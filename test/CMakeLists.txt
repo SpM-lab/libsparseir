@@ -1,6 +1,3 @@
-# Copyright (C) 2023 Markus Wallerberger and others
-# SPDX-License-Identifier: MIT
-#
 include(FetchContent)
 
 # Require Catch2 for tests
@@ -19,6 +16,7 @@ add_executable(libsparseirtests
 )
 
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
+target_link_libraries(libsparseirtests PRIVATE SparseIR::sparseir)
 
 #if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.12")
     #set_property(TARGET tests PROPERTY CXX_STANDARD 20)
