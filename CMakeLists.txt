@@ -30,7 +30,7 @@ find_package (Eigen3 3.4 REQUIRED NO_MODULE)
 include(FetchContent)
 FetchContent_Declare(XPrec
     GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
-    GIT_TAG v0.5.0
+    GIT_TAG mainline
     )
 FetchContent_MakeAvailable(XPrec)
 
