@@ -68,8 +68,23 @@ TEST_CASE("gauss.cpp") {
     }
 
     SECTION("collocate") {
-        Rule<DDouble> r = legendre(20);
-        cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
+        int n = 6;
+        Rule<DDouble> r = legendre(n);
+        Eigen::Matrix<DDouble, Dynamic, Dynamic> cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
+        Eigen::Matrix<DDouble, Dynamic, Dynamic> emat = legvander(r.x, r.x.size() - 1);
+        DDouble e = 1e-13;
+        auto out =  emat * cmat;
+        // std::cout << emat * cmat << std::endl;
+        for (int i = 0; i < n; i++){
+            for (int j = 0; j < n; j++){
+                if (i == j){
+                    REQUIRE((double)out(i, j) == 1);
+                } else {
+                    REQUIRE((double)out(i, j) == 0);
+                }
+            }
+        }
+        //REQUIRE((emat * cmat).isApprox(Eigen::Matrix<DDouble, Dynamic, Dynamic>::Identity(n, n), e));
         REQUIRE(1==1);
     }
     /*
