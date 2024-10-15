@@ -54,6 +54,56 @@ void gaussValidate(const Rule<T>& rule) {
     REQUIRE(equal(rule.x_backward.begin(), rule.x_backward.end(), rule.x.begin(), [rule](T xi, T x_backward) { return abs(x_backward - (rule.b - xi)) < 1e-9; }));
 }
 
+TEST_CASE("_specfuns.cxx"){
+    SECTION("legval"){
+        vector<double> c = {1.0, 2.0, 3.0};
+        double x = 0.5;
+        double result = legval(x, c);
+        REQUIRE(result == 1.625);
+    }
+
+    SECTION("legvander"){
+        vector<double> x = {0.0, 0.5, 1.0};
+        int deg = 2;
+        MatrixXd result = legvander(x, deg);
+        MatrixXd expected(3, 3);
+        expected << 1, 0, -0.5, 1.0, 0.5, -0.125, 1, 1, 1;
+        REQUIRE(result.isApprox(expected, 1e-9));
+    }
+
+    SECTION("legvander6"){
+        auto result = legvander(legendre(6).x, 5);
+        MatrixXd expected(6, 6);
+        // expected is computed by
+        // using SparseIR
+        // SparseIR.legvander(SparseIR.legendre(6).x, 5)
+        expected << 1.0, -0.93247 ,  0.804249,  -0.62825 ,  0.422005, -0.205712,
+                    1.0, -0.661209,  0.155797,   0.269116, -0.428246,  0.294396,
+                    1.0, -0.238619, -0.414591,   0.323962,  0.175662, -0.334619,
+                    1.0,  0.238619, -0.414591,  -0.323962,  0.175662,  0.334619,
+                    1.0,  0.661209,  0.155797,  -0.269116, -0.428246, -0.294396,
+                    1.0,  0.93247 ,  0.804249,   0.62825 ,  0.422005,  0.205712;
+        for (int i = 0; i < 6; i++){
+            for (int j = 0; j < 6; j++){
+                REQUIRE((double)result(i, j) - (double)expected(i, j) < 1);
+            }
+        }
+    }
+
+    SECTION("legendre_collocation"){
+        Rule<DDouble> r = legendre(2);
+        Matrix<DDouble, Dynamic, Dynamic> result = legendre_collocation(r);
+        Matrix<DDouble, Dynamic, Dynamic> expected(2, 2);
+        expected << 0.5, 0.5,
+                   -0.866025, 0.866025;
+        for (int i = 0; i < 2; i++){
+            for (int j = 0; j < 2; j++){
+                REQUIRE((double)result(i, j) - (double)expected(i, j) < 1e-6);
+            }
+        }
+    }
+}
+
 TEST_CASE("gauss.cpp") {
     SECTION("DEBUG"){
         std::vector<DDouble> x(20), w(20);
@@ -70,7 +120,9 @@ TEST_CASE("gauss.cpp") {
     SECTION("collocate") {
         int n = 6;
         Rule<DDouble> r = legendre(n);
+
         Eigen::Matrix<DDouble, Dynamic, Dynamic> cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
+
         Eigen::Matrix<DDouble, Dynamic, Dynamic> emat = legvander(r.x, r.x.size() - 1);
         DDouble e = 1e-13;
         auto out =  emat * cmat;
@@ -78,14 +130,13 @@ TEST_CASE("gauss.cpp") {
         for (int i = 0; i < n; i++){
             for (int j = 0; j < n; j++){
                 if (i == j){
-                    REQUIRE((double)out(i, j) == 1);
+                    REQUIRE(out(i, j) - DDouble(1.0) < 1e-13);
                 } else {
-                    REQUIRE((double)out(i, j) == 0);
+                    REQUIRE(out(i, j) - DDouble(0.0) < 1e-13);
                 }
             }
         }
         //REQUIRE((emat * cmat).isApprox(Eigen::Matrix<DDouble, Dynamic, Dynamic>::Identity(n, n), e));
-        REQUIRE(1==1);
     }
     /*
         MatrixXd cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined

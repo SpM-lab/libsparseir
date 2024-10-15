@@ -170,33 +170,30 @@ Rule<DDouble> legendre(int n){
 
 template <typename T>
 Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1) {
-    if (n == -1) {
+    if (n < 0) {
         n = rule.x.size();
     }
-
     // Compute the Legendre Vandermonde matrix
-    Matrix<T, Dynamic, Dynamic> res = Matrix<T, Dynamic, Dynamic>::Zero(n, rule.x.size());
-    for (int i = 0; i < n; ++i) {
-        for (size_t j = 0; j < rule.x.size(); ++j) {
-            res(i, j) = pow(rule.x[j], i);
+    Matrix<T, Dynamic, Dynamic> lv = legvander(rule.x, n-1);
+    for (size_t i = 0; i < rule.w.size(); ++i) {
+        for (size_t j = 0; j < lv.cols(); ++j) {
+            lv(i, j) *= rule.w[i];
         }
     }
     // !!! do NOT do this !!!
     // res = res.transpose();
     // This is the so-called aliasing issue. In "debug mode", i.e., when assertions have not been disabled, such common pitfalls are automatically detected.
 
-    auto res_ = res.transpose();
-
-    // Multiply by the weights
-    for (size_t i = 0; i < rule.w.size(); ++i) {
-        res_.row(i) *= rule.w[i];
-    }
+    auto res = lv.transpose();
 
     // Normalize the matrix rows
-    VectorXd invnorm = VectorXd::LinSpaced(n, 0.5, n + 0.5);
-    for (int i = 0; i < n; ++i) {
-        res_.row(i) *= invnorm[i];
+    VectorXd invnorm = VectorXd::LinSpaced(n, 0.5, n - 0.5);
+
+    for (size_t i = 0; i < invnorm.size(); ++i) {
+        for (size_t j = 0; j < lv.cols(); ++j) {
+            res(i, j) *= invnorm(i);
+        }
     }
 
-    return res_;
+    return res;
 }

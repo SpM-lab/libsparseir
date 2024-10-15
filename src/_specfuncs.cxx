@@ -100,10 +100,10 @@ T legval(T x, const vector<T>& c) {
 
     T c0 = c[nd - 2];
     T c1 = c[nd - 1];
-    for (int j = nd - 3; j >= 0; --j) {
+    for (int j = nd - 2; j >= 1; --j) {
         T k = T(j) / T(j + 1);
         T temp = c0;
-        c0 = c[j] - c1 * k;
+        c0 = c[j-1] - c1 * k;
         c1 = temp + c1 * x * (k + 1);
     }
     return c0 + c1 * x;
@@ -128,7 +128,7 @@ Matrix<T, Dynamic, Dynamic> legvander(const vector<T>& x, int deg) {
         }
         for (int i = 2; i <= deg; ++i) {
             T invi = T(1) / T(i);
-            for (int j = 0; j < n; ++j) {
+            for (int j = 0; j < deg + 1; ++j) {
                 v(j, i) = v(j, i - 1) * x[j] * (2 - invi) - v(j, i - 2) * (1 - invi);
             }
         }
