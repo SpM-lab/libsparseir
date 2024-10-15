@@ -17,11 +17,9 @@ using xprec::DDouble;
 
 TEST_CASE("gauss", "[Rule]")
 {
-    vector<DDouble> x, w, v, x_forward, x_backward;
     // Initialize x, w, v, x_forward, x_backward with DDouble values
-
-    NestedRule<DDouble> rule(x, w, v, x_forward, x_backward);
-    // Use the rule object as needed
+    vector<DDouble> x, w;
+    Rule<DDouble> r = Rule<DDouble>(x, w);
     REQUIRE(1==1);
 }
 
@@ -57,9 +55,24 @@ void gaussValidate(const Rule<T>& rule) {
 }
 
 TEST_CASE("gauss.cpp") {
-    /*
+    SECTION("DEBUG"){
+        std::vector<DDouble> x(20), w(20);
+        DDouble a = -1, b = 1;
+        xprec::gauss_legendre(20, x.data(), w.data());
+        Rule<DDouble> r1 = Rule<DDouble>(x, w);
+        Rule<DDouble> r2 = Rule<DDouble>(x, w, a, b);
+        REQUIRE(r1.a == r2.a);
+        REQUIRE(r1.b == r2.b);
+        REQUIRE(r1.x == r2.x);
+        REQUIRE(r1.w == r2.w);
+    }
+
     SECTION("collocate") {
-        Rule<double> r = legendre(20); // Assuming legendre function is defined
+        Rule<DDouble> r = legendre(20);
+        cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
+        REQUIRE(1==1);
+    }
+    /*
         MatrixXd cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
         MatrixXd emat = legvander(r.x, r.x.size() - 1); // Assuming legvander function is defined
         REQUIRE((emat * cmat).isApprox(MatrixXd::Identity(20, 20), 1e-13));

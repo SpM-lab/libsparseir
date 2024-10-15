@@ -4,9 +4,11 @@
 #include <algorithm>
 #include <numeric>
 #include <Eigen/Dense>
+#include <xprec/ddouble-header-only.h>
 
 using namespace std;
 using namespace Eigen;
+using xprec::DDouble;
 
 class slice {
 public:
@@ -51,7 +53,7 @@ public:
     vector<T> x, w, x_forward, x_backward;
     T a, b;
 
-    Rule(const vector<T>& x, const vector<T>& w, const vector<T>& x_forward = {}, const vector<T>& x_backward = {}, T a = -1, T b = 1)
+    Rule(const vector<T>& x, const vector<T>& w, T a = -1, T b = 1)
         : x(x), w(w), a(a), b(b) {
         this->x_forward = x_forward.empty() ? vector<T>(x.size(), 0) : x_forward;
         this->x_backward = x_backward.empty() ? vector<T>(x.size(), 0) : x_backward;
@@ -123,6 +125,7 @@ public:
     }
 };
 
+/*
 template <typename T>
 class NestedRule : public Rule<T> {
 public:
@@ -151,3 +154,45 @@ public:
         return *this;
     }
 };
+*/
+
+/*
+    legendre(n[, T])
+
+Gauss-Legendre quadrature with `n` points on [-1, 1].
+*/
+Rule<DDouble> legendre(int n){
+    vector<DDouble> x(n), w(n);
+    xprec::gauss_legendre(n, x.data(), w.data());
+    return Rule<DDouble>(x, w);
+}
+
+
+template <typename T>
+MatrixXd legendre_collocation(const Rule<T>& rule, int n = -1) {
+    if (n == -1) {
+        n = rule.x.size();
+    }
+
+    // Compute the Legendre Vandermonde matrix
+    MatrixXd res = MatrixXd::Zero(n, rule.x.size());
+    for (int i = 0; i < n; ++i) {
+        for (size_t j = 0; j < rule.x.size(); ++j) {
+            res(i, j) = pow(rule.x[j], i);
+        }
+    }
+    res = res.transpose();
+
+    // Multiply by the weights
+    for (size_t i = 0; i < rule.w.size(); ++i) {
+        res.row(i) *= rule.w[i];
+    }
+
+    // Normalize the matrix rows
+    VectorXd invnorm = VectorXd::LinSpaced(n, 0.5, n + 0.5);
+    for (int i = 0; i < n; ++i) {
+        res.row(i) *= invnorm[i];
+    }
+
+    return res;
+}

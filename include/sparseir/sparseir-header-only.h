@@ -1,1 +1,3 @@
-#include "../src/gauss.cpp"
+#include "../src/_specfuncs.cxx"
+
+#include "../src/gauss.cxx"
