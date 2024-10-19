@@ -9,13 +9,15 @@
 #include <xprec/ddouble-header-only.hpp>
 #include <sparseir/sparseir-header-only.hpp>
 
+using std::invalid_argument;
+
 using xprec::DDouble;
 using Eigen::Matrix;
 
 TEST_CASE("gauss", "[Rule]")
 {
     // Initialize x, w, v, x_forward, x_backward with DDouble values
-    vector<DDouble> x, w;
+    std::vector<DDouble> x, w;
     Rule<DDouble> r = Rule<DDouble>(x, w);
     REQUIRE(1==1);
 }
@@ -97,17 +99,7 @@ TEST_CASE("gauss.cpp") {
         Eigen::Matrix<DDouble, Dynamic, Dynamic> emat = legvander(r.x, r.x.size() - 1);
         DDouble e = 1e-13;
         auto out =  emat * cmat;
-        // std::cout << emat * cmat << std::endl;
-        for (int i = 0; i < n; i++){
-            for (int j = 0; j < n; j++){
-                if (i == j){
-                    REQUIRE(out(i, j) - DDouble(1.0) < 1e-13);
-                } else {
-                    REQUIRE(out(i, j) - DDouble(0.0) < 1e-13);
-                }
-            }
-        }
-        //REQUIRE((emat * cmat).isApprox(Eigen::Matrix<DDouble, Dynamic, Dynamic>::Identity(n, n), e));
+        REQUIRE((emat * cmat).isApprox(Eigen::Matrix<DDouble, Dynamic, Dynamic>::Identity(n, n), e));
     }
     /*
         MatrixXd cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
@@ -129,7 +121,7 @@ TEST_CASE("gauss.cpp") {
 
     /*
     SECTION("piecewise") {
-        vector<double> edges = {-4, -1, 1, 3};
+        std::vector<double> edges = {-4, -1, 1, 3};
         Rule<double> rule = piecewise(legendre(20), edges); // Assuming piecewise function is defined
         gaussValidate(rule);
     }
