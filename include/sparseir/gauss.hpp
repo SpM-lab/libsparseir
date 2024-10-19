@@ -43,7 +43,8 @@ class Rule {
 public:
     std::vector<T> x, w, x_forward, x_backward;
     T a, b;
-
+    Rule(const std::vector<T>& x, const std::vector<T>& w, std::vector<T> x_forward, std::vector<T> x_backward, T a = -1, T b = 1)
+        : x(x), w(w), x_forward(x_forward), x_backward(x_backward), a(a), b(b) {}
     Rule(const std::vector<T>& x, const std::vector<T>& w, T a = -1, T b = 1)
         : x(x), w(w), a(a), b(b) {
         this->x_forward = x_forward.empty() ? std::vector<T>(x.size(), 0) : x_forward;
