@@ -3,7 +3,7 @@
 #include <cstdint>
 
 #include "sparseir/sparseir-header-only.h"
-#include <xprec/ddouble.h>
+#include <xprec/ddouble-header-only.hpp>
 
 #include <catch2/catch_test_macros.hpp>
 #include <vector>

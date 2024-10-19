@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <numeric>
 #include <Eigen/Dense>
-#include <xprec/ddouble-header-only.h>
+#include <xprec/ddouble-header-only.hpp>
 
 using namespace std;
 using namespace Eigen;
