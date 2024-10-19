@@ -1,19 +1,16 @@
-#include <catch2/catch_test_macros.hpp>
-
-#include <cstdint>
-
-#include "sparseir/sparseir-header-only.h"
-#include <xprec/ddouble-header-only.hpp>
-
-#include <catch2/catch_test_macros.hpp>
 #include <vector>
 #include <algorithm>
 #include <numeric>
 #include <Eigen/Dense>
+#include <cstdint>
 
-using namespace std;
-using namespace Eigen;
+#include <catch2/catch_test_macros.hpp>
+
+#include <xprec/ddouble-header-only.hpp>
+#include <sparseir/sparseir-header-only.hpp>
+
 using xprec::DDouble;
+using Eigen::Matrix;
 
 TEST_CASE("gauss", "[Rule]")
 {
@@ -23,14 +20,6 @@ TEST_CASE("gauss", "[Rule]")
     REQUIRE(1==1);
 }
 
-#include <catch2/catch_test_macros.hpp>
-#include <vector>
-#include <algorithm>
-#include <numeric>
-#include <Eigen/Dense>
-
-using namespace std;
-using namespace Eigen;
 
 template <typename T>
 void gaussValidate(const Rule<T>& rule) {
@@ -54,21 +43,17 @@ void gaussValidate(const Rule<T>& rule) {
     REQUIRE(equal(rule.x_backward.begin(), rule.x_backward.end(), rule.x.begin(), [rule](T xi, T x_backward) { return abs(x_backward - (rule.b - xi)) < 1e-9; }));
 }
 
-TEST_CASE("_specfuns.cxx"){
-    SECTION("legval"){
-        vector<double> c = {1.0, 2.0, 3.0};
-        double x = 0.5;
-        double result = legval(x, c);
-        REQUIRE(result == 1.625);
-    }
-
-    SECTION("legvander"){
-        vector<double> x = {0.0, 0.5, 1.0};
-        int deg = 2;
-        MatrixXd result = legvander(x, deg);
-        MatrixXd expected(3, 3);
-        expected << 1, 0, -0.5, 1.0, 0.5, -0.125, 1, 1, 1;
-        REQUIRE(result.isApprox(expected, 1e-9));
+TEST_CASE("gauss.cpp") {
+    SECTION("Rule"){
+        std::vector<DDouble> x(20), w(20);
+        DDouble a = -1, b = 1;
+        xprec::gauss_legendre(20, x.data(), w.data());
+        Rule<DDouble> r1 = Rule<DDouble>(x, w);
+        Rule<DDouble> r2 = Rule<DDouble>(x, w, a, b);
+        REQUIRE(r1.a == r2.a);
+        REQUIRE(r1.b == r2.b);
+        REQUIRE(r1.x == r2.x);
+        REQUIRE(r1.w == r2.w);
     }
 
     SECTION("legvander6"){
@@ -101,20 +86,6 @@ TEST_CASE("_specfuns.cxx"){
                 REQUIRE((double)result(i, j) - (double)expected(i, j) < 1e-6);
             }
         }
-    }
-}
-
-TEST_CASE("gauss.cpp") {
-    SECTION("DEBUG"){
-        std::vector<DDouble> x(20), w(20);
-        DDouble a = -1, b = 1;
-        xprec::gauss_legendre(20, x.data(), w.data());
-        Rule<DDouble> r1 = Rule<DDouble>(x, w);
-        Rule<DDouble> r2 = Rule<DDouble>(x, w, a, b);
-        REQUIRE(r1.a == r2.a);
-        REQUIRE(r1.b == r2.b);
-        REQUIRE(r1.x == r2.x);
-        REQUIRE(r1.w == r2.w);
     }
 
     SECTION("collocate") {

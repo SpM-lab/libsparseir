@@ -3,26 +3,29 @@
 #include <cstdint>
 #include <vector>
 #include <iostream>
-#include "sparseir/sparseir.h"
-// #include "sparseir/sparseir-header-only.h"
 #include <Eigen/Dense>
 
-int main1() {
-    vector<double> c = {1.0, 2.0, 3.0};
-    double x = 0.5;
-    double result = legval(x, c);
-    std::cout << "Result of legval: " << result << std::endl;
-    return 0;
-}
+#include <xprec/ddouble-header-only.hpp>
 
-int main2() {
-    Eigen::MatrixXd c(4, 3);
-    c << 1, 2, 3,
-         4, 5, 6,
-         7, 8, 9,
-         10, 11, 12;
-    int cnt = 1;
-    Eigen::MatrixXd result = legder(c, cnt);
-    std::cout << "Result of legder:\n" << result << std::endl;
-    return 0;
+#include <sparseir/_specfuncs.hpp>
+
+using xprec::DDouble;
+
+TEST_CASE("_specfuns.cxx"){
+    SECTION("legval"){
+        vector<double> c = {1.0, 2.0, 3.0};
+        double x = 0.5;
+        double result = legval(x, c);
+        REQUIRE(result == 1.625);
+    }
+
+    SECTION("legvander"){
+        vector<double> x = {0.0, 0.5, 1.0};
+        int deg = 2;
+        MatrixXd result = legvander(x, deg);
+        MatrixXd expected(3, 3);
+        expected << 1, 0, -0.5, 1.0, 0.5, -0.125, 1, 1, 1;
+        REQUIRE(result.isApprox(expected, 1e-9));
+    }
+
 }
