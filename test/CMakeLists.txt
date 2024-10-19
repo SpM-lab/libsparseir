@@ -13,6 +13,8 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(libsparseirtests
     example.cxx
+    _specfuncs.cxx
+    gauss.cxx
 )
 
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
