@@ -9,13 +9,15 @@
 #include <xprec/ddouble-header-only.hpp>
 #include <sparseir/sparseir-header-only.hpp>
 
+using std::invalid_argument;
+
 using xprec::DDouble;
 using Eigen::Matrix;
 
 TEST_CASE("gauss", "[Rule]")
 {
     // Initialize x, w, v, x_forward, x_backward with DDouble values
-    vector<DDouble> x, w;
+    std::vector<DDouble> x, w;
     Rule<DDouble> r = Rule<DDouble>(x, w);
     REQUIRE(1==1);
 }

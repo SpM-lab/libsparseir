@@ -10,17 +10,18 @@
 #include <sparseir/_specfuncs.hpp>
 
 using xprec::DDouble;
+using Eigen::MatrixXd;
 
 TEST_CASE("_specfuns.cxx"){
     SECTION("legval"){
-        vector<double> c = {1.0, 2.0, 3.0};
+        std::vector<double> c = {1.0, 2.0, 3.0};
         double x = 0.5;
         double result = legval(x, c);
         REQUIRE(result == 1.625);
     }
 
     SECTION("legvander"){
-        vector<double> x = {0.0, 0.5, 1.0};
+        std::vector<double> x = {0.0, 0.5, 1.0};
         int deg = 2;
         MatrixXd result = legvander(x, deg);
         MatrixXd expected(3, 3);
