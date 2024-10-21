@@ -14,6 +14,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(libsparseirtests
     example.cxx
     _specfuncs.cxx
+    _root.cxx
     gauss.cxx
 )
 
