@@ -15,6 +15,7 @@ add_executable(libsparseirtests
     example.cxx
     _specfuncs.cxx
     _root.cxx
+    freq.cxx
     gauss.cxx
 )
 
