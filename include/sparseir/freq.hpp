@@ -152,6 +152,8 @@ int zeta(const MatsubaraFreq<S>& freq) {
     return freq.zeta();
 }
 
+auto pioverbeta = MatsubaraFreq<Fermionic()>(1);
+
 /*
 int main() {
     try {
