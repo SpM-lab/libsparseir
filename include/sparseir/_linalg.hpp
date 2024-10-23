@@ -23,7 +23,58 @@ struct QRPivoted {
 };
 
 template <typename T>
-QRPivoted<T> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_limits<double>::epsilon()) {
+struct QRPackedQ {
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> factors;
+    Eigen::Matrix<T, Eigen::Dynamic, 1> taus;
+
+    QRPackedQ(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& factors, const Eigen::Matrix<T, Eigen::Dynamic, 1>& taus)
+        : factors(factors), taus(taus) {
+        if (factors.rows() != taus.size()) {
+            throw std::invalid_argument("The number of rows in factors must match the size of taus.");
+        }
+    }
+};
+
+template <typename T>
+double reflector(Eigen::Vector<T, Dynamic>& x) {
+    int n = x.size();
+    if (n == 0) return 0.0;
+
+    T xi1 = x(0);
+    T normu = x.norm();
+    if (normu == 0.0) return 0.0;
+
+    T nu = std::copysign(normu, xi1);
+    xi1 += nu;
+    x(0) = -nu;
+
+    for (int i = 1; i < n; ++i) {
+        x(i) /= xi1;
+    }
+
+    return xi1 / nu;
+}
+
+template <typename T>
+void reflectorApply(Eigen::Matrix<T, Eigen::Dynamic, 1>& x, T tau, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A) {
+    int m = A.rows();
+    int n = A.cols();
+    if (x.size() != m) {
+        throw std::invalid_argument("reflector has length " + std::to_string(x.size()) + ", which must match the first dimension of matrix A, " + std::to_string(m));
+    }
+    if (m == 0) return;
+
+    for (int j = 0; j < n; ++j) {
+        Eigen::Matrix<T, Eigen::Dynamic, 1> Aj = A.col(j).segment(1, m - 1);
+        Eigen::Matrix<T, Eigen::Dynamic, 1> xj = x.segment(1, m - 1);
+        T vAj = tau * (A(0, j) + xj.dot(Aj));
+        A(0, j) -= vAj;
+        Aj.noalias() -= vAj * xj;
+    }
+}
+
+template <typename T>
+std::pair<QRPivoted<T>, int> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_limits<double>::epsilon()) {
     int m = A.rows();
     int n = A.cols();
     int k = std::min(m, n);
@@ -44,9 +95,9 @@ QRPivoted<T> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_lim
             A.col(i).swap(A.col(pvt));
         }
 
-        Eigen::HouseholderQR<Eigen::Ref<Matrix<T, Dynamic, Dynamic>>> qr(A.bottomRightCorner(m - i, n - i));
-        taus[i] = qr.householderQ().coeff(0, 0);
-        qr.applyHouseholderOnTheLeft(A.bottomRightCorner(m - i, n - i), qr.householderQ().col(0));
+        T tau_i = reflector(A.col(i).tail(m - i));
+        taus[i] = tau_i;
+        refrectorApply(A.col(i).tail(m - i), tau_i, A.bottomRightCorner(m - i, n - i));
 
         for (int j = i + 1; j < n; ++j) {
             double temp = std::abs(A(i, j)) / pnorms[j];
@@ -68,28 +119,65 @@ QRPivoted<T> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_lim
         }
     }
 
-    return {A, taus, jpvt};
+    return {QRPivoted<T>(A, taus, jpvt), k};
+}
+
+template <typename T>
+void lmul(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& factors, const Eigen::Matrix<T, Eigen::Dynamic, 1>& taus, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& B) {
+    int m = factors.rows();
+    int n = factors.cols();
+    int k = taus.size();
+
+    if (B.rows() != m) {
+        throw std::invalid_argument("The number of rows in B must match the number of rows in factors.");
+    }
+
+    // Apply the Householder reflections to B
+    for (int i = 0; i < k; ++i) {
+        Eigen::VectorXd v = Eigen::VectorXd::Zero(m);
+        v(i) = 1.0;
+        v.tail(m - i - 1) = factors.col(i).tail(m - i - 1);
+        B -= (taus(i) * v) * (v.transpose() * B);
+    }
+}
+
+template <typename T>
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& triu(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& M, int k) {
+    int m = M.rows();
+    int n = M.cols();
+    for (int j = 0; j < std::min(n, m + k); ++j) {
+        for (int i = std::max(0, j - k + 1); i < m; ++i) {
+            M(i, j) = 0;
+        }
+    }
+    return M;
 }
 
 template <typename T>
 std::pair<Matrix<T, Dynamic, Dynamic>, Matrix<T, Dynamic, Dynamic>> truncate_qr_result(const QRPivoted<T>& qr, int k) {
-    int m = qr.factors.rows();
-    int n = qr.factors.cols();
+    int m = qr.matrixQR().rows();
+    int n = qr.matrixQR().cols();
     if (k < 0 || k > std::min(m, n)) {
         throw std::domain_error("Invalid rank, must be in [0, " + std::to_string(std::min(m, n)) + "]");
     }
 
-    Matrix<T, Dynamic, Dynamic> Q = qr.factors.leftCols(k).householderQr().householderQ();
-    Matrix<T, Dynamic, Dynamic> R = qr.factors.topLeftCorner(k, n).triangularView<Eigen::Upper>();
+    // Extract Q matrix
+    auto Q = Eigen::Matrix<T, Dynamic, Dynamic>::Identity(m, k);
+    lmul(qr.factors, qr.taus.head(k), Q);
 
-    return {Q, R};
+    // Extract R matrix
+    auto R = triu(qr.factors.topRows(k));
+
+    return std::make_pair(Q, R);
 }
+
 
 template <typename T>
 SVDResult<T> tsvd(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_limits<double>::epsilon()) {
-    auto [A_qr, k] = rrqr(A, rtol);
-    auto [Q, R] = truncate_qr_result(A_qr, k);
-
+    auto A_qr_k = rrqr(A, rtol);
+    auto QR_result = truncate_qr_result(A_qr_k.first, A_qr_k.second);
+    auto Q = QR_result.first;
+    auto R = QR_result.second;
     Eigen::JacobiSVD<Matrix<T, Dynamic, Dynamic>> svd(R.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
     Matrix<T, Dynamic, Dynamic> U = Q * svd.matrixV();
     Matrix<T, Dynamic, Dynamic> V = svd.matrixU().transpose();
