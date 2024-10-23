@@ -186,12 +186,66 @@ SVDResult<T> tsvd(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_lim
     return {U, s, V};
 }
 
-std::tuple<double, double, double, double> svd2x2(double a11, double a12, double a21, double a22) {
-    double abs_a12 = std::abs(a12);
-    double abs_a21 = std::abs(a21);
+
+template <typename T>
+std::tuple<std::pair<T, T>, std::pair<T, T>, std::pair<T, T>> svd2x2(T f, T g, T h) {
+    T fa = std::abs(f);
+    T ga = std::abs(g);
+    T ha = std::abs(h);
+
+    T cu, su, smax, smin, cv, sv;
+
+    if (fa < ha) {
+        // switch h <-> f, cu <-> sv, cv <-> su
+        std::tie(std::tie(sv, cv), std::tie(smax, smin), std::tie(su, cu)) = svd2x2(h, g, f);
+    } else if (ga == T(0)) {
+        // already diagonal, fa > ha
+        smax = fa;
+        smin = ha;
+        cv = cu = T(1);
+        sv = su = T(0);
+    } else if (fa < std::numeric_limits<T>::epsilon() * ga) {
+        // ga is very large
+        smax = ga;
+        if (ha > T(1)) {
+            smin = fa / (ga / ha);
+        } else {
+            smin = (fa / ga) * ha;
+        }
+        cv = f / g;
+        sv = T(1);
+        cu = T(1);
+        su = h / g;
+    } else {
+        // normal case
+        T fmh = fa - ha;
+        T d = fmh / fa;
+        T q = g / f;
+        T s = T(2) - d;
+        T spq = std::hypot(q, s);
+        T dpq = std::hypot(d, q);
+        T a = (spq + dpq) / T(2);
+        smax = std::abs(fa * a);
+        smin = std::abs(ha / a);
+
+        T tmp = (q / (spq + s) + q / (dpq + d)) * (T(1) + a);
+        T tt = std::hypot(tmp, T(2));
+        cv = T(2) / tt;
+        sv = tmp / tt;
+        cu = (cv + sv * q) / a;
+        su = ((h / f) * sv) / a;
+    }
+
+    return std::make_tuple(std::make_pair(cu, su), std::make_pair(smax, smin), std::make_pair(cv, sv));
+}
+
+template <typename T>
+std::tuple<T, T, T, T> svd2x2(T a11, T a12, T a21, T a22) {
+    T abs_a12 = std::abs(a12);
+    T abs_a21 = std::abs(a21);
 
     if (a21 == 0) {
-        return svd2x2(a11, a12, a22);
+        return svd2x2<T>(a11, a12, a22);
     } else if (abs_a12 < abs_a21) {
         auto [cv, sv, smax, smin, cu, su] = svd2x2(a11, a21, a12, a22);
         return {cu, su, smax, smin, cv, sv};
@@ -246,6 +300,7 @@ double jacobi_sweep(Matrix<T, Dynamic, Dynamic>& U, Matrix<T, Dynamic, Dynamic>&
             double Hjj = U.col(j).squaredNorm();
             offd += Hij * Hij;
 
+            // std::get ?
             auto [cv, sv, _, _] = svd2x2(Hii, Hij, Hij, Hjj);
 
             Eigen::JacobiRotation<double> rot(cv, sv);
