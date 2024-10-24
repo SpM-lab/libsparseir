@@ -240,44 +240,62 @@ std::tuple<std::pair<T, T>, std::pair<T, T>, std::pair<T, T>> svd2x2(T f, T g, T
 }
 
 template <typename T>
-std::tuple<T, T, T, T> svd2x2(T a11, T a12, T a21, T a22) {
+std::tuple<std::tuple<T, T>, std::tuple<T, T>, std::tuple<T, T>> svd2x2(T a11, T a12, T a21, T a22) {
     T abs_a12 = std::abs(a12);
     T abs_a21 = std::abs(a21);
 
     if (a21 == 0) {
         return svd2x2<T>(a11, a12, a22);
     } else if (abs_a12 < abs_a21) {
-        auto [cv, sv, smax, smin, cu, su] = svd2x2(a11, a21, a12, a22);
-        return {cu, su, smax, smin, cv, sv};
+        auto svd_result = svd2x2(a11, a21, a12, a22);
+        auto cu = std::get<0>(std::get<0>(svd_result));
+        auto su = std::get<1>(std::get<0>(svd_result));
+        auto smax_smin = std::get<1>(svd_result);
+        auto cv = std::get<0>(std::get<2>(svd_result));
+        auto sv = std::get<1>(std::get<2>(svd_result));
+        return std::make_tuple(std::make_pair(cv, sv), smax_smin, std::make_pair(cu, su));
     } else {
-        auto [cx, sx, rx] = givens_params(a11, a21);
+        auto rot = givens_params(a11, a21);
+        auto cx_sx = std::get<0>(rot);
+        auto cx = std::get<0>(cx_sx);
+        auto sx = std::get<1>(cx_sx);
+        auto rx = std::get<1>(rot);
         a11 = rx;
         a21 = 0;
         std::tie(a12, a22) = givens_lmul(cx, sx, a12, a22);
 
-        auto [cu, su, smax, smin, cv, sv] = svd2x2(a11, a12, a22);
+        // auto [cu, su, smax, smin, cv, sv] = svd2x2(a11, a12, a22);
+        auto svd_result = svd2x2(a11, a12, a22);
+        auto cu = std::get<0>(std::get<0>(svd_result));
+        auto su = std::get<1>(std::get<0>(svd_result));
+        auto smax = std::get<0>(std::get<1>(svd_result));
+        auto smin = std::get<1>(std::get<1>(svd_result));
+        auto cv = std::get<0>(std::get<2>(svd_result));
+        auto sv = std::get<1>(std::get<2>(svd_result));
         std::tie(cu, su) = givens_lmul(cx, -sx, cu, su);
 
-        return {cu, su, smax, smin, cv, sv};
+        return std::make_tuple(std::make_tuple(cu, su), std::make_tuple(smax, smin), std::make_tuple(cu, sv));
     }
 }
 
-std::tuple<double, double, double> givens_params(double f, double g) {
+template <typename T>
+std::tuple<std::tuple<T, T>, T> givens_params(T f, T g) {
     if (g == 0) {
         return {1.0, 0.0, f};
     } else if (f == 0) {
         return {0.0, std::copysign(1.0, g), std::abs(g)};
     } else {
-        double r = std::copysign(std::hypot(f, g), f);
-        double c = f / r;
-        double s = g / r;
-        return {c, s, r};
+        T r = std::copysign(std::hypot(f, g), f);
+        T c = f / r;
+        T s = g / r;
+        return {{c, s}, r};
     }
 }
 
-std::pair<double, double> givens_lmul(double c, double s, double x, double y) {
-    double a = c * x + s * y;
-    double b = c * y - s * x;
+template <typename T>
+std::pair<T, T> givens_lmul(T c, T s, T x, T y) {
+    T a = c * x + s * y;
+    T b = c * y - s * x;
     return {a, b};
 }
 
@@ -292,18 +310,18 @@ double jacobi_sweep(Matrix<T, Dynamic, Dynamic>& U, Matrix<T, Dynamic, Dynamic>&
         throw std::invalid_argument("U and VT must be compatible");
     }
 
-    double offd = 0.0;
+    T offd = 0.0;
     for (int i = 0; i < ii; ++i) {
         for (int j = i + 1; j < jj; ++j) {
-            double Hii = U.col(i).squaredNorm();
-            double Hij = U.col(i).dot(U.col(j));
-            double Hjj = U.col(j).squaredNorm();
+            T Hii = U.col(i).squaredNorm();
+            T Hij = U.col(i).dot(U.col(j));
+            T Hjj = U.col(j).squaredNorm();
             offd += Hij * Hij;
 
-            // std::get ?
-            auto [cv, sv, _, _] = svd2x2(Hii, Hij, Hij, Hjj);
-
-            Eigen::JacobiRotation<double> rot(cv, sv);
+            auto svd_result = svd2x2(Hii, Hij, Hij, Hjj);
+            T cv = std::get<0>(std::get<2>(svd_result));
+            T sv = std::get<1>(std::get<2>(svd_result));
+            Eigen::JacobiRotation<T> rot(cv, sv);
             VT.applyOnTheLeft(j, i, rot);
             U.applyOnTheRight(i, j, rot.transpose());
         }
@@ -332,5 +350,5 @@ SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic>& U, double rtol = std::numer
     Vector<T, Dynamic> s = U.colwise().norm();
     U.array().rowwise() /= s.transpose().array();
 
-    return {U, s, VT};
+    return SVDResult(U, s, VT);
 }
