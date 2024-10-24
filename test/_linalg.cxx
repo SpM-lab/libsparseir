@@ -8,18 +8,93 @@ using namespace xprec;
 
 TEST_CASE("Jacobi SVD", "[linalg]") {
         Matrix<DDouble, Dynamic, Dynamic> A = Matrix<DDouble, Dynamic, Dynamic>::Random(20, 10);
-        auto [U, S, V] = svd_jacobi(A);
+        SVDResult<DDouble> svd_result = svd_jacobi(A);
+        auto U = svd_result.U;
+        auto S = svd_result.s;
+        auto V = svd_result.V;
         Matrix<DDouble, Dynamic, Dynamic> S_diag = S.asDiagonal();
         REQUIRE((U * S_diag * V.transpose()).isApprox(A));
 }
 
+/*
+function getproperty(F::QRPivoted{T}, d::Symbol) where T
+    m, n = size(F)
+    if d === :R
+        return triu!(getfield(F, :factors)[1:min(m,n), 1:n])
+    elseif d === :Q
+        return QRPackedQ(getfield(F, :factors), F.τ)
+    elseif d === :p
+        return getfield(F, :jpvt)
+    elseif d === :P
+        p = F.p
+        n = length(p)
+        P = zeros(T, n, n)
+        for i in 1:n
+            P[p[i],i] = one(T)
+        end
+        return P
+    else
+        getfield(F, d)
+    end
+end
+*/
+
+
+/*
+template <typename T>
+struct QRPackedQ {
+    Matrix<T, Dynamic, Dynamic> factors;
+    Matrix<T, Dynamic, 1> taus;
+
+    QRPackedQ(const Matrix<T, Dynamic, Dynamic>& factors, const Matrix<T, Dynamic, 1>& taus)
+        : factors(factors), taus(taus) {}
+};
+*/
+
+template <typename T>
+Matrix<T, Dynamic, Dynamic> triu(const Eigen::Block<const Matrix<T, Dynamic, Dynamic>, -1, -1, false>& M) {
+    Matrix<T, Dynamic, Dynamic> upper = M;
+    for (int i = 0; i < upper.rows(); ++i) {
+        for (int j = 0; j < i; ++j) {
+            upper(i, j) = 0;
+        }
+    }
+    return upper;
+}
+
+// TODO: FIX THIS
+template <typename T>
+auto getProperty(const QRPivoted<T>& F, const std::string& property) {
+    int m = F.factors.rows();
+    int n = F.factors.cols();
+
+    if (property == "R") {
+        return triu(F.factors.topLeftCorner(std::min(m, n), n));
+    } else if (property == "Q") {
+        return QRPackedQ<T>(F.factors, F.taus);
+    } else if (property == "p") {
+        return F.jpvt;
+    } else if (property == "P") {
+        Matrix<T, Dynamic, Dynamic> P = Matrix<T, Dynamic, Dynamic>::Zero(n, n);
+        for (int i = 0; i < n; ++i) {
+            P(F.jpvt[i], i) = 1;
+        }
+        return P;
+    } else {
+        throw std::invalid_argument("Unknown property: " + property);
+    }
+}
+
 TEST_CASE("RRQR", "[linalg]") {
         Matrix<DDouble, Dynamic, Dynamic> A = Matrix<DDouble, Dynamic, Dynamic>::Random(40, 30);
-        double A_eps = A.norm() * std::numeric_limits<DDouble>::epsilon();
+        DDouble A_eps = A.norm() * std::numeric_limits<DDouble>::epsilon();
         QRPivoted<DDouble> A_qr;
         int A_rank;
         std::tie(A_qr, A_rank) = rrqr(A);
-        Matrix<DDouble, Dynamic, Dynamic> A_rec = A_qr.Q * A_qr.R * A_qr.P.transpose();
+        QRPackedQ<DDouble> Q = getProperty(A_qr, "Q");
+        Matrix<DDouble, Dynamic, Dynamic> R = getProperty(A_qr, "R");
+        Matrix<DDouble, Dynamic, Dynamic> P = getProperty(A_qr, "P");
+        Matrix<DDouble, Dynamic, Dynamic> A_rec = Q * R * P.transpose();
         REQUIRE(A_rec.isApprox(A, 4 * A_eps));
         REQUIRE(A_rank == 30);
 }
@@ -29,7 +104,9 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
         Matrix<DDouble, Dynamic, Dynamic> A = x.array().pow(Vector<DDouble, Dynamic>::LinSpaced(21, 0, 20).transpose().array());
         int m = A.rows();
         int n = A.cols();
-        auto [A_qr, k] = rrqr(A, 1e-5);
+        QRPivoted<DDouble> A_qr;
+        int k;
+        std::tie(A_qr, k) = rrqr(A, 1e-5);
         REQUIRE(k < std::min(m, n));
 
         auto [Q, R] = truncate_qr_result(A_qr, k);

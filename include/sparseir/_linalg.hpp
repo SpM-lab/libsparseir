@@ -330,7 +330,7 @@ double jacobi_sweep(Matrix<T, Dynamic, Dynamic>& U, Matrix<T, Dynamic, Dynamic>&
 }
 
 template <typename T>
-SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic>& U, double rtol = std::numeric_limits<double>::epsilon(), int maxiter = 20) {
+SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic>& U, T rtol = std::numeric_limits<T>::epsilon(), int maxiter = 20) {
     int m = U.rows();
     int n = U.cols();
     if (m < n) {
@@ -338,10 +338,10 @@ SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic>& U, double rtol = std::numer
     }
 
     Matrix<T, Dynamic, Dynamic> VT = Matrix<T, Dynamic, Dynamic>::Identity(n, n);
-    double Unorm = U.topLeftCorner(n, n).norm();
+    T Unorm = U.topLeftCorner(n, n).norm();
 
     for (int iter = 0; iter < maxiter; ++iter) {
-        double offd = jacobi_sweep(U, VT);
+        T offd = jacobi_sweep(U, VT);
         if (offd < rtol * Unorm) {
             break;
         }
@@ -350,5 +350,5 @@ SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic>& U, double rtol = std::numer
     Vector<T, Dynamic> s = U.colwise().norm();
     U.array().rowwise() /= s.transpose().array();
 
-    return SVDResult(U, s, VT);
+    return SVDResult<T>(U, s, VT);
 }
