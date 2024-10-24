@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
+#include <iostream>
 
 using Eigen::Dynamic;
 using Eigen::Matrix;
@@ -36,7 +37,7 @@ struct QRPackedQ {
 };
 
 template <typename T>
-double reflector(Eigen::Vector<T, Dynamic>& x) {
+T reflector(Eigen::VectorBlock<T, Dynamic>& x) {
     int n = x.size();
     if (n == 0) return 0.0;
 
@@ -84,9 +85,10 @@ std::pair<QRPivoted<T>, int> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = 
 
     Vector<T, Dynamic> xnorms = A.colwise().norm();
     Vector<T, Dynamic> pnorms = xnorms;
-    double sqrteps = std::sqrt(std::numeric_limits<double>::epsilon());
+    T sqrteps = std::sqrt(std::numeric_limits<double>::epsilon());
 
     for (int i = 0; i < k; ++i) {
+        // TODO: This should be `argmax`
         int pvt = (pnorms.segment(i, n - i).array().abs()).maxCoeff(&pvt) + i;
         if (i != pvt) {
             std::swap(jpvt[i], jpvt[pvt]);
@@ -94,24 +96,24 @@ std::pair<QRPivoted<T>, int> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = 
             std::swap(pnorms[pvt], pnorms[i]);
             A.col(i).swap(A.col(pvt));
         }
-
-        T tau_i = reflector(A.col(i).tail(m - i));
+        auto ggg = A.col(i).tail(m - i);
+        T tau_i = reflector(ggg);
         taus[i] = tau_i;
         refrectorApply(A.col(i).tail(m - i), tau_i, A.bottomRightCorner(m - i, n - i));
 
         for (int j = i + 1; j < n; ++j) {
-            double temp = std::abs(A(i, j)) / pnorms[j];
-            temp = std::max(0.0, (1.0 + temp) * (1.0 - temp));
-            double temp2 = temp * std::pow(pnorms[j] / xnorms[j], 2);
+            T temp = std::abs(A(i, j)) / pnorms[j];
+            temp = std::max<T>(0.0, (1.0 + temp) * (1.0 - temp));
+            T temp2 = temp * std::pow<T>(pnorms[j] / xnorms[j], 2);
             if (temp2 < sqrteps) {
                 pnorms[j] = A.col(j).tail(m - i - 1).norm();
                 xnorms[j] = pnorms[j];
             } else {
-                pnorms[j] *= std::sqrt(temp);
+                pnorms[j] *= std::sqrt<T>(temp);
             }
         }
 
-        if (std::abs(A(i, i)) < rtol * std::abs(A(0, 0))) {
+        if (std::abs<T>(A(i, i)) < rtol * std::abs<T>(A(0, 0))) {
             A.bottomRightCorner(m - i, n - i).setZero();
             taus.tail(k - i).setZero();
             k = i;
@@ -183,15 +185,15 @@ SVDResult<T> tsvd(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_lim
     Matrix<T, Dynamic, Dynamic> V = svd.matrixU().transpose();
     Vector<T, Dynamic> s = svd.singularValues();
 
-    return {U, s, V};
+    return SVDResult<T> {U, s, V};
 }
 
 
 template <typename T>
 std::tuple<std::pair<T, T>, std::pair<T, T>, std::pair<T, T>> svd2x2(T f, T g, T h) {
-    T fa = std::abs(f);
-    T ga = std::abs(g);
-    T ha = std::abs(h);
+    T fa = std::abs<T>(f);
+    T ga = std::abs<T>(g);
+    T ha = std::abs<T>(h);
 
     T cu, su, smax, smin, cv, sv;
 
@@ -300,7 +302,7 @@ std::pair<T, T> givens_lmul(T c, T s, T x, T y) {
 }
 
 template <typename T>
-double jacobi_sweep(Matrix<T, Dynamic, Dynamic>& U, Matrix<T, Dynamic, Dynamic>& VT) {
+T jacobi_sweep(Matrix<T, Dynamic, Dynamic>& U, Matrix<T, Dynamic, Dynamic>& VT) {
     int ii = U.rows();
     int jj = U.cols();
     if (ii < jj) {
@@ -326,7 +328,10 @@ double jacobi_sweep(Matrix<T, Dynamic, Dynamic>& U, Matrix<T, Dynamic, Dynamic>&
             U.applyOnTheRight(i, j, rot.transpose());
         }
     }
-    return std::sqrt(offd);
+    if (offd < T(0)) {
+        std::runtime_error("offd < 0");
+    }
+    return std::sqrt<T>(offd);
 }
 
 template <typename T>
@@ -350,5 +355,5 @@ SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic>& U, T rtol = std::numeric_li
     Vector<T, Dynamic> s = U.colwise().norm();
     U.array().rowwise() /= s.transpose().array();
 
-    return SVDResult<T>(U, s, VT);
+    return SVDResult<T> {U, s, VT};
 }
