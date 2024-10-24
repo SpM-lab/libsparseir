@@ -75,6 +75,19 @@ void reflectorApply(Eigen::Matrix<T, Eigen::Dynamic, 1>& x, T tau, Eigen::Matrix
 }
 
 template <typename T>
+int myargmax(const Eigen::VectorX<T>& v, int start = 0) {
+    int index = start;
+    T M = v(start);
+    for (int i = start; i < v.size(); ++i) {
+        if (v(i) > M) {
+            M = v(i);
+            index = i;
+        }
+    }
+    return index;
+}
+
+template <typename T>
 std::pair<QRPivoted<T>, int> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_limits<double>::epsilon()) {
     int m = A.rows();
     int n = A.cols();
@@ -88,8 +101,7 @@ std::pair<QRPivoted<T>, int> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = 
     T sqrteps = std::sqrt(std::numeric_limits<double>::epsilon());
 
     for (int i = 0; i < k; ++i) {
-        // TODO: This should be `argmax`
-        int pvt = (pnorms.segment(i, n - i).array().abs()).maxCoeff(&pvt) + i;
+        int pvt = myargmax(pnorms, n-i) + i;
         if (i != pvt) {
             std::swap(jpvt[i], jpvt[pvt]);
             std::swap(xnorms[pvt], xnorms[i]);
@@ -99,6 +111,7 @@ std::pair<QRPivoted<T>, int> rrqr(Matrix<T, Dynamic, Dynamic>& A, double rtol = 
         auto ggg = A.col(i).tail(m - i);
         T tau_i = reflector(ggg);
         taus[i] = tau_i;
+        // TODO: resolve me:
         refrectorApply(A.col(i).tail(m - i), tau_i, A.bottomRightCorner(m - i, n - i));
 
         for (int j = i + 1; j < n; ++j) {
@@ -328,9 +341,7 @@ T jacobi_sweep(Matrix<T, Dynamic, Dynamic>& U, Matrix<T, Dynamic, Dynamic>& VT) 
             U.applyOnTheRight(i, j, rot.transpose());
         }
     }
-    if (offd < T(0)) {
-        std::runtime_error("offd < 0");
-    }
+    // TODO: Fix me:
     return std::sqrt<T>(offd);
 }
 
