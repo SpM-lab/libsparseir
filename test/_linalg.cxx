@@ -23,7 +23,7 @@ TEST_CASE("Jacobi SVD", "[linalg]") {
         Matrix<DDouble, Dynamic, Dynamic> Areconst = ((U * S_diag * V.transpose()));
 
         // 28 significant digits are enough?
-        REQUIRE((A - Areconst).norm() < 1e-28); // 28 significant digits
+        REQUIRE((A - Areconst).norm()/A.norm() < 1e-28); // 28 significant digits
 }
 
 /*
