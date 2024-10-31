@@ -153,7 +153,7 @@ public:
 
 Gauss-Legendre quadrature with `n` points on [-1, 1].
 */
-Rule<DDouble> legendre(int n){
+inline Rule<DDouble> legendre(int n){
     std::vector<DDouble> x(n), w(n);
     xprec::gauss_legendre(n, x.data(), w.data());
     return Rule<DDouble>(x, w);

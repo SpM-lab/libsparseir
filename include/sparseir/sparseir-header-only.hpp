@@ -5,3 +5,4 @@
 #include "./_root.hpp"
 
 #include "./gauss.hpp"
+#include "./freq.hpp"
