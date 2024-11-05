@@ -7,6 +7,54 @@
 using namespace Eigen;
 using namespace xprec;
 
+TEST_CASE("Utils", "[linalg]") {
+        // double
+        {
+                Eigen::VectorXd v(3);
+                v << 1, 2, 3;
+                auto tau = reflector(v);
+
+                Eigen::VectorXd refv(3);
+                // obtained by
+                // julia> using LinearAlgebra; v = Float64[1,2,3]; LinearAlgebra.reflector!(v)
+                refv << -3.7416574, 0.42179344, 0.63269017;
+                for (int i = 0; i < 3; i++) {
+                        REQUIRE(std::abs(v(i) - refv(i)) < 1e-7);
+                }
+        }
+
+        // DDouble
+        {
+                Eigen::VectorX<DDouble> v(3);
+                v << 1, 2, 3;
+                auto tau = reflector(v);
+
+                Eigen::VectorX<DDouble> refv(3);
+                refv << -3.7416574, 0.42179344, 0.63269017;
+                for (int i = 0; i < 3; i++) {
+                        REQUIRE(xprec::abs(v(i) - refv(i)) < 1e-7);
+                }
+        }
+
+        {
+                Eigen::MatrixX<double> A(3, 4);
+                A << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
+                int i = 3;
+                auto v = A.col(i).tail(2);
+                reflector(v);
+                REQUIRE(1 == 1);
+        }
+
+        {
+                Eigen::MatrixX<DDouble> A(3, 4);
+                A << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
+                int i = 3;
+                auto v = A.col(i).tail(2);
+                reflector(v);
+                REQUIRE(1 == 1);
+        }
+}
+
 TEST_CASE("Jacobi SVD", "[linalg]") {
         Matrix<DDouble, Dynamic, Dynamic> A = Matrix<DDouble, Dynamic, Dynamic>::Random(20, 10);
 
@@ -26,17 +74,16 @@ TEST_CASE("Jacobi SVD", "[linalg]") {
         REQUIRE((A - Areconst).norm()/A.norm() < 1e-28); // 28 significant digits
 }
 
-/*
 TEST_CASE("RRQR", "[linalg]") {
-        Matrix<DDouble, Dynamic, Dynamic> A = Matrix<DDouble, Dynamic, Dynamic>::Random(40, 30);
+        MatrixX<DDouble> A = MatrixX<DDouble>::Random(40, 30);
         DDouble A_eps = A.norm() * std::numeric_limits<DDouble>::epsilon();
         QRPivoted<DDouble> A_qr;
         int A_rank;
 
         bool impl_finished = false;
-        REQUIRE(impl_finished==false);
-
-        //std::tie(A_qr, A_rank) = rrqr(A);
+        REQUIRE(!impl_finished);
+        auto ret = rrqr(A);
+        REQUIRE(!impl_finished);
         //QRPackedQ<DDouble> Q = getPropertyQ(A_qr, "Q");
         //Eigen::MatrixX<DDouble> R = getPropertyR(A_qr, "R");
         //Matrix<DDouble, Dynamic, Dynamic> P = getPropertyP(A_qr, "P");
@@ -45,7 +92,6 @@ TEST_CASE("RRQR", "[linalg]") {
         //REQUIRE(A_rec.isApprox(A, 4 * A_eps));
         //REQUIRE(A_rank == 30);
 }
-*/
 
 /*
 TEST_CASE("RRQR Trunc", "[linalg]") {

@@ -13,6 +13,24 @@ using Eigen::MatrixX;
 using Eigen::Vector;
 using Eigen::VectorX;
 
+template <typename Derived>
+int argmax(const Eigen::MatrixBase<Derived>& vec) {
+    // Ensure this function is only used for 1D Eigen column vectors
+    static_assert(Derived::ColsAtCompileTime == 1, "argmax function is only for Eigen column vectors.");
+
+    int maxIndex = 0;
+    auto maxValue = vec(0);
+
+    for (int i = 1; i < vec.size(); ++i) {
+        if (vec(i) > maxValue) {
+            maxValue = vec(i);
+            maxIndex = i;
+        }
+    }
+
+    return maxIndex;
+}
+
 template <typename T>
 struct SVDResult {
     Matrix<T, Dynamic, Dynamic> U;
@@ -113,19 +131,39 @@ auto getPropertyR(const QRPivoted<T>& F, const std::string& property) {
     return triu(F.factors.topLeftCorner(std::min(m, n), n));
 }
 
-template <typename T>
-T reflector(Eigen::VectorBlock<Eigen::Matrix<T, Eigen::Dynamic, 1>>& x) {
+// General template for _copysign, handles standard floating-point types like double and float
+double _copysign(double x, double y) {
+    return std::copysign(x, y);
+}
+
+// Specialization for xprec::DDouble type, assuming xprec::copysign is defined
+xprec::DDouble _copysign(xprec::DDouble x, xprec::DDouble y) {
+    return xprec::copysign(x, y);
+}
+
+/*
+This implementation is based on Julia's LinearAlgebra.refrector! function.
+
+Elementary reflection similar to LAPACK. The reflector is not Hermitian but
+ensures that tridiagonalization of Hermitian matrices become real. See lawn72
+*/
+template <typename Derived>
+typename Derived::Scalar reflector(Eigen::MatrixBase<Derived>& x) {
+    using T = typename Derived::Scalar;
+
     int n = x.size();
-    if (n == 0) return static_cast<T>(0.0);
+    if (n == 0) return T(0);
 
-    T xi1 = x(0);
-    T normu = x.norm();
-    if (normu == static_cast<T>(0.0)) return static_cast<T>(0.0);
+    T xi1 = x(0);            // First element of x
+    T normu = x.norm();       // Norm of vector x
+    if (normu == T(0)) return T(0);
 
-    T nu = std::copysign(normu, xi1);
-    xi1 += nu;
-    x(0) = -nu;
+    // Calculate ν using copysign, which gives normu with the sign of xi1
+    T nu = _copysign(normu, xi1);
+    xi1 += nu;                // Update xi1
+    x(0) = -nu;               // Set first element to -ν
 
+    // Divide remaining elements by the new xi1 value
     for (int i = 1; i < n; ++i) {
         x(i) /= xi1;
     }
@@ -133,22 +171,12 @@ T reflector(Eigen::VectorBlock<Eigen::Matrix<T, Eigen::Dynamic, 1>>& x) {
     return xi1 / nu;
 }
 
-template <typename T>
-int myargmax(const Eigen::VectorX<T>& v, int start = 0) {
-    int index = start;
-    T M = v(start);
-    for (int i = start; i < v.size(); ++i) {
-        if (v(i) > M) {
-            M = v(i);
-            index = i;
-        }
-    }
-    return index;
-}
-
 // Eigen::VectorBlock<Eigen::Block<Eigen::Matrix<xprec::DDouble, -1, -1>, -1, 1, true>>, T = xprec::DDouble, T3 = Eigen::Block<Eigen::Matrix<xprec::DDouble, -1, -1>>
+//template <typename T1, typename T, typename T3>
 template <typename T>
-void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::Matrix<T, -1, -1>, -1, 1, true>>& x, T tau, Eigen::Block<Eigen::Matrix<T, -1, -1>>& A) {
+void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::MatrixX<T>, -1, 1, true>, -1>& x, T tau, Eigen::Block<Eigen::MatrixX<T>>& A){
+//void reflectorApply(T1& x, T tau, T3& A) {
+    // using T = typename Derived::Scalar;
     int m = A.rows();
     int n = A.cols();
 
@@ -189,43 +217,23 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
     T sqrteps = T(std::sqrt(std::numeric_limits<double>::epsilon()));
 
     for (int i = 0; i < k; ++i) {
-        int pvt = myargmax(pnorms, n-i) + i;
+
+        int pvt = argmax(pnorms.tail(n - i)) + i;
         if (i != pvt) {
             std::swap(jpvt[i], jpvt[pvt]);
             std::swap(xnorms[pvt], xnorms[i]);
             std::swap(pnorms[pvt], pnorms[i]);
-            A.col(i).swap(A.col(pvt));
+            A.col(i).swap(A.col(pvt)); // swapcols!
         }
-        auto x_ = A.col(i).tail(m - i);
 
-        // inline implementation
-        // T tau_i = reflector(x);
-        int n = x_.size();
-        T tau_i;
-        if (n == 0) {
-            tau_i = static_cast<T>(0.0);
-        } else {
-            T xi1 = x_(0);
-            T normu = x_.norm();
-            if (normu == static_cast<T>(0.0)){
-                tau_i = static_cast<T>(0.0);
-            }
-            // Fix me: `std::copysign<T>` is not available for T = DDouble
-            T nu = T(std::copysign((double)normu, (double)(xi1)));
-            xi1 += nu;
-            x_(0) = -nu;
-
-            for (int i = 1; i < n; ++i) {
-                x_(i) /= xi1;
-            }
-
-            T tau_i = xi1 / nu;
-        }
+        auto Ainp = A.col(i).tail(m - i);
+        T tau_i = reflector(Ainp);
         // end inline implementation of reflector
         taus[i] = tau_i;
-        // TODO: fix me
-        MatrixX<T> Ainp = A.col(i).tail(m - i);
-        reflectorApply(Ainp, tau_i, A.bottomRightCorner(m - i, n - i));
+        // reflectorApply<VectorX<T>, T, Eigen::Block<Eigen::MatrixX<T>>>(Ainp, tau_i, A.bottomRightCorner(m - i, n - i));
+        auto block = A.bottomRightCorner(m - i, n - i);
+        reflectorApply<T>(Ainp, tau_i, block);
+        /*
 
         for (int j = i + 1; j < n; ++j) {
             T temp = std::abs((double)(A(i, j))) / pnorms[j];
@@ -246,6 +254,7 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
             k = i;
             break;
         }
+        */
     }
 
     return {QRPivoted<T>{A, taus, jpvt}, k};
