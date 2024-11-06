@@ -97,7 +97,7 @@ TEST_CASE("reflectorApply", "[linalg]") {
 
 
 TEST_CASE("Jacobi SVD", "[linalg]") {
-        Matrix<DDouble, Dynamic, Dynamic> A = Matrix<DDouble, Dynamic, Dynamic>::Random(20, 10);
+        MatrixX<DDouble> A = MatrixX<DDouble>::Random(20, 10);
 
         // There seems to be a bug in the latest version of Eigen3.
         // Please first construct a Jacobi SVD and then compare the results.
@@ -109,7 +109,7 @@ TEST_CASE("Jacobi SVD", "[linalg]") {
         auto U = svd.matrixU();
         auto S_diag = svd.singularValues().asDiagonal();
         auto V = svd.matrixV();
-        Matrix<DDouble, Dynamic, Dynamic> Areconst = ((U * S_diag * V.transpose()));
+        MatrixX<DDouble> Areconst = ((U * S_diag * V.transpose()));
 
         // 28 significant digits are enough?
         REQUIRE((A - Areconst).norm()/A.norm() < 1e-28); // 28 significant digits
@@ -201,37 +201,69 @@ TEST_CASE("RRQR", "[linalg]") {
         REQUIRE(A_rec.isApprox(Aorig, 4 * A_eps));
 }
 
-/*
 TEST_CASE("RRQR Trunc", "[linalg]") {
-        Vector<DDouble, Dynamic> x = Vector<DDouble, Dynamic>::LinSpaced(101, -1, 1);
-        Matrix<DDouble, Dynamic, Dynamic> A = x.array().pow(Vector<DDouble, Dynamic>::LinSpaced(21, 0, 20).transpose().array());
-        int m = A.rows();
-        int n = A.cols();
-        QRPivoted<DDouble> A_qr;
-        int k;r
-        std::tie(A_qr, k) = rrqr<DDouble>(A, DDouble(1e-5));
-        REQUIRE(k < std::min(m, n));
+        // double
+        {
+                VectorX<double> x = VectorX<double>::LinSpaced(101, -1, 1);
+                MatrixX<double> Aorig(101, 21);
+                for (int i = 0; i < 21; i++) {
+                        Aorig.col(i) = x.array().pow(i);
+                }
 
-        auto QR = truncate_qr_result<DDouble>(A_qr, k);
-        auto Q = QR.first;
-        auto R = QR.second;
-        Matrix<DDouble, Dynamic, Dynamic> A_rec = Q * R * getPropertyP(A_qr, "P").transpose();
-        REQUIRE(A_rec.isApprox(A, 1e-5 * A.norm()));
+                MatrixX<double> A = Aorig;
+                int m = A.rows();
+                int n = A.cols();
+                QRPivoted<double> A_qr;
+                int k;
+                std::tie(A_qr, k) = rrqr<double>(A, double(1e-5));
+                REQUIRE(k < std::min(m, n));
+                REQUIRE(k == 17);
+                auto QR = truncate_qr_result<double>(A_qr, k);
+                auto Q = QR.first;
+                auto R = QR.second;
+
+                MatrixX<double> A_rec = Q * R * getPropertyP(A_qr).transpose();
+                REQUIRE(A_rec.isApprox(Aorig, 1e-5 * A.norm()));
+        }
+        // DDouble
+        /*
+        {
+                VectorX<DDouble> x = VectorX<DDouble>::LinSpaced(101, -1, 1);
+                MatrixX<DDouble> Aorig(101, 21);
+                for (int i = 0; i < 21; i++) {
+                        Aorig.col(i) = x.array().pow(i);
+                }
+
+                MatrixX<DDouble> A = Aorig;
+                int m = A.rows();
+                int n = A.cols();
+                QRPivoted<DDouble> A_qr;
+                int k;
+                std::tie(A_qr, k) = rrqr<DDouble>(A, DDouble(1e-5));
+                REQUIRE(k < std::min(m, n));
+                REQUIRE(k == 17);
+                auto QR = truncate_qr_result<DDouble>(A_qr, k);
+                auto Q = QR.first;
+                auto R = QR.second;
+
+                MatrixX<DDouble> A_rec = Q * R * getPropertyP(A_qr).transpose();
+                REQUIRE(A_rec.isApprox(Aorig, 1e-5 * A.norm()));
+        }
+        */
 }
-*/
 
 /*
 TEST_CASE("TSVD", "[linalg]") {
         for (auto tol : {1e-14, 1e-13}) {
-            Vector<DDouble, Dynamic> x = Vector<DDouble, Dynamic>::LinSpaced(201, -1, 1);
-            Matrix<DDouble, Dynamic, Dynamic> A = x.array().pow(Vector<DDouble, Dynamic>::LinSpaced(51, 0, 50).transpose().array());
+            VectorX<DDouble> x = VectorX<DDouble>::LinSpaced(201, -1, 1);
+            MatrixX<DDouble> A = x.array().pow(VectorX<DDouble>::LinSpaced(51, 0, 50).transpose().array());
             auto tsvd_result = tsvd<DDouble>(A, tol);
             auto U = std::get<0>(tsvd_result);
             auto S = std::get<1>(tsvd_result);
             auto V = std::get<2>(tsvd_result);
             int k = S.size();
 
-            Matrix<DDouble, Dynamic, Dynamic> S_diag = S.asDiagonal();
+            MatrixX<DDouble> S_diag = S.asDiagonal();
             REQUIRE((U * S_diag * V.transpose()).isApprox(A, tol * A.norm()));
             REQUIRE((U.transpose() * U).isIdentity());
             REQUIRE((V.transpose() * V).isIdentity());
