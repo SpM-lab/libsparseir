@@ -236,10 +236,13 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
         }
         // DDouble
         {
+                using std::pow;
                 VectorX<DDouble> x = VectorX<DDouble>::LinSpaced(101, -1, 1);
                 MatrixX<DDouble> Aorig(101, 21);
-                for (int i = 0; i < 21; i++) {
-                        Aorig.col(i) = x.array().pow(i);
+                for (int i = 0; i < Aorig.cols(); i++) {
+                        for (int j = 0; j < Aorig.rows(); j++) {
+                                Aorig(j, i) = pow(x(j), i); // xprec::pow is called.
+                        }
                 }
 
                 MatrixX<DDouble> A = Aorig;
@@ -248,9 +251,7 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
                 QRPivoted<DDouble> A_qr;
                 int k;
                 std::tie(A_qr, k) = rrqr<DDouble>(A, DDouble(0.00001));
-                /*
                 REQUIRE(k < std::min(m, n));
-                // This fails
                 REQUIRE(k == 17);
                 auto QR = truncate_qr_result<DDouble>(A_qr, k);
                 auto Q = QR.first;
@@ -258,7 +259,6 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
 
                 MatrixX<DDouble> A_rec = Q * R * getPropertyP(A_qr).transpose();
                 REQUIRE(A_rec.isApprox(Aorig, 1e-5 * A.norm()));
-                */
         }
 }
 
