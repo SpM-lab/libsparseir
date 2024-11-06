@@ -192,8 +192,8 @@ void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::MatrixX<T>, -1, 1, tr
     // Loop over each column of A
     for (int j = 0; j < n; ++j) {
         // Equivalent to `Aj = view(A, 2:m, j)` and `xj = view(x, 2:m)`
-        Eigen::VectorX<T> Aj = A.block(1, j, m - 1, 1).reshaped();
-        Eigen::VectorX<T> xj = x.tail(m - 1);
+        auto Aj = A.block(1, j, m - 1, 1).reshaped();
+        auto xj = x.tail(m - 1);
 
         // We expect tau to be real, so we use conj(tau) = tau
         T conj_tau = tau;
