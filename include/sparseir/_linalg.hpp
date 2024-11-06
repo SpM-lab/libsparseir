@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <Eigen/Dense>
 #include <vector>
 #include <cmath>
@@ -233,15 +235,15 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
 
         auto Ainp = A.col(i).tail(m - i);
         T tau_i = reflector(Ainp);
-        // end inline implementation of reflector
+
         taus[i] = tau_i;
-        // reflectorApply<VectorX<T>, T, Eigen::Block<Eigen::MatrixX<T>>>(Ainp, tau_i, A.bottomRightCorner(m - i, n - i));
-        auto block = A.bottomRightCorner(m - i, n - i);
+
+        auto block = A.bottomRightCorner(m - i, n - (i + 1));
         reflectorApply<T>(Ainp, tau_i, block);
 
         for (int j = i + 1; j < n; ++j) {
             T temp = std::abs((double)(A(i, j))) / pnorms[j];
-            temp = std::max<T>(0.0, (1.0 + temp) * (1.0 - temp));
+            temp = std::max<T>(T(0), (T(1) + temp) * (T(1) - temp));
             // abs2
             T temp2 = temp * (pnorms(j) / xnorms(j)) * (pnorms(j) / xnorms(j));
             if (temp2 < sqrteps) {

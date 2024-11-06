@@ -35,27 +35,36 @@ TEST_CASE("reflector", "[linalg]") {
                         REQUIRE(xprec::abs(v(i) - refv(i)) < 1e-7);
                 }
         }
-
-        {
-                Eigen::MatrixX<double> A(3, 4);
-                A << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
-                int i = 3;
-                auto v = A.col(i).tail(2);
-                reflector(v);
-                REQUIRE(1 == 1);
-        }
-
-        {
-                Eigen::MatrixX<DDouble> A(3, 4);
-                A << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
-                int i = 3;
-                auto v = A.col(i).tail(2);
-                reflector(v);
-                REQUIRE(1 == 1);
-        }
 }
 
 TEST_CASE("reflectorApply", "[linalg]") {
+        /*
+        using SparseIR
+        T = Float64
+        rtol = T(0.1)
+        A = T[
+                1 1 1
+                1 1 1
+                1 1 1
+        ]
+
+        i = 1
+        Ainp = @view A[i:end, i]
+        print("Pre: "); @show Ainp
+        tau_i = SparseIR._LinAlg.reflector!(Ainp)
+        @show tau_i
+        block = @view A[i:end, (i+1):end]
+        SparseIR._LinAlg.reflectorApply!(
+                Ainp, tau_i, block
+        )
+        for i in axes(A, 1)
+                for j in axes(A, 2)
+                        s = (i,j) == size(A) ? ";" : ","
+                        print(A[i, j], "$(s) ")
+                end
+                println()
+        end
+        */
         Eigen::MatrixX<double> A = Eigen::MatrixX<double>::Random(3, 3);
         A << 1, 1, 1,
              1, 1, 1,
@@ -83,11 +92,7 @@ TEST_CASE("reflectorApply", "[linalg]") {
         refA <<-1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
                 0.36602540378443865, 0.0, 0.0,
                 0.36602540378443865, 0.0, 0.0;
-        for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                        REQUIRE(std::abs(A(i, j) - refA(i, j)) < 1e-7);
-                }
-        }
+        REQUIRE(A.isApprox(refA, 1e-7));
 }
 
 
@@ -110,6 +115,23 @@ TEST_CASE("Jacobi SVD", "[linalg]") {
         REQUIRE((A - Areconst).norm()/A.norm() < 1e-28); // 28 significant digits
 }
 
+TEST_CASE("RRPR", "[linalg]") {
+        Eigen::MatrixX<double> A = Eigen::MatrixX<double>::Random(3, 3);
+        A << 1, 1, 1,
+             1, 1, 1,
+             1, 1, 1;
+        double rtol = 0.1;
+        QRPivoted<double> A_qr;
+        int A_rank;
+        std::tie(A_qr, A_rank) = rrqr<double>(A);
+        REQUIRE(A_rank == 1);
+        Eigen::MatrixX<double> refA(3, 3);
+        refA <<-1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
+                0.36602540378443865, 0.0, 0.0,
+                0.36602540378443865, 0.0, 0.0;
+        REQUIRE(A.isApprox(refA, 1e-7));
+}
+
 TEST_CASE("RRQR", "[linalg]") {
         MatrixX<DDouble> A = MatrixX<DDouble>::Random(40, 30);
         DDouble A_eps = A.norm() * std::numeric_limits<DDouble>::epsilon();
@@ -119,7 +141,8 @@ TEST_CASE("RRQR", "[linalg]") {
         bool impl_finished = false;
         std::tie(A_qr, A_rank) = rrqr(A);
         REQUIRE(!impl_finished);
-        //QRPackedQ<DDouble> Q = getPropertyQ(A_qr, "Q");
+        REQUIRE(A_rank == 30);
+        // QRPackedQ<DDouble> Q = getPropertyQ(A_qr, "Q");
         //Eigen::MatrixX<DDouble> R = getPropertyR(A_qr, "R");
         //Matrix<DDouble, Dynamic, Dynamic> P = getPropertyP(A_qr, "P");
         // TODO: resolve Q * R
