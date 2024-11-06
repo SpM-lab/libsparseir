@@ -306,7 +306,6 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
             // abs2
             T temp2 = temp * (pnorms(j) / xnorms(j)) * (pnorms(j) / xnorms(j));
             if (temp2 < sqrteps) {
-                std::cout << "Called" << std::endl;
                 auto recomputed = A.col(j).tail(m - i - 1).norm();
                 pnorms(j) = recomputed;
                 xnorms(j) = recomputed;
@@ -506,7 +505,13 @@ tsvd(Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
 
     // Step 3: Compute SVD of R_trunc
 
-    Eigen::JacobiSVD<Eigen::MatrixX<T>> svd(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+    //Eigen::JacobiSVD<Eigen::MatrixX<T>> svd(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+    // There seems to be a bug in the latest version of Eigen3.
+    // Please first construct a Jacobi SVD and then compare the results.
+    // Do not use the svd_jacobi function directly.
+    // Better to write a wrrapper function for the SVD.
+    Eigen::JacobiSVD<decltype(R_trunc)> svd;
+    svd.compute(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
     Eigen::PermutationMatrix<Dynamic, Dynamic> perm(p.size());
     perm.indices() = invperm(p);
