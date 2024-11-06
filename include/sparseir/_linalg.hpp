@@ -33,6 +33,24 @@ int argmax(const Eigen::MatrixBase<Derived>& vec) {
     return maxIndex;
 }
 
+/*
+This function ports Julia's implementation of the `invperm` function to C++.
+*/
+Eigen::VectorXi invperm(const Eigen::VectorXi& a) {
+    int n = a.size();
+    Eigen::VectorXi b(n);
+    b.setConstant(-1);
+
+    for (int i = 0; i < n; i++){
+        int j = a(i);
+        if ((0 <= j < n) && b(j) == -1){
+            std::invalid_argument("invalid permutation");
+        }
+        b(j) = i;
+    }
+    return b;
+}
+
 template <typename T>
 struct SVDResult {
     Matrix<T, Dynamic, Dynamic> U;
@@ -49,7 +67,7 @@ struct QRPivoted {
 
 template <typename T>
 struct QRPackedQ {
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> factors;
+    Eigen::MatrixX<T> factors;
     Eigen::Matrix<T, Eigen::Dynamic, 1> taus;
 };
 
@@ -181,6 +199,23 @@ xprec::DDouble _copysign(xprec::DDouble x, xprec::DDouble y) {
     return xprec::copysign(x, y);
 }
 
+double _sqrt(double x) {
+    return std::sqrt(x);
+}
+
+xprec::DDouble _sqrt(xprec::DDouble x) {
+    return xprec::sqrt(x);
+}
+
+double _abs(double x) {
+    return std::abs(x);
+}
+
+xprec::DDouble _abs(xprec::DDouble x) {
+    return xprec::abs(x);
+}
+
+
 /*
 This implementation is based on Julia's LinearAlgebra.refrector! function.
 
@@ -253,13 +288,13 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
     int m = A.rows();
     int n = A.cols();
     int k = std::min(m, n);
-
+    int rk = k;
     Vector<int, Dynamic> jpvt = Vector<int, Dynamic>::LinSpaced(n, 0, n - 1);
     Vector<T, Dynamic> taus(k);
 
     Vector<T, Dynamic> xnorms = A.colwise().norm();
     Vector<T, Dynamic> pnorms = xnorms;
-    T sqrteps = T(std::sqrt(std::numeric_limits<double>::epsilon()));
+    T sqrteps = _sqrt(std::numeric_limits<T>::epsilon());
 
     for (int i = 0; i < k; ++i) {
 
@@ -280,33 +315,38 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
         reflectorApply<T>(Ainp, tau_i, block);
 
         for (int j = i + 1; j < n; ++j) {
-            T temp = std::abs((double)(A(i, j))) / pnorms[j];
+            T temp = _abs((A(i, j))) / pnorms[j];
             temp = std::max<T>(T(0), (T(1) + temp) * (T(1) - temp));
             // abs2
             T temp2 = temp * (pnorms(j) / xnorms(j)) * (pnorms(j) / xnorms(j));
             if (temp2 < sqrteps) {
-                pnorms(j) = A.col(j).tail(m - i - 1).norm();
-                xnorms(j) = pnorms(j);
+                auto recomputed = A.col(j).tail(m - i - 1).norm();
+                pnorms(j) = recomputed;
+                xnorms(j) = recomputed;
             } else {
-                pnorms(j) = pnorms(j) * T(std::sqrt(double(temp)));
+                pnorms(j) = pnorms(j) * _sqrt(temp);
             }
         }
 
-        if (std::abs((double)(A(i,i))) < rtol * std::abs((double)(A(0,0)))) {
+        // std::cout << "rtol" << rtol << std::endl;
+        // std::cout << _abs(A(i,i)) << " v.s " << rtol * _abs((A(0,0))) << std::endl;
+        // std::cout << (_abs(A(i,i)) < rtol * _abs((A(0,0)))) << std::endl;
+
+        if (_abs(A(i,i)) < rtol * _abs((A(0,0)))) {
             A.bottomRightCorner(m - i, n - i).setZero();
             taus.tail(k - i).setZero();
-            k = i;
+            rk = i;
             break;
         }
     }
 
-    return {QRPivoted<T>{A, taus, jpvt}, k};
+    return {QRPivoted<T>{A, taus, jpvt}, rk};
 }
 
 /*
 template <typename T>
-std::tuple<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>, std::vector<int>>
-rrqr(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A, T rtol = std::numeric_limits<T>::epsilon()) {
+std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>, std::vector<int>>
+rrqr(Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     int m = A.rows();
     int n = A.cols();
     int k = std::min(m, n);
@@ -403,8 +443,8 @@ std::pair<MatrixX<T>, MatrixX<T>> truncate_qr_result(QRPivoted<T>& qr, int k) {
 
 /*
 template <typename T>
-std::pair<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
-truncate_qr_result(const Eigen::HouseholderQR<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& qr, int k) {
+std::pair<Eigen::MatrixX<T>, Eigen::MatrixX<T>>
+truncate_qr_result(const Eigen::HouseholderQR<Eigen::MatrixX<T>>& qr, int k) {
     int m = qr.matrixQR().rows();
     int n = qr.matrixQR().cols();
 
@@ -414,10 +454,10 @@ truncate_qr_result(const Eigen::HouseholderQR<Eigen::Matrix<T, Eigen::Dynamic, E
     }
 
     // Extract the first k columns of Q
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Qfull = qr.householderQ() * Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>::Identity(m, k);
+    Eigen::MatrixX<T> Qfull = qr.householderQ() * Eigen::MatrixX<T>::Identity(m, k);
 
     // Extract the upper triangular part of the first k rows of R
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> R = qr.matrixQR().topLeftCorner(k, n).template triangularView<Eigen::Upper>();
+    Eigen::MatrixX<T> R = qr.matrixQR().topLeftCorner(k, n).template triangularView<Eigen::Upper>();
 
     return std::make_pair(Qfull, R);
 }
@@ -444,7 +484,7 @@ SVDResult<T> tsvd(Matrix<T, Dynamic, Dynamic>& A, double rtol = std::numeric_lim
 
 // Swap columns of a matrix A
 template <typename T>
-void swapCols(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A, int i, int j) {
+void swapCols(Eigen::MatrixX<T>& A, int i, int j) {
     if (i != j) {
         A.col(i).swap(A.col(j));
     }
@@ -452,8 +492,8 @@ void swapCols(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A, int i, int j)
 
 // Truncate RRQR result to low rank
 template <typename T>
-std::pair<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
-truncateQRResult(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& Q, const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& R, int k) {
+std::pair<Eigen::MatrixX<T>, Eigen::MatrixX<T>>
+truncateQRResult(const Eigen::MatrixX<T>& Q, const Eigen::MatrixX<T>& R, int k) {
     int m = Q.rows();
     int n = R.cols();
 
@@ -461,33 +501,39 @@ truncateQRResult(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& Q, cons
         throw std::domain_error("Invalid rank, must be in [0, min(m, n)]");
     }
 
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> Q_trunc = Q.leftCols(k);
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> R_trunc = R.topLeftCorner(k, n);
+    Eigen::MatrixX<T> Q_trunc = Q.leftCols(k);
+    Eigen::MatrixX<T> R_trunc = R.topLeftCorner(k, n);
     return std::make_pair(Q_trunc, R_trunc);
 }
 
 // Truncated SVD (TSVD)
 template <typename T>
-std::tuple<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>, Eigen::VectorXd, Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
-tsvd(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A, T rtol = std::numeric_limits<T>::epsilon()) {
+std::tuple<Eigen::MatrixX<T>, Eigen::VectorX<T>, Eigen::MatrixX<T>>
+tsvd(Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     // Step 1: Apply RRQR to A
-    std::pair<QRPivoted<T>, int>
-    rrqr_result = rrqr(A, rtol);
-    auto A_qr = std::get<0>(rrqr_result);
-    int k = std::get<1>(rrqr_result);
+    QRPivoted<T> A_qr;
+    int k;
+    std::tie(A_qr, k) = rrqr<T>(A, rtol);
     // Step 2: Truncate QR Result to rank k
-    auto tqr = truncate_qr_result(A_qr, k);
+    auto tqr = truncate_qr_result<T>(A_qr, k);
+    auto p = A_qr.jpvt;
     auto Q_trunc = tqr.first;
     auto R_trunc = tqr.second;
     // TODO
 
     // Step 3: Compute SVD of R_trunc
-    Eigen::JacobiSVD<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> svd(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> U = Q_trunc * svd.matrixV();
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> V = svd.matrixU().transpose();
-    Eigen::VectorXd s = svd.singularValues();
 
-    return std::make_tuple(U, s, V.transpose());
+    Eigen::JacobiSVD<Eigen::MatrixX<T>> svd(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    Eigen::PermutationMatrix<Dynamic, Dynamic> perm(p.size());
+    perm.indices() = invperm(p);
+
+    Eigen::MatrixX<T> U = Q_trunc * svd.matrixV();
+    // implement invperm
+    Eigen::MatrixX<T> V = (perm * svd.matrixU());
+
+    Eigen::VectorX<T> s = svd.singularValues();
+    return std::make_tuple(U, s, V);
 }
 
 
