@@ -226,7 +226,6 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
                 REQUIRE(A_rec.isApprox(Aorig, 1e-5 * A.norm()));
         }
         // DDouble
-        /*
         {
                 VectorX<DDouble> x = VectorX<DDouble>::LinSpaced(101, -1, 1);
                 MatrixX<DDouble> Aorig(101, 21);
@@ -239,8 +238,10 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
                 int n = A.cols();
                 QRPivoted<DDouble> A_qr;
                 int k;
-                std::tie(A_qr, k) = rrqr<DDouble>(A, DDouble(1e-5));
+                std::tie(A_qr, k) = rrqr<DDouble>(A, DDouble(0.00001));
+                /*
                 REQUIRE(k < std::min(m, n));
+                // This fails
                 REQUIRE(k == 17);
                 auto QR = truncate_qr_result<DDouble>(A_qr, k);
                 auto Q = QR.first;
@@ -248,8 +249,8 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
 
                 MatrixX<DDouble> A_rec = Q * R * getPropertyP(A_qr).transpose();
                 REQUIRE(A_rec.isApprox(Aorig, 1e-5 * A.norm()));
+                */
         }
-        */
 }
 
 /*

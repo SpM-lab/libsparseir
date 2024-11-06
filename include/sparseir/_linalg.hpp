@@ -181,6 +181,23 @@ xprec::DDouble _copysign(xprec::DDouble x, xprec::DDouble y) {
     return xprec::copysign(x, y);
 }
 
+double _sqrt(double x) {
+    return std::sqrt(x);
+}
+
+xprec::DDouble _sqrt(xprec::DDouble x) {
+    return xprec::sqrt(x);
+}
+
+double _abs(double x) {
+    return std::abs(x);
+}
+
+xprec::DDouble _abs(xprec::DDouble x) {
+    return xprec::abs(x);
+}
+
+
 /*
 This implementation is based on Julia's LinearAlgebra.refrector! function.
 
@@ -253,13 +270,13 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
     int m = A.rows();
     int n = A.cols();
     int k = std::min(m, n);
-
+    int rk = k;
     Vector<int, Dynamic> jpvt = Vector<int, Dynamic>::LinSpaced(n, 0, n - 1);
     Vector<T, Dynamic> taus(k);
 
     Vector<T, Dynamic> xnorms = A.colwise().norm();
     Vector<T, Dynamic> pnorms = xnorms;
-    T sqrteps = T(std::sqrt(std::numeric_limits<double>::epsilon()));
+    T sqrteps = _sqrt(std::numeric_limits<T>::epsilon());
 
     for (int i = 0; i < k; ++i) {
 
@@ -280,27 +297,32 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
         reflectorApply<T>(Ainp, tau_i, block);
 
         for (int j = i + 1; j < n; ++j) {
-            T temp = std::abs((double)(A(i, j))) / pnorms[j];
+            T temp = _abs((A(i, j))) / pnorms[j];
             temp = std::max<T>(T(0), (T(1) + temp) * (T(1) - temp));
             // abs2
             T temp2 = temp * (pnorms(j) / xnorms(j)) * (pnorms(j) / xnorms(j));
             if (temp2 < sqrteps) {
-                pnorms(j) = A.col(j).tail(m - i - 1).norm();
-                xnorms(j) = pnorms(j);
+                auto recomputed = A.col(j).tail(m - i - 1).norm();
+                pnorms(j) = recomputed;
+                xnorms(j) = recomputed;
             } else {
-                pnorms(j) = pnorms(j) * T(std::sqrt(double(temp)));
+                pnorms(j) = pnorms(j) * _sqrt(temp);
             }
         }
 
-        if (std::abs((double)(A(i,i))) < rtol * std::abs((double)(A(0,0)))) {
+        std::cout << "rtol" << rtol << std::endl;
+        std::cout << _abs(A(i,i)) << " v.s " << rtol * _abs((A(0,0))) << std::endl;
+        std::cout << (_abs(A(i,i)) < rtol * _abs((A(0,0)))) << std::endl;
+
+        if (_abs(A(i,i)) < rtol * _abs((A(0,0)))) {
             A.bottomRightCorner(m - i, n - i).setZero();
             taus.tail(k - i).setZero();
-            k = i;
+            rk = i;
             break;
         }
     }
 
-    return {QRPivoted<T>{A, taus, jpvt}, k};
+    return {QRPivoted<T>{A, taus, jpvt}, rk};
 }
 
 /*
