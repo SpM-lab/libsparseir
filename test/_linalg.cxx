@@ -263,13 +263,17 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
 }
 
 TEST_CASE("TSVD", "[linalg]") {
+        using std::pow;
         // double
         {
             for (auto tol : {1e-14, 1e-13}) {
                 VectorX<double> x = VectorX<double>::LinSpaced(201, -1, 1);
                 MatrixX<double> Aorig(201, 51);
-                for (int i = 0; i < 51; i++) {
-                    Aorig.col(i) = x.array().pow(i);
+                for (int i = 0; i < Aorig.cols(); i++) {
+                    //Aorig.col(i) = x.array().pow(i);
+                    for (int j = 0; j < Aorig.rows(); j++) {
+                        Aorig(j, i) = pow(x(j), i);
+                    }
                 }
 
                 MatrixX<double> A = Aorig;
@@ -285,8 +289,9 @@ TEST_CASE("TSVD", "[linalg]") {
                 // std::cout << "S: " << S_diag.rows() << "," << S_diag.cols() << std::endl;
                 // std::cout << "V: " << V.rows() << "," << V.cols() << std::endl;
                 auto B = U * S_diag * V.transpose() - Aorig;
-                //std::cout << B << std::endl; // Oh...?
-                REQUIRE(1==1);
+                std::cout << Aorig.norm() << std::endl; // Oh...?
+                std::cout << B.norm() << std::endl; // Oh...?
+                REQUIRE(0==1);
                 //REQUIRE((U * S_diag * V).isApprox(Aorig, tol * A.norm()));
                 /*
                 REQUIRE((U.transpose() * U).isIdentity());
