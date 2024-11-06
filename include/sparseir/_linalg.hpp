@@ -54,7 +54,7 @@ struct QRPackedQ {
 };
 
 template <typename T>
-void lmul(const QRPackedQ<T> Q, MatrixX<T>& B) {
+void lmul(const QRPackedQ<T> Q, Eigen::MatrixX<T>& B) {
     Eigen::MatrixX<T> A_factors = Q.factors;
     Eigen::VectorX<T> A_tau = Q.taus;
     int mA = A_factors.rows();
@@ -82,7 +82,7 @@ void lmul(const QRPackedQ<T> Q, MatrixX<T>& B) {
 }
 
 template <typename T>
-void mul(MatrixX<T>& C, const QRPackedQ<T>& Q, const MatrixX<T>& B) {
+void mul(Eigen::MatrixX<T>& C, const QRPackedQ<T>& Q, const Eigen::MatrixX<T>& B) {
 
     int mB = B.rows();
     int nB = B.cols();
@@ -96,10 +96,10 @@ void mul(MatrixX<T>& C, const QRPackedQ<T>& Q, const MatrixX<T>& B) {
     if (mB < mC) {
         C.topRows(mB) = B;
         C.bottomRows(mC - mB).setZero();
-        lmul(Q, C);
+        lmul<T>(Q, C);
     } else {
         C = B;
-        lmul(Q, C);
+        lmul<T>(Q, C);
     }
 }
 
@@ -360,34 +360,14 @@ rrqr(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& A, T rtol = std::numeric_
 }
 */
 
-template <typename T>
-void lmul(const Eigen::Matrix<T, -1, -1>& factors, Eigen::VectorBlock<const Eigen::Matrix<T, -1, 1>> taus, Eigen::CwiseNullaryOp<Eigen::internal::scalar_identity_op<T>, Eigen::Matrix<T, -1, -1>> B){
-//void lmul(T1& factors, const T2& taus, T3& B) {
-    int m = factors.rows();
-    int n = factors.cols();
-    int k = taus.size();
-
-    if (B.rows() != m) {
-        throw std::invalid_argument("The number of rows in B must match the number of rows in factors.");
-    }
-
-    // Apply the Householder reflections to B
-    for (int i = 0; i < k; ++i) {
-        Eigen::VectorXd v = Eigen::VectorXd::Zero(m);
-        v(i) = 1.0;
-        v.tail(m - i - 1) = factors.col(i).tail(m - i - 1);
-        // Fix me
-        B -= (taus(i) * v) * (v.transpose() * B);
-    }
-}
-
-template <typename T>
-Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& triu(Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& M, int k) {
+template <typename Derived>
+Eigen::MatrixBase<Derived> triu(Eigen::MatrixBase<Derived>& M) {
+    using T = typename Derived::Scalar;
     int m = M.rows();
     int n = M.cols();
-    for (int j = 0; j < std::min(n, m + k); ++j) {
-        for (int i = std::max(0, j - k + 1); i < m; ++i) {
-            M(i, j) = 0;
+    for (int j = 0; j < std::min(n, m); ++j) {
+        for (int i = std::max(0, j + 1); i < m; ++i) {
+            M(i, j) = T(0);
         }
     }
     return M;
@@ -395,7 +375,7 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& triu(Eigen::Matrix<T, Eigen::D
 
 
 template <typename T>
-std::pair<Matrix<T, Dynamic, Dynamic>, Matrix<T, Dynamic, Dynamic>> truncate_qr_result(const QRPivoted<T>& qr, int k) {
+std::pair<MatrixX<T>, MatrixX<T>> truncate_qr_result(QRPivoted<T>& qr, int k) {
     int m = qr.factors.rows();
     int n = qr.factors.cols();
     if (k < 0 || k > std::min(m, n)) {
@@ -403,12 +383,21 @@ std::pair<Matrix<T, Dynamic, Dynamic>, Matrix<T, Dynamic, Dynamic>> truncate_qr_
     }
 
     // Extract Q matrix
-    auto Q = Eigen::Matrix<T, Dynamic, Dynamic>::Identity(m, k);
-    lmul<>(qr.factors, qr.taus.head(k), Q);
 
+    MatrixX<T> k_factors = qr.factors.topLeftCorner(qr.factors.rows(), k);
+    MatrixX<T> k_taus = qr.taus.head(k);
+    auto Qfull = QRPackedQ<T>{k_factors, k_taus};
+
+    MatrixX<T> Q = Eigen::MatrixX<T>::Identity(m, k);
+    lmul<T>(Qfull, Q);
     // Extract R matrix
-    auto R = triu(qr.factors.topRows(k));
-
+    auto R = qr.factors.topRows(k);
+    // inline implementation of triu(qr.factors.topRows(k))
+    for (int j = 0; j < R.rows(); ++j) {
+        for (int i = j + 1; i < R.rows(); ++i) {
+            R(i, j) = T(0);
+        }
+    }
     return std::make_pair(Q, R);
 }
 
