@@ -1,5 +1,7 @@
 # libsparseir
 
+[![CMake on a single platform](https://github.com/SpM-lab/libsparseir/actions/workflows/CI_cmake.yml/badge.svg)](https://github.com/SpM-lab/libsparseir/actions/workflows/CI_cmake.yml)
+
 > [!WARNING]
 > This C++ project is still under construction. Please use other repositories:
 > - https://github.com/SpM-lab/sparse-ir
