@@ -51,14 +51,57 @@ template <typename T>
 struct QRPackedQ {
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> factors;
     Eigen::Matrix<T, Eigen::Dynamic, 1> taus;
+};
 
-    QRPackedQ(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& factors, const Eigen::Matrix<T, Eigen::Dynamic, 1>& taus)
-        : factors(factors), taus(taus) {
-        if (factors.rows() != taus.size()) {
-            throw std::invalid_argument("The number of rows in factors must match the size of taus.");
+template <typename T>
+void lmul(const QRPackedQ<T> Q, MatrixX<T>& B) {
+    Eigen::MatrixX<T> A_factors = Q.factors;
+    Eigen::VectorX<T> A_tau = Q.taus;
+    int mA = A_factors.rows();
+    int nA = A_factors.cols();
+    int mB = B.rows();
+    int nB = B.cols();
+
+    if (mA != mB) {
+        throw std::invalid_argument("DimensionMismatch: matrix A has different dimensions than matrix B");
+    }
+
+    for (int k = std::min(mA, nA) - 1; k >= 0; --k) {
+        for (int j = 0; j < nB; ++j) {
+            T vBj = B(k, j);
+            for (int i = k + 1; i < mB; ++i) {
+                vBj += A_factors(i, k) * B(i, j);
+            }
+            vBj = A_tau(k) * vBj;
+            B(k, j) -= vBj;
+            for (int i = k + 1; i < mB; ++i) {
+                B(i, j) -= A_factors(i, k) * vBj;
+            }
         }
     }
-};
+}
+
+template <typename T>
+void mul(MatrixX<T>& C, const QRPackedQ<T>& Q, const MatrixX<T>& B) {
+
+    int mB = B.rows();
+    int nB = B.cols();
+    int mC = C.rows();
+    int nC = C.cols();
+
+    if (nB != nC) {
+        throw std::invalid_argument("DimensionMismatch: number of columns in B and C do not match");
+    }
+
+    if (mB < mC) {
+        C.topRows(mB) = B;
+        C.bottomRows(mC - mB).setZero();
+        lmul(Q, C);
+    } else {
+        C = B;
+        lmul(Q, C);
+    }
+}
 
 /*
 function getproperty(F::QRPivoted{T}, d::Symbol) where T
@@ -95,42 +138,37 @@ struct QRPackedQ {
 };
 */
 
+// TODO: FIX THIS
 template <typename T>
-Matrix<T, Dynamic, Dynamic> triu(const Eigen::Block<const Matrix<T, Dynamic, Dynamic>, -1, -1, false>& M) {
-    Matrix<T, Dynamic, Dynamic> upper = M;
+auto getPropertyP(const QRPivoted<T>& F) {
+    int m = F.factors.rows();
+    int n = F.factors.cols();
+
+    MatrixX<T> P = MatrixX<T>::Zero(n, n);
+    for (int i = 0; i < n; ++i) {
+        P(F.jpvt[i], i) = 1;
+    }
+    return P;
+}
+
+template <typename T>
+QRPackedQ<T> getPropertyQ(const QRPivoted<T>& F) {
+    return QRPackedQ<T>{F.factors, F.taus};
+}
+
+template <typename T>
+MatrixX<T> getPropertyR(const QRPivoted<T>& F) {
+    int m = F.factors.rows();
+    int n = F.factors.cols();
+
+    MatrixX<T> upper = MatrixX<T>::Zero(std::min(m, n), n);
+
     for (int i = 0; i < upper.rows(); ++i) {
-        for (int j = 0; j < i; ++j) {
-            upper(i, j) = 0;
+        for (int j = i; j < upper.cols(); ++j) {
+            upper(i, j) = F.factors(i, j);
         }
     }
     return upper;
-}
-
-// TODO: FIX THIS
-template <typename T>
-auto getPropertyP(const QRPivoted<T>& F, const std::string& property) {
-    int m = F.factors.rows();
-    int n = F.factors.cols();
-
-        Matrix<T, Dynamic, Dynamic> P = Matrix<T, Dynamic, Dynamic>::Zero(n, n);
-        for (int i = 0; i < n; ++i) {
-            P(F.jpvt[i], i) = 1;
-        }
-        return P;
-}
-
-// TODO: FIX THIS
-template <typename T>
-auto getPropertyQ(const QRPivoted<T>& F, const std::string& property) {
-    return QRPackedQ<T>(F.factors, F.taus);
-}
-
-// TODO: FIX THIS
-template <typename T>
-auto getPropertyR(const QRPivoted<T>& F, const std::string& property) {
-    int m = F.factors.rows();
-    int n = F.factors.cols();
-    return triu(F.factors.topLeftCorner(std::min(m, n), n));
 }
 
 // General template for _copysign, handles standard floating-point types like double and float

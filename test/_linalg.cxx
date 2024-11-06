@@ -115,11 +115,17 @@ TEST_CASE("Jacobi SVD", "[linalg]") {
         REQUIRE((A - Areconst).norm()/A.norm() < 1e-28); // 28 significant digits
 }
 
-TEST_CASE("RRPR", "[linalg]") {
-        Eigen::MatrixX<double> A = Eigen::MatrixX<double>::Random(3, 3);
+TEST_CASE("rrqr simple", "[linalg]") {
+        Eigen::MatrixX<double> Aorig(3,3);
+        Aorig << 1, 1, 1,
+                 1, 1, 1,
+                 1, 1, 1;
+        Eigen::MatrixX<double> A(3,3);
         A << 1, 1, 1,
              1, 1, 1,
              1, 1, 1;
+
+        double A_eps = A.norm() * std::numeric_limits<double>::epsilon();
         double rtol = 0.1;
         QRPivoted<double> A_qr;
         int A_rank;
@@ -129,26 +135,70 @@ TEST_CASE("RRPR", "[linalg]") {
         refA <<-1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
                 0.36602540378443865, 0.0, 0.0,
                 0.36602540378443865, 0.0, 0.0;
-        REQUIRE(A.isApprox(refA, 1e-7));
+        Eigen::VectorX<double> reftaus(3);
+        reftaus << 1.5773502691896257, 0.0, 0.0;
+        Eigen::VectorX<int> refjpvt(3);
+        refjpvt << 0, 1, 2;
+
+        REQUIRE(A_qr.factors.isApprox(refA, 1e-7));
+        REQUIRE(A_qr.taus.isApprox(reftaus, 1e-7));
+        REQUIRE(A_qr.jpvt == refjpvt);
+
+        QRPackedQ<double> Q = getPropertyQ(A_qr);
+        Eigen::VectorX<double> Qreftaus(3);
+        Qreftaus << 1.5773502691896257, 0.0, 0.0;
+        Eigen::MatrixX<double> Qreffactors(3, 3);
+        Qreffactors << -1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
+                        0.36602540378443865, 0.0, 0.0,
+                        0.36602540378443865, 0.0, 0.0;
+        REQUIRE(Q.taus.isApprox(Qreftaus, 1e-7));
+        REQUIRE(Q.factors.isApprox(Qreffactors, 1e-7));
+
+        Eigen::MatrixX<double> R = getPropertyR(A_qr);
+        Eigen::MatrixX<double> refR(3, 3);
+        refR << -1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
+                0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0;
+        REQUIRE(R.isApprox(refR, 1e-7));
+
+
+        MatrixX<double> P = getPropertyP(A_qr);
+        MatrixX<double> refP = MatrixX<double>::Identity(3, 3);
+        refP << 1.0, 0.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 0.0, 1.0;
+        REQUIRE(P.isApprox(refP, 1e-7));
+
+        // In Julia Q * R
+        // In C++ Q.factors * R
+
+        MatrixX<double> C(3, 3);
+        mul<double>(C, Q, R);
+        MatrixX<double> A_rec = C * P.transpose();
+
+        REQUIRE(A_rec.isApprox(Aorig, 4 * A_eps));
 }
 
 TEST_CASE("RRQR", "[linalg]") {
-        MatrixX<DDouble> A = MatrixX<DDouble>::Random(40, 30);
+        MatrixX<DDouble> Aorig = MatrixX<DDouble>::Random(40, 30);
+        MatrixX<DDouble> A = Aorig;
         DDouble A_eps = A.norm() * std::numeric_limits<DDouble>::epsilon();
         QRPivoted<DDouble> A_qr;
         int A_rank;
 
-        bool impl_finished = false;
         std::tie(A_qr, A_rank) = rrqr(A);
-        REQUIRE(!impl_finished);
+
         REQUIRE(A_rank == 30);
-        // QRPackedQ<DDouble> Q = getPropertyQ(A_qr, "Q");
-        //Eigen::MatrixX<DDouble> R = getPropertyR(A_qr, "R");
-        //Matrix<DDouble, Dynamic, Dynamic> P = getPropertyP(A_qr, "P");
-        // TODO: resolve Q * R
-        // Matrix<DDouble, Dynamic, Dynamic> A_rec = (Q * R) * P.transpose();
-        //REQUIRE(A_rec.isApprox(A, 4 * A_eps));
-        //REQUIRE(A_rank == 30);
+        QRPackedQ<DDouble> Q = getPropertyQ(A_qr);
+        Eigen::MatrixX<DDouble> R = getPropertyR(A_qr);
+        MatrixX<DDouble> P = getPropertyP(A_qr);
+
+        // In Julia Q * R
+        // In C++ Q.factors * R
+        MatrixX<DDouble> C(40, 30);
+        mul<DDouble>(C, Q, R);
+        MatrixX<DDouble> A_rec = C * P.transpose();
+        REQUIRE(A_rec.isApprox(Aorig, 4 * A_eps));
 }
 
 /*
@@ -158,7 +208,7 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
         int m = A.rows();
         int n = A.cols();
         QRPivoted<DDouble> A_qr;
-        int k;
+        int k;r
         std::tie(A_qr, k) = rrqr<DDouble>(A, DDouble(1e-5));
         REQUIRE(k < std::min(m, n));
 
