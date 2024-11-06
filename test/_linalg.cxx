@@ -7,7 +7,7 @@
 using namespace Eigen;
 using namespace xprec;
 
-TEST_CASE("Utils", "[linalg]") {
+TEST_CASE("reflector", "[linalg]") {
         // double
         {
                 Eigen::VectorXd v(3);
@@ -54,6 +54,42 @@ TEST_CASE("Utils", "[linalg]") {
                 REQUIRE(1 == 1);
         }
 }
+
+TEST_CASE("reflectorApply", "[linalg]") {
+        Eigen::MatrixX<double> A = Eigen::MatrixX<double>::Random(3, 3);
+        A << 1, 1, 1,
+             1, 1, 1,
+             1, 1, 1;
+        int m = A.rows();
+        int n = A.cols();
+        int k = std::min(m, n);
+        double rtol = 0.1;
+        int i = 0;
+
+        auto Ainp = A.col(i).tail(m - i);
+        REQUIRE(Ainp.size() == 3);
+        auto tau_i = reflector(Ainp);
+        REQUIRE(std::abs(tau_i - 1.5773502691896257) < 1e-7);
+
+        Eigen::VectorX<double> refv(3);
+        refv << -1.7320508075688772, 0.36602540378443865, 0.36602540378443865;
+        for (int i = 0; i < 3; i++) {
+                REQUIRE(std::abs(Ainp(i) - refv(i)) < 1e-7);
+        }
+
+        auto block = A.bottomRightCorner(m - i, n - (i + 1));
+        reflectorApply(Ainp, tau_i, block);
+        Eigen::MatrixX<double> refA(3, 3);
+        refA <<-1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
+                0.36602540378443865, 0.0, 0.0,
+                0.36602540378443865, 0.0, 0.0;
+        for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                        REQUIRE(std::abs(A(i, j) - refA(i, j)) < 1e-7);
+                }
+        }
+}
+
 
 TEST_CASE("Jacobi SVD", "[linalg]") {
         Matrix<DDouble, Dynamic, Dynamic> A = Matrix<DDouble, Dynamic, Dynamic>::Random(20, 10);
