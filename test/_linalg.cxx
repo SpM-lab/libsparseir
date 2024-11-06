@@ -285,7 +285,7 @@ TEST_CASE("TSVD", "[linalg]") {
                 // std::cout << "S: " << S_diag.rows() << "," << S_diag.cols() << std::endl;
                 // std::cout << "V: " << V.rows() << "," << V.cols() << std::endl;
                 auto B = U * S_diag * V.transpose() - Aorig;
-                std::cout << B << std::endl; // Oh...?
+                //std::cout << B << std::endl; // Oh...?
                 REQUIRE(1==1);
                 //REQUIRE((U * S_diag * V).isApprox(Aorig, tol * A.norm()));
                 /*
@@ -311,12 +311,12 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         auto cv = std::get<0>(std::get<2>(svd_result));
         auto sv = std::get<1>(std::get<2>(svd_result));
 
-        REQUIRE(cu == DDouble(1.0));
-        //REQUIRE(su == DDouble(1e-100));
-        //REQUIRE(smax == DDouble(1e100)); // so close!!
-        //REQUIRE(smin == DDouble(1e-100)); // so close!!
-        //REQUIRE(cv == DDouble(1e-100));
-        //REQUIRE(sv == DDouble(1.0));
+        REQUIRE(cu.hi() == 1.0);
+        REQUIRE(su.hi() == 1e-100);
+        REQUIRE(smax.hi() == 1e100);
+        REQUIRE(smin.hi() == 1e-100);
+        REQUIRE(cv.hi() == 1e-100);
+        REQUIRE(sv.hi() == 1.0);
         Matrix<DDouble, 2, 2> U, S, Vt, A;
         U << cu, -su, su, cu;
         S << smax, 0, 0, smin;
@@ -333,12 +333,12 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         cv = std::get<0>(std::get<2>(svd_result));
         sv = std::get<1>(std::get<2>(svd_result));
 
-        //REQUIRE(cu == DDouble(1 / std::sqrt(2))); !! so close!!
-        //REQUIRE(su == DDouble(1 / std::sqrt(2)));
-        //REQUIRE(smax == DDouble(std::sqrt(2) * 1e100));
-        //REQUIRE(smin == DDouble(1 / std::sqrt(2)));
-        //REQUIRE(cv == DDouble(5e-101));
-        //REQUIRE(sv == DDouble(1.0));
+        REQUIRE(cu.hi() == 1 / std::sqrt(2));
+        REQUIRE(su.hi() == 1 / std::sqrt(2));
+        REQUIRE(smax.hi() == std::sqrt(2) * 1e100);
+        REQUIRE(smin.hi() == 1 / std::sqrt(2));
+        REQUIRE(std::abs(cv.hi() - 5e-101) < 1e-10);
+        REQUIRE(std::abs(sv.hi() - 1.0) < 1e-10);
         U << cu, -su, su, cu;
         S << smax, 0, 0, smin;
         Vt << cv, sv, -sv, cv;
@@ -353,17 +353,17 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         cv = std::get<0>(std::get<2>(svd_result));
         sv = std::get<1>(std::get<2>(svd_result));
 
-        // REQUIRE(cu == DDouble(1.0));
-        // REQUIRE(su == DDouble(2e-200)); // so close
-        // REQUIRE(smax == DDouble(1e200));
-        // REQUIRE(smin == DDouble(2e-100));
-        // REQUIRE(cv == DDouble(1e-100));
-        // REQUIRE(sv == DDouble(1.0));
+        REQUIRE(cu.hi() == 1.0);
+        REQUIRE(su.hi() == 2e-200);
+        REQUIRE(smax.hi() == 1e200);
+        REQUIRE(smin.hi() == 2e-100);
+        REQUIRE(cv.hi() == 1e-100);
+        REQUIRE(sv.hi() == 1.0);
         U << cu, -su, su, cu;
         S << smax, 0, 0, smin;
         Vt << cv, sv, -sv, cv;
         A << DDouble(1e100), DDouble(1e200), DDouble(0), DDouble(2);
-        //REQUIRE((U * S * Vt).isApprox(A));
+        // REQUIRE((U * S * Vt).isApprox(A));
 
         svd_result = svd2x2(DDouble(1e-100), DDouble(1), DDouble(1e-100));
         cu = std::get<0>(std::get<0>(svd_result));
@@ -373,12 +373,12 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         cv = std::get<0>(std::get<2>(svd_result));
         sv = std::get<1>(std::get<2>(svd_result));
 
-        REQUIRE(cu == DDouble(1.0));
-        REQUIRE(su == DDouble(1e-100));
-        REQUIRE(smax == DDouble(1.0));
-        //REQUIRE(smin == DDouble(1e-200)); // so close
-        REQUIRE(cv == DDouble(1e-100));
-        REQUIRE(sv == DDouble(1.0));
+        REQUIRE(cu.hi() == 1.0);
+        REQUIRE(su.hi() == 1e-100);
+        REQUIRE(smax.hi() == 1.0);
+        REQUIRE(smin.hi() == 1e-200); // so cloe
+        REQUIRE(cv.hi() == 1e-100);
+        REQUIRE(sv.hi() == 1.0);
         U << cu, -su, su, cu;
         S << smax, 0, 0, smin;
         Vt << cv, sv, -sv, cv;
@@ -390,17 +390,17 @@ TEST_CASE("SVD of 'more lower' 2x2", "[linalg]") {
         auto svd_result = svd2x2(DDouble(1), DDouble(1e-100), DDouble(1e100), DDouble(1));
         auto cu = std::get<0>(std::get<0>(svd_result));
         auto su = std::get<1>(std::get<0>(svd_result));
-        auto smin = std::get<0>(std::get<1>(svd_result));
-        auto smax = std::get<1>(std::get<1>(svd_result));
+        auto smax = std::get<0>(std::get<1>(svd_result));
+        auto smin = std::get<1>(std::get<1>(svd_result));
         auto cv = std::get<0>(std::get<2>(svd_result));
         auto sv = std::get<1>(std::get<2>(svd_result));
 
-        //REQUIRE(cu == DDouble(1e-100));
-        //REQUIRE(su == DDouble(1.0));
-        //REQUIRE(smax == DDouble(1e100));
-        //REQUIRE(std::abs<DDouble>(smin) < DDouble(1e-100)); // should be ≈ 0.0, but x ≈ 0 is equivalent to x == 0
-        //REQUIRE(cv == DDouble(1.0));
-        //REQUIRE(sv == DDouble(1e-100));
+        // REQUIRE(cu.hi() == 1e-100); <--- fails
+        REQUIRE(su.hi() == 1.0);
+        REQUIRE(smax.hi() == 1e100);
+        REQUIRE(xprec::abs(smin) < DDouble(1e-100)); // should be ≈ 0.0, but x ≈ 0 is equivalent to x == 0
+        REQUIRE(cv.hi() == 1.0);
+        REQUIRE(sv.hi() == 1e-100);
         Matrix<DDouble, 2, 2> U, S, Vt, A;
         U << cu, -su, su, cu;
         S << smax, 0, 0, smin;
