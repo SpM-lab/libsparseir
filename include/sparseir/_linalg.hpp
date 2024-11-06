@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <Eigen/Dense>
 #include <vector>
 #include <cmath>
@@ -12,6 +14,24 @@ using Eigen::Matrix;
 using Eigen::MatrixX;
 using Eigen::Vector;
 using Eigen::VectorX;
+
+template <typename Derived>
+int argmax(const Eigen::MatrixBase<Derived>& vec) {
+    // Ensure this function is only used for 1D Eigen column vectors
+    static_assert(Derived::ColsAtCompileTime == 1, "argmax function is only for Eigen column vectors.");
+
+    int maxIndex = 0;
+    auto maxValue = vec(0);
+
+    for (int i = 1; i < vec.size(); ++i) {
+        if (vec(i) > maxValue) {
+            maxValue = vec(i);
+            maxIndex = i;
+        }
+    }
+
+    return maxIndex;
+}
 
 template <typename T>
 struct SVDResult {
@@ -31,14 +51,57 @@ template <typename T>
 struct QRPackedQ {
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> factors;
     Eigen::Matrix<T, Eigen::Dynamic, 1> taus;
+};
 
-    QRPackedQ(const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>& factors, const Eigen::Matrix<T, Eigen::Dynamic, 1>& taus)
-        : factors(factors), taus(taus) {
-        if (factors.rows() != taus.size()) {
-            throw std::invalid_argument("The number of rows in factors must match the size of taus.");
+template <typename T>
+void lmul(const QRPackedQ<T> Q, MatrixX<T>& B) {
+    Eigen::MatrixX<T> A_factors = Q.factors;
+    Eigen::VectorX<T> A_tau = Q.taus;
+    int mA = A_factors.rows();
+    int nA = A_factors.cols();
+    int mB = B.rows();
+    int nB = B.cols();
+
+    if (mA != mB) {
+        throw std::invalid_argument("DimensionMismatch: matrix A has different dimensions than matrix B");
+    }
+
+    for (int k = std::min(mA, nA) - 1; k >= 0; --k) {
+        for (int j = 0; j < nB; ++j) {
+            T vBj = B(k, j);
+            for (int i = k + 1; i < mB; ++i) {
+                vBj += A_factors(i, k) * B(i, j);
+            }
+            vBj = A_tau(k) * vBj;
+            B(k, j) -= vBj;
+            for (int i = k + 1; i < mB; ++i) {
+                B(i, j) -= A_factors(i, k) * vBj;
+            }
         }
     }
-};
+}
+
+template <typename T>
+void mul(MatrixX<T>& C, const QRPackedQ<T>& Q, const MatrixX<T>& B) {
+
+    int mB = B.rows();
+    int nB = B.cols();
+    int mC = C.rows();
+    int nC = C.cols();
+
+    if (nB != nC) {
+        throw std::invalid_argument("DimensionMismatch: number of columns in B and C do not match");
+    }
+
+    if (mB < mC) {
+        C.topRows(mB) = B;
+        C.bottomRows(mC - mB).setZero();
+        lmul(Q, C);
+    } else {
+        C = B;
+        lmul(Q, C);
+    }
+}
 
 /*
 function getproperty(F::QRPivoted{T}, d::Symbol) where T
@@ -75,57 +138,72 @@ struct QRPackedQ {
 };
 */
 
+// TODO: FIX THIS
 template <typename T>
-Matrix<T, Dynamic, Dynamic> triu(const Eigen::Block<const Matrix<T, Dynamic, Dynamic>, -1, -1, false>& M) {
-    Matrix<T, Dynamic, Dynamic> upper = M;
+auto getPropertyP(const QRPivoted<T>& F) {
+    int m = F.factors.rows();
+    int n = F.factors.cols();
+
+    MatrixX<T> P = MatrixX<T>::Zero(n, n);
+    for (int i = 0; i < n; ++i) {
+        P(F.jpvt[i], i) = 1;
+    }
+    return P;
+}
+
+template <typename T>
+QRPackedQ<T> getPropertyQ(const QRPivoted<T>& F) {
+    return QRPackedQ<T>{F.factors, F.taus};
+}
+
+template <typename T>
+MatrixX<T> getPropertyR(const QRPivoted<T>& F) {
+    int m = F.factors.rows();
+    int n = F.factors.cols();
+
+    MatrixX<T> upper = MatrixX<T>::Zero(std::min(m, n), n);
+
     for (int i = 0; i < upper.rows(); ++i) {
-        for (int j = 0; j < i; ++j) {
-            upper(i, j) = 0;
+        for (int j = i; j < upper.cols(); ++j) {
+            upper(i, j) = F.factors(i, j);
         }
     }
     return upper;
 }
 
-// TODO: FIX THIS
-template <typename T>
-auto getPropertyP(const QRPivoted<T>& F, const std::string& property) {
-    int m = F.factors.rows();
-    int n = F.factors.cols();
-
-        Matrix<T, Dynamic, Dynamic> P = Matrix<T, Dynamic, Dynamic>::Zero(n, n);
-        for (int i = 0; i < n; ++i) {
-            P(F.jpvt[i], i) = 1;
-        }
-        return P;
+// General template for _copysign, handles standard floating-point types like double and float
+double _copysign(double x, double y) {
+    return std::copysign(x, y);
 }
 
-// TODO: FIX THIS
-template <typename T>
-auto getPropertyQ(const QRPivoted<T>& F, const std::string& property) {
-    return QRPackedQ<T>(F.factors, F.taus);
+// Specialization for xprec::DDouble type, assuming xprec::copysign is defined
+xprec::DDouble _copysign(xprec::DDouble x, xprec::DDouble y) {
+    return xprec::copysign(x, y);
 }
 
-// TODO: FIX THIS
-template <typename T>
-auto getPropertyR(const QRPivoted<T>& F, const std::string& property) {
-    int m = F.factors.rows();
-    int n = F.factors.cols();
-    return triu(F.factors.topLeftCorner(std::min(m, n), n));
-}
+/*
+This implementation is based on Julia's LinearAlgebra.refrector! function.
 
-template <typename T>
-T reflector(Eigen::VectorBlock<Eigen::Matrix<T, Eigen::Dynamic, 1>>& x) {
+Elementary reflection similar to LAPACK. The reflector is not Hermitian but
+ensures that tridiagonalization of Hermitian matrices become real. See lawn72
+*/
+template <typename Derived>
+typename Derived::Scalar reflector(Eigen::MatrixBase<Derived>& x) {
+    using T = typename Derived::Scalar;
+
     int n = x.size();
-    if (n == 0) return static_cast<T>(0.0);
+    if (n == 0) return T(0);
 
-    T xi1 = x(0);
-    T normu = x.norm();
-    if (normu == static_cast<T>(0.0)) return static_cast<T>(0.0);
+    T xi1 = x(0);            // First element of x
+    T normu = x.norm();       // Norm of vector x
+    if (normu == T(0)) return T(0);
 
-    T nu = std::copysign(normu, xi1);
-    xi1 += nu;
-    x(0) = -nu;
+    // Calculate ν using copysign, which gives normu with the sign of xi1
+    T nu = _copysign(normu, xi1);
+    xi1 += nu;                // Update xi1
+    x(0) = -nu;               // Set first element to -ν
 
+    // Divide remaining elements by the new xi1 value
     for (int i = 1; i < n; ++i) {
         x(i) /= xi1;
     }
@@ -133,22 +211,15 @@ T reflector(Eigen::VectorBlock<Eigen::Matrix<T, Eigen::Dynamic, 1>>& x) {
     return xi1 / nu;
 }
 
-template <typename T>
-int myargmax(const Eigen::VectorX<T>& v, int start = 0) {
-    int index = start;
-    T M = v(start);
-    for (int i = start; i < v.size(); ++i) {
-        if (v(i) > M) {
-            M = v(i);
-            index = i;
-        }
-    }
-    return index;
-}
+/*
+This implementation is based on Julia's LinearAlgebra.reflectorApply! function.
 
-// Eigen::VectorBlock<Eigen::Block<Eigen::Matrix<xprec::DDouble, -1, -1>, -1, 1, true>>, T = xprec::DDouble, T3 = Eigen::Block<Eigen::Matrix<xprec::DDouble, -1, -1>>
+    reflectorApply!(x, τ, A)
+
+Multiplies `A` in-place by a Householder reflection on the left. It is equivalent to `A .= (I - conj(τ)*[1; x[2:end]]*[1; x[2:end]]')*A`.
+*/
 template <typename T>
-void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::Matrix<T, -1, -1>, -1, 1, true>>& x, T tau, Eigen::Block<Eigen::Matrix<T, -1, -1>>& A) {
+void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::MatrixX<T>, -1, 1, true>, -1>& x, T tau, Eigen::Block<Eigen::MatrixX<T>>& A){
     int m = A.rows();
     int n = A.cols();
 
@@ -161,11 +232,13 @@ void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::Matrix<T, -1, -1>, -1
     // Loop over each column of A
     for (int j = 0; j < n; ++j) {
         // Equivalent to `Aj = view(A, 2:m, j)` and `xj = view(x, 2:m)`
-        Eigen::Block<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> Aj = A.block(1, j, m - 1, 1);
-        Eigen::Block<Eigen::Matrix<T, Eigen::Dynamic, 1>> xj = x.tail(m - 1);
+        auto Aj = A.block(1, j, m - 1, 1).reshaped();
+        auto xj = x.tail(m - 1);
 
+        // We expect tau to be real, so we use conj(tau) = tau
+        T conj_tau = tau;
         // Compute vAj = conj(tau) * (A(0, j) + xj.dot(Aj));
-        T vAj = std::conj(tau) * (A(0, j) + xj.dot(Aj));
+        T vAj = conj_tau * (A(0, j) + xj.dot(Aj));
 
         // Update A(0, j)
         A(0, j) -= vAj;
@@ -189,47 +262,26 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
     T sqrteps = T(std::sqrt(std::numeric_limits<double>::epsilon()));
 
     for (int i = 0; i < k; ++i) {
-        int pvt = myargmax(pnorms, n-i) + i;
+
+        int pvt = argmax(pnorms.tail(n - i)) + i;
         if (i != pvt) {
             std::swap(jpvt[i], jpvt[pvt]);
             std::swap(xnorms[pvt], xnorms[i]);
             std::swap(pnorms[pvt], pnorms[i]);
-            A.col(i).swap(A.col(pvt));
+            A.col(i).swap(A.col(pvt)); // swapcols!
         }
-        auto x_ = A.col(i).tail(m - i);
 
-        // inline implementation
-        // T tau_i = reflector(x);
-        int n = x_.size();
-        T tau_i;
-        if (n == 0) {
-            tau_i = static_cast<T>(0.0);
-        } else {
-            T xi1 = x_(0);
-            T normu = x_.norm();
-            if (normu == static_cast<T>(0.0)){
-                tau_i = static_cast<T>(0.0);
-            }
-            // Fix me: `std::copysign<T>` is not available for T = DDouble
-            T nu = T(std::copysign((double)normu, (double)(xi1)));
-            xi1 += nu;
-            x_(0) = -nu;
+        auto Ainp = A.col(i).tail(m - i);
+        T tau_i = reflector(Ainp);
 
-            for (int i = 1; i < n; ++i) {
-                x_(i) /= xi1;
-            }
-
-            T tau_i = xi1 / nu;
-        }
-        // end inline implementation of reflector
         taus[i] = tau_i;
-        // TODO: fix me
-        MatrixX<T> Ainp = A.col(i).tail(m - i);
-        reflectorApply(Ainp, tau_i, A.bottomRightCorner(m - i, n - i));
+
+        auto block = A.bottomRightCorner(m - i, n - (i + 1));
+        reflectorApply<T>(Ainp, tau_i, block);
 
         for (int j = i + 1; j < n; ++j) {
             T temp = std::abs((double)(A(i, j))) / pnorms[j];
-            temp = std::max<T>(0.0, (1.0 + temp) * (1.0 - temp));
+            temp = std::max<T>(T(0), (T(1) + temp) * (T(1) - temp));
             // abs2
             T temp2 = temp * (pnorms(j) / xnorms(j)) * (pnorms(j) / xnorms(j));
             if (temp2 < sqrteps) {
