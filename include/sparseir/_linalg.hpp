@@ -171,12 +171,15 @@ typename Derived::Scalar reflector(Eigen::MatrixBase<Derived>& x) {
     return xi1 / nu;
 }
 
-// Eigen::VectorBlock<Eigen::Block<Eigen::Matrix<xprec::DDouble, -1, -1>, -1, 1, true>>, T = xprec::DDouble, T3 = Eigen::Block<Eigen::Matrix<xprec::DDouble, -1, -1>>
-//template <typename T1, typename T, typename T3>
+/*
+This implementation is based on Julia's LinearAlgebra.reflectorApply! function.
+
+    reflectorApply!(x, τ, A)
+
+Multiplies `A` in-place by a Householder reflection on the left. It is equivalent to `A .= (I - conj(τ)*[1; x[2:end]]*[1; x[2:end]]')*A`.
+*/
 template <typename T>
 void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::MatrixX<T>, -1, 1, true>, -1>& x, T tau, Eigen::Block<Eigen::MatrixX<T>>& A){
-//void reflectorApply(T1& x, T tau, T3& A) {
-    // using T = typename Derived::Scalar;
     int m = A.rows();
     int n = A.cols();
 
@@ -189,11 +192,13 @@ void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::MatrixX<T>, -1, 1, tr
     // Loop over each column of A
     for (int j = 0; j < n; ++j) {
         // Equivalent to `Aj = view(A, 2:m, j)` and `xj = view(x, 2:m)`
-        Eigen::Block<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> Aj = A.block(1, j, m - 1, 1);
-        Eigen::Block<Eigen::Matrix<T, Eigen::Dynamic, 1>> xj = x.tail(m - 1);
+        Eigen::VectorX<T> Aj = A.block(1, j, m - 1, 1).reshaped();
+        Eigen::VectorX<T> xj = x.tail(m - 1);
 
+        // We expect tau to be real, so we use conj(tau) = tau
+        T conj_tau = tau;
         // Compute vAj = conj(tau) * (A(0, j) + xj.dot(Aj));
-        T vAj = std::conj(tau) * (A(0, j) + xj.dot(Aj));
+        T vAj = conj_tau * (A(0, j) + xj.dot(Aj));
 
         // Update A(0, j)
         A(0, j) -= vAj;
@@ -233,7 +238,6 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
         // reflectorApply<VectorX<T>, T, Eigen::Block<Eigen::MatrixX<T>>>(Ainp, tau_i, A.bottomRightCorner(m - i, n - i));
         auto block = A.bottomRightCorner(m - i, n - i);
         reflectorApply<T>(Ainp, tau_i, block);
-        /*
 
         for (int j = i + 1; j < n; ++j) {
             T temp = std::abs((double)(A(i, j))) / pnorms[j];
@@ -254,7 +258,6 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>
             k = i;
             break;
         }
-        */
     }
 
     return {QRPivoted<T>{A, taus, jpvt}, k};

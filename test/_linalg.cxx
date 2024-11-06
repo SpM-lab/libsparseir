@@ -81,14 +81,13 @@ TEST_CASE("RRQR", "[linalg]") {
         int A_rank;
 
         bool impl_finished = false;
-        REQUIRE(!impl_finished);
-        auto ret = rrqr(A);
+        std::tie(A_qr, A_rank) = rrqr(A);
         REQUIRE(!impl_finished);
         //QRPackedQ<DDouble> Q = getPropertyQ(A_qr, "Q");
         //Eigen::MatrixX<DDouble> R = getPropertyR(A_qr, "R");
         //Matrix<DDouble, Dynamic, Dynamic> P = getPropertyP(A_qr, "P");
         // TODO: resolve Q * R
-        //Matrix<DDouble, Dynamic, Dynamic> A_rec = (Q * R) * P.transpose();
+        // Matrix<DDouble, Dynamic, Dynamic> A_rec = (Q * R) * P.transpose();
         //REQUIRE(A_rec.isApprox(A, 4 * A_eps));
         //REQUIRE(A_rank == 30);
 }
