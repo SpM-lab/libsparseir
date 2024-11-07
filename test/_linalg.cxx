@@ -256,7 +256,10 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
                 auto QR = truncate_qr_result<DDouble>(A_qr, k);
                 auto Q = QR.first;
                 auto R = QR.second;
-
+                REQUIRE(Q.rows() == m);
+                REQUIRE(Q.cols() == k);
+                REQUIRE(R.rows() == k);
+                REQUIRE(R.cols() == n);
                 MatrixX<DDouble> A_rec = Q * R * getPropertyP(A_qr).transpose();
                 REQUIRE(A_rec.isApprox(Aorig, 1e-5 * A.norm()));
         }
@@ -267,10 +270,8 @@ TEST_CASE("TSVD", "[linalg]") {
         // double
         {
             for (auto tol : {1e-14}) {
-                //auto N1 = 201;
-                //auto N2 = 51;
-                auto N1 = 20;
-                auto N2 = 20;
+                int N1 = 201;
+                int N2 = 51;
                 VectorX<double> x = VectorX<double>::LinSpaced(N1, -1, 1);
                 //MatrixX<double> Aorig(201, 51);
                 MatrixX<double> Aorig(N1, N2);
@@ -281,17 +282,21 @@ TEST_CASE("TSVD", "[linalg]") {
                     //}
                 }
 
-                MatrixX<double> A = Aorig;
+                MatrixX<double> A = Aorig; // create a copy of Aorig
+
                 auto tsvd_result = tsvd<double>(A, double(tol));
                 tsvd<double>(Aorig, double(tol));
                 auto U = std::get<0>(tsvd_result);
                 auto s = std::get<1>(tsvd_result);
                 auto V = std::get<2>(tsvd_result);
                 int k = s.size();
+
                 auto S_diag = s.asDiagonal();
-                //std::cout << "U " << U.rows() << " " << U.cols() << std::endl;
-                //std::cout << "V " << V.rows() << " " << V.cols() << std::endl;
-                //std::cout << "S_diag " << S_diag.rows() << " " << S_diag.cols() << std::endl;
+
+                std::cout << "U " << U.rows() << " " << U.cols() << std::endl;
+                std::cout << "V " << V.rows() << " " << V.cols() << std::endl;
+                std::cout << "S_diag " << S_diag.rows() << " " << S_diag.cols() << std::endl;
+
                 auto Areconst = U * S_diag * V.transpose();
                 auto diff = (A - Areconst).norm() / A.norm();
                 std::cout << "diff " << diff << std::endl;
@@ -300,16 +305,15 @@ TEST_CASE("TSVD", "[linalg]") {
                 std::cout << "norm diff" << Aorig.norm() - Areconst.norm() << std::endl;
 
                 REQUIRE(Areconst.isApprox(Aorig, tol * Aorig.norm()));
-                //a
-                /*
+
                 REQUIRE((U.transpose() * U).isIdentity());
                 REQUIRE((V.transpose() * V).isIdentity());
-                REQUIRE(std::is_sorted(S.data(), S.data() + S.size(), std::greater<DDouble>()));
+                REQUIRE(std::is_sorted(s.data(), s.data() + s.size(), std::greater<DDouble>()));
                 REQUIRE(k < std::min(A.rows(), A.cols()));
 
-                Eigen::JacobiSVD<MatrixX<DDouble>> svd(A.cast<DDouble>());
-                REQUIRE(S.isApprox(svd.singularValues().head(k).cast<DDouble>()));
-                */
+                Eigen::JacobiSVD<MatrixX<double>> svd(Aorig.cast<double>());
+                REQUIRE(s.isApprox(svd.singularValues().head(k)));
+                REQUIRE(S_diag.toDenseMatrix().isApprox(svd.singularValues().head(k).asDiagonal().toDenseMatrix()));
             }
         }
 }
@@ -389,7 +393,7 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         REQUIRE(cu.hi() == 1.0);
         REQUIRE(su.hi() == 1e-100);
         REQUIRE(smax.hi() == 1.0);
-        REQUIRE(smin.hi() == 1e-200); // so cloe
+        REQUIRE(smin.hi() == 1e-200);
         REQUIRE(cv.hi() == 1e-100);
         REQUIRE(sv.hi() == 1.0);
         U << cu, -su, su, cu;
