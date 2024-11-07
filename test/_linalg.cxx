@@ -292,7 +292,6 @@ TEST_CASE("TSVD", "[linalg]") {
                 int k = s.size();
 
                 auto S_diag = s.asDiagonal();
-
                 auto Areconst = U * S_diag * V.transpose();
                 auto diff = (A - Areconst).norm() / A.norm();
                 // std::cout << "diff " << diff << std::endl;
@@ -301,7 +300,6 @@ TEST_CASE("TSVD", "[linalg]") {
                 // std::cout << "norm diff" << Aorig.norm() - Areconst.norm() << std::endl;
 
                 REQUIRE(Areconst.isApprox(Aorig, tol * Aorig.norm()));
-
                 REQUIRE((U.transpose() * U).isIdentity());
                 REQUIRE((V.transpose() * V).isIdentity());
                 REQUIRE(std::is_sorted(s.data(), s.data() + s.size(), std::greater<DDouble>()));
