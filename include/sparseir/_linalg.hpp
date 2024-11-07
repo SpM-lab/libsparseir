@@ -266,6 +266,9 @@ void reflectorApply(Eigen::VectorBlock<Eigen::Block<Eigen::MatrixX<T>, -1, 1, tr
     }
 }
 
+/*
+A will be modified in-place.
+*/
 template <typename T>
 std::pair<QRPivoted<T>, int> rrqr(MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     using std::abs;
@@ -491,11 +494,12 @@ truncateQRResult(const Eigen::MatrixX<T>& Q, const Eigen::MatrixX<T>& R, int k) 
 // Truncated SVD (TSVD)
 template <typename T>
 std::tuple<Eigen::MatrixX<T>, Eigen::VectorX<T>, Eigen::MatrixX<T>>
-tsvd(Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
+tsvd(const Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     // Step 1: Apply RRQR to A
     QRPivoted<T> A_qr;
     int k;
-    std::tie(A_qr, k) = rrqr<T>(A, rtol);
+    Eigen::MatrixX<T> A_ = A;
+    std::tie(A_qr, k) = rrqr<T>(A_, rtol);
     // Step 2: Truncate QR Result to rank k
     auto tqr = truncate_qr_result<T>(A_qr, k);
     auto p = A_qr.jpvt;

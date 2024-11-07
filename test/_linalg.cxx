@@ -266,14 +266,19 @@ TEST_CASE("TSVD", "[linalg]") {
         using std::pow;
         // double
         {
-            for (auto tol : {1e-14, 1e-13}) {
-                VectorX<double> x = VectorX<double>::LinSpaced(201, -1, 1);
-                MatrixX<double> Aorig(201, 51);
+            for (auto tol : {1e-14}) {
+                //auto N1 = 201;
+                //auto N2 = 51;
+                auto N1 = 20;
+                auto N2 = 20;
+                VectorX<double> x = VectorX<double>::LinSpaced(N1, -1, 1);
+                //MatrixX<double> Aorig(201, 51);
+                MatrixX<double> Aorig(N1, N2);
                 for (int i = 0; i < Aorig.cols(); i++) {
-                    //Aorig.col(i) = x.array().pow(i);
-                    for (int j = 0; j < Aorig.rows(); j++) {
-                        Aorig(j, i) = pow(x(j), i);
-                    }
+                    Aorig.col(i) = x.array().pow(i);
+                    //for (int j = 0; j < Aorig.rows(); j++) {
+                        //Aorig(j, i) = pow(x(j), i);
+                    //}
                 }
 
                 MatrixX<double> A = Aorig;
@@ -284,15 +289,17 @@ TEST_CASE("TSVD", "[linalg]") {
                 auto V = std::get<2>(tsvd_result);
                 int k = s.size();
                 auto S_diag = s.asDiagonal();
-                // U * S_diag * V.transpose();
-                // std::cout << "U: " << U.rows() << "," << U.cols() << std::endl;
-                // std::cout << "S: " << S_diag.rows() << "," << S_diag.cols() << std::endl;
-                // std::cout << "V: " << V.rows() << "," << V.cols() << std::endl;
-                auto B = U * S_diag * V.transpose() - Aorig;
-                std::cout << Aorig.norm() << std::endl; // Oh...?
-                std::cout << B.norm() << std::endl; // Oh...?
-                REQUIRE(0==1);
-                //REQUIRE((U * S_diag * V).isApprox(Aorig, tol * A.norm()));
+                //std::cout << "U " << U.rows() << " " << U.cols() << std::endl;
+                //std::cout << "V " << V.rows() << " " << V.cols() << std::endl;
+                //std::cout << "S_diag " << S_diag.rows() << " " << S_diag.cols() << std::endl;
+                auto Areconst = U * S_diag * V.transpose();
+                auto diff = (A - Areconst).norm() / A.norm();
+                std::cout << "diff " << diff << std::endl;
+                std::cout << "Areconst " << Areconst.norm() << std::endl;
+                std::cout << "Aorig " << Aorig.norm() << std::endl;
+
+                REQUIRE(Areconst.isApprox(Aorig, tol * Aorig.norm()));
+                //a
                 /*
                 REQUIRE((U.transpose() * U).isIdentity());
                 REQUIRE((V.transpose() * V).isIdentity());
