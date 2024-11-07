@@ -498,7 +498,7 @@ tsvd(const Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     // Step 1: Apply RRQR to A
     QRPivoted<T> A_qr;
     int k;
-    Eigen::MatrixX<T> A_ = A;
+    Eigen::MatrixX<T> A_ = A; // create a copy of A
     std::tie(A_qr, k) = rrqr<T>(A_, rtol);
     // Step 2: Truncate QR Result to rank k
     auto tqr = truncate_qr_result<T>(A_qr, k);
@@ -515,8 +515,13 @@ tsvd(const Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     // Do not use the svd_jacobi function directly.
     // Better to write a wrrapper function for the SVD.
     Eigen::JacobiSVD<decltype(R_trunc)> svd;
+
+    // The following comment is taken from Julia's implementation
+    // # RRQR is an excellent preconditioner for Jacobi. One should then perform
+    // # Jacobi on RT
     svd.compute(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
+    // Reconstruct A from QR factorization
     Eigen::PermutationMatrix<Dynamic, Dynamic> perm(p.size());
     perm.indices() = p;
 
@@ -525,6 +530,7 @@ tsvd(const Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     Eigen::MatrixX<T> V = (perm * svd.matrixU());
 
     Eigen::VectorX<T> s = svd.singularValues();
+    // TODO: Create a return type for truncated SVD
     return std::make_tuple(U, s, V);
 }
 
