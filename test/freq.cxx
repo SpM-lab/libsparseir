@@ -52,7 +52,7 @@ TEST_CASE("freq", "[Imaginary value calculation for MatsubaraFreq]")
     double beta = 3.0;
     BosonicFreq bf(2);
     std::complex<double> expected_value_im(0, 2 * M_PI / beta);
-    std::cout << bf.value_im(beta) << std::endl;
+    // std::cout << bf.value_im(beta) << std::endl;
     REQUIRE(bf.value_im(beta) == expected_value_im);
 }
 

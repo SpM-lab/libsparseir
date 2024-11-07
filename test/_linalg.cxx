@@ -293,16 +293,12 @@ TEST_CASE("TSVD", "[linalg]") {
 
                 auto S_diag = s.asDiagonal();
 
-                std::cout << "U " << U.rows() << " " << U.cols() << std::endl;
-                std::cout << "V " << V.rows() << " " << V.cols() << std::endl;
-                std::cout << "S_diag " << S_diag.rows() << " " << S_diag.cols() << std::endl;
-
                 auto Areconst = U * S_diag * V.transpose();
                 auto diff = (A - Areconst).norm() / A.norm();
-                std::cout << "diff " << diff << std::endl;
-                std::cout << "Areconst " << Areconst.norm() << std::endl;
-                std::cout << "Aorig " << Aorig.norm() << std::endl;
-                std::cout << "norm diff" << Aorig.norm() - Areconst.norm() << std::endl;
+                // std::cout << "diff " << diff << std::endl;
+                // std::cout << "Areconst " << Areconst.norm() << std::endl;
+                // std::cout << "Aorig " << Aorig.norm() << std::endl;
+                // std::cout << "norm diff" << Aorig.norm() - Areconst.norm() << std::endl;
 
                 REQUIRE(Areconst.isApprox(Aorig, tol * Aorig.norm()));
 
