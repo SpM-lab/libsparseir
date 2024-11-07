@@ -297,6 +297,7 @@ TEST_CASE("TSVD", "[linalg]") {
                 std::cout << "diff " << diff << std::endl;
                 std::cout << "Areconst " << Areconst.norm() << std::endl;
                 std::cout << "Aorig " << Aorig.norm() << std::endl;
+                std::cout << "norm diff" << Aorig.norm() - Areconst.norm() << std::endl;
 
                 REQUIRE(Areconst.isApprox(Aorig, tol * Aorig.norm()));
                 //a
