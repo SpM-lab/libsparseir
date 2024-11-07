@@ -518,7 +518,7 @@ tsvd(const Eigen::MatrixX<T>& A, T rtol = std::numeric_limits<T>::epsilon()) {
     svd.compute(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
     Eigen::PermutationMatrix<Dynamic, Dynamic> perm(p.size());
-    perm.indices() = invperm(p);
+    perm.indices() = p;
 
     Eigen::MatrixX<T> U = Q_trunc * svd.matrixV();
     // implement invperm
