@@ -10,7 +10,7 @@ using namespace xprec;
 TEST_CASE("invperm", "[linalg]") {
         VectorXi a(3);
         a << 1, 2, 0;
-        VectorXi b = invperm(a);
+        VectorXi b = sparseir::invperm(a);
         VectorX<int> refb(3);
         refb << 2, 0, 1;
         REQUIRE(b.isApprox(refb));
@@ -21,7 +21,7 @@ TEST_CASE("reflector", "[linalg]") {
         {
                 Eigen::VectorXd v(3);
                 v << 1, 2, 3;
-                auto tau = reflector(v);
+                auto tau = sparseir::reflector(v);
 
                 Eigen::VectorXd refv(3);
                 // obtained by
@@ -36,7 +36,7 @@ TEST_CASE("reflector", "[linalg]") {
         {
                 Eigen::VectorX<DDouble> v(3);
                 v << 1, 2, 3;
-                auto tau = reflector(v);
+                auto tau = sparseir::reflector(v);
 
                 Eigen::VectorX<DDouble> refv(3);
                 refv << -3.7416574, 0.42179344, 0.63269017;
@@ -86,7 +86,7 @@ TEST_CASE("reflectorApply", "[linalg]") {
 
         auto Ainp = A.col(i).tail(m - i);
         REQUIRE(Ainp.size() == 3);
-        auto tau_i = reflector(Ainp);
+        auto tau_i = sparseir::reflector(Ainp);
         REQUIRE(std::abs(tau_i - 1.5773502691896257) < 1e-7);
 
         Eigen::VectorX<double> refv(3);
@@ -96,7 +96,7 @@ TEST_CASE("reflectorApply", "[linalg]") {
         }
 
         auto block = A.bottomRightCorner(m - i, n - (i + 1));
-        reflectorApply(Ainp, tau_i, block);
+        sparseir::reflectorApply(Ainp, tau_i, block);
         Eigen::MatrixX<double> refA(3, 3);
         refA <<-1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
                 0.36602540378443865, 0.0, 0.0,
@@ -124,7 +124,7 @@ TEST_CASE("Jacobi SVD", "[linalg]") {
         REQUIRE((A - Areconst).norm()/A.norm() < 1e-28); // 28 significant digits
 }
 
-TEST_CASE("rrqr simple", "[linalg]") {
+TEST_CASE("sparseir::rrqr simple", "[linalg]") {
         Eigen::MatrixX<double> Aorig(3,3);
         Aorig << 1, 1, 1,
                  1, 1, 1,
@@ -136,9 +136,9 @@ TEST_CASE("rrqr simple", "[linalg]") {
 
         double A_eps = A.norm() * std::numeric_limits<double>::epsilon();
         double rtol = 0.1;
-        QRPivoted<double> A_qr;
+        sparseir::QRPivoted<double> A_qr;
         int A_rank;
-        std::tie(A_qr, A_rank) = rrqr<double>(A);
+        std::tie(A_qr, A_rank) = sparseir::rrqr<double>(A);
         REQUIRE(A_rank == 1);
         Eigen::MatrixX<double> refA(3, 3);
         refA <<-1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
@@ -153,7 +153,7 @@ TEST_CASE("rrqr simple", "[linalg]") {
         REQUIRE(A_qr.taus.isApprox(reftaus, 1e-7));
         REQUIRE(A_qr.jpvt == refjpvt);
 
-        QRPackedQ<double> Q = getPropertyQ(A_qr);
+        sparseir::QRPackedQ<double> Q = sparseir::getPropertyQ(A_qr);
         Eigen::VectorX<double> Qreftaus(3);
         Qreftaus << 1.5773502691896257, 0.0, 0.0;
         Eigen::MatrixX<double> Qreffactors(3, 3);
@@ -182,35 +182,35 @@ TEST_CASE("rrqr simple", "[linalg]") {
         // In C++ Q.factors * R
 
         MatrixX<double> C(3, 3);
-        mul<double>(C, Q, R);
+        sparseir::mul<double>(C, Q, R);
         MatrixX<double> A_rec = C * P.transpose();
 
         REQUIRE(A_rec.isApprox(Aorig, 4 * A_eps));
 }
 
-TEST_CASE("RRQR", "[linalg]") {
+TEST_CASE("sparseir::RRQR", "[linalg]") {
         MatrixX<DDouble> Aorig = MatrixX<DDouble>::Random(40, 30);
         MatrixX<DDouble> A = Aorig;
         DDouble A_eps = A.norm() * std::numeric_limits<DDouble>::epsilon();
-        QRPivoted<DDouble> A_qr;
+        sparseir::QRPivoted<DDouble> A_qr;
         int A_rank;
 
-        std::tie(A_qr, A_rank) = rrqr(A);
+        std::tie(A_qr, A_rank) = sparseir::rrqr(A);
 
         REQUIRE(A_rank == 30);
-        QRPackedQ<DDouble> Q = getPropertyQ(A_qr);
+        sparseir::QRPackedQ<DDouble> Q = sparseir::getPropertyQ(A_qr);
         Eigen::MatrixX<DDouble> R = getPropertyR(A_qr);
         MatrixX<DDouble> P = getPropertyP(A_qr);
 
         // In Julia Q * R
         // In C++ Q.factors * R
         MatrixX<DDouble> C(40, 30);
-        mul<DDouble>(C, Q, R);
+        sparseir::mul<DDouble>(C, Q, R);
         MatrixX<DDouble> A_rec = C * P.transpose();
         REQUIRE(A_rec.isApprox(Aorig, 4 * A_eps));
 }
 
-TEST_CASE("RRQR Trunc", "[linalg]") {
+TEST_CASE("sparseir::RRQR Trunc", "[linalg]") {
         // double
         {
                 VectorX<double> x = VectorX<double>::LinSpaced(101, -1, 1);
@@ -222,12 +222,12 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
                 MatrixX<double> A = Aorig;
                 int m = A.rows();
                 int n = A.cols();
-                QRPivoted<double> A_qr;
+                sparseir::QRPivoted<double> A_qr;
                 int k;
-                std::tie(A_qr, k) = rrqr<double>(A, double(1e-5));
+                std::tie(A_qr, k) = sparseir::rrqr<double>(A, double(1e-5));
                 REQUIRE(k < std::min(m, n));
                 REQUIRE(k == 17);
-                auto QR = truncate_qr_result<double>(A_qr, k);
+                auto QR = sparseir::truncate_qr_result<double>(A_qr, k);
                 auto Q = QR.first;
                 auto R = QR.second;
 
@@ -248,12 +248,12 @@ TEST_CASE("RRQR Trunc", "[linalg]") {
                 MatrixX<DDouble> A = Aorig;
                 int m = A.rows();
                 int n = A.cols();
-                QRPivoted<DDouble> A_qr;
+                sparseir::QRPivoted<DDouble> A_qr;
                 int k;
-                std::tie(A_qr, k) = rrqr<DDouble>(A, DDouble(0.00001));
+                std::tie(A_qr, k) = sparseir::rrqr<DDouble>(A, DDouble(0.00001));
                 REQUIRE(k < std::min(m, n));
                 REQUIRE(k == 17);
-                auto QR = truncate_qr_result<DDouble>(A_qr, k);
+                auto QR = sparseir::truncate_qr_result<DDouble>(A_qr, k);
                 auto Q = QR.first;
                 auto R = QR.second;
                 REQUIRE(Q.rows() == m);
@@ -284,8 +284,8 @@ TEST_CASE("TSVD", "[linalg]") {
 
                 MatrixX<double> A = Aorig; // create a copy of Aorig
 
-                auto tsvd_result = tsvd<double>(A, double(tol));
-                tsvd<double>(Aorig, double(tol));
+                auto tsvd_result = sparseir::tsvd<double>(A, double(tol));
+                sparseir::tsvd<double>(Aorig, double(tol));
                 auto U = std::get<0>(tsvd_result);
                 auto s = std::get<1>(tsvd_result);
                 auto V = std::get<2>(tsvd_result);
@@ -313,8 +313,8 @@ TEST_CASE("TSVD", "[linalg]") {
 }
 
 TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
-        // auto [cu, su, smax, smin, cv, sv] = svd2x2(DDouble(1), DDouble(1e100), DDouble(1));
-        auto svd_result = svd2x2<DDouble>(DDouble(1), DDouble(1e100), DDouble(1));
+        // auto [cu, su, smax, smin, cv, sv] = sparseir::svd2x2(DDouble(1), DDouble(1e100), DDouble(1));
+        auto svd_result = sparseir::svd2x2<DDouble>(DDouble(1), DDouble(1e100), DDouble(1));
         auto cu = std::get<0>(std::get<0>(svd_result));
         auto su = std::get<1>(std::get<0>(svd_result));
         auto smax = std::get<0>(std::get<1>(svd_result));
@@ -335,7 +335,7 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         A << DDouble(1), DDouble(1e100), DDouble(0), DDouble(1);
         REQUIRE((U * S * Vt).isApprox(A));
 
-        svd_result = svd2x2(DDouble(1), DDouble(1e100), DDouble(1e100));
+        svd_result = sparseir::svd2x2(DDouble(1), DDouble(1e100), DDouble(1e100));
 
         cu = std::get<0>(std::get<0>(svd_result));
         su = std::get<1>(std::get<0>(svd_result));
@@ -356,7 +356,7 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         A << DDouble(1), DDouble(1e100), DDouble(0), DDouble(1e100);
         // REQUIRE((U * S * Vt).isApprox(A));
 
-        svd_result = svd2x2(DDouble(1e100), DDouble(1e200), DDouble(2));
+        svd_result = sparseir::svd2x2(DDouble(1e100), DDouble(1e200), DDouble(2));
         cu = std::get<0>(std::get<0>(svd_result));
         su = std::get<1>(std::get<0>(svd_result));
         smax = std::get<0>(std::get<1>(svd_result));
@@ -376,7 +376,7 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
         A << DDouble(1e100), DDouble(1e200), DDouble(0), DDouble(2);
         // REQUIRE((U * S * Vt).isApprox(A));
 
-        svd_result = svd2x2(DDouble(1e-100), DDouble(1), DDouble(1e-100));
+        svd_result = sparseir::svd2x2(DDouble(1e-100), DDouble(1), DDouble(1e-100));
         cu = std::get<0>(std::get<0>(svd_result));
         su = std::get<1>(std::get<0>(svd_result));
         smax = std::get<0>(std::get<1>(svd_result));
@@ -398,7 +398,7 @@ TEST_CASE("SVD of VERY triangular 2x2", "[linalg]") {
 }
 
 TEST_CASE("SVD of 'more lower' 2x2", "[linalg]") {
-        auto svd_result = svd2x2(DDouble(1), DDouble(1e-100), DDouble(1e100), DDouble(1));
+        auto svd_result = sparseir::svd2x2(DDouble(1), DDouble(1e-100), DDouble(1e100), DDouble(1));
         auto cu = std::get<0>(std::get<0>(svd_result));
         auto su = std::get<1>(std::get<0>(svd_result));
         auto smax = std::get<0>(std::get<1>(svd_result));
@@ -422,7 +422,7 @@ TEST_CASE("SVD of 'more lower' 2x2", "[linalg]") {
 
 TEST_CASE("Givens rotation of 2D vector - special cases", "[linalg]") {
     for (auto v : {std::vector<DDouble>{42, 0}, std::vector<DDouble>{-42, 0}, std::vector<DDouble>{0, 42}, std::vector<DDouble>{0, -42}, std::vector<DDouble>{0, 0}}) {
-        auto rot = givens_params(v[0], v[1]);
+        auto rot = sparseir::givens_params(v[0], v[1]);
         auto c_s = std::get<0>(rot);
         auto r = std::get<1>(rot);
         auto c = std::get<0>(c_s);

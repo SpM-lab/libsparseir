@@ -12,19 +12,18 @@
 using std::invalid_argument;
 
 using xprec::DDouble;
-using Eigen::Matrix;
 
 TEST_CASE("gauss", "[Rule]")
 {
     // Initialize x, w, v, x_forward, x_backward with DDouble values
     std::vector<DDouble> x, w;
-    Rule<DDouble> r = Rule<DDouble>(x, w);
+    sparseir::Rule<DDouble> r = sparseir::Rule<DDouble>(x, w);
     REQUIRE(1==1);
 }
 
 
 template <typename T>
-void gaussValidate(const Rule<T>& rule) {
+void gaussValidate(const sparseir::Rule<T>& rule) {
     if (!(rule.a <= rule.b)) {
         throw invalid_argument("a,b must be a valid interval");
     }
@@ -51,8 +50,8 @@ TEST_CASE("gauss.cpp") {
         std::vector<DDouble> x(20), w(20);
         DDouble a = -1, b = 1;
         xprec::gauss_legendre(20, x.data(), w.data());
-        Rule<DDouble> r1 = Rule<DDouble>(x, w);
-        Rule<DDouble> r2 = Rule<DDouble>(x, w, a, b);
+        sparseir::Rule<DDouble> r1 = sparseir::Rule<DDouble>(x, w);
+        sparseir::Rule<DDouble> r2 = sparseir::Rule<DDouble>(x, w, a, b);
         REQUIRE(r1.a == r2.a);
         REQUIRE(r1.b == r2.b);
         REQUIRE(r1.x == r2.x);
@@ -61,10 +60,10 @@ TEST_CASE("gauss.cpp") {
 
     SECTION("legvander6"){
         int n = 6;
-        auto result = legvander(legendre(n).x, n-1);
-        Matrix<DDouble, Dynamic, Dynamic> expected(n, n);
+        auto result = sparseir::legvander(sparseir::legendre(n).x, n-1);
+        Eigen::MatrixX<DDouble> expected(n, n);
         // expected is computed by
-        // using SparseIR; m = SparseIR.legvander(SparseIR.legendre(6, SparseIR.Float64x2).x, 5); foreach(x -> println(x, ","), vec(m'))
+        // using SparseIR; m = SparseIR.legvander(SparseIR.sparseir::legendre(6, SparseIR.Float64x2).x, 5); foreach(x -> println(x, ","), vec(m'))
         expected << 1.0,
                     -0.9324695142031520278123015544939835,
                     0.8042490923773935119886600608277198,
@@ -106,11 +105,11 @@ TEST_CASE("gauss.cpp") {
     }
 
     SECTION("legendre_collocation"){
-        Rule<DDouble> r = legendre(2);
-        Matrix<DDouble, Dynamic, Dynamic> result = legendre_collocation(r);
-        Matrix<DDouble, Dynamic, Dynamic> expected(2, 2);
+        sparseir::Rule<DDouble> r = sparseir::legendre(2);
+        Eigen::MatrixX<DDouble> result = legendre_collocation(r);
+        Eigen::MatrixX<DDouble> expected(2, 2);
         // expected is computed by
-        // julia> using SparseIR; m = SparseIR.legendre_collocation(SparseIR.legendre(2, SparseIR.Float64x2))
+        // julia> using SparseIR; m = SparseIR.legendre_collocation(SparseIR.sparseir::legendre(2, SparseIR.Float64x2))
         expected << 0.5, 0.5,
                    -0.8660254037844386467637231707528938, 0.8660254037844386467637231707528938;
         DDouble e = 1e-13;
@@ -119,19 +118,19 @@ TEST_CASE("gauss.cpp") {
 
     SECTION("collocate") {
         int n = 6;
-        Rule<DDouble> r = legendre(n);
+        sparseir::Rule<DDouble> r = sparseir::legendre(n);
 
-        Eigen::Matrix<DDouble, Dynamic, Dynamic> cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
+        Eigen::MatrixX<DDouble> cmat = legendre_collocation(r); // Assuming legendre_collocation function is defined
 
-        Eigen::Matrix<DDouble, Dynamic, Dynamic> emat = legvander(r.x, r.x.size() - 1);
+        Eigen::MatrixX<DDouble> emat = sparseir::legvander(r.x, r.x.size() - 1);
         DDouble e = 1e-13;
-        Eigen::Matrix<DDouble, Dynamic, Dynamic> out =  emat * cmat;
-        REQUIRE((emat * cmat).isApprox(Eigen::Matrix<DDouble, Dynamic, Dynamic>::Identity(n, n), e));
+        Eigen::MatrixX<DDouble> out =  emat * cmat;
+        REQUIRE((emat * cmat).isApprox(Eigen::MatrixX<DDouble>::Identity(n, n), e));
     }
 
-    SECTION("gauss legendre") {
+    SECTION("gauss sparseir::legendre") {
         int n = 200;
-        Rule<DDouble> rule = legendre(n); // Assuming legendre function is defined
+        sparseir::Rule<DDouble> rule = sparseir::legendre(n);
         gaussValidate(rule);
         std::vector<DDouble> x(n), w(n);
         xprec::gauss_legendre(n, x.data(), w.data());
@@ -142,7 +141,7 @@ TEST_CASE("gauss.cpp") {
 
     SECTION("piecewise") {
         std::vector<DDouble> edges = {-4, -1, 1, 3};
-        Rule<DDouble> rule = legendre(20).piecewise(edges);
+        sparseir::Rule<DDouble> rule = sparseir::legendre(20).piecewise(edges);
         gaussValidate(rule);
     }
 }
