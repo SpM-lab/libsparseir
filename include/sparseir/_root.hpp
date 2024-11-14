@@ -115,6 +115,26 @@ std::vector<T> refine_grid(const std::vector<T>& grid, int alpha) {
     return newgrid;
 }
 
+
+template <typename F, typename T>
+T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b) {
+    T d = b - a;
+
+    if (d <= 1) return absf_a > absf_b ? a : b;
+    if (d == 2) return a + 1;
+
+    T m = midpoint(a, b);
+    T n = m + 1;
+    double absf_m = absf(m);
+    double absf_n = absf(n);
+
+    if (absf_m > absf_n) {
+        return bisect_discr_extremum(absf, a, n, absf_a, absf_n);
+    } else {
+        return bisect_discr_extremum(absf, m, b, absf_m, absf_b);
+    }
+}
+
 template <typename F, typename T>
 std::vector<T> discrete_extrema(F f, const std::vector<T>& xgrid) {
     std::vector<double> fx(xgrid.size());
@@ -171,22 +191,4 @@ std::vector<T> discrete_extrema(F f, const std::vector<T>& xgrid) {
     return res;
 }
 
-template <typename F, typename T>
-T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b) {
-    T d = b - a;
-
-    if (d <= 1) return absf_a > absf_b ? a : b;
-    if (d == 2) return a + 1;
-
-    T m = midpoint(a, b);
-    T n = m + 1;
-    double absf_m = absf(m);
-    double absf_n = absf(n);
-
-    if (absf_m > absf_n) {
-        return bisect_discr_extremum(absf, a, n, absf_a, absf_n);
-    } else {
-        return bisect_discr_extremum(absf, m, b, absf_m, absf_b);
-    }
-}
 } // namespace sparseir
