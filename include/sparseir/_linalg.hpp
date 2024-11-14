@@ -9,6 +9,8 @@
 
 #include "xprec/ddouble.hpp"
 
+namespace sparseir{
+
 using Eigen::Dynamic;
 using Eigen::Matrix;
 using Eigen::MatrixX;
@@ -710,3 +712,5 @@ SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic>& U, T rtol = std::numeric_li
 
     return SVDResult<T> {U, s, VT};
 }
+
+} // namespace sparseir

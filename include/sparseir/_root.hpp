@@ -4,6 +4,7 @@
 #include <functional>
 #include <bitset>
 
+namespace sparseir {
 
 template <typename T>
 T midpoint(T lo, T hi) {
@@ -188,3 +189,4 @@ T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b) {
         return bisect_discr_extremum(absf, m, b, absf_m, absf_b);
     }
 }
+} // namespace sparseir

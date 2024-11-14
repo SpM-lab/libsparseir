@@ -7,6 +7,8 @@
 #include <type_traits>
 #include <iostream>
 
+namespace sparseir {
+
 // Base abstract class for Statistics
 class Statistics
 {
@@ -124,3 +126,5 @@ inline void show(std::ostream &os, const MatsubaraFreq<S> &a)
     else
         os << a.get_n() << "π/β";
 }
+
+} // namespace sparseir

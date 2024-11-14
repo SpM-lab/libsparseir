@@ -4,6 +4,8 @@
 #include <vector>
 #include <stdexcept>
 
+namespace sparseir {
+
 using Eigen::Matrix;
 using Eigen::Dynamic;
 
@@ -83,3 +85,5 @@ Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt = 1) {
     }
     return c;
 }
+
+} // namespace sparseir

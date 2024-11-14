@@ -8,6 +8,8 @@
 #include <Eigen/Dense>
 #include <xprec/ddouble-header-only.hpp>
 
+namespace sparseir {
+
 using namespace Eigen;
 using xprec::DDouble;
 
@@ -189,3 +191,5 @@ Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1
 
     return res;
 }
+
+} // namespace sparseir
