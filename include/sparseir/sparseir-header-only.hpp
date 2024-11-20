@@ -6,3 +6,4 @@
 
 #include "./gauss.hpp"
 #include "./freq.hpp"
+#include "./poly.hpp"
