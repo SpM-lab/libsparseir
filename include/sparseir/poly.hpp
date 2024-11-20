@@ -315,15 +315,15 @@ private:
 } // namespace sparseir
 
 
-/*
 namespace sparseir {
-    class PiecewiseLegendrePolyVector {
+
+class PiecewiseLegendrePolyVector {
 public:
     // Member variable
     std::vector<PiecewiseLegendrePoly> polyvec;
 
     // Constructors
-    PiecewiseLegendrePolyVector() {}
+    // PiecewiseLegendrePolyVector() {}
 
     // Constructor with polyvec
     PiecewiseLegendrePolyVector(const std::vector<PiecewiseLegendrePoly>& polyvec)
@@ -338,27 +338,27 @@ public:
         if (!symm.empty() && symm.size() != npolys) {
             throw std::runtime_error("Sizes of data and symm don't match");
         }
+
+
+        int nrows = data.dimension(0);
+        int ncols = data.dimension(1);
+
         polyvec.reserve(npolys);
         for (int i = 0; i < npolys; ++i) {
-            Eigen::MatrixXd data_i = data.chip(i, 2);
-            int sym = symm.empty() ? 0 : symm[i];
-            polyvec.emplace_back(data_i, knots, i, Eigen::VectorXd(), sym);
-        }
-    }
+        // Evaluate the tensor slice
+        Eigen::Tensor<double, 2> data_i_tensor = data.chip(i, 2).eval();
 
-    // Constructor with polys, new knots, delta_x, and symm
-    PiecewiseLegendrePolyVector(const PiecewiseLegendrePolyVector& polys,
-                                const Eigen::VectorXd& knots,
-                                const Eigen::VectorXd& delta_x = Eigen::VectorXd(),
-                                const std::vector<int>& symm = std::vector<int>())
-    {
-        if (!symm.empty() && symm.size() != polys.size()) {
-            throw std::runtime_error("Sizes of polys and symm don't match");
+        // Create an Eigen::MatrixXd
+        Eigen::MatrixXd data_i(nrows, ncols);
+
+        // Copy data from the tensor to the matrix
+        for (int r = 0; r < nrows; ++r) {
+            for (int c = 0; c < ncols; ++c) {
+                data_i(r, c) = data_i_tensor(r, c);
+            }
         }
-        polyvec.reserve(polys.size());
-        for (size_t i = 0; i < polys.size(); ++i) {
-            int sym = symm.empty() ? 0 : symm[i];
-            polyvec.emplace_back(polys.polyvec[i].data, knots, polys.polyvec[i].l, delta_x, sym);
+                    int sym = symm.empty() ? 0 : symm[i];
+            polyvec.emplace_back(data_i, knots, i, Eigen::VectorXd(), sym);
         }
     }
 
@@ -371,8 +371,24 @@ public:
             throw std::runtime_error("Sizes of data and polys don't match");
         }
         polyvec.reserve(npolys);
+
+        int nrows = data.dimension(0);
+        int ncols = data.dimension(1);
+
         for (int i = 0; i < npolys; ++i) {
-            Eigen::MatrixXd data_i = data.chip(i, 2);
+                    // Evaluate the tensor slice
+        Eigen::Tensor<double, 2> data_i_tensor = data.chip(i, 2).eval();
+
+        // Create an Eigen::MatrixXd
+        Eigen::MatrixXd data_i(nrows, ncols);
+
+        // Copy data from the tensor to the matrix
+        for (int r = 0; r < nrows; ++r) {
+            for (int c = 0; c < ncols; ++c) {
+                data_i(r, c) = data_i_tensor(r, c);
+            }
+        }
+            // TODO: fix me.
             polyvec.emplace_back(data_i, polys.polyvec[i]);
         }
     }
@@ -460,4 +476,4 @@ public:
     }
 };
 } // namespace sparseir
-*/
+
