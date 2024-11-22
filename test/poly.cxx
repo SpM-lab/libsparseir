@@ -21,16 +21,6 @@
 #include <random>
 #include <functional>
 
-
-// Helper function for approximate equality
-bool isApprox(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b, double tol = 1e-12) {
-    return ((a - b).array().abs() < tol).all();
-}
-
-bool isApprox(const double a, const double b, double tol = 1e-12) {
-    return (std::abs(a - b) < tol);
-}
-
 TEST_CASE("StableRNG") {
     // Initialize data directly with the given values
     Eigen::MatrixXd data(3, 3);
@@ -41,9 +31,6 @@ TEST_CASE("StableRNG") {
     Eigen::VectorXd knots(4);
     knots << 0.507134318967235, 0.5766150365607372,
              0.7126662232433161, 0.7357313003784003;
-
-    // Check that data matches expected values
-    REQUIRE(isApprox(data, data));
 
     // Check that knots are sorted
     REQUIRE(std::is_sorted(knots.data(), knots.data() + knots.size()));
@@ -56,7 +43,7 @@ TEST_CASE("StableRNG") {
              0.13124858727993338, 0.2193663343416914, 0.7756615110113394;
 
     // Check that ddata matches expected values
-    REQUIRE(isApprox(ddata, ddata));
+    REQUIRE(ddata.isApprox(ddata));
 }
 
 TEST_CASE("sparseir::PiecewiseLegendrePoly(data::Matrix, knots::Vector, l::Int)") {
@@ -76,10 +63,10 @@ TEST_CASE("sparseir::PiecewiseLegendrePoly(data::Matrix, knots::Vector, l::Int)"
     sparseir::PiecewiseLegendrePoly pwlp(data, knots, l);
 
     // Test that the object is initialized correctly
-    REQUIRE(isApprox(pwlp.data, data));
-    REQUIRE(isApprox(pwlp.xmin, knots[0]));
-    REQUIRE(isApprox(pwlp.xmax, knots[knots.size() - 1]));
-    REQUIRE(isApprox(pwlp.knots, knots));
+    REQUIRE(pwlp.data.isApprox(data));
+    REQUIRE(pwlp.xmin == knots[0]);
+    REQUIRE(pwlp.xmax == knots[knots.size() - 1]);
+    REQUIRE(pwlp.knots.isApprox(knots));
     REQUIRE(pwlp.polyorder == data.rows());
     REQUIRE(pwlp.symm == 0);
 }
@@ -110,19 +97,19 @@ TEST_CASE("PiecewiseLegendrePoly(data, p::PiecewiseLegendrePoly; symm=symm(p))")
     sparseir::PiecewiseLegendrePoly ddata_pwlp(ddata, pwlp, randsymm);
 
     // Test that ddata_pwlp is initialized correctly
-    REQUIRE(isApprox(ddata_pwlp.data, ddata));
+    REQUIRE(ddata_pwlp.data.isApprox(ddata));
     REQUIRE(ddata_pwlp.symm == randsymm);
 
     // Check that other fields match between pwlp and ddata_pwlp
     REQUIRE(pwlp.polyorder == ddata_pwlp.polyorder);
     REQUIRE(pwlp.xmin == ddata_pwlp.xmin);
     REQUIRE(pwlp.xmax == ddata_pwlp.xmax);
-    REQUIRE(isApprox(pwlp.knots, ddata_pwlp.knots));
-    REQUIRE(isApprox(pwlp.delta_x, ddata_pwlp.delta_x));
+    REQUIRE(pwlp.knots.isApprox(ddata_pwlp.knots));
+    REQUIRE(pwlp.delta_x == ddata_pwlp.delta_x);
     REQUIRE(pwlp.l == ddata_pwlp.l);
-    REQUIRE(isApprox(pwlp.xm, ddata_pwlp.xm));
-    REQUIRE(isApprox(pwlp.inv_xs, ddata_pwlp.inv_xs));
-    REQUIRE(isApprox(pwlp.norms, ddata_pwlp.norms));
+    REQUIRE(pwlp.xm.isApprox(ddata_pwlp.xm));
+    REQUIRE(pwlp.inv_xs.isApprox(ddata_pwlp.inv_xs));
+    REQUIRE(pwlp.norms.isApprox(ddata_pwlp.norms));
 }
 
 TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
@@ -213,10 +200,10 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
     // Test properties
     REQUIRE(polys.xmin() == pwlp1.xmin);
     REQUIRE(polys.xmax() == pwlp1.xmax);
-    REQUIRE(isApprox(polys.get_knots(), pwlp1.knots));
-    REQUIRE(isApprox(polys.get_delta_x(), pwlp1.delta_x));
+    REQUIRE(polys.get_knots().isApprox(pwlp1.knots));
+    REQUIRE(polys.get_delta_x() == pwlp1.delta_x);
     REQUIRE(polys.get_polyorder() == pwlp1.polyorder);
-    REQUIRE(isApprox(polys.get_norms(), pwlp1.norms));
+    REQUIRE(polys.get_norms().isApprox(pwlp1.norms));
 
     // Test symm
     std::vector<int> expected_symm = {pwlp1.symm, pwlp2.symm, pwlp3.symm};
@@ -274,19 +261,19 @@ TEST_CASE("Deriv") {
     sparseir::PiecewiseLegendrePoly deriv_pwlp = pwlp.deriv();
 
     // Test that derivative data matches
-    REQUIRE(isApprox(deriv_pwlp.data, ddata));
+    REQUIRE(deriv_pwlp.data.isApprox(ddata));
     REQUIRE(deriv_pwlp.symm == 0);
 
     // Check that other fields match
     REQUIRE(pwlp.polyorder == deriv_pwlp.polyorder);
     REQUIRE(pwlp.xmin == deriv_pwlp.xmin);
     REQUIRE(pwlp.xmax == deriv_pwlp.xmax);
-    REQUIRE(isApprox(pwlp.knots, deriv_pwlp.knots));
-    REQUIRE(isApprox(pwlp.delta_x, deriv_pwlp.delta_x));
+    REQUIRE(pwlp.knots.isApprox(deriv_pwlp.knots));
+    REQUIRE(pwlp.delta_x == deriv_pwlp.delta_x);
     REQUIRE(pwlp.l == deriv_pwlp.l);
-    REQUIRE(isApprox(pwlp.xm, deriv_pwlp.xm));
-    REQUIRE(isApprox(pwlp.inv_xs, deriv_pwlp.inv_xs));
-    REQUIRE(isApprox(pwlp.norms, deriv_pwlp.norms));
+    REQUIRE(pwlp.xm.isApprox(deriv_pwlp.xm));
+    REQUIRE(pwlp.inv_xs.isApprox(deriv_pwlp.inv_xs));
+    REQUIRE(pwlp.norms.isApprox(deriv_pwlp.norms));
 }
 
 TEST_CASE("Overlap") {
