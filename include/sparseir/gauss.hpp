@@ -202,7 +202,7 @@ Rule<TargetType> convert(const Rule<SourceType> &rule)
     std::vector<TargetType> x_forward(rule.x_forward.begin(), rule.x_forward.end());
     std::vector<TargetType> x_backward(rule.x_backward.begin(), rule.x_backward.end());
 
-    return Rule<TargetType>(x, w, a, b, x_forward, x_backward);
+    return Rule<TargetType>(x, w, x_forward, x_backward, a, b);
 }
 
 } // namespace sparseir
