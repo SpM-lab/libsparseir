@@ -229,7 +229,6 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
     Eigen::VectorXd expected_x(3);
     expected_x << pwlp1(x), pwlp2(x), pwlp3(x);
     REQUIRE(polys_x.isApprox(expected_x));
-    /*
 
     // Test data
     Eigen::Tensor<double, 3> data_tensor = polys.get_data();
@@ -240,12 +239,12 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
     Eigen::VectorXd xs(4);
     xs << -0.8, -0.2, 0.2, 0.8;
     Eigen::MatrixXd polys_xs = polys(xs); // Should return a matrix of size (3, 4)
+
     Eigen::MatrixXd expected_xs(3, 4);
     for (int i = 0; i < 4; ++i) {
         expected_xs.col(i) << pwlp1(xs[i]), pwlp2(xs[i]), pwlp3(xs[i]);
     }
     REQUIRE(polys_xs.isApprox(expected_xs));
-    */
 }
 
 TEST_CASE("Deriv") {

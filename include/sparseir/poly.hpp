@@ -447,7 +447,6 @@ public:
         }
         return results;
     }
-    /*
 
     // Evaluate the vector of polynomials at multiple x
     Eigen::MatrixXd operator()(const Eigen::VectorXd& xs) const {
@@ -457,6 +456,7 @@ public:
         }
         return results;
     }
+    /*
 
     // Overlap function
     std::vector<double> overlap(std::function<double(double)> f, double rtol = std::numeric_limits<double>::epsilon(),
