@@ -755,28 +755,9 @@ namespace sparseir
         double epsilon_;
     };
 
-    template <typename T>
-    std::vector<T> SVEHintsLogistic::segments_x() const
+    std::vector<double> SVEHintsLogistic::segments_y() const
     {
-        T h = static_cast<T>(1.0 / kernel_.lambda_);
-        std::vector<T> segments;
-
-        if (std::isinf(h) || std::isnan(h))
-        {
-            segments.push_back(static_cast<T>(0));
-        }
-        else
-        {
-            segments = {static_cast<T>(-1), -h, static_cast<T>(0), h, static_cast<T>(1)};
-        }
-
-        return segments;
-    }
-
-    template <typename T>
-    std::vector<T> SVEHintsLogistic::segments_y() const
-    {
-        return {static_cast<T>(-1), static_cast<T>(0), static_cast<T>(1)};
+        return {-1.0, 0.0, 1.0};
     }
 
     int SVEHintsLogistic::nsvals() const
@@ -835,9 +816,5 @@ namespace sparseir
         return segments;
     }
 
-    std::vector<double> SVEHintsLogistic::segments_y() const
-    {
-        return {-1.0, 0.0, 1.0};
-    }
 
 } // namespace sparseir
