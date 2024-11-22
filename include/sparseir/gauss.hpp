@@ -192,4 +192,17 @@ Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1
     return res;
 }
 
+template <typename TargetType, typename SourceType>
+Rule<TargetType> convert(const Rule<SourceType> &rule)
+{
+    std::vector<TargetType> x(rule.x.begin(), rule.x.end());
+    std::vector<TargetType> w(rule.w.begin(), rule.w.end());
+    TargetType a = static_cast<TargetType>(rule.a);
+    TargetType b = static_cast<TargetType>(rule.b);
+    std::vector<TargetType> x_forward(rule.x_forward.begin(), rule.x_forward.end());
+    std::vector<TargetType> x_backward(rule.x_backward.begin(), rule.x_backward.end());
+
+    return Rule<TargetType>(x, w, a, b, x_forward, x_backward);
+}
+
 } // namespace sparseir
