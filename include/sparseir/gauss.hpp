@@ -161,6 +161,40 @@ inline Rule<DDouble> legendre(int n){
     return Rule<DDouble>(x, w);
 }
 
+template <typename T, typename U>
+Rule<T> convert(const Rule<U> &rule)
+{
+    // xの変換
+    std::vector<T> x(rule.x.size());
+    std::transform(rule.x.begin(), rule.x.end(), x.begin(),
+                   [](const U &val)
+                   { return static_cast<T>(val); });
+
+    // wの変換
+    std::vector<T> w(rule.w.size());
+    std::transform(rule.w.begin(), rule.w.end(), w.begin(),
+                   [](const U &val)
+                   { return static_cast<T>(val); });
+
+    // x_forwardの変換
+    std::vector<T> x_forward(rule.x_forward.size());
+    std::transform(rule.x_forward.begin(), rule.x_forward.end(), x_forward.begin(),
+                   [](const U &val)
+                   { return static_cast<T>(val); });
+
+    // x_backwardの変換
+    std::vector<T> x_backward(rule.x_backward.size());
+    std::transform(rule.x_backward.begin(), rule.x_backward.end(), x_backward.begin(),
+                   [](const U &val)
+                   { return static_cast<T>(val); });
+
+    // a, bの変換
+    T a = static_cast<T>(rule.a);
+    T b = static_cast<T>(rule.b);
+
+    // 新しいRuleオブジェクトを返す
+    return Rule<T>(x, w, x_forward, x_backward, a, b);
+}
 
 template <typename T>
 Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1) {

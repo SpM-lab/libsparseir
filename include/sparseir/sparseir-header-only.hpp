@@ -7,3 +7,4 @@
 #include "./gauss.hpp"
 #include "./freq.hpp"
 #include "./poly.hpp"
+#include "./kernel.hpp"
