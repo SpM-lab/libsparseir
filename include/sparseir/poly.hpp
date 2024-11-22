@@ -1,27 +1,15 @@
-// Include necessary headers
-#include <iostream>
-#include <Eigen/Dense>
-#include <vector>
+// C++ Standard Library headers
 #include <algorithm>
-#include <stdexcept>
-#include <cmath>
 #include <cassert>
-#include <functional>
-
-#include <vector>
-#include <Eigen/Dense>
-#include <iostream>
-#include <functional>
-#include <stdexcept>
-#include <numeric>
-#include <iostream>
-#include <vector>
-#include <Eigen/Dense>
 #include <cmath>
-#include <algorithm>
-#include <stdexcept>
 #include <functional>
+#include <iostream>
+#include <numeric>
+#include <stdexcept>
+#include <vector>
 
+// Eigen headers
+#include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
 
