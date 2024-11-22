@@ -222,7 +222,6 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
     std::vector<int> expected_symm = {pwlp1.symm, pwlp2.symm, pwlp3.symm};
     std::vector<int> polys_symm = polys.get_symm();
     REQUIRE(polys_symm == expected_symm);
-    /*
 
     // Test evaluation at a random point x
     double x = 0.5; // Example point
@@ -230,6 +229,7 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
     Eigen::VectorXd expected_x(3);
     expected_x << pwlp1(x), pwlp2(x), pwlp3(x);
     REQUIRE(polys_x.isApprox(expected_x));
+    /*
 
     // Test data
     Eigen::Tensor<double, 3> data_tensor = polys.get_data();

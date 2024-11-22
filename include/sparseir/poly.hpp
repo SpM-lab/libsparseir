@@ -419,7 +419,6 @@ public:
         }
         return symms;
     }
-    /*
 
     // Function to retrieve data as Eigen Tensor
     Eigen::Tensor<double, 3> get_data() const {
@@ -448,6 +447,7 @@ public:
         }
         return results;
     }
+    /*
 
     // Evaluate the vector of polynomials at multiple x
     Eigen::MatrixXd operator()(const Eigen::VectorXd& xs) const {
