@@ -8,10 +8,19 @@
 #include <memory>
 #include <limits>
 
+#pragma once
+
+#include <memory>
+#include <vector>
+
 namespace sparseir
 {
     // Forward declaration of ReducedKernel
     class ReducedKernel;
+    class SVEHints;
+    class SVEHintsLogistic;
+    class SVEHintsRegularizedBose;
+
 
     /**
      * @brief Abstract base class for an integral kernel K(x, y).
@@ -48,6 +57,8 @@ namespace sparseir
          */
         virtual double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
                                   double x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
+
+        virtual std::shared_ptr<SVEHints> sve_hints(double epsilon) const = 0;
 
         /**
          * @brief Return symmetrized kernel K(x, y) + sign * K(x, -y).
@@ -207,6 +218,14 @@ namespace sparseir
 
             return compute(u_plus, u_minus, v);
         }
+
+        /*
+        // Inside class LogisticKernel definition
+        std::shared_ptr<SVEHints> sve_hints(double epsilon) const override
+        {
+            return std::make_shared<SVEHintsLogistic>(*this, epsilon);
+        }
+        */
 
         /**
          * @brief Check if the kernel is centrosymmetric.
@@ -378,6 +397,14 @@ namespace sparseir
 
             return compute(u_plus, u_minus, v);
         }
+
+        /*
+        // Inside class RegularizedBoseKernel definition
+        std::shared_ptr<SVEHints> sve_hints(double epsilon) const override
+        {
+            return std::make_shared<SVEHintsRegularizedBose>(*this, epsilon);
+        }
+        */
 
         /**
          * @brief Check if the kernel is centrosymmetric.
@@ -662,5 +689,155 @@ namespace sparseir
             }
         }
     };
+
+} // namespace sparseir
+
+namespace sparseir
+{
+
+    class SVEHints
+    {
+    public:
+        virtual ~SVEHints() = default;
+
+        // Functions to compute segments for x and y
+        virtual std::vector<double> segments_x() const = 0;
+        virtual std::vector<xprec::DDouble> segments_x_ddouble() const = 0;
+
+        virtual std::vector<double> segments_y() const = 0;
+        virtual std::vector<xprec::DDouble> segments_y_ddouble() const = 0;
+
+        // Additional methods if needed
+        virtual int nsvals() const = 0;
+        virtual int ngauss() const = 0;
+    };
+
+    class SVEHintsLogistic : public SVEHints
+    {
+    public:
+        SVEHintsLogistic(const LogisticKernel &kernel, double epsilon)
+            : kernel_(kernel), epsilon_(epsilon) {}
+
+        std::vector<double> segments_x() const override;
+        std::vector<double> segments_y() const override;
+
+        std::vector<xprec::DDouble> segments_x_ddouble() const override;
+        std::vector<xprec::DDouble> segments_y_ddouble() const override;
+
+        int nsvals() const override;
+        int ngauss() const override;
+
+    private:
+        const LogisticKernel &kernel_;
+        double epsilon_;
+    };
+
+    class SVEHintsRegularizedBose : public SVEHints
+    {
+    public:
+        SVEHintsRegularizedBose(const RegularizedBoseKernel &kernel, double epsilon)
+            : kernel_(kernel), epsilon_(epsilon) {}
+
+        template <typename T>
+        std::vector<T> segments_x() const;
+
+        template <typename T>
+        std::vector<T> segments_y() const;
+
+        int nsvals() const override;
+        int ngauss() const override;
+
+        std::vector<xprec::DDouble> segments_x_ddouble() const override;
+        std::vector<xprec::DDouble> segments_y_ddouble() const override;
+
+    private:
+        const RegularizedBoseKernel &kernel_;
+        double epsilon_;
+    };
+
+    template <typename T>
+    std::vector<T> SVEHintsLogistic::segments_x() const
+    {
+        T h = static_cast<T>(1.0 / kernel_.lambda_);
+        std::vector<T> segments;
+
+        if (std::isinf(h) || std::isnan(h))
+        {
+            segments.push_back(static_cast<T>(0));
+        }
+        else
+        {
+            segments = {static_cast<T>(-1), -h, static_cast<T>(0), h, static_cast<T>(1)};
+        }
+
+        return segments;
+    }
+
+    template <typename T>
+    std::vector<T> SVEHintsLogistic::segments_y() const
+    {
+        return {static_cast<T>(-1), static_cast<T>(0), static_cast<T>(1)};
+    }
+
+    int SVEHintsLogistic::nsvals() const
+    {
+        // Implement as needed
+        return 0; // Placeholder
+    }
+
+    int SVEHintsLogistic::ngauss() const
+    {
+        // Implement as needed
+        return 0; // Placeholder
+    }
+
+    std::vector<double> SVEHintsLogistic::segments_x() const
+    {
+        int nzeros = std::max(static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 1);
+
+        std::vector<double> temp(nzeros);
+        double coeff = 0.143;
+        for (int i = 0; i < nzeros; ++i)
+        {
+            temp[i] = coeff * static_cast<double>(i);
+        }
+
+        std::vector<double> diffs(nzeros);
+        for (int i = 0; i < nzeros; ++i)
+        {
+            diffs[i] = 1.0 / std::cosh(temp[i]);
+        }
+
+        std::vector<double> zeros(nzeros);
+        zeros[0] = diffs[0];
+        for (int i = 1; i < nzeros; ++i)
+        {
+            zeros[i] = zeros[i - 1] + diffs[i];
+        }
+
+        // Normalize zeros
+        double last_zero = zeros.back();
+        for (double &z : zeros)
+        {
+            z /= last_zero;
+        }
+
+        // Create segments: [-reverse(zeros); 0; zeros]
+        std::vector<double> segments;
+        segments.reserve(2 * nzeros + 1);
+        for (auto it = zeros.rbegin(); it != zeros.rend(); ++it)
+        {
+            segments.push_back(-(*it));
+        }
+        segments.push_back(0.0);
+        segments.insert(segments.end(), zeros.begin(), zeros.end());
+
+        return segments;
+    }
+
+    std::vector<double> SVEHintsLogistic::segments_y() const
+    {
+        return {-1.0, 0.0, 1.0};
+    }
 
 } // namespace sparseir
