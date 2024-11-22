@@ -32,8 +32,9 @@ TEST_CASE("Kernel Accuracy Test")
         const auto &K = *K_ptr;
 
         // Convert Rule to type T
-        sparseir::Rule<DDouble> _rule = sparseir::legendre(10);
-        sparseir::Rule<T> rule = sparseir::convert<T>(_rule);
+        sparseir::Rule<DDouble> ddouble_rule = sparseir::legendre(10);
+        sparseir::Rule<double> double_rule = sparseir::convert<double>(ddouble_rule);
+        sparseir::Rule<T> rule = sparseir::convert<T>(double_rule);
 
         // Obtain SVE hints for the kernel
         auto hints = K.sve_hints(2.2e-16);
