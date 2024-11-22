@@ -89,7 +89,7 @@ TEST_CASE("Kernel Singularity Test")
         {
             double expected = 1.0 / lambda;
             double computed = K(x, 0.0);
-            REQUIRE(isApprox(computed, expected));
+            REQUIRE(Eigen::internal::isApprox(computed, expected));
         }
     }
 }
