@@ -205,7 +205,6 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
 
     // Create sparseir::PiecewiseLegendrePolyVector
     std::vector<sparseir::PiecewiseLegendrePoly> polyvec = {pwlp1, pwlp2, pwlp3};
-    /*
     sparseir::PiecewiseLegendrePolyVector polys(polyvec);
 
     // Test length
@@ -223,6 +222,7 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
     std::vector<int> expected_symm = {pwlp1.symm, pwlp2.symm, pwlp3.symm};
     std::vector<int> polys_symm = polys.get_symm();
     REQUIRE(polys_symm == expected_symm);
+    /*
 
     // Test evaluation at a random point x
     double x = 0.5; // Example point

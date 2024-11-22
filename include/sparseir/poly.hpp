@@ -314,7 +314,6 @@ private:
 
 } // namespace sparseir
 
-
 namespace sparseir {
 
 class PiecewiseLegendrePolyVector {
@@ -329,6 +328,7 @@ public:
     PiecewiseLegendrePolyVector(const std::vector<PiecewiseLegendrePoly>& polyvec)
         : polyvec(polyvec) {}
 
+    /*
     // Constructor with data tensor, knots, and optional symm vector
     PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3>& data,
                                 const Eigen::VectorXd& knots,
@@ -361,7 +361,6 @@ public:
             polyvec.emplace_back(data_i, knots, i, Eigen::VectorXd(), sym);
         }
     }
-
     // Constructor with data tensor and existing polys
     PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3>& data,
                                 const PiecewiseLegendrePolyVector& polys)
@@ -392,6 +391,7 @@ public:
             polyvec.emplace_back(data_i, polys.polyvec[i]);
         }
     }
+    */
 
     // Accessors
     size_t size() const { return polyvec.size(); }
@@ -419,6 +419,7 @@ public:
         }
         return symms;
     }
+    /*
 
     // Function to retrieve data as Eigen Tensor
     Eigen::Tensor<double, 3> get_data() const {
@@ -474,6 +475,7 @@ public:
         os << "on [" << polys.xmin() << ", " << polys.xmax() << "]";
         return os;
     }
+    */
 };
 } // namespace sparseir
 
