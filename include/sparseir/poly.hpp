@@ -1,27 +1,15 @@
-// Include necessary headers
-#include <iostream>
-#include <Eigen/Dense>
-#include <vector>
+// C++ Standard Library headers
 #include <algorithm>
-#include <stdexcept>
-#include <cmath>
 #include <cassert>
-#include <functional>
-
-#include <vector>
-#include <Eigen/Dense>
-#include <iostream>
-#include <functional>
-#include <stdexcept>
-#include <numeric>
-#include <iostream>
-#include <vector>
-#include <Eigen/Dense>
 #include <cmath>
-#include <algorithm>
-#include <stdexcept>
 #include <functional>
+#include <iostream>
+#include <numeric>
+#include <stdexcept>
+#include <vector>
 
+// Eigen headers
+#include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
 
@@ -314,21 +302,21 @@ private:
 
 } // namespace sparseir
 
-
-/*
 namespace sparseir {
-    class PiecewiseLegendrePolyVector {
+
+class PiecewiseLegendrePolyVector {
 public:
     // Member variable
     std::vector<PiecewiseLegendrePoly> polyvec;
 
     // Constructors
-    PiecewiseLegendrePolyVector() {}
+    // PiecewiseLegendrePolyVector() {}
 
     // Constructor with polyvec
     PiecewiseLegendrePolyVector(const std::vector<PiecewiseLegendrePoly>& polyvec)
         : polyvec(polyvec) {}
 
+    /*
     // Constructor with data tensor, knots, and optional symm vector
     PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3>& data,
                                 const Eigen::VectorXd& knots,
@@ -338,30 +326,29 @@ public:
         if (!symm.empty() && symm.size() != npolys) {
             throw std::runtime_error("Sizes of data and symm don't match");
         }
+
+
+        int nrows = data.dimension(0);
+        int ncols = data.dimension(1);
+
         polyvec.reserve(npolys);
         for (int i = 0; i < npolys; ++i) {
-            Eigen::MatrixXd data_i = data.chip(i, 2);
-            int sym = symm.empty() ? 0 : symm[i];
+        // Evaluate the tensor slice
+        Eigen::Tensor<double, 2> data_i_tensor = data.chip(i, 2).eval();
+
+        // Create an Eigen::MatrixXd
+        Eigen::MatrixXd data_i(nrows, ncols);
+
+        // Copy data from the tensor to the matrix
+        for (int r = 0; r < nrows; ++r) {
+            for (int c = 0; c < ncols; ++c) {
+                data_i(r, c) = data_i_tensor(r, c);
+            }
+        }
+                    int sym = symm.empty() ? 0 : symm[i];
             polyvec.emplace_back(data_i, knots, i, Eigen::VectorXd(), sym);
         }
     }
-
-    // Constructor with polys, new knots, delta_x, and symm
-    PiecewiseLegendrePolyVector(const PiecewiseLegendrePolyVector& polys,
-                                const Eigen::VectorXd& knots,
-                                const Eigen::VectorXd& delta_x = Eigen::VectorXd(),
-                                const std::vector<int>& symm = std::vector<int>())
-    {
-        if (!symm.empty() && symm.size() != polys.size()) {
-            throw std::runtime_error("Sizes of polys and symm don't match");
-        }
-        polyvec.reserve(polys.size());
-        for (size_t i = 0; i < polys.size(); ++i) {
-            int sym = symm.empty() ? 0 : symm[i];
-            polyvec.emplace_back(polys.polyvec[i].data, knots, polys.polyvec[i].l, delta_x, sym);
-        }
-    }
-
     // Constructor with data tensor and existing polys
     PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3>& data,
                                 const PiecewiseLegendrePolyVector& polys)
@@ -371,11 +358,28 @@ public:
             throw std::runtime_error("Sizes of data and polys don't match");
         }
         polyvec.reserve(npolys);
+
+        int nrows = data.dimension(0);
+        int ncols = data.dimension(1);
+
         for (int i = 0; i < npolys; ++i) {
-            Eigen::MatrixXd data_i = data.chip(i, 2);
+                    // Evaluate the tensor slice
+        Eigen::Tensor<double, 2> data_i_tensor = data.chip(i, 2).eval();
+
+        // Create an Eigen::MatrixXd
+        Eigen::MatrixXd data_i(nrows, ncols);
+
+        // Copy data from the tensor to the matrix
+        for (int r = 0; r < nrows; ++r) {
+            for (int c = 0; c < ncols; ++c) {
+                data_i(r, c) = data_i_tensor(r, c);
+            }
+        }
+            // TODO: fix me.
             polyvec.emplace_back(data_i, polys.polyvec[i]);
         }
     }
+    */
 
     // Accessors
     size_t size() const { return polyvec.size(); }
@@ -440,6 +444,7 @@ public:
         }
         return results;
     }
+    /*
 
     // Overlap function
     std::vector<double> overlap(std::function<double(double)> f, double rtol = std::numeric_limits<double>::epsilon(),
@@ -458,6 +463,7 @@ public:
         os << "on [" << polys.xmin() << ", " << polys.xmax() << "]";
         return os;
     }
+    */
 };
 } // namespace sparseir
-*/
+

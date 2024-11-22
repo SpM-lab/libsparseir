@@ -205,7 +205,6 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
 
     // Create sparseir::PiecewiseLegendrePolyVector
     std::vector<sparseir::PiecewiseLegendrePoly> polyvec = {pwlp1, pwlp2, pwlp3};
-    /*
     sparseir::PiecewiseLegendrePolyVector polys(polyvec);
 
     // Test length
@@ -240,12 +239,12 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector") {
     Eigen::VectorXd xs(4);
     xs << -0.8, -0.2, 0.2, 0.8;
     Eigen::MatrixXd polys_xs = polys(xs); // Should return a matrix of size (3, 4)
+
     Eigen::MatrixXd expected_xs(3, 4);
     for (int i = 0; i < 4; ++i) {
         expected_xs.col(i) << pwlp1(xs[i]), pwlp2(xs[i]), pwlp3(xs[i]);
     }
     REQUIRE(polys_xs.isApprox(expected_xs));
-    */
 }
 
 TEST_CASE("Deriv") {
