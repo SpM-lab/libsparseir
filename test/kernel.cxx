@@ -13,45 +13,52 @@
 using xprec::DDouble;
 
 template<typename Kernel>
-bool kernel_accuracy_test(Kernel &K){
-        using T = float;
-        using T_x = double;
-        // Convert Rule to type T
-        sparseir::Rule<DDouble> ddouble_rule = sparseir::legendre(10);
-        sparseir::Rule<double> double_rule = sparseir::convert<double>(ddouble_rule);
-        sparseir::Rule<T> rule = sparseir::convert<T>(double_rule);
+bool kernel_accuracy_test(Kernel &K) {
+    using T = float;
+    using T_x = double;
 
-        // Obtain SVE hints for the kernel
-        auto hints = sparseir::sve_hints(K, 2.2e-16);
+    // Convert Rule to type T
+    auto ddouble_rule = sparseir::legendre(10);
+    auto double_rule = sparseir::convert<double>(ddouble_rule);
+    auto rule = sparseir::convert<T>(double_rule);
 
-        // Generate piecewise Gaussian quadrature rules for x and y
-        auto gauss_x = rule.piecewise(hints.segments_x());
-        auto gauss_y = rule.piecewise(hints.segments_y());
+    // Obtain SVE hints for the kernel
+    auto hints = sparseir::sve_hints(K, 2.2e-16);
 
-        T epsilon = std::numeric_limits<T>::epsilon();
-        T tiny = std::numeric_limits<T>::min() / epsilon;
+    // Generate piecewise Gaussian quadrature rules for x and y
 
-        // Compute the matrix from Gaussian quadrature
-        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> result = sparseir::matrix_from_gauss(K, gauss_x, gauss_y);
+    auto sx = hints.segments_x();
+    auto sy = hints.segments_y();
 
-        // Convert gauss_x and gauss_y to higher precision T_x
-        auto gauss_x_Tx = sparseir::convert<T_x>(gauss_x);
-        auto gauss_y_Tx = sparseir::convert<T_x>(gauss_y);
+    REQUIRE(std::is_sorted(sx.begin(), sx.end()));
+    REQUIRE(std::is_sorted(sy.begin(), sy.end()));
 
-        // Compute the matrix in higher precision
-        Eigen::Matrix<T_x, Eigen::Dynamic, Eigen::Dynamic> result_x = sparseir::matrix_from_gauss(K, gauss_x_Tx, gauss_y_Tx);
-        T_x magn = result_x.cwiseAbs().maxCoeff();
+    auto gauss_x = rule.piecewise(sx);
+    auto gauss_y = rule.piecewise(sy);
 
-        // Check that the difference is within tolerance
-        REQUIRE((result.template cast<T_x>() - result_x).cwiseAbs().maxCoeff() <= 2 * magn * epsilon);
+    T epsilon = std::numeric_limits<T>::epsilon();
+    T tiny = std::numeric_limits<T>::min() / epsilon;
 
-        Eigen::Array<T, Eigen::Dynamic, Eigen::Dynamic> reldiff = (result.cwiseAbs().array() < tiny)
-                                                                      .select(T(1.0), result.array() / result_x.template cast<T>().array());
+    // Compute the matrix from Gaussian quadrature
+    auto result = sparseir::matrix_from_gauss<T>(K, gauss_x, gauss_y);
 
-        REQUIRE((reldiff - T(1.0)).cwiseAbs().maxCoeff() <= 100 * epsilon);
-        return true;
+    // Convert gauss_x and gauss_y to higher precision T_x
+    auto gauss_x_Tx = sparseir::convert<T_x>(gauss_x);
+    auto gauss_y_Tx = sparseir::convert<T_x>(gauss_y);
+
+    // Compute the matrix in higher precision
+    auto result_x = sparseir::matrix_from_gauss<T_x>(K, gauss_x_Tx, gauss_y_Tx);
+    T_x magn = result_x.cwiseAbs().maxCoeff();
+
+    // Check that the difference is within tolerance
+    REQUIRE((result.template cast<T_x>() - result_x).cwiseAbs().maxCoeff() <= 2 * magn * epsilon);
+
+    auto reldiff = (result.cwiseAbs().array() < tiny)
+                       .select(T(1.0), result.array() / result_x.template cast<T>().array());
+
+    REQUIRE((reldiff - T(1.0)).cwiseAbs().maxCoeff() <= 100 * epsilon);
+    return true;
 }
-
 
 TEST_CASE("Kernel Accuracy Test")
 {
@@ -71,6 +78,32 @@ TEST_CASE("Kernel Accuracy Test")
             REQUIRE(kernel_accuracy_test(K));
         }
     }
+
+    {
+        // List of kernels to test
+        std::vector<sparseir::RegularizedBoseKernel> kernels = {
+            sparseir::RegularizedBoseKernel(8.0),
+            sparseir::RegularizedBoseKernel(127500.0),
+        };
+        for (const auto &K : kernels)
+        {
+            REQUIRE(kernel_accuracy_test(K));
+        }
+    }
+    /*
+    {
+        // List of kernels to test
+        std::vector<sparseir::RegularizedBoseKernel> kernels = {
+            // Symmetrized kernels
+            sparseir::LogisticKernel(40000.0).get_symmetrized(-1),
+            sparseir::RegularizedBoseKernel(35000.0).get_symmetrized(-1),
+        };
+        for (const auto &K : kernels)
+        {
+            REQUIRE(kernel_accuracy_test(K));
+        }
+    }
+    */
 }
 
 TEST_CASE("Kernel Singularity Test")

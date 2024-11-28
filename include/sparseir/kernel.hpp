@@ -706,8 +706,10 @@ namespace sparseir
         virtual ~AbstractSVEHints() = default;
 
         // Functions to compute segments for x and y
-        virtual std::vector<double> segments_x() const = 0;
-        virtual std::vector<double> segments_y() const = 0;
+        //template <typename T = double>
+        //virtual std::vector<T> segments_x() const = 0;
+        //template <typename T = double>
+        //virtual std::vector<T> segments_y() const = 0;
 
         // Additional methods if needed
         virtual int nsvals() const = 0;
@@ -720,48 +722,51 @@ namespace sparseir
         SVEHintsLogistic(const LogisticKernel &kernel, double epsilon)
             : kernel_(kernel), epsilon_(epsilon) {}
 
-        std::vector<double> segments_x() const override{
+        template <typename T = double>
+        std::vector<T> segments_x() const {
             int nzeros = std::max(static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 1);
 
             // Create a range of values
-            std::vector<double> temp(nzeros);
+            std::vector<T> temp(nzeros);
             for (int i = 0; i < nzeros; ++i) {
-                temp[i] = (double)0.143 * i;
+                temp[i] = (T)0.143 * i;
             }
 
             // Calculate diffs using the inverse hyperbolic cosine
-            std::vector<double> diffs(nzeros);
+            std::vector<T> diffs(nzeros);
             for (int i = 0; i < nzeros; ++i) {
                 diffs[i] = 1.0 / std::cosh(temp[i]);
             }
 
             // Calculate cumulative sum of diffs
-            std::vector<double> zeros(nzeros);
+            std::vector<T> zeros(nzeros);
             zeros[0] = diffs[0];
             for (int i = 1; i < nzeros; ++i) {
                 zeros[i] = zeros[i - 1] + diffs[i];
             }
 
             // Normalize zeros
-            double last_zero = zeros.back();
+            T last_zero = zeros.back();
             for (int i = 0; i < nzeros; ++i) {
                 zeros[i] /= last_zero;
             }
 
             // Create the final segments vector
-            std::vector<double> segments(2 * nzeros + 1, 0);
+            std::vector<T> segments(2 * nzeros + 1, 0);
             for (int i = 0; i < nzeros; ++i) {
                 segments[i] = -zeros[nzeros - i - 1];
                 segments[nzeros + i + 1] = zeros[i];
             }
             return segments;
         };
-        std::vector<double> segments_y() const override {
+
+        template <typename T = double>
+        std::vector<T> segments_y() const {
             // Calculate the number of zeros
             int nzeros = std::max(static_cast<int>(std::round(20 * std::log10(kernel_.lambda_))), 2);
 
             // Initial differences
-            std::vector<double> diffs = {
+            std::vector<T> diffs = {
                 0.01523, 0.03314, 0.04848, 0.05987, 0.06703, 0.07028, 0.07030,
                 0.06791, 0.06391, 0.05896, 0.05358, 0.04814, 0.04288, 0.03795,
                 0.03342, 0.02932, 0.02565, 0.02239, 0.01951, 0.01699
@@ -774,19 +779,19 @@ namespace sparseir
 
             // Calculate trailing differences
             for (int i = 20; i < nzeros; ++i) {
-                double x = (double)0.141 * i;
+                T x = (T)0.141 * i;
                 diffs.push_back(0.25 * std::exp(-x));
             }
 
             // Calculate cumulative sum of diffs
-            std::vector<double> zeros(nzeros);
+            std::vector<T> zeros(nzeros);
             zeros[0] = diffs[0];
             for (int i = 1; i < nzeros; ++i) {
                 zeros[i] = zeros[i - 1] + diffs[i];
             }
 
             // Normalize zeros
-            double last_zero = zeros.back();
+            T last_zero = zeros.back();
             for (int i = 0; i < nzeros; ++i) {
                 zeros[i] /= last_zero;
             }
@@ -801,14 +806,14 @@ namespace sparseir
             }
 
             // Create the final segments vector
-            std::vector<double> segments(2 * nzeros + 3, 0);
+            std::vector<T> segments(2 * nzeros + 3, 0);
             for (int i = 0; i < nzeros; ++i) {
                 segments[1+i] = zeros[i];
                 segments[1+nzeros + 1 + i] = -zeros[nzeros-i-1];
             }
-            segments[0] = -1.0;
-            segments[1 + nzeros] = 0.0;
-            segments[2*nzeros + 2] = 1.0;
+            segments[0] = -T(1.0);
+            segments[1 + nzeros] = T( 0.0);
+            segments[2*nzeros + 2] = T(1.0);
             return segments;
         }
 
@@ -831,11 +836,74 @@ namespace sparseir
         SVEHintsRegularizedBose(const RegularizedBoseKernel &kernel, double epsilon)
             : kernel_(kernel), epsilon_(epsilon) {}
 
-        template <typename T>
-        std::vector<T> segments_x() const;
+        template <typename T = double>
+        std::vector<T> segments_x() const  {
+            int nzeros = std::max(static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 15);
+            std::vector<T> temp(nzeros);
+            std::vector<T> diffs(nzeros);
+            std::vector<T> zeros(nzeros);
 
-        template <typename T>
-        std::vector<T> segments_y() const;
+            for (int i = 0; i < nzeros; ++i) {
+                temp[i] = T(0.18) * i;
+                diffs[i] = 1.0 / std::cosh(temp[i]);
+            }
+
+            std::partial_sum(diffs.begin(), diffs.end(), zeros.begin());
+            T last_zero = zeros.back();
+            std::transform(zeros.begin(), zeros.end(), zeros.begin(), [last_zero](T z) { return z / last_zero; });
+
+            std::vector<T> result(2 * nzeros + 1, T(0));
+
+            for (int i = 0; i < nzeros; ++i) {
+                result[i] = -zeros[nzeros - i - 1];
+                result[nzeros + i + 1] = zeros[i];
+            }
+
+            return result;
+        }
+
+        template <typename T = double>
+        std::vector<T> segments_y() const {
+            int nzeros = std::max(static_cast<int>(std::round(20 * std::log10(kernel_.lambda_))), 20);
+            std::vector<T> diffs(nzeros);
+
+            for (int j = 0; j < nzeros; ++j) {
+                diffs[j] = T(0.12) / std::exp(0.0337 * j * std::log(j + 1));
+            }
+
+            // Calculate cumulative sum of diffs
+            std::vector<T> zeros(nzeros);
+            zeros[0] = diffs[0];
+            for (int i = 1; i < nzeros; ++i) {
+                zeros[i] = zeros[i - 1] + diffs[i];
+            }
+
+            // Normalize zeros
+            T last_zero = zeros.back();
+            for (int i = 0; i < nzeros; ++i) {
+                zeros[i] /= last_zero;
+            }
+            zeros.pop_back();
+
+            // updated nzeros
+            nzeros = zeros.size();
+
+            // Adjust zeros
+            for (int i = 0; i < nzeros; ++i) {
+                zeros[i] -= 1.0;
+            }
+
+            std::vector<T> result(2 * nzeros + 3, T(0));
+
+            for (int i = 0; i < nzeros; ++i) {
+                result[1+i] = zeros[i];
+                result[1+nzeros + 1 + i] = -zeros[nzeros-i-1];
+            }
+            result[0] = T(-1);
+            result[1 + nzeros] = T(0);
+            result[2*nzeros + 2] = T(1);
+            return result;
+        }
 
         int nsvals() const override{
             double log10_Lambda = std::max(1.0, std::log10(kernel_.lambda_));
@@ -887,11 +955,9 @@ namespace sparseir{
         return SVEHintsLogistic(kernel, epsilon);
     }
 
-    /*
     inline SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel& kernel, double epsilon) {
         return SVEHintsRegularizedBose(kernel, epsilon);
     }
-    */
 
 /*
 function ngauss end

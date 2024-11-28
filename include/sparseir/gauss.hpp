@@ -77,7 +77,7 @@ public:
 
     template <typename U>
     Rule<T> piecewise(const std::vector<U>& edges) const {
-        if (!is_sorted(edges.begin(), edges.end())) {
+        if (!std::is_sorted(edges.begin(), edges.end())) {
             throw std::invalid_argument("segments ends must be ordered ascendingly");
         }
         std::vector<Rule<T>> rules;
