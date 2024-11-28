@@ -75,13 +75,14 @@ public:
         return Rule<T>(x, new_w, x_forward, x_backward, a, b);
     }
 
-    Rule<T> piecewise(const std::vector<T>& edges) const {
-        if (!is_sorted(edges.begin(), edges.end())) {
+    template <typename U>
+    Rule<T> piecewise(const std::vector<U>& edges) const {
+        if (!std::is_sorted(edges.begin(), edges.end())) {
             throw std::invalid_argument("segments ends must be ordered ascendingly");
         }
         std::vector<Rule<T>> rules;
         for (size_t i = 0; i < edges.size() - 1; ++i) {
-            rules.push_back(reseat(edges[i], edges[i + 1]));
+            rules.push_back(reseat(T(edges[i]), T(edges[i + 1])));
         }
         return join(rules);
     }
@@ -190,6 +191,19 @@ Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1
     }
 
     return res;
+}
+
+template <typename TargetType, typename SourceType>
+Rule<TargetType> convert(const Rule<SourceType> &rule)
+{
+    std::vector<TargetType> x(rule.x.begin(), rule.x.end());
+    std::vector<TargetType> w(rule.w.begin(), rule.w.end());
+    TargetType a = static_cast<TargetType>(rule.a);
+    TargetType b = static_cast<TargetType>(rule.b);
+    std::vector<TargetType> x_forward(rule.x_forward.begin(), rule.x_forward.end());
+    std::vector<TargetType> x_backward(rule.x_backward.begin(), rule.x_backward.end());
+
+    return Rule<TargetType>(x, w, x_forward, x_backward, a, b);
 }
 
 } // namespace sparseir
