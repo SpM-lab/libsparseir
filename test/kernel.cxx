@@ -41,7 +41,6 @@ TEST_CASE("Kernel Accuracy Test")
         // Generate piecewise Gaussian quadrature rules for x and y
         auto gauss_x = rule.piecewise(hints.segments_x());
         auto gauss_y = rule.piecewise(hints.segments_y());
-        /*
 
         T epsilon = std::numeric_limits<T>::epsilon();
         T tiny = std::numeric_limits<T>::min() / epsilon;
@@ -55,7 +54,6 @@ TEST_CASE("Kernel Accuracy Test")
 
         // Compute the matrix in higher precision
         Eigen::Matrix<T_x, Eigen::Dynamic, Eigen::Dynamic> result_x = sparseir::matrix_from_gauss(K, gauss_x_Tx, gauss_y_Tx);
-
         T_x magn = result_x.cwiseAbs().maxCoeff();
 
         // Check that the difference is within tolerance
@@ -65,7 +63,6 @@ TEST_CASE("Kernel Accuracy Test")
                                                                       .select(T(1.0), result.array() / result_x.template cast<T>().array());
 
         REQUIRE((reldiff - T(1.0)).cwiseAbs().maxCoeff() <= 100 * epsilon);
-        */
     }
 }
 

@@ -852,6 +852,34 @@ namespace sparseir
 
 namespace sparseir{
 
+    // Function to compute matrix from Gauss rules
+    template <typename T>
+    Eigen::MatrixX<T> matrix_from_gauss(
+        const AbstractKernel &kernel, const Rule<T>& gauss_x, const Rule<T>& gauss_y) {
+
+        size_t n = gauss_x.x.size();
+        size_t m = gauss_y.x.size();
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> res(n, m);
+
+        // Parallelize using threads
+        std::vector<std::thread> threads;
+        for (size_t i = 0; i < n; ++i) {
+            threads.emplace_back([&, i]() {
+                for (size_t j = 0; j < m; ++j) {
+                    res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j],
+                                    gauss_x.x_forward[i], gauss_x.x_backward[i]);
+                }
+            });
+        }
+
+        // Join threads
+        for (auto& thread : threads) {
+            thread.join();
+        }
+
+        return res;
+    }
+
     // Function to provide SVE hints
     inline SVEHintsLogistic sve_hints(const LogisticKernel& kernel, double epsilon) {
         return SVEHintsLogistic(kernel, epsilon);
