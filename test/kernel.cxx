@@ -12,24 +12,10 @@
 
 using xprec::DDouble;
 
-TEST_CASE("Kernel Accuracy Test")
-{
-    using T = float;
-    using T_x = double;
-
-    // List of kernels to test
-    std::vector<sparseir::LogisticKernel> kernels = {
-        sparseir::LogisticKernel(9.0),
-        //sparseir::RegularizedBoseKernel(8.0),
-        sparseir::LogisticKernel(120000.0),
-        //sparseir::RegularizedBoseKernel(127500.0),
-        // Symmetrized kernels
-        //sparseir::LogisticKernel(40000.0)->get_symmetrized(-1),
-        //std::make_shared<sparseir::RegularizedBoseKernel>(35000.0)->get_symmetrized(-1),
-    };
-
-    for (const auto &K : kernels)
-    {
+template<typename Kernel>
+bool kernel_accuracy_test(Kernel &K){
+        using T = float;
+        using T_x = double;
         // Convert Rule to type T
         sparseir::Rule<DDouble> ddouble_rule = sparseir::legendre(10);
         sparseir::Rule<double> double_rule = sparseir::convert<double>(ddouble_rule);
@@ -63,6 +49,27 @@ TEST_CASE("Kernel Accuracy Test")
                                                                       .select(T(1.0), result.array() / result_x.template cast<T>().array());
 
         REQUIRE((reldiff - T(1.0)).cwiseAbs().maxCoeff() <= 100 * epsilon);
+        return true;
+}
+
+
+TEST_CASE("Kernel Accuracy Test")
+{
+    {
+        // List of kernels to test
+        std::vector<sparseir::LogisticKernel> kernels = {
+            sparseir::LogisticKernel(9.0),
+            //sparseir::RegularizedBoseKernel(8.0),
+            sparseir::LogisticKernel(120000.0),
+            //sparseir::RegularizedBoseKernel(127500.0),
+            // Symmetrized kernels
+            //sparseir::LogisticKernel(40000.0)->get_symmetrized(-1),
+            //std::make_shared<sparseir::RegularizedBoseKernel>(35000.0)->get_symmetrized(-1),
+        };
+        for (const auto &K : kernels)
+        {
+            REQUIRE(kernel_accuracy_test(K));
+        }
     }
 }
 

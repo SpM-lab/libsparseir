@@ -841,7 +841,9 @@ namespace sparseir
             double log10_Lambda = std::max(1.0, std::log10(kernel_.lambda_));
             return static_cast<int>(std::round(28 * log10_Lambda));
         }
-        int ngauss() const override;
+        int ngauss() const override {
+            return epsilon_ >= std::sqrt(std::numeric_limits<double>::epsilon()) ? 10 : 16;
+        };
 
     private:
         const RegularizedBoseKernel &kernel_;
@@ -885,6 +887,12 @@ namespace sparseir{
         return SVEHintsLogistic(kernel, epsilon);
     }
 
+    /*
+    inline SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel& kernel, double epsilon) {
+        return SVEHintsRegularizedBose(kernel, epsilon);
+    }
+    */
+
 /*
 function ngauss end
 ngauss(hints::SVEHintsLogistic)        = hints.ε ≥ sqrt(eps()) ? 10 : 16
@@ -892,11 +900,7 @@ ngauss(hints::SVEHintsRegularizedBose) = hints.ε ≥ sqrt(eps()) ? 10 : 16
 ngauss(hints::SVEHintsReduced)         = ngauss(hints.inner_hints)
 */
 
-    /*
-    SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel& kernel, double epsilon) {
-        return SVEHintsRegularizedBose(kernel, epsilon);
-    }
-    */
+
 
     /*
     std::shared_ptr<AbstractSVEHints> sve_hints(const AbstractReducedKernel& kernel, double epsilon) {
