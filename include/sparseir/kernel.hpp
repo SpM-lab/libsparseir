@@ -7,10 +7,6 @@
 #include <tuple>
 #include <memory>
 #include <limits>
-
-#pragma once
-
-#include <memory>
 #include <vector>
 
 namespace sparseir
@@ -58,7 +54,12 @@ namespace sparseir
         virtual double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
                                   double x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
 
-        // virtual auto sve_hints(double epsilon) const = 0;
+        /*
+        sve_hints(double epsilon) const
+        {
+            return std::make_shared<AbstractSVEHints>(*this, epsilon);
+        }
+        */
 
         /**
          * @brief Return symmetrized kernel K(x, y) + sign * K(x, -y).
@@ -219,9 +220,9 @@ namespace sparseir
             return compute(u_plus, u_minus, v);
         }
 
-        /*
         // Inside class LogisticKernel definition
-        std::shared_ptr<SVEHints> sve_hints(double epsilon) const override
+        /*
+        std::shared_ptr<SVEHintsLogistic> sve_hints(double epsilon) const
         {
             return std::make_shared<SVEHintsLogistic>(*this, epsilon);
         }
@@ -398,9 +399,9 @@ namespace sparseir
             return compute(u_plus, u_minus, v);
         }
 
-        /*
         // Inside class RegularizedBoseKernel definition
-        std::shared_ptr<SVEHints> sve_hints(double epsilon) const override
+        /*
+        std::shared_ptr<SVEHintsRegularizedBose> sve_hints(double epsilon) const
         {
             return std::make_shared<SVEHintsRegularizedBose>(*this, epsilon);
         }
@@ -748,14 +749,11 @@ namespace sparseir
             }
 
             // Create the final segments vector
-            std::vector<double> segments;
-            segments.reserve(2 * nzeros + 1);
-
-            // Add reversed zeros, zero, and zeros to segments
-            segments.insert(segments.end(), zeros.rbegin(), zeros.rend());
-            segments.push_back(0.0);
-            segments.insert(segments.end(), zeros.begin(), zeros.end());
-
+            std::vector<double> segments(2 * nzeros + 1, 0);
+            for (int i = 0; i < nzeros; ++i) {
+                segments[i] = -zeros[nzeros - i - 1];
+                segments[nzeros + i + 1] = zeros[i];
+            }
             return segments;
         };
         std::vector<double> segments_y() const override {
@@ -816,7 +814,9 @@ namespace sparseir
             double log10_Lambda = std::max(1.0, std::log10(kernel_.lambda_));
             return static_cast<int>(std::round((25 + log10_Lambda) * log10_Lambda));
         }
-        int ngauss() const override;
+        int ngauss() const override{
+            return epsilon_ >= std::sqrt(std::numeric_limits<double>::epsilon()) ? 10 : 16;
+        };
 
     private:
         const LogisticKernel &kernel_;
@@ -847,3 +847,32 @@ namespace sparseir
     };
 
 } // namespace sparseir
+
+namespace sparseir{
+
+    // Function to provide SVE hints
+    inline SVEHintsLogistic sve_hints(const LogisticKernel& kernel, double epsilon) {
+        return SVEHintsLogistic(kernel, epsilon);
+    }
+
+/*
+function ngauss end
+ngauss(hints::SVEHintsLogistic)        = hints.ε ≥ sqrt(eps()) ? 10 : 16
+ngauss(hints::SVEHintsRegularizedBose) = hints.ε ≥ sqrt(eps()) ? 10 : 16
+ngauss(hints::SVEHintsReduced)         = ngauss(hints.inner_hints)
+*/
+
+    /*
+    SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel& kernel, double epsilon) {
+        return SVEHintsRegularizedBose(kernel, epsilon);
+    }
+    */
+
+    /*
+    std::shared_ptr<AbstractSVEHints> sve_hints(const AbstractReducedKernel& kernel, double epsilon) {
+        // Assume kernel.inner is a method that returns the inner kernel
+        auto innerHints = sve_hints(kernel.inner(), epsilon);
+        return std::make_shared<SVEHintsReduced>(innerHints);
+    }
+    */
+}

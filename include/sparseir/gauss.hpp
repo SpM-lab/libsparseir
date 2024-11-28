@@ -75,13 +75,14 @@ public:
         return Rule<T>(x, new_w, x_forward, x_backward, a, b);
     }
 
-    Rule<T> piecewise(const std::vector<T>& edges) const {
+    template <typename U>
+    Rule<T> piecewise(const std::vector<U>& edges) const {
         if (!is_sorted(edges.begin(), edges.end())) {
             throw std::invalid_argument("segments ends must be ordered ascendingly");
         }
         std::vector<Rule<T>> rules;
         for (size_t i = 0; i < edges.size() - 1; ++i) {
-            rules.push_back(reseat(edges[i], edges[i + 1]));
+            rules.push_back(reseat(T(edges[i]), T(edges[i + 1])));
         }
         return join(rules);
     }
