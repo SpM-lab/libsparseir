@@ -40,9 +40,8 @@ TEST_CASE("Kernel Accuracy Test")
 
         // Generate piecewise Gaussian quadrature rules for x and y
         auto gauss_x = rule.piecewise(hints.segments_x());
-        /*
         auto gauss_y = rule.piecewise(hints.segments_y());
-
+        /*
 
         T epsilon = std::numeric_limits<T>::epsilon();
         T tiny = std::numeric_limits<T>::min() / epsilon;

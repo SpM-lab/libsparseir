@@ -790,6 +790,10 @@ namespace sparseir
             for (int i = 0; i < nzeros; ++i) {
                 zeros[i] /= last_zero;
             }
+            zeros.pop_back();
+
+            // updated nzeros
+            nzeros = zeros.size();
 
             // Adjust zeros
             for (int i = 0; i < nzeros; ++i) {
@@ -797,16 +801,14 @@ namespace sparseir
             }
 
             // Create the final segments vector
-            std::vector<double> segments;
-            segments.reserve(2 * nzeros + 3);
-
-            // Add -1, zeros, 0, reversed zeros, and 1 to segments
-            segments.push_back(-1.0);
-            segments.insert(segments.end(), zeros.begin(), zeros.end());
-            segments.push_back(0.0);
-            segments.insert(segments.end(), zeros.rbegin(), zeros.rend());
-            segments.push_back(1.0);
-
+            std::vector<double> segments(2 * nzeros + 3, 0);
+            for (int i = 0; i < nzeros; ++i) {
+                segments[1+i] = zeros[i];
+                segments[1+nzeros + 1 + i] = -zeros[nzeros-i-1];
+            }
+            segments[0] = -1.0;
+            segments[1 + nzeros] = 0.0;
+            segments[2*nzeros + 2] = 1.0;
             return segments;
         }
 
