@@ -899,6 +899,7 @@ namespace sparseir {
         PiecewiseLegendreFTVector<S>(const std::vector<PiecewiseLegendreFT<S>> &polyvec_)
             : polyvec(polyvec_) {}
 
+        /*
         // Constructor from PiecewiseLegendrePolyVector and Statistics
         PiecewiseLegendreFTVector(const PiecewiseLegendrePolyVector &polys,
                                   const Statistics &stat,
@@ -910,6 +911,7 @@ namespace sparseir {
                 polyvec.emplace_back(poly, stat, n_asymp);
             }
         }
+        */
 
         // Get the size of the vector
         size_t size() const
@@ -963,9 +965,9 @@ namespace sparseir {
         }
 
         // Get statistics from the first element
-        Statistics statistics() const
+        S statistics() const
         {
-            return polyvec.empty() ? Statistics() : polyvec.front().statistics();
+            return polyvec.front().statistics();
         }
 
         // Get zeta from the first element
@@ -974,6 +976,7 @@ namespace sparseir {
             return polyvec.empty() ? 0.0 : polyvec.front().zeta();
         }
 
+        /*
         // Get poly as PiecewiseLegendrePolyVector
         PiecewiseLegendrePolyVector<S> poly() const
         {
@@ -985,6 +988,7 @@ namespace sparseir {
             }
             return PiecewiseLegendrePolyVector<S>{std::move(polys)};
         }
+        */
 
         // Overload operator() for MatsubaraFreq<S>
         Eigen::VectorXcd operator()(const MatsubaraFreq<S> &omega) const
