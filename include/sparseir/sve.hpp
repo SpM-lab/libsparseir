@@ -24,6 +24,7 @@ inline double sign(double x) {
 }
 
 // SVEResult class
+// TODO: Fix implementation so that template should be representing a type for a Kernel
 template <typename T>
 class SVEResult {
 public:

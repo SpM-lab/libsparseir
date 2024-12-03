@@ -268,7 +268,7 @@ public:
 
     // Default τ sampling points
     Eigen::VectorXd defaultTauSamplingPoints() const {
-        Eigen::VectorXd x = defaultSamplingPoints(sve_result.u, static_cast<int>(s.size()));
+        Eigen::VectorXd x = default_sampling_points(sve_result.u, static_cast<int>(s.size()));
         return (beta / 2.0) * (x.array() + 1.0);
     }
 
@@ -279,7 +279,7 @@ public:
 
     // Default ω sampling points
     Eigen::VectorXd defaultOmegaSamplingPoints() const {
-        Eigen::VectorXd y = defaultSamplingPoints(sve_result.v, static_cast<int>(s.size()));
+        Eigen::VectorXd y = default_sampling_points(sve_result.v, static_cast<int>(s.size()));
         return getOmegaMax() * y.array();
     }
 
@@ -297,7 +297,7 @@ private:
     }
 
     // Default sampling points function
-    Eigen::VectorXd defaultSamplingPoints(const PiecewiseLegendrePolyVector& u, int L) const {
+    Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector& u, int L) const {
         if (u.xmin() != -1.0 || u.xmax() != 1.0)
             throw std::runtime_error("Expecting unscaled functions here.");
 
@@ -307,10 +307,10 @@ private:
         } else {
             // Approximate roots by extrema
             // TODO: resolve this error
-            auto poly = u.back();
-            Eigen::VectorXd maxima = poly.derivative().roots();
+            PiecewiseLegendrePoly poly = u.polyvec.back();
+            Eigen::VectorXd maxima = poly.deriv().roots();
 
-            double left = (maxima[0] + poly.xmin()) / 2.0;
+            double left = (maxima[0] + poly.xmin) / 2.0;
             double right = (maxima[maxima.size() - 1] + poly.xmax) / 2.0;
 
             Eigen::VectorXd x0(maxima.size() + 2);
