@@ -171,8 +171,8 @@ public:
     PiecewiseLegendrePolyVector u;
     PiecewiseLegendrePolyVector v;
     std::vector<double> s;
-    PiecewiseLegendreFTVector<S> uhat;
-    PiecewiseLegendreFTVector<S> uhat_full;
+    PiecewiseLegendreFTVector uhat;
+    PiecewiseLegendreFTVector uhat_full;
 
     // Constructor
     FiniteTempBasis(S statistics, double beta, double omega_max, double epsilon = 0.0,
