@@ -303,13 +303,14 @@ private:
 
         if (L < u.size()) {
             // TODO: Resolve this errors.
-            return u[L + 1].roots();  // Assuming indexing starts at 1
+            return u.polyvec[L].roots();
         } else {
             // Approximate roots by extrema
+            // TODO: resolve this error
             auto poly = u.back();
             Eigen::VectorXd maxima = poly.derivative().roots();
 
-            double left = (maxima[0] + poly.xmin) / 2.0;
+            double left = (maxima[0] + poly.xmin()) / 2.0;
             double right = (maxima[maxima.size() - 1] + poly.xmax) / 2.0;
 
             Eigen::VectorXd x0(maxima.size() + 2);
