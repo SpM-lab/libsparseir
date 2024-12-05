@@ -219,15 +219,16 @@ public:
 
     CentrosymmSVE(const K& kernel_, T epsilon_, int n_gauss_ = -1)
         : kernel(kernel_), epsilon(epsilon_),
+          // TODO: implement get_symmetrized function
           even(get_symmetrized(kernel, +1), epsilon_, n_gauss_),
           odd(get_symmetrized(kernel, -1), epsilon_, n_gauss_) {
         nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
     }
 
-    virtual std::vector<Eigen::MatrixX<T>> matrices() const override {
-        auto mats_even = even.matrices();
-        auto mats_odd = odd.matrices();
-        return { mats_even[0], mats_odd[0] };
+    std::vector<Eigen::MatrixX<T>> matrices() const override {
+        Eigen::MatrixX<T> mats_even = even.matrices();
+        Eigen::MatrixX<T> mats_odd = odd.matrices();
+        return std::vector<Eigen::MatrixX<T>>{ mats_even[0], mats_odd[0] };
     }
 
     virtual SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
@@ -407,19 +408,16 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss, double cutoff 
     }
 
     // Apply cutoff and lmax
-    double cutoff_actual = std::isnan(cutoff) ? 2 * std::numeric_limits<T>::epsilon() : cutoff;
-    std::tuple<std::vector<Eigen::MatrixX<T>>, std::vector<Eigen::VectorX<T>>, std::vector<Eigen::MatrixX<T>>> truncated_result = truncate_singular_values(u_list, s_list, v_list, cutoff_actual, lmax);
-    std::vector<Eigen::MatrixX<T>> u_truncated = std::get<0>(truncated_result);
-    std::vector<Eigen::VectorX<T>> s_truncated = std::get<1>(truncated_result);
-    std::vector<Eigen::MatrixX<T>> v_truncated = std::get<2>(truncated_result);
+    T cutoff_actual = std::isnan(cutoff) ? 2 * std::numeric_limits<T>::epsilon() : cutoff;
+    //truncate_singular_values(u_list, s_list, v_list, cutoff_actual, lmax);
     // Postprocess to get the SVEResult
-    return sve.postprocess(u_truncated, s_truncated, v_truncated);
+    return sve.postprocess(u_list, s_list, v_list);
 }
 
 // Function to compute SVE result
-template <typename K, typename T = double>
+template <typename K>
     auto compute_sve(K kernel,
-                            std::string Twork = "double",
+                            double Twork = std::numeric_limits<double>::quiet_NaN(),
                             double cutoff = std::numeric_limits<double>::quiet_NaN(),
                             double epsilon = std::numeric_limits<double>::quiet_NaN(),
                             int lmax = std::numeric_limits<int>::max(),
