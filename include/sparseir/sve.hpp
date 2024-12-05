@@ -286,7 +286,8 @@ template <typename K, typename T = double>
     double safe_epsilon;
     T Twork_actual;
     std::string svd_strategy_actual;
-    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = choose_accuracy(epsilon, Twork_actual, svd_strat);
+    // TODO: resolve choose_accuracy
+    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = choose_accuracy(epsilon, Twork, svd_strat);
 
     // Compute SVDs
     auto matrices = sve_strategy.matrices();
