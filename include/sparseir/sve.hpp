@@ -20,19 +20,45 @@ namespace sparseir {
 template <typename K>
 class SVEResult;
 
-std::tuple<double, std::string> choose_accuracy(double epsilon, const std::string& Twork, const std::string& svd_strat) {
-    double safe_epsilon = epsilon;
-    std::string Twork_actual = Twork;
-    std::string svd_strategy_actual = svd_strat;
-
-    if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
-        svd_strategy_actual = "default";
+template<typename T>
+std::tuple<double, T, std::string> choose_accuracy(double epsilon, T Twork) {
+    if (epsilon >= std::sqrt(std::numeric_limits<T>::epsilon())) {
+        return std::make_tuple(epsilon, Twork, "default");
     } else {
-        std::cerr << "Warning: Basis cutoff is below √ε. Expect lower precision." << std::endl;
-        svd_strategy_actual = "accurate";
+        std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is below √ε with ε = "
+                  << std::numeric_limits<T>::epsilon() << ".\n"
+                  << "Expect singular values and basis functions for large l to have lower precision than the cutoff.\n";
+        return std::make_tuple(epsilon, Twork, "accurate");
     }
+}
 
-    return std::make_tuple(safe_epsilon, svd_strategy_actual);
+std::tuple<double, double, std::string> choose_accuracy(double epsilon, std::nullptr_t) {
+    if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
+        return std::make_tuple(epsilon, double(), "default");
+    } else {
+        if (epsilon < std::sqrt(std::numeric_limits<double>::epsilon())) {
+            std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is below √ε with ε = "
+                      << std::numeric_limits<double>::epsilon() << ".\n"
+                      << "Expect singular values and basis functions for large l to have lower precision than the cutoff.\n";
+        }
+        return std::make_tuple(epsilon, std::numeric_limits<double>::max(), "default");
+    }
+}
+
+std::tuple<double, double, std::string> choose_accuracy(std::nullptr_t, double Twork) {
+    return std::make_tuple(std::sqrt(std::numeric_limits<double>::epsilon()), Twork, "default");
+}
+
+std::tuple<double, double, std::string> choose_accuracy(std::nullptr_t, std::nullptr_t) {
+    return std::make_tuple(std::sqrt(std::numeric_limits<double>::epsilon()), "Float64x2", "default");
+}
+
+template<typename T>
+std::tuple<double, T, std::string> choose_accuracy(double epsilon, T Twork, const std::string& svd_strat = "auto") {
+    std::string auto_svd_strat;
+    std::tie(epsilon, Twork, auto_svd_strat) = choose_accuracy(epsilon, Twork);
+    std::string final_svd_strat = (svd_strat == "auto") ? auto_svd_strat : svd_strat;
+    return std::make_tuple(epsilon, Twork, final_svd_strat);
 }
 
 // Base class for SVE strategies
