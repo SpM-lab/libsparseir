@@ -60,7 +60,7 @@ void check_smooth(const std::function<double(double)>& u, const std::vector<doub
 TEST_CASE("sve.cpp", "[sve]") {
 
     // Define a map to store SVEResult objects
-    auto sve_logistic = std::map < int, sparseir::SVEResult<sparseir::LogisticKernel>> sve_logistic = {
+    auto sve_logistic = std::map < int, sparseir::SVEResult<sparseir::LogisticKernel>>{
                                             {10, sparseir::SVEResult(sparseir::LogisticKernel(10.0))},
                                             {42, sparseir::SVEResult(sparseir::LogisticKernel(42.0))},
                                             {10000, sparseir::SVEResult(sparseir::LogisticKernel(10000.0))},
