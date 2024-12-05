@@ -534,7 +534,7 @@ public:
     std::vector<PiecewiseLegendrePoly> polyvec;
 
     // Constructors
-    // PiecewiseLegendrePolyVector() {}
+    PiecewiseLegendrePolyVector() {}
 
     // Constructor with polyvec
     PiecewiseLegendrePolyVector(const std::vector<PiecewiseLegendrePoly>& polyvec)
