@@ -107,7 +107,9 @@ TEST_CASE("Kernel Accuracy Test")
         {
             bool b1, b2;
             std::tie(b1, b2) = kernel_accuracy_test(K);
+            // TODO: resolve this errors
             REQUIRE(b1);
+            // TODO: resolve this errors
             REQUIRE(b2);
             if (b1)
             {

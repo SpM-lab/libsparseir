@@ -178,6 +178,14 @@ namespace sparseir
         }
     };
 
+    inline double callreduced(const AbstractReducedKernel &kernel, double x, double y, double x_plus, double x_minus)
+    {
+        x_plus += 1;
+        auto K_plus = (*kernel.inner)(x, +y, x_plus, x_minus);
+        auto K_minus = (*kernel.inner)(x, -y, x_minus, x_plus);
+        return K_plus + kernel.sign * K_minus;
+    }
+
     /**
      * @brief Fermionic/bosonic analytical continuation kernel.
      *
@@ -956,7 +964,7 @@ namespace sparseir
             }
             else
             {
-                return 1.0; // callreduced(this, x, x, x_plus, x_minus);
+                return callreduced(*this, x, x, x_plus, x_minus);
             }
         }
 
@@ -968,14 +976,9 @@ namespace sparseir
             return true;
         }
     };
-    /*
-    double callreduced(const AbstractReducedKernel &kernel, double x, double y, double x_plus, double x_minus){
-        auto x_plus = 1 + x_plus;
-        auto K_plus = kernel.inner(x, +y, x_plus, x_minus);
-        auto K_minus = kernel.inner(x, -y, x_minus, x_plus);
-        return K_plus + kernel.sign * K_minus;
-    }
-    */
+
+
+
 
     class LogisticKernelOdd : public AbstractReducedKernel
     {
@@ -990,12 +993,11 @@ namespace sparseir
         bool cosh_finite = v_half < 85;
         if (xy_small && cosh_finite)
         {
-            // return -sinh(v_half * x)/ cosh(v_half)
             return -std::sinh(v_half * x) / std::cosh(v_half);
         }
         else
         {
-            return 1.0; // callreduced(this, x, x, x_plus, x_minus);
+            return callreduced(*this, x, x, x_plus, x_minus);
         }
     }
     };
