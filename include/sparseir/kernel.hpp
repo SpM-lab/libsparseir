@@ -1100,17 +1100,17 @@ namespace sparseir{
         return SVEHintsRegularizedBose(kernel, epsilon);
     }
 
-    inline std::shared_ptr<AbstractSVEHints> sve_hints(std::shared_ptr<AbstractKernel> kernel, double epsilon)
+    inline std::shared_ptr<AbstractSVEHints> sve_hints(std::shared_ptr<const AbstractKernel> kernel, double epsilon)
     {
-        if (auto logisticKernel = std::dynamic_pointer_cast<LogisticKernel>(kernel))
+        if (auto logisticKernel = std::dynamic_pointer_cast<const LogisticKernel>(kernel))
         {
             return std::make_shared<SVEHintsLogistic>(*logisticKernel, epsilon);
         }
-        else if (auto boseKernel = std::dynamic_pointer_cast<RegularizedBoseKernel>(kernel))
+        else if (auto boseKernel = std::dynamic_pointer_cast<const RegularizedBoseKernel>(kernel))
         {
             return std::make_shared<SVEHintsRegularizedBose>(*boseKernel, epsilon);
         }
-        else if (auto reducedKernel = std::dynamic_pointer_cast<AbstractReducedKernel>(kernel))
+        else if (auto reducedKernel = std::dynamic_pointer_cast<const AbstractReducedKernel>(kernel))
         {
             return std::make_shared<SVEHintsReduced>(sve_hints(reducedKernel->inner, epsilon));
         }
