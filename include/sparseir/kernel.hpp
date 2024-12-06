@@ -12,6 +12,7 @@
 namespace sparseir
 {
     // Forward declaration of ReducedKernel
+    template <typename K>
     class ReducedKernel;
     class AbstractSVEHints;
     class SVEHintsLogistic;
@@ -37,6 +38,9 @@ namespace sparseir
     class AbstractKernel
     {
     public:
+        double lambda_;
+        // Constructor
+        AbstractKernel(double lambda) : lambda_(lambda) {}
         /**
          * @brief Evaluate kernel at point (x, y).
          *
@@ -69,10 +73,10 @@ namespace sparseir
          * @param sign The sign (+1 or -1).
          * @return A shared pointer to the symmetrized kernel.
          */
-        virtual std::shared_ptr<AbstractKernel> get_symmetrized(int sign) const
-        {
-            throw std::runtime_error("get_symmetrized not implemented in base class");
-        }
+        //virtual std::shared_ptr<AbstractKernel> get_symmetrized(int sign) const
+        //{
+        //    throw std::runtime_error("get_symmetrized not implemented in base class");
+        //}
 
         /**
          * @brief Return tuple (xmin, xmax) delimiting the range of allowed x values.
@@ -152,6 +156,36 @@ namespace sparseir
         virtual ~AbstractKernel() {}
     };
 
+    class AbstractReducedKernel : public AbstractKernel
+    {
+    public:
+        int sign;
+        std::shared_ptr<const AbstractKernel> inner;
+
+        // Constructor
+        AbstractReducedKernel(std::shared_ptr<const AbstractKernel> inner_kernel, int sign)
+            : AbstractKernel(inner_kernel->lambda_), inner(std::move(inner_kernel)), sign(sign)
+        {
+            // Validate inputs
+            if (!inner->is_centrosymmetric())
+            {
+                throw std::invalid_argument("Inner kernel must be centrosymmetric");
+            }
+            if (sign != 1 && sign != -1)
+            {
+                throw std::invalid_argument("sign must be -1 or 1");
+            }
+        }
+    };
+
+    inline double callreduced(const AbstractReducedKernel &kernel, double x, double y, double x_plus, double x_minus)
+    {
+        x_plus += 1;
+        auto K_plus = (*kernel.inner)(x, +y, x_plus, x_minus);
+        auto K_minus = (*kernel.inner)(x, -y, x_minus, x_plus);
+        return K_plus + kernel.sign * K_minus;
+    }
+
     /**
      * @brief Fermionic/bosonic analytical continuation kernel.
      *
@@ -169,16 +203,14 @@ namespace sparseir
     class LogisticKernel : public AbstractKernel
     {
     public:
-        double lambda_; ///< The kernel cutoff Λ.
-
         /**
          * @brief Constructor for LogisticKernel.
          *
          * @param lambda The kernel cutoff Λ.
          */
-        explicit LogisticKernel(double lambda) : lambda_(lambda)
+        LogisticKernel(double lambda) : AbstractKernel(lambda)
         {
-            if (lambda_ < 0)
+            if (lambda < 0)
             {
                 throw std::domain_error("Kernel cutoff Λ must be non-negative");
             }
@@ -348,16 +380,14 @@ namespace sparseir
     class RegularizedBoseKernel : public AbstractKernel
     {
     public:
-        double lambda_; ///< The kernel cutoff Λ.
-
         /**
          * @brief Constructor for RegularizedBoseKernel.
          *
          * @param lambda The kernel cutoff Λ.
          */
-        explicit RegularizedBoseKernel(double lambda) : lambda_(lambda)
+        explicit RegularizedBoseKernel(double lambda) : AbstractKernel(lambda)
         {
-            if (lambda_ < 0)
+            if (lambda < 0)
             {
                 throw std::domain_error("Kernel cutoff Λ must be non-negative");
             }
@@ -398,14 +428,6 @@ namespace sparseir
 
             return compute(u_plus, u_minus, v);
         }
-
-        // Inside class RegularizedBoseKernel definition
-        /*
-        std::shared_ptr<SVEHintsRegularizedBose> sve_hints(double epsilon) const
-        {
-            return std::make_shared<SVEHintsRegularizedBose>(*this, epsilon);
-        }
-        */
 
         /**
          * @brief Check if the kernel is centrosymmetric.
@@ -500,37 +522,22 @@ namespace sparseir
          * @param v Computed v.
          * @return The value of K(x, y).
          */
-        double compute(double u_plus, double u_minus, double v) const
-        {
+        double compute(double u_plus, double u_minus, double v) const{
             double absv = std::abs(v);
+            double enum_val = std::exp(-absv * (v >= 0 ? u_plus : u_minus));
 
-            double numerator;
-            double denominator;
-
-            if (v >= 0)
+            // Handle the tricky expression v / (exp(v) - 1)
+            double denom;
+            if (absv >= 1e-200)
             {
-                numerator = std::exp(-u_plus * absv);
+                denom = absv / std::expm1(-absv);
             }
             else
             {
-                numerator = std::exp(-u_minus * absv);
+                denom = -1; // Assuming T is a floating-point type
             }
 
-            // Handle small values of absv to avoid division by zero
-            double value;
-
-            if (absv > 1e-200)
-            {
-                denominator = std::expm1(-absv); // exp(-absv) - 1
-                value = -1.0 / lambda_ * numerator * (absv / denominator);
-            }
-            else
-            {
-                // Limit as absv -> 0
-                value = -1.0 / lambda_ * numerator * (-1.0);
-            }
-
-            return value;
+            return -1 / static_cast<double>(this->lambda_) * enum_val * denom;
         }
     };
 
@@ -549,6 +556,7 @@ namespace sparseir
      * This kernel is what this class represents. The full singular functions can be
      * reconstructed by (anti-)symmetrically continuing them to the negative axis.
      */
+    template <typename K>
     class ReducedKernel : public AbstractKernel
     {
     public:
@@ -562,7 +570,9 @@ namespace sparseir
          * @param sign The sign (+1 or -1). Must satisfy abs(sign) == 1.
          */
         ReducedKernel(std::shared_ptr<const AbstractKernel> inner_kernel, int sign)
-            : inner_kernel_(std::move(inner_kernel)), sign_(sign)
+            : AbstractKernel(inner_kernel->lambda_), // Initialize base class
+              inner_kernel_(std::move(inner_kernel)),
+              sign_(sign)
         {
             if (!inner_kernel_->is_centrosymmetric())
             {
@@ -623,17 +633,6 @@ namespace sparseir
         bool is_centrosymmetric() const override
         {
             return false;
-        }
-
-        /**
-         * @brief Attempting to symmetrize a ReducedKernel will result in an error.
-         *
-         * @param sign The sign (+1 or -1).
-         * @throws std::runtime_error Cannot symmetrize twice.
-         */
-        std::shared_ptr<AbstractKernel> get_symmetrized(int /*sign*/) const override
-        {
-            throw std::runtime_error("Cannot symmetrize twice");
         }
 
         /**
@@ -918,6 +917,108 @@ namespace sparseir
         double epsilon_;
     };
 
+    class RegularizedBoseKernelOdd : public AbstractReducedKernel
+    {
+    public:
+        RegularizedBoseKernelOdd(std::shared_ptr<const RegularizedBoseKernel> inner, int sign)
+            : AbstractReducedKernel(inner, sign)
+        {
+            if (!is_centrosymmetric())
+            {
+                throw std::runtime_error("inner kernel must be centrosymmetric");
+            }
+            if (std::abs(sign) != 1)
+            {
+                throw std::domain_error("sign must be -1 or 1");
+            }
+        }
+
+        // Implement the pure virtual function from the parent class
+        double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
+                          double x_minus = std::numeric_limits<double>::quiet_NaN()) const override
+        {
+            double v_half = inner->lambda_ * 0.5 * y;
+            double xv_half = x * v_half;
+            bool xy_small = xv_half < 1;
+            bool sinh_range = 1e-200 < v_half && v_half < 85;
+            if (xy_small && sinh_range)
+            {
+                return y * std::sinh(xv_half) / std::sinh(v_half);
+            }
+            else
+            {
+                return callreduced(*this, x, x, x_plus, x_minus);
+            }
+        }
+
+        // You'll need to implement the isCentrosymmetric function
+        // Here's a placeholder
+        bool isCentrosymmetric(RegularizedBoseKernel &kernel)
+        {
+            // Implement this function
+            return true;
+        }
+    };
+
+
+
+
+    class LogisticKernelOdd : public AbstractReducedKernel
+    {
+    public:
+        LogisticKernelOdd(std::shared_ptr<const LogisticKernel> inner, int sign)
+            : AbstractReducedKernel(inner, sign){}
+    // Implement the pure virtual function from the parent class
+    double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
+                    double x_minus = std::numeric_limits<double>::quiet_NaN()) const override{
+        double v_half = inner->lambda_ * 0.5 * y;
+        bool xy_small = x * v_half < 1;
+        bool cosh_finite = v_half < 85;
+        if (xy_small && cosh_finite)
+        {
+            return -std::sinh(v_half * x) / std::cosh(v_half);
+        }
+        else
+        {
+            return callreduced(*this, x, x, x_plus, x_minus);
+        }
+    }
+    };
+
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(std::shared_ptr<AbstractKernel> kernel, int sign)
+    {
+        return std::make_shared<ReducedKernel<AbstractKernel>>(kernel, sign);
+    }
+
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(std::shared_ptr<const LogisticKernel> kernel, int sign)
+    {
+        if (sign == -1)
+        {
+            return std::make_shared<LogisticKernelOdd>(kernel, sign);
+        }
+        else
+        {
+            return std::make_shared<ReducedKernel<LogisticKernel>>(kernel, sign);
+        }
+    }
+
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(std::shared_ptr<const RegularizedBoseKernel> kernel, int sign)
+    {
+        if (sign == -1)
+        {
+            return std::make_shared<RegularizedBoseKernelOdd>(kernel, sign);
+        }
+        else
+        {
+            return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(kernel, sign);
+        }
+    }
+
+    inline void get_symmetrized(AbstractReducedKernel &kernel, int sign)
+    {
+        throw std::runtime_error("cannot symmetrize twice");
+    }
+
 } // namespace sparseir
 
 namespace sparseir{
@@ -950,6 +1051,31 @@ namespace sparseir{
         return res;
     }
 
+    class SVEHintsReduced : public AbstractSVEHints
+    {
+    public:
+        SVEHintsReduced(std::shared_ptr<AbstractSVEHints> inner_hints)
+            : inner(inner_hints) {}
+
+        // Implement required methods
+        int nsvals() const override
+        {
+            // Implement this function
+            // For example, you can delegate the call to the inner object
+            return inner->nsvals();
+        }
+
+        int ngauss() const override
+        {
+            // Implement this function
+            // For example, you can delegate the call to the inner object
+            return inner->ngauss();
+        }
+
+    private:
+        std::shared_ptr<AbstractSVEHints> inner;
+    };
+
     // Function to provide SVE hints
     inline SVEHintsLogistic sve_hints(const LogisticKernel& kernel, double epsilon) {
         return SVEHintsLogistic(kernel, epsilon);
@@ -957,6 +1083,30 @@ namespace sparseir{
 
     inline SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel& kernel, double epsilon) {
         return SVEHintsRegularizedBose(kernel, epsilon);
+    }
+
+    inline std::shared_ptr<AbstractSVEHints> sve_hints(std::shared_ptr<const AbstractKernel> kernel, double epsilon)
+    {
+        if (auto logisticKernel = std::dynamic_pointer_cast<const LogisticKernel>(kernel))
+        {
+            return std::make_shared<SVEHintsLogistic>(*logisticKernel, epsilon);
+        }
+        else if (auto boseKernel = std::dynamic_pointer_cast<const RegularizedBoseKernel>(kernel))
+        {
+            return std::make_shared<SVEHintsRegularizedBose>(*boseKernel, epsilon);
+        }
+        else if (auto reducedKernel = std::dynamic_pointer_cast<const AbstractReducedKernel>(kernel))
+        {
+            return std::make_shared<SVEHintsReduced>(sve_hints(reducedKernel->inner, epsilon));
+        }
+        else
+        {
+            throw std::invalid_argument("Unsupported kernel type for SVE hints");
+        }
+    }
+
+    inline SVEHintsReduced sve_hints(const AbstractReducedKernel& kernel, double epsilon) {
+        return SVEHintsReduced(sve_hints(kernel.inner, epsilon));
     }
 
 /*

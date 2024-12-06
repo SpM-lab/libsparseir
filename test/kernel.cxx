@@ -13,7 +13,7 @@
 using xprec::DDouble;
 
 template<typename Kernel>
-bool kernel_accuracy_test(Kernel &K) {
+std::tuple<bool, bool> kernel_accuracy_test(Kernel &K) {
     using T = float;
     using T_x = double;
 
@@ -51,13 +51,13 @@ bool kernel_accuracy_test(Kernel &K) {
     T_x magn = result_x.cwiseAbs().maxCoeff();
 
     // Check that the difference is within tolerance
-    REQUIRE((result.template cast<T_x>() - result_x).cwiseAbs().maxCoeff() <= 2 * magn * epsilon);
+    bool b1 = (result.template cast<T_x>() - result_x).cwiseAbs().maxCoeff() <= 2 * magn * epsilon;
 
     auto reldiff = (result.cwiseAbs().array() < tiny)
                        .select(T(1.0), result.array() / result_x.template cast<T>().array());
 
-    REQUIRE((reldiff - T(1.0)).cwiseAbs().maxCoeff() <= 100 * epsilon);
-    return true;
+    bool b2 = (reldiff - T(1.0)).cwiseAbs().maxCoeff() <= 100 * epsilon;
+    return std::make_tuple(b1, b2);
 }
 
 TEST_CASE("Kernel Accuracy Test")
@@ -70,15 +70,37 @@ TEST_CASE("Kernel Accuracy Test")
             sparseir::LogisticKernel(120000.0),
             //sparseir::RegularizedBoseKernel(127500.0),
             // Symmetrized kernels
-            //sparseir::LogisticKernel(40000.0)->get_symmetrized(-1),
-            //std::make_shared<sparseir::RegularizedBoseKernel>(35000.0)->get_symmetrized(-1),
         };
         for (const auto &K : kernels)
         {
-            REQUIRE(kernel_accuracy_test(K));
+            bool b1, b2;
+            std::tie(b1, b2) = kernel_accuracy_test(K);
+            REQUIRE(b1);
+            REQUIRE(b2);
+            /*
+            if (b1){
+                std::cout << "Kernel accuracy test passed for " << typeid(K).name() << b1 << b2 << std::endl;
+            }
+
+            if (b2){
+                std::cout << "Kernel accuracy test passed for " << typeid(K).name() << b1 << b2 << std::endl;
+            }
+            */
         }
     }
-
+    {
+        auto kernel_ptr = std::make_shared<const sparseir::LogisticKernel>(40000.0);
+        auto K = sparseir::get_symmetrized(kernel_ptr, -1);
+        // TODO: implement sve_hints
+        bool b1, b2;
+        //std::tie(b1, b2) = kernel_accuracy_test(K);
+        //REQUIRE(b1);
+        //REQUIRE(b2);
+        // TODO: resolve this errors
+        //auto k2 = sparseir::get_symmetrized(sparseir::RegularizedBoseKernel(40000.0), -1);
+        // TODO: implement sve_hints
+        // REQUIRE(kernel_accuracy_test(k2));
+    }
     {
         // List of kernels to test
         std::vector<sparseir::RegularizedBoseKernel> kernels = {
@@ -87,7 +109,23 @@ TEST_CASE("Kernel Accuracy Test")
         };
         for (const auto &K : kernels)
         {
-            REQUIRE(kernel_accuracy_test(K));
+            bool b1, b2;
+            std::tie(b1, b2) = kernel_accuracy_test(K);
+            // TODO: resolve this errors
+            REQUIRE(b1);
+            // TODO: resolve this errors
+            REQUIRE(b2);
+            /*
+            if (b1)
+            {
+                std::cout << "Kernel accuracy test passed for " << typeid(K).name() << b1 << b2 << std::endl;
+            }
+
+            if (b2)
+            {
+                std::cout << "Kernel accuracy test passed for " << typeid(K).name() << b1 << b2 << std::endl;
+            }
+            */
         }
     }
     /*
