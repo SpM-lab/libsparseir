@@ -909,6 +909,49 @@ namespace sparseir
         double epsilon_;
     };
 
+    class RegularizedBoseKernelOdd : public AbstractReducedKernel
+    {
+    public:
+        RegularizedBoseKernel inner;
+
+        RegularizedBoseKernelOdd(RegularizedBoseKernel &inner_, int sign) : inner(inner_), AbstractReducedKernel(sign)
+        {
+            if (!isCentrosymmetric(inner))
+            {
+                throw std::runtime_error("inner kernel must be centrosymmetric");
+            }
+            if (std::abs(sign) != 1)
+            {
+                throw std::domain_error("sign must be -1 or 1");
+            }
+        }
+
+        // Implement the pure virtual function from the parent class
+        double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
+                          double x_minus = std::numeric_limits<double>::quiet_NaN()) const override
+        {
+            double v_half = inner.lambda_ * 0.5 * y;
+            double xv_half = x * v_half;
+            bool xy_small = xv_half < 1;
+            bool sinh_range = 1e-200 < v_half && v_half < 85;
+            if (xy_small && sinh_range)
+            {
+                return y * std::sinh(xv_half) / std::sinh(v_half);
+            }
+            else
+            {
+                return 1.0; // callreduced(this, x, x, x_plus, x_minus);
+            }
+        }
+
+        // You'll need to implement the isCentrosymmetric function
+        // Here's a placeholder
+        bool isCentrosymmetric(RegularizedBoseKernel &kernel)
+        {
+            // Implement this function
+            return true;
+        }
+    };
     /*
     double callreduced(const AbstractReducedKernel &kernel, double x, double y, double x_plus, double x_minus){
         auto x_plus = 1 + x_plus;
@@ -953,6 +996,19 @@ namespace sparseir
         } else{
             return std::make_shared<ReducedKernel<LogisticKernel>>(std::make_shared<LogisticKernel>(kernel), sign);
         }
+    }
+
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(RegularizedBoseKernel &kernel, int sign){
+        if (sign == -1){
+            return std::make_shared<RegularizedBoseKernelOdd>(kernel, sign);
+        } else{
+            return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(std::make_shared<RegularizedBoseKernel>(kernel), sign);
+        }
+    }
+
+    inline void get_symmetrized(AbstractReducedKernel &kernel, int sign)
+    {
+        throw std::runtime_error("cannot symmetrize twice");
     }
 
 } // namespace sparseir
