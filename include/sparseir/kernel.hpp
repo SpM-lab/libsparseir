@@ -38,6 +38,9 @@ namespace sparseir
     class AbstractKernel
     {
     public:
+        double lambda_;
+        // Constructor
+        AbstractKernel(double lambda) : lambda_(lambda) {}
         /**
          * @brief Evaluate kernel at point (x, y).
          *
@@ -153,12 +156,26 @@ namespace sparseir
         virtual ~AbstractKernel() {}
     };
 
-    class AbstractReducedKernel : public AbstractKernel{
+    class AbstractReducedKernel : public AbstractKernel
+    {
     public:
-        int sign; // Add this line to declare the sign variable
+        int sign;
+        std::shared_ptr<const AbstractKernel> inner;
 
-        // Add this constructor
-        AbstractReducedKernel(int sign_) : sign(sign_) {}
+        // Constructor
+        AbstractReducedKernel(std::shared_ptr<const AbstractKernel> inner_kernel, int sign)
+            : AbstractKernel(inner_kernel->lambda_), inner(std::move(inner_kernel)), sign(sign)
+        {
+            // Validate inputs
+            if (!inner->is_centrosymmetric())
+            {
+                throw std::invalid_argument("Inner kernel must be centrosymmetric");
+            }
+            if (sign != 1 && sign != -1)
+            {
+                throw std::invalid_argument("sign must be -1 or 1");
+            }
+        }
     };
 
     /**
@@ -178,16 +195,14 @@ namespace sparseir
     class LogisticKernel : public AbstractKernel
     {
     public:
-        double lambda_; ///< The kernel cutoff Λ.
-
         /**
          * @brief Constructor for LogisticKernel.
          *
          * @param lambda The kernel cutoff Λ.
          */
-        explicit LogisticKernel(double lambda) : lambda_(lambda)
+        LogisticKernel(double lambda) : AbstractKernel(lambda)
         {
-            if (lambda_ < 0)
+            if (lambda < 0)
             {
                 throw std::domain_error("Kernel cutoff Λ must be non-negative");
             }
@@ -364,9 +379,9 @@ namespace sparseir
          *
          * @param lambda The kernel cutoff Λ.
          */
-        explicit RegularizedBoseKernel(double lambda) : lambda_(lambda)
+        explicit RegularizedBoseKernel(double lambda) : AbstractKernel(lambda)
         {
-            if (lambda_ < 0)
+            if (lambda < 0)
             {
                 throw std::domain_error("Kernel cutoff Λ must be non-negative");
             }
@@ -564,7 +579,9 @@ namespace sparseir
          * @param sign The sign (+1 or -1). Must satisfy abs(sign) == 1.
          */
         ReducedKernel(std::shared_ptr<const AbstractKernel> inner_kernel, int sign)
-            : inner_kernel_(std::move(inner_kernel)), sign_(sign)
+            : AbstractKernel(inner_kernel->lambda_), // Initialize base class
+              inner_kernel_(std::move(inner_kernel)),
+              sign_(sign)
         {
             if (!inner_kernel_->is_centrosymmetric())
             {
@@ -912,11 +929,10 @@ namespace sparseir
     class RegularizedBoseKernelOdd : public AbstractReducedKernel
     {
     public:
-        RegularizedBoseKernel inner;
-
-        RegularizedBoseKernelOdd(RegularizedBoseKernel &inner_, int sign) : inner(inner_), AbstractReducedKernel(sign)
+        RegularizedBoseKernelOdd(std::shared_ptr<const RegularizedBoseKernel> inner, int sign)
+            : AbstractReducedKernel(inner, sign)
         {
-            if (!isCentrosymmetric(inner))
+            if (!is_centrosymmetric())
             {
                 throw std::runtime_error("inner kernel must be centrosymmetric");
             }
@@ -930,7 +946,7 @@ namespace sparseir
         double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
                           double x_minus = std::numeric_limits<double>::quiet_NaN()) const override
         {
-            double v_half = inner.lambda_ * 0.5 * y;
+            double v_half = inner->lambda_ * 0.5 * y;
             double xv_half = x * v_half;
             bool xy_small = xv_half < 1;
             bool sinh_range = 1e-200 < v_half && v_half < 85;
@@ -964,25 +980,24 @@ namespace sparseir
     class LogisticKernelOdd : public AbstractReducedKernel
     {
     public:
-        LogisticKernel inner;
-        // Constructor
-        LogisticKernelOdd(const LogisticKernel &kernel, int sign) : inner(kernel), AbstractReducedKernel(sign) {}
-
-        // Implement the pure virtual function from the parent class
-        double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
-                          double x_minus = std::numeric_limits<double>::quiet_NaN()) const override
+        LogisticKernelOdd(std::shared_ptr<const LogisticKernel> inner, int sign)
+            : AbstractReducedKernel(inner, sign){}
+    // Implement the pure virtual function from the parent class
+    double operator()(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(),
+                    double x_minus = std::numeric_limits<double>::quiet_NaN()) const override{
+        double v_half = inner->lambda_ * 0.5 * y;
+        bool xy_small = x * v_half < 1;
+        bool cosh_finite = v_half < 85;
+        if (xy_small && cosh_finite)
         {
-            double v_half = inner.lambda_ * 0.5 * y;
-            bool xy_small = x * v_half < 1;
-            bool cosh_finite = v_half < 85;
-            if (xy_small && cosh_finite) {
-                // return -sinh(v_half * x)/ cosh(v_half)
-                return -std::sinh(v_half * x) / std::cosh(v_half);
-            } else
-            {
-                return 1.0; // callreduced(this, x, x, x_plus, x_minus);
-            }
+            // return -sinh(v_half * x)/ cosh(v_half)
+            return -std::sinh(v_half * x) / std::cosh(v_half);
         }
+        else
+        {
+            return 1.0; // callreduced(this, x, x, x_plus, x_minus);
+        }
+    }
     };
 
     inline std::shared_ptr<AbstractKernel> get_symmetrized(std::shared_ptr<AbstractKernel> kernel, int sign)
@@ -990,19 +1005,27 @@ namespace sparseir
         return std::make_shared<ReducedKernel<AbstractKernel>>(kernel, sign);
     }
 
-    inline std::shared_ptr<AbstractKernel> get_symmetrized(LogisticKernel kernel, int sign){
-        if (sign == -1){
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(std::shared_ptr<const LogisticKernel> kernel, int sign)
+    {
+        if (sign == -1)
+        {
             return std::make_shared<LogisticKernelOdd>(kernel, sign);
-        } else{
-            return std::make_shared<ReducedKernel<LogisticKernel>>(std::make_shared<LogisticKernel>(kernel), sign);
+        }
+        else
+        {
+            return std::make_shared<ReducedKernel<LogisticKernel>>(kernel, sign);
         }
     }
 
-    inline std::shared_ptr<AbstractKernel> get_symmetrized(RegularizedBoseKernel &kernel, int sign){
-        if (sign == -1){
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(std::shared_ptr<const RegularizedBoseKernel> kernel, int sign)
+    {
+        if (sign == -1)
+        {
             return std::make_shared<RegularizedBoseKernelOdd>(kernel, sign);
-        } else{
-            return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(std::make_shared<RegularizedBoseKernel>(kernel), sign);
+        }
+        else
+        {
+            return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(kernel, sign);
         }
     }
 
@@ -1043,6 +1066,31 @@ namespace sparseir{
         return res;
     }
 
+    class SVEHintsReduced : public AbstractSVEHints
+    {
+    public:
+        SVEHintsReduced(std::shared_ptr<AbstractSVEHints> inner_hints)
+            : inner(inner_hints) {}
+
+        // Implement required methods
+        int nsvals() const override
+        {
+            // Implement this function
+            // For example, you can delegate the call to the inner object
+            return inner->nsvals();
+        }
+
+        int ngauss() const override
+        {
+            // Implement this function
+            // For example, you can delegate the call to the inner object
+            return inner->ngauss();
+        }
+
+    private:
+        std::shared_ptr<AbstractSVEHints> inner;
+    };
+
     // Function to provide SVE hints
     inline SVEHintsLogistic sve_hints(const LogisticKernel& kernel, double epsilon) {
         return SVEHintsLogistic(kernel, epsilon);
@@ -1050,6 +1098,30 @@ namespace sparseir{
 
     inline SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel& kernel, double epsilon) {
         return SVEHintsRegularizedBose(kernel, epsilon);
+    }
+
+    inline std::shared_ptr<AbstractSVEHints> sve_hints(std::shared_ptr<AbstractKernel> kernel, double epsilon)
+    {
+        if (auto logisticKernel = std::dynamic_pointer_cast<LogisticKernel>(kernel))
+        {
+            return std::make_shared<SVEHintsLogistic>(*logisticKernel, epsilon);
+        }
+        else if (auto boseKernel = std::dynamic_pointer_cast<RegularizedBoseKernel>(kernel))
+        {
+            return std::make_shared<SVEHintsRegularizedBose>(*boseKernel, epsilon);
+        }
+        else if (auto reducedKernel = std::dynamic_pointer_cast<AbstractReducedKernel>(kernel))
+        {
+            return std::make_shared<SVEHintsReduced>(sve_hints(reducedKernel->inner, epsilon));
+        }
+        else
+        {
+            throw std::invalid_argument("Unsupported kernel type for SVE hints");
+        }
+    }
+
+    inline SVEHintsReduced sve_hints(const AbstractReducedKernel& kernel, double epsilon) {
+        return SVEHintsReduced(sve_hints(kernel.inner, epsilon));
     }
 
 /*

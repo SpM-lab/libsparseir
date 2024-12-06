@@ -70,15 +70,21 @@ TEST_CASE("Kernel Accuracy Test")
             sparseir::LogisticKernel(120000.0),
             //sparseir::RegularizedBoseKernel(127500.0),
             // Symmetrized kernels
-            //sparseir::LogisticKernel(40000.0)->get_symmetrized(-1),
-            //std::make_shared<sparseir::RegularizedBoseKernel>(35000.0)->get_symmetrized(-1),
         };
         for (const auto &K : kernels)
         {
             REQUIRE(kernel_accuracy_test(K));
         }
     }
-
+    {
+        auto kernel_ptr = std::make_shared<const sparseir::LogisticKernel>(40000.0);
+        auto k1 = sparseir::get_symmetrized(kernel_ptr, -1);
+        // TODO: implement sve_hints
+        // REQUIRE(kernel_accuracy_test(k1));
+        //auto k2 = sparseir::get_symmetrized(sparseir::RegularizedBoseKernel(40000.0), -1);
+        // TODO: implement sve_hints
+        // REQUIRE(kernel_accuracy_test(k2));
+    }
     {
         // List of kernels to test
         std::vector<sparseir::RegularizedBoseKernel> kernels = {
