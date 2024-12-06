@@ -309,7 +309,7 @@ namespace sparseir
 {
 
     // Function to compute the spherical Bessel function of the first kind using recursion
-    double spherical_bessel_j(int l, double x)
+    inline double spherical_bessel_j(int l, double x)
     {
         if (l < 0)
         {
@@ -348,7 +348,7 @@ namespace sparseir
         return j_curr;
     }
 
-    std::complex<double> get_tnl(int l, double w)
+    inline std::complex<double> get_tnl(int l, double w)
     {
         double abs_w = std::abs(w);
         // Compute spherical Bessel function of order l at abs_w
@@ -369,7 +369,7 @@ namespace sparseir
         }
     }
 
-    std::pair<std::vector<double>, std::vector<int>> shift_xmid(const std::vector<double> &knots, const std::vector<double> &delta_x)
+    inline std::pair<std::vector<double>, std::vector<int>> shift_xmid(const std::vector<double> &knots, const std::vector<double> &delta_x)
     {
         size_t N = delta_x.size();
         std::vector<double> delta_x_half(N);
@@ -450,7 +450,7 @@ namespace sparseir
         return std::make_pair(diff, shift);
     }
 
-    Eigen::VectorXcd phase_stable(const PiecewiseLegendrePoly &poly, int wn)
+    inline Eigen::VectorXcd phase_stable(const PiecewiseLegendrePoly &poly, int wn)
     {
         const std::vector<double> knots(poly.knots.data(), poly.knots.data() + poly.knots.size());
         const std::vector<double> delta_x(poly.delta_x.data(), poly.delta_x.data() + poly.delta_x.size());
@@ -494,7 +494,7 @@ namespace sparseir
         return phase_wi;
     }
 
-    std::complex<double> compute_unl_inner(const PiecewiseLegendrePoly &poly, int wn)
+    inline std::complex<double> compute_unl_inner(const PiecewiseLegendrePoly &poly, int wn)
     {
         double wred = M_PI / 4.0 * wn;
         Eigen::VectorXcd phase_wi = phase_stable(poly, wn);
