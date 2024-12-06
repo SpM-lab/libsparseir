@@ -1,3 +1,4 @@
+#pragma once
 // C++ Standard Library headers
 #include <algorithm>
 #include <cassert>

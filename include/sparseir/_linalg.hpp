@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 
 #include <Eigen/Dense>
@@ -38,7 +40,7 @@ int argmax(const Eigen::MatrixBase<Derived>& vec) {
 /*
 This function ports Julia's implementation of the `invperm` function to C++.
 */
-Eigen::VectorXi invperm(const Eigen::VectorXi& a) {
+inline Eigen::VectorXi invperm(const Eigen::VectorXi& a) {
     int n = a.size();
     Eigen::VectorXi b(n);
     b.setConstant(-1);
@@ -192,12 +194,12 @@ MatrixX<T> getPropertyR(const QRPivoted<T>& F) {
 }
 
 // General template for _copysign, handles standard floating-point types like double and float
-double _copysign(double x, double y) {
+inline double _copysign(double x, double y) {
     return std::copysign(x, y);
 }
 
 // Specialization for xprec::DDouble type, assuming xprec::copysign is defined
-xprec::DDouble _copysign(xprec::DDouble x, xprec::DDouble y) {
+inline xprec::DDouble _copysign(xprec::DDouble x, xprec::DDouble y) {
     return xprec::copysign(x, y);
 }
 
