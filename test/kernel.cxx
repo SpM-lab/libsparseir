@@ -90,9 +90,13 @@ TEST_CASE("Kernel Accuracy Test")
     }
     {
         auto kernel_ptr = std::make_shared<const sparseir::LogisticKernel>(40000.0);
-        auto k1 = sparseir::get_symmetrized(kernel_ptr, -1);
+        auto K = sparseir::get_symmetrized(kernel_ptr, -1);
         // TODO: implement sve_hints
-        // REQUIRE(kernel_accuracy_test(k1));
+        bool b1, b2;
+        std::tie(b1, b2) = kernel_accuracy_test(K);
+        //REQUIRE(b1);
+        //REQUIRE(b2);
+        // TODO: resolve this errors
         //auto k2 = sparseir::get_symmetrized(sparseir::RegularizedBoseKernel(40000.0), -1);
         // TODO: implement sve_hints
         // REQUIRE(kernel_accuracy_test(k2));
@@ -111,6 +115,7 @@ TEST_CASE("Kernel Accuracy Test")
             REQUIRE(b1);
             // TODO: resolve this errors
             REQUIRE(b2);
+            /*
             if (b1)
             {
                 std::cout << "Kernel accuracy test passed for " << typeid(K).name() << b1 << b2 << std::endl;
@@ -120,6 +125,7 @@ TEST_CASE("Kernel Accuracy Test")
             {
                 std::cout << "Kernel accuracy test passed for " << typeid(K).name() << b1 << b2 << std::endl;
             }
+            */
         }
     }
     /*
@@ -159,7 +165,7 @@ TEST_CASE("Kernel Singularity Test")
         {
             double expected = 1.0 / lambda;
             double computed = K(x, 0.0);
-            //REQUIRE(Eigen::internal::isApprox(computed, expected));
+            REQUIRE(Eigen::internal::isApprox(computed, expected));
         }
     }
 }

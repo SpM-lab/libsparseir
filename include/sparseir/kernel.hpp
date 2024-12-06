@@ -380,8 +380,6 @@ namespace sparseir
     class RegularizedBoseKernel : public AbstractKernel
     {
     public:
-        double lambda_; ///< The kernel cutoff Λ.
-
         /**
          * @brief Constructor for RegularizedBoseKernel.
          *
@@ -524,37 +522,22 @@ namespace sparseir
          * @param v Computed v.
          * @return The value of K(x, y).
          */
-        double compute(double u_plus, double u_minus, double v) const
-        {
+        double compute(double u_plus, double u_minus, double v) const{
             double absv = std::abs(v);
+            double enum_val = std::exp(-absv * (v >= 0 ? u_plus : u_minus));
 
-            double numerator;
-            double denominator;
-
-            if (v >= 0)
+            // Handle the tricky expression v / (exp(v) - 1)
+            double denom;
+            if (absv >= 1e-200)
             {
-                numerator = std::exp(-u_plus * absv);
+                denom = absv / std::expm1(-absv);
             }
             else
             {
-                numerator = std::exp(-u_minus * absv);
+                denom = -1; // Assuming T is a floating-point type
             }
 
-            // Handle small values of absv to avoid division by zero
-            double value;
-
-            if (absv > 1e-200)
-            {
-                denominator = std::expm1(-absv); // exp(-absv) - 1
-                value = -1.0 / lambda_ * numerator * (absv / denominator);
-            }
-            else
-            {
-                // Limit as absv -> 0
-                value = -1.0 / lambda_ * numerator * (-1.0);
-            }
-
-            return value;
+            return -1 / static_cast<double>(this->lambda_) * enum_val * denom;
         }
     };
 
