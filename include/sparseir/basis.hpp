@@ -6,6 +6,158 @@
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
+#include <utility>
+
+namespace sparseir
+{
+
+    template <typename T>
+    class AbstractBasis
+    {
+    public:
+        virtual ~AbstractBasis() {}
+
+        /**
+         * @brief Basis functions on the imaginary time axis.
+         *
+         * Set of IR basis functions on the imaginary time (tau) axis, where tau
+         * is a real number between zero and beta. To get the l-th basis function
+         * at imaginary time tau, use:
+         *
+         *     T ul_tau = u(l, tau);
+         *
+         * @param l Index of the basis function.
+         * @param tau Imaginary time variable.
+         * @return Value of the l-th basis function at time tau.
+         */
+        virtual T u(int l, T tau) const = 0;
+
+        /**
+         * @brief Basis functions on the reduced Matsubara frequency axis.
+         *
+         * Set of IR basis functions on the reduced Matsubara frequency (wn) axis,
+         * where wn is an integer. These are related to u by the Fourier transform:
+         *
+         *     uhat(n) = ∫₀^β dτ exp(iπnτ/β) * u(τ)
+         *
+         * To get the l-th basis function at some reduced frequency wn, use:
+         *
+         *     T uhat_l_n = uhat(l, wn);
+         *
+         * @param l Index of the basis function.
+         * @param wn Reduced Matsubara frequency (integer multiplier).
+         * @return Value of the l-th basis function at frequency wn.
+         */
+        virtual T uhat(int l, int wn) const = 0;
+
+        /**
+         * @brief Quantum statistic ("F" for fermionic, "B" for bosonic).
+         *
+         * @return Character representing the quantum statistics.
+         */
+        virtual char statistics() const = 0;
+
+        /**
+         * @brief Access basis functions/singular values for given index/indices.
+         *
+         * This can be used to truncate the basis to the n most significant
+         * singular values: `basis[0, n]`.
+         *
+         * @param index Index or range of indices.
+         * @return Pointer to the truncated basis (implementation-defined).
+         */
+        virtual AbstractBasis<T> *operator[](int index) const = 0;
+
+        /**
+         * @brief Shape of the basis function set.
+         *
+         * @return Pair representing the shape (rows, columns).
+         */
+        virtual std::pair<int, int> shape() const = 0;
+
+        /**
+         * @brief Number of basis functions / singular values.
+         *
+         * @return Size of the basis function set.
+         */
+        virtual int size() const = 0;
+
+        /**
+         * @brief Significances of the basis functions.
+         *
+         * Vector of significance values, one for each basis function. Each value
+         * is a number between 0 and 1 which provides an a-priori bound on the
+         * relative error made by discarding the associated coefficient.
+         *
+         * @return Vector of significance values.
+         */
+        virtual const std::vector<T> &significance() const = 0;
+
+        /**
+         * @brief Accuracy of the basis.
+         *
+         * Upper bound to the relative error of representing a propagator with
+         * the given number of basis functions (number between 0 and 1).
+         *
+         * @return Accuracy value.
+         */
+        virtual T accuracy() const
+        {
+            const auto &sig = significance();
+            return !sig.empty() ? sig.back() : static_cast<T>(0);
+        }
+
+        /**
+         * @brief Basis cutoff parameter, Λ == β * wmax, or NaN if not present.
+         *
+         * @return Cutoff parameter Λ.
+         */
+        virtual T lambda() const = 0;
+
+        /**
+         * @brief Inverse temperature.
+         *
+         * @return Value of β.
+         */
+        virtual T beta() const = 0;
+
+        /**
+         * @brief Real frequency cutoff or NaN if not present.
+         *
+         * @return Maximum real frequency wmax.
+         */
+        virtual T wmax() const = 0;
+
+        /**
+         * @brief Default sampling points on the imaginary time axis.
+         *
+         * @param npoints Minimum number of sampling points to return.
+         * @return Vector of sampling points on the τ-axis.
+         */
+        virtual std::vector<T> default_tau_sampling_points(int npoints = 0) const = 0;
+
+        /**
+         * @brief Default sampling points on the imaginary frequency axis.
+         *
+         * @param npoints Minimum number of sampling points to return.
+         * @param positive_only If true, only return non-negative frequencies.
+         * @return Vector of sampling points on the Matsubara axis.
+         */
+        virtual std::vector<int> default_matsubara_sampling_points(
+            int npoints = 0, bool positive_only = false) const = 0;
+
+        /**
+         * @brief Returns true if the sampling is expected to be well-conditioned.
+         *
+         * @return True if well-conditioned.
+         */
+        virtual bool is_well_conditioned() const
+        {
+            return true;
+        }
+    };
+
+} // namespace sparseir
 
 namespace sparseir {
 
