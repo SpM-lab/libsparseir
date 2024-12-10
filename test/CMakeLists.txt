@@ -21,6 +21,7 @@ add_executable(libsparseirtests
     poly.cxx
     kernel.cxx
     svd.cxx
+    sve.cxx
 )
 
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)

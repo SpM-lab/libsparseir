@@ -8,3 +8,5 @@
 #include "./gauss.hpp"
 #include "./poly.hpp"
 #include "./kernel.hpp"
+#include "./sve.hpp"
+#include "./basis.hpp"
