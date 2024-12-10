@@ -2,6 +2,7 @@
 
 #include "./_linalg.hpp"
 #include "./_specfuncs.hpp"
+#include "./_linalg.hpp"
 #include "./_root.hpp"
 #include "./freq.hpp"
 #include "./svd.hpp"

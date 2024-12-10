@@ -203,6 +203,10 @@ namespace sparseir
     class LogisticKernel : public AbstractKernel
     {
     public:
+        double lambda_; ///< The kernel cutoff Λ.
+
+        // Constructor
+        LogisticKernel(){}
         /**
          * @brief Constructor for LogisticKernel.
          *
