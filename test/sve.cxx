@@ -61,10 +61,10 @@ TEST_CASE("sve.cpp", "[sve]") {
 
     // Define a map to store SVEResult objects
     auto sve_logistic = std::map < int, sparseir::SVEResult<sparseir::LogisticKernel>>{
-                                            {10, sparseir::compute_sve<sparseir::LogisticKernel, double>(sparseir::LogisticKernel(10.0))},
-                                            {42, sparseir::compute_sve<sparseir::LogisticKernel, double>(sparseir::LogisticKernel(42.0))},
-                                            {10000, sparseir::compute_sve<sparseir::LogisticKernel, double>(sparseir::LogisticKernel(10000.0))},
-                                            {100000000, sparseir::compute_sve<sparseir::LogisticKernel, double>(sparseir::LogisticKernel(10000.0), 1e-12)}};
+                                            {10, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0))},
+                                            {42, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(42.0))},
+                                            {10000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0))},
+                                            {100000000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0), 1e-12)}};
 
     SECTION("smooth with Λ =") {
         for (int Lambda : {10, 42, 10000}) {
