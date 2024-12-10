@@ -314,8 +314,8 @@ class CentrosymmSVE : public AbstractSVE<K, T> {
 public:
     K kernel;
     double epsilon;
-    SamplingSVE<T, K> even;
-    SamplingSVE<T, K> odd;
+    SamplingSVE<K, T> even;
+    SamplingSVE<K, T> odd;
     int nsvals_hint;
 
     CentrosymmSVE(const K& kernel_, double epsilon_, int n_gauss_ = -1)
@@ -333,11 +333,12 @@ public:
         return std::vector<Eigen::MatrixX<T>>{ mats_even[0], mats_odd[0] };
     }
 
-    virtual SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
-                                     const std::vector<Eigen::VectorX<T>>& s_list,
-                                     const std::vector<Eigen::MatrixX<T>>& v_list) const override {
-        SVEResult<T> result_even = even.postprocess({ u_list[0] }, { s_list[0] }, { v_list[0] });
-        SVEResult<T> result_odd = odd.postprocess({ u_list[1] }, { s_list[1] }, { v_list[1] });
+    SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
+                                   const std::vector<Eigen::VectorX<T>>& s_list,
+                                   const std::vector<Eigen::MatrixX<T>>& v_list) const override {
+        SVEResult<K> result_even = even.postprocess({ u_list[0] }, { s_list[0] }, { v_list[0] });
+        SVEResult<K> result_odd = odd.postprocess({ u_list[1] }, { s_list[1] }, { v_list[1] });
+
 
         // Merge results
         auto u = result_even.u;
@@ -417,23 +418,13 @@ public:
         : u(u_), s(s_), v(v_), kernel(kernel_), epsilon(epsilon_) {}
 };
 
-template <typename K>
-bool iscentrosymmetric(const K& kernel) {
-    // TODO: Implement centrosymmetric kernel check
-    return true;
-}
 template <typename K, typename T>
-auto determine_sve(const K& kernel, double safe_epsilon, int n_gauss){
-    //if (iscentrosymmetric(kernel)){
-        auto sve = CentrosymmSVE<K, T>(kernel, safe_epsilon, n_gauss);
-        return sve;
-    //}
-    /*
-    else {
-        auto sve = SamplingSVE<K, T>(kernel, safe_epsilon, n_gauss);
-        return sve;
+std::shared_ptr<AbstractSVE<K, T>> determine_sve(const K& kernel, double safe_epsilon, int n_gauss) {
+    if (kernel.is_centrosymmetric()) {
+        return std::make_shared<CentrosymmSVE<K, T>>(kernel, safe_epsilon, n_gauss);
+    } else {
+        return std::make_shared<SamplingSVE<K, T>>(kernel, safe_epsilon, n_gauss);
     }
-    */
 }
 
 // Function to truncate singular values
