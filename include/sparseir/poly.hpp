@@ -181,7 +181,7 @@ public:
     }
 
     // Roots function
-    std::vector<double> roots(double tol = 1e-10) const {
+    Eigen::VectorXd roots(double tol = 1e-10) const {
         std::vector<double> all_roots;
 
         // For each segment, find the roots of the polynomial
@@ -199,7 +199,10 @@ public:
             all_roots.insert(all_roots.end(), segment_roots.begin(), segment_roots.end());
         }
 
-        return all_roots;
+        // Convert std::vector to Eigen::VectorXd
+        Eigen::VectorXd roots = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(all_roots.data(), all_roots.size());
+
+        return roots;
     }
 
     // Overloaded operators
