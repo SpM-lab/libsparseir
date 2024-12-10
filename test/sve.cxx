@@ -6,7 +6,6 @@
 #include <Eigen/Dense>
 #include <cstdint>
 #include <map>
-
 #include <catch2/catch_test_macros.hpp>
 
 #include <xprec/ddouble-header-only.hpp>
@@ -114,32 +113,28 @@ TEST_CASE("sve.cpp", "[sve]") {
     }
     */
 
-    /*
     SECTION("choose_accuracy") {
-        // Suppress warnings using logger
-        sparseir::with_logger(sparseir::NullLogger(), [&]() {
-            REQUIRE(sparseir::choose_accuracy({}, {}) == std::make_tuple(2.2204460492503131e-16, Float64x2(), "default"));
-            REQUIRE(sparseir::choose_accuracy({}, Float64()) == std::make_tuple(1.4901161193847656e-8, Float64(), "default"));
-            REQUIRE(sparseir::choose_accuracy({}, Float64x2()) == std::make_tuple(2.2204460492503131e-16, Float64x2(), "default"));
-            REQUIRE(sparseir::choose_accuracy(1e-6, {}) == std::make_tuple(1.0e-6, Float64(), "default"));
-            REQUIRE(sparseir::choose_accuracy(1e-8, {}) == std::make_tuple(1.0e-8, Float64x2(), "default"));
+            REQUIRE(sparseir::choose_accuracy(nullptr, nullptr) == std::make_tuple(2.2204460492503131e-16, "Float64x2", "default"));
+            REQUIRE(sparseir::choose_accuracy(nullptr, "Float64") == std::make_tuple(1.4901161193847656e-8, "Float64", "default"));
+            REQUIRE(sparseir::choose_accuracy(nullptr, "Float64x2") == std::make_tuple(2.2204460492503131e-16, "Float64x2", "default"));
 
-            REQUIRE(sparseir::choose_accuracy(1e-20, {}) == std::make_tuple(1.0e-20, Float64x2(), "default"));
+            REQUIRE(sparseir::choose_accuracy(1e-6, nullptr) == std::make_tuple(1.0e-6, "Float64", "default"));
             // Note: Catch2 doesn't have a built-in way to capture logs.
             // You might need to implement a custom logger or use a library that supports log capturing.
+            // Add debug output to see the actual return value
+            REQUIRE(sparseir::choose_accuracy(1e-8, nullptr) == std::make_tuple(1.0e-8, "Float64x2", "default"));
+            REQUIRE(sparseir::choose_accuracy(1e-20, nullptr) == std::make_tuple(1.0e-20, "Float64x2", "default"));
 
-            REQUIRE(sparseir::choose_accuracy(1e-10, Float64()) == std::make_tuple(1.0e-10, Float64(), "accurate"));
+            REQUIRE(sparseir::choose_accuracy(1e-10, "Float64") == std::make_tuple(1.0e-10, "Float64", "accurate"));
 
-            REQUIRE(sparseir::choose_accuracy(1e-6, Float64()) == std::make_tuple(1.0e-6, Float64(), "default"));
-            REQUIRE(sparseir::choose_accuracy(1e-6, Float64(), "auto") == std::make_tuple(1.0e-6, Float64(), "default"));
-            REQUIRE(sparseir::choose_accuracy(1e-6, Float64(), "accurate") == std::make_tuple(1.0e-6, Float64(), "accurate"));
-        });
+            REQUIRE(sparseir::choose_accuracy(1e-6, "Float64") == std::make_tuple(1.0e-6, "Float64", "default"));
+            REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "auto") == std::make_tuple(1.0e-6, "Float64", "default"));
+            REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "accurate") == std::make_tuple(1.0e-6, "Float64", "accurate"));
     }
-    */
 
     /*
     SECTION("truncate") {
-        sparseir::CentrosymmSVE sve(LogisticKernel(5), 1e-6, Float64());
+        sparseir::CentrosymmSVE sve(LogisticKernel(5), 1e-6, "Float64");
 
         auto svds = sparseir::compute_svd(sparseir::matrices(sve));
         std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> svd_tuple = svds;

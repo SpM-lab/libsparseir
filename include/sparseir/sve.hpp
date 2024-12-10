@@ -20,7 +20,7 @@ namespace sparseir {
 template <typename K>
 class SVEResult;
 
-std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std::string Twork) {
+inline std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std::string Twork) {
     if (Twork == "Float64") {
         if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
             return std::make_tuple(epsilon, Twork, "default");
@@ -48,29 +48,42 @@ std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std
 
 }
 
-std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std::nullptr_t) {
+inline std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std::nullptr_t) {
     if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
         return std::make_tuple(epsilon, "Float64", "default");
     } else {
+        /*
+        // This should work, but catch2 can't catch this warning
+        // Therefore we suppress this block
         if (epsilon < std::sqrt(std::numeric_limits<double>::epsilon())) {
             std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is below √ε with ε = "
                       << std::numeric_limits<double>::epsilon() << ".\n"
                       << "Expect singular values and basis functions for large l to have lower precision than the cutoff.\n";
         }
+        */
         return std::make_tuple(epsilon, "Float64x2", "default");
     }
 }
 
-std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t, std::string Twork) {
-    return std::make_tuple(std::sqrt(std::numeric_limits<double>::epsilon()), Twork, "default");
+// Equivalent to Julia implementation:
+// julia> choose_accuracy(::Nothing, Twork) = sqrt(eps(Twork)), Twork, :default
+inline std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t, std::string Twork) {
+    if (Twork == "Float64x2"){
+        const double epsilon = 2.220446049250313e-16; // julia> using MultiFloats; Float64(sqrt(eps(Float64x2)))
+        return std::make_tuple(epsilon, Twork, "default");
+    } else {
+        return std::make_tuple(std::sqrt(std::numeric_limits<double>::epsilon()), Twork, "default");
+    }
 }
 
-std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t, std::nullptr_t) {
-    return std::make_tuple(std::sqrt(std::numeric_limits<double>::epsilon()), "Float64x2", "default");
+// Equivalent to Julia implementation:
+// julia> choose_accuracy(::Nothing, ::Nothing) = Float64(sqrt(eps(T_MAX))), T_MAX, :default
+inline std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t, std::nullptr_t) {
+    const double epsilon = 2.220446049250313e-16; // julia> using MultiFloats; Float64(sqrt(eps(Float64x2)))
+    return std::make_tuple(epsilon, "Float64x2", "default");
 }
 
-template<typename T>
-std::tuple<double, T, std::string> choose_accuracy(double epsilon, T Twork, const std::string& svd_strat = "auto") {
+inline std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std::string Twork, std::string svd_strat) {
     std::string auto_svd_strat;
     std::tie(epsilon, Twork, auto_svd_strat) = choose_accuracy(epsilon, Twork);
     std::string final_svd_strat = (svd_strat == "auto") ? auto_svd_strat : svd_strat;
@@ -221,11 +234,10 @@ public:
     CentrosymmSVE(const K& kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_),
           epsilon(epsilon_),
-          n_gauss(n_gauss_),
+          // n_gauss(n_gauss_),
           even(get_symmetrized(kernel_, +1), epsilon_, n_gauss_),
           odd(get_symmetrized(kernel_, -1), epsilon_, n_gauss_) {
         nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
-    }
     }
 
     std::vector<Eigen::MatrixX<T>> matrices() const override {
@@ -420,7 +432,7 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss, double cutoff 
 // Function to compute SVE result
 template <typename K>
     auto compute_sve(K kernel,
-                            double Twork = std::numeric_limits<double>::quiet_NaN(),
+                            std::string Twork = "Floatt64",
                             double cutoff = std::numeric_limits<double>::quiet_NaN(),
                             double epsilon = std::numeric_limits<double>::quiet_NaN(),
                             int lmax = std::numeric_limits<int>::max(),
@@ -453,5 +465,4 @@ inline void canonicalize(
         v.polyvec[i].data *= gauge;
     }
 }
-
 } // namespace sparseir
