@@ -20,36 +20,52 @@ namespace sparseir {
 template <typename K>
 class SVEResult;
 
-template<typename T>
-std::tuple<double, T, std::string> choose_accuracy(double epsilon, T Twork) {
-    if (epsilon >= std::sqrt(std::numeric_limits<T>::epsilon())) {
-        return std::make_tuple(epsilon, Twork, "default");
-    } else {
-        std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is below √ε with ε = "
-                  << std::numeric_limits<T>::epsilon() << ".\n"
-                  << "Expect singular values and basis functions for large l to have lower precision than the cutoff.\n";
-        return std::make_tuple(epsilon, Twork, "accurate");
+std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std::string Twork) {
+    if (Twork == "Float64") {
+        if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
+            return std::make_tuple(epsilon, Twork, "default");
+        } else {
+            std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is below √ε with ε = "
+                    << std::numeric_limits<double>::epsilon() << ".\n"
+                    << "Expect singular values and basis functions for large l to have lower precision than the cutoff.\n";
+            return std::make_tuple(epsilon, Twork, "accurate");
+        }
+    } else
+    {
+        // Handle the case for xprec::DDouble
+        if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon()))
+        {
+            return std::make_tuple(epsilon, Twork, "default");
+        }
+        else
+        {
+            std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is below √ε with ε = "
+                      << std::numeric_limits<xprec::DDouble>::epsilon() << ".\n"
+                      << "Expect singular values and basis functions for large l to have lower precision than the cutoff.\n";
+            return std::make_tuple(epsilon, Twork, "accurate");
+        }
     }
+
 }
 
-std::tuple<double, double, std::string> choose_accuracy(double epsilon, std::nullptr_t) {
+std::tuple<double, std::string, std::string> choose_accuracy(double epsilon, std::nullptr_t) {
     if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
-        return std::make_tuple(epsilon, double(), "default");
+        return std::make_tuple(epsilon, "Float64", "default");
     } else {
         if (epsilon < std::sqrt(std::numeric_limits<double>::epsilon())) {
             std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is below √ε with ε = "
                       << std::numeric_limits<double>::epsilon() << ".\n"
                       << "Expect singular values and basis functions for large l to have lower precision than the cutoff.\n";
         }
-        return std::make_tuple(epsilon, std::numeric_limits<double>::max(), "default");
+        return std::make_tuple(epsilon, "Float64x2", "default");
     }
 }
 
-std::tuple<double, double, std::string> choose_accuracy(std::nullptr_t, double Twork) {
+std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t, std::string Twork) {
     return std::make_tuple(std::sqrt(std::numeric_limits<double>::epsilon()), Twork, "default");
 }
 
-std::tuple<double, double, std::string> choose_accuracy(std::nullptr_t, std::nullptr_t) {
+std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t, std::nullptr_t) {
     return std::make_tuple(std::sqrt(std::numeric_limits<double>::epsilon()), "Float64x2", "default");
 }
 
@@ -113,8 +129,8 @@ public:
     }
 
     // Compute matrices for SVD
-    std::vector<Eigen::MatrixXd> matrices() const override {
-        std::vector<Eigen::MatrixXd> mats;
+    std::vector<Eigen::MatrixX<T>> matrices() const override {
+        std::vector<Eigen::MatrixX<T>> mats;
 
         size_t n_rows = gauss_x.points.size();
         size_t n_cols = gauss_y.points.size();
@@ -139,9 +155,9 @@ public:
 
     // Postprocess to construct SVEResult
     SVEResult<K> postprocess(
-        const std::vector<Eigen::MatrixXd>& u_list,
-        const std::vector<Eigen::VectorXd>& s_list,
-        const std::vector<Eigen::MatrixXd>& v_list
+        const std::vector<Eigen::MatrixX<T>>& u_list,
+        const std::vector<Eigen::VectorX<T>>& s_list,
+        const std::vector<Eigen::MatrixX<T>>& v_list
     ) const override {
         // Assuming there's only one matrix in u_list, s_list, and v_list
         const auto& u_mat = u_list[0];
@@ -153,14 +169,14 @@ public:
         size_t n_segments_y = segs_y.size() - 1;
 
         // Compute the Legendre coefficients for u and v
-        std::vector<Eigen::MatrixXd> u_data;
-        std::vector<Eigen::MatrixXd> v_data;
+        std::vector<Eigen::MatrixX<T>> u_data;
+        std::vector<Eigen::MatrixX<T>> v_data;
 
         // For each segment, compute the Legendre coefficients
         for (size_t seg = 0; seg < n_segments_x; ++seg) {
             // Extract points and weights for the segment
-            std::vector<double> x_points = gauss_x.points_segment(seg);
-            std::vector<double> w_x = gauss_x.weights_segment(seg);
+            std::vector<T> x_points = gauss_x.points_segment(seg);
+            std::vector<T> w_x = gauss_x.weights_segment(seg);
 
             // Collocation matrix for Legendre polynomials
             Eigen::MatrixXd cmat = legendre_collocation(rule);
@@ -171,8 +187,8 @@ public:
         }
 
         for (size_t seg = 0; seg < n_segments_y; ++seg) {
-            std::vector<double> y_points = gauss_y.points_segment(seg);
-            std::vector<double> w_y = gauss_y.weights_segment(seg);
+            std::vector<T> y_points = gauss_y.points_segment(seg);
+            std::vector<T> w_y = gauss_y.weights_segment(seg);
 
             Eigen::MatrixXd cmat = legendre_collocation(rule);
 
@@ -192,13 +208,13 @@ public:
 };
 
 // CentrosymmSVE class
-template <typename K, typename T, typename InnerSVE = SamplingSVE<T, K>>
+template <typename K, typename T>
 class CentrosymmSVE : public AbstractSVE<K, T> {
 public:
     K kernel;
-    T epsilon;
-    InnerSVE even;
-    InnerSVE odd;
+    double epsilon;
+    SamplingSVE<T, K> even;
+    SamplingSVE<T, K> odd;
     int nsvals_hint;
 
     CentrosymmSVE(const K& kernel_, T epsilon_, int n_gauss_ = -1)
@@ -298,25 +314,83 @@ public:
         : u(u_), s(s_), v(v_), kernel(kernel_), epsilon(epsilon_) {}
 };
 
-// Function to compute SVE result
-template <typename K, typename T = double>
-    auto compute_sve(K kernel,
-                            T epsilon = std::numeric_limits<T>::quiet_NaN(),
-                            T cutoff = std::numeric_limits<T>::quiet_NaN(),
-                            int lmax = std::numeric_limits<int>::max(),
-                            int n_gauss = -1,
-                            const std::string& svd_strat = "auto") {
-    // Choose accuracy parameters
-    auto sve_strategy = SamplingSVE<K,T>(kernel, epsilon, n_gauss);
+template <typename K>
+bool iscentrosymmetric(const K& kernel) {
+    // TODO: Implement centrosymmetric kernel check
+    return true;
+}
+template <typename K, typename T>
+auto determine_sve(const K& kernel, double safe_epsilon, int n_gauss){
+    //if (iscentrosymmetric(kernel)){
+        auto sve = CentrosymmSVE<K, T>(kernel, safe_epsilon, n_gauss);
+        return sve;
+    //}
+    /*
+    else {
+        auto sve = SamplingSVE<K, T>(kernel, safe_epsilon, n_gauss);
+        return sve;
+    }
+    */
+}
 
-    double safe_epsilon;
-    T Twork_actual;
-    std::string svd_strategy_actual;
-    // TODO: resolve choose_accuracy
-    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = choose_accuracy(epsilon, Twork, svd_strat);
+// Function to truncate singular values
+inline void truncate_singular_values(
+    std::vector<Eigen::MatrixXd> &u_list,
+    std::vector<Eigen::VectorXd> &s_list,
+    std::vector<Eigen::MatrixXd> &v_list,
+    double rtol,
+    int lmax)
+{
+    // Collect all singular values
+    std::vector<double> all_singular_values;
+    for (const auto &s : s_list)
+    {
+        for (int i = 0; i < s.size(); ++i)
+        {
+            all_singular_values.push_back(s(i));
+        }
+    }
+    std::sort(all_singular_values.begin(), all_singular_values.end(), std::greater<double>());
 
+    // Determine cutoff
+    double cutoff = rtol * all_singular_values.front();
+    if (lmax < static_cast<int>(all_singular_values.size()))
+    {
+        cutoff = std::max(cutoff, all_singular_values[lmax - 1]);
+    }
+
+    // Truncate singular values and corresponding vectors
+    for (size_t idx = 0; idx < s_list.size(); ++idx)
+    {
+        const auto &s = s_list[idx];
+        int scount = 0;
+        for (int i = 0; i < s.size(); ++i)
+        {
+            if (s(i) > cutoff)
+            {
+                ++scount;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if (scount < s.size())
+        {
+            u_list[idx] = u_list[idx].leftCols(scount);
+            s_list[idx] = s_list[idx].head(scount);
+            v_list[idx] = v_list[idx].leftCols(scount);
+        }
+    }
+}
+
+
+template <typename K, typename T>
+auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss, double cutoff = std::numeric_limits<double>::quiet_NaN(), int lmax = -1)
+{
+    auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
     // Compute SVDs
-    auto matrices = sve_strategy.matrices();
+    std::vector<Eigen::MatrixX<T>> matrices = sve.matrices();
     std::vector<Eigen::BDCSVD<Eigen::MatrixX<T>>> svds;
     for (const auto& mat : matrices) {
         Eigen::BDCSVD<Eigen::MatrixX<T>> svd(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -334,56 +408,37 @@ template <typename K, typename T = double>
 
     // Apply cutoff and lmax
     double cutoff_actual = std::isnan(cutoff) ? 2 * std::numeric_limits<T>::epsilon() : cutoff;
-    std::tuple<std::vector<Eigen::MatrixX<T>>, std::vector<Eigen::VectorX<T>>, std::vector<Eigen::MatrixX<T>>> truncated_result = truncate(u_list, s_list, v_list, cutoff_actual, lmax);
+    std::tuple<std::vector<Eigen::MatrixX<T>>, std::vector<Eigen::VectorX<T>>, std::vector<Eigen::MatrixX<T>>> truncated_result = truncate_singular_values(u_list, s_list, v_list, cutoff_actual, lmax);
     std::vector<Eigen::MatrixX<T>> u_truncated = std::get<0>(truncated_result);
     std::vector<Eigen::VectorX<T>> s_truncated = std::get<1>(truncated_result);
     std::vector<Eigen::MatrixX<T>> v_truncated = std::get<2>(truncated_result);
-
     // Postprocess to get the SVEResult
-    return sve_strategy.postprocess(u_truncated, s_truncated, v_truncated);
+    return sve.postprocess(u_truncated, s_truncated, v_truncated);
 }
 
-// Function to truncate singular values
-inline void truncate_singular_values(
-    std::vector<Eigen::MatrixXd>& u_list,
-    std::vector<Eigen::VectorXd>& s_list,
-    std::vector<Eigen::MatrixXd>& v_list,
-    double rtol,
-    int lmax
-) {
-    // Collect all singular values
-    std::vector<double> all_singular_values;
-    for (const auto& s : s_list) {
-        for (int i = 0; i < s.size(); ++i) {
-            all_singular_values.push_back(s(i));
-        }
+// Function to compute SVE result
+template <typename K, typename T = double>
+    auto compute_sve(K kernel,
+                            std::string Twork = "double",
+                            double cutoff = std::numeric_limits<double>::quiet_NaN(),
+                            double epsilon = std::numeric_limits<double>::quiet_NaN(),
+                            int lmax = std::numeric_limits<int>::max(),
+                            int n_gauss = -1,
+                            const std::string& svd_strat = "auto") {
+    // Choose accuracy parameters
+    double safe_epsilon;
+    std::string Twork_actual;
+    std::string svd_strategy_actual;
+    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = choose_accuracy(epsilon, Twork, svd_strat);
+    if (Twork_actual == "Float64"){
+        return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff, lmax);
     }
-    std::sort(all_singular_values.begin(), all_singular_values.end(), std::greater<double>());
-
-    // Determine cutoff
-    double cutoff = rtol * all_singular_values.front();
-    if (lmax < static_cast<int>(all_singular_values.size())) {
-        cutoff = std::max(cutoff, all_singular_values[lmax - 1]);
-    }
-
-    // Truncate singular values and corresponding vectors
-    for (size_t idx = 0; idx < s_list.size(); ++idx) {
-        const auto& s = s_list[idx];
-        int scount = 0;
-        for (int i = 0; i < s.size(); ++i) {
-            if (s(i) > cutoff) {
-                ++scount;
-            } else {
-                break;
-            }
-        }
-        if (scount < s.size()) {
-            u_list[idx] = u_list[idx].leftCols(scount);
-            s_list[idx] = s_list[idx].head(scount);
-            v_list[idx] = v_list[idx].leftCols(scount);
-        }
+    else{
+        // xprec::DDouble
+        return pre_postprocess<K, xprec::DDouble>(kernel, safe_epsilon, n_gauss, cutoff, lmax);
     }
 }
+
 
 
 // Function to canonicalize basis functions
