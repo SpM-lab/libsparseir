@@ -130,12 +130,12 @@ public:
     Rule<T> gauss_y;
 
     // Constructor
-    SamplingSVE(std::shared_ptr<const K> kernel_, T epsilon_, int n_gauss_ = -1)
+    SamplingSVE(std::shared_ptr<const K> kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_), epsilon(epsilon_) {
         auto hints = kernel->sve_hints(epsilon);
         this->nsvals_hint = hints.nsvals_hint;
         n_gauss = (n_gauss_ > 0) ? n_gauss_ : hints.ngauss;
-        rule = Rule(n_gauss);
+        rule = Rule<T>(n_gauss);
         segs_x = kernel->template segments_x<T>();
         segs_y = kernel->template segments_y<T>();
         gauss_x = piecewise(rule, segs_x);
