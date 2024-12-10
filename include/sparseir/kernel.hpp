@@ -205,8 +205,6 @@ namespace sparseir
     public:
         double lambda_; ///< The kernel cutoff Λ.
 
-        // Constructor
-        LogisticKernel(){}
         /**
          * @brief Constructor for LogisticKernel.
          *
