@@ -13,8 +13,6 @@
 
 using std::invalid_argument;
 
-using xprec::DDouble;
-
 // Function to check smoothness
 void check_smooth(const std::function<double(double)>& u, const std::vector<double>& s, double uscale, double fudge_factor) {
     /*
@@ -58,15 +56,31 @@ void check_smooth(const std::function<double(double)>& u, const std::vector<doub
 
 TEST_CASE("AbstractSVE", "[sve]"){
     sparseir::LogisticKernel lk(10.0);
-    //auto sve = sparseir::compute_sve(lk);
-    //REQUIRE(true);
-    // auto sve = sparseir::SamplingSVE<sparseir::LogisticKernel, double>(std::make_shared<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0)), 1e-6);
-    // REQUIRE(sve.nsvals_hint == 10);
-    // REQUIRE(sve.n_gauss == 10);
-    // REQUIRE(sve.segs_x.size() == 10);
-    // REQUIRE(sve.segs_y.size() == 10);
-    // REQUIRE(sve.gauss_x.size() == 10);
-    // REQUIRE(sve.gauss_y.size() == 10);
+    auto hints = sparseir::sve_hints(lk, 1e-6);
+    int nsvals_hint = hints.nsvals();
+    int n_gauss = hints.ngauss();
+    std::vector<double> segs_x = hints.template segments_x<double>();
+    std::vector<double> segs_y = hints.template segments_y<double>();
+
+    // Ensure `convert` is declared before this line
+    sparseir::Rule<double> rule = sparseir::convert<double>(sparseir::legendre(n_gauss));
+
+    sparseir::Rule<double> gauss_x = rule.piecewise(segs_x);
+    sparseir::Rule<double> gauss_y = rule.piecewise(segs_y);
+    auto ssve1 = sparseir::SamplingSVE<sparseir::LogisticKernel>(lk, 1e-6);
+    REQUIRE(ssve1.n_gauss == n_gauss);
+    auto ssve2 = sparseir::SamplingSVE<sparseir::LogisticKernel>(lk, 1e-6, 12);
+    REQUIRE(ssve2.n_gauss == 12);
+
+    auto ssve1_double = sparseir::SamplingSVE<sparseir::LogisticKernel, double>(lk, 1e-6);
+    REQUIRE(ssve1_double.n_gauss == n_gauss);
+    auto ssve2_double = sparseir::SamplingSVE<sparseir::LogisticKernel, double>(lk, 1e-6, 12);
+    REQUIRE(ssve2_double.n_gauss == 12);
+
+    //auto ssve1_ddouble = sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
+    //REQUIRE(ssve1_ddouble.n_gauss == n_gauss);
+    //auto ssve2_ddouble = sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6, 12);
+    //REQUIRE(ssve2_ddouble.n_gauss == 12);
 }
 
 TEST_CASE("sve.cpp", "[sve]")

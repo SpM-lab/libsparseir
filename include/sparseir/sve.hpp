@@ -130,7 +130,7 @@ public:
 template <typename K, typename T = double>
 class SamplingSVE : public AbstractSVE<K, T> {
 public:
-    std::shared_ptr<const K> kernel;
+    K kernel;
     double epsilon;
     int n_gauss;
     int nsvals_hint;
@@ -142,25 +142,25 @@ public:
     Rule<T> gauss_y;
 
     // Constructor
-    SamplingSVE(std::shared_ptr<const K> kernel_, double epsilon_, int n_gauss_ = -1)
+    SamplingSVE(K kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_),
-          epsilon(epsilon_),
-          n_gauss((n_gauss_ > 0) ? n_gauss_ : sve_hints(*kernel, epsilon).ngauss()),
-          rule(convert<T>(legendre(n_gauss))),
-          gauss_x(rule.piecewise(segs_x)), // Initialize gauss_x
-          gauss_y(rule.piecewise(segs_y))  // Initialize gauss_y
+          epsilon(epsilon_)
     {
-        auto hints = sve_hints(*kernel, epsilon);
-        // TODO: This is not correct, we need to use the segments from the hints
+        n_gauss = (n_gauss_ > 0) ? n_gauss_ : sve_hints(kernel, epsilon).ngauss();
+        // TODO: Implement Rule<T>(n_gauss)
+        rule = convert<T>(legendre(n_gauss));
+        auto hints = sve_hints(kernel, epsilon);
         nsvals_hint = hints.nsvals();
         segs_x = hints.template segments_x<T>();
         segs_y = hints.template segments_y<T>();
+        gauss_x = rule.piecewise(segs_x);
+        gauss_y = rule.piecewise(segs_y);
     }
 
     // Compute matrices for SVD
     std::vector<Eigen::MatrixX<T>> matrices() const override {
         std::vector<Eigen::MatrixX<T>> mats;
-        Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
+        Eigen::MatrixX<T> A = matrix_from_gauss(kernel, gauss_x, gauss_y);
         // Element-wise multiplication with square roots of weights
         for (int i = 0; i < gauss_x.w.size(); ++i)
         {
@@ -304,7 +304,7 @@ public:
         PiecewiseLegendrePolyVector ulx(polyvec_u);
         PiecewiseLegendrePolyVector vly(polyvec_v);
         canonicalize(ulx, vly);
-        return SVEResult<K>(ulx, s, vly, *kernel, epsilon);
+        return SVEResult<K>(ulx, s, vly, kernel, epsilon);
     }
 };
 
