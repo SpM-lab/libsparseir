@@ -3,6 +3,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor> // Include Tensor module
 #include <vector>
 #include <tuple>
 #include <limits>
@@ -90,6 +91,19 @@ inline std::tuple<double, std::string, std::string> choose_accuracy(double epsil
     return std::make_tuple(epsilon, Twork, final_svd_strat);
 }
 
+// Function to canonicalize basis functions
+inline void canonicalize(
+    PiecewiseLegendrePolyVector &u,
+    PiecewiseLegendrePolyVector &v)
+{
+    for (size_t i = 0; i < u.size(); ++i)
+    {
+        double gauge = std::copysign(1.0, u.polyvec[i](1.0));
+        u.polyvec[i].data *= gauge;
+        v.polyvec[i].data *= gauge;
+    }
+}
+
 // Base class for SVE strategies
 template <typename K, typename T>
 class AbstractSVE {
@@ -101,8 +115,6 @@ public:
         const std::vector<Eigen::VectorX<T>>& s_list,
         const std::vector<Eigen::MatrixX<T>>& v_list
     ) const = 0;
-
-    int nsvals_hint;
 };
 
 
@@ -121,7 +133,7 @@ public:
     std::shared_ptr<const K> kernel;
     double epsilon;
     int n_gauss;
-
+    int nsvals_hint;
     // Quadrature rules and segments
     Rule<T> rule;
     std::vector<T> segs_x;
@@ -131,93 +143,168 @@ public:
 
     // Constructor
     SamplingSVE(std::shared_ptr<const K> kernel_, double epsilon_, int n_gauss_ = -1)
-        : kernel(kernel_), epsilon(epsilon_) {
-        auto hints = kernel->sve_hints(epsilon);
-        this->nsvals_hint = hints.nsvals_hint;
-        n_gauss = (n_gauss_ > 0) ? n_gauss_ : hints.ngauss;
-        rule = Rule<T>(n_gauss);
-        segs_x = kernel->template segments_x<T>();
-        segs_y = kernel->template segments_y<T>();
-        gauss_x = piecewise(rule, segs_x);
-        gauss_y = piecewise(rule, segs_y);
+        : kernel(kernel_),
+          epsilon(epsilon_),
+          n_gauss((n_gauss_ > 0) ? n_gauss_ : sve_hints(*kernel, epsilon).ngauss()),
+          rule(convert<T>(legendre(n_gauss))),
+          gauss_x(rule.piecewise(segs_x)), // Initialize gauss_x
+          gauss_y(rule.piecewise(segs_y))  // Initialize gauss_y
+    {
+        auto hints = sve_hints(*kernel, epsilon);
+        // TODO: This is not correct, we need to use the segments from the hints
+        nsvals_hint = hints.nsvals();
+        segs_x = hints.template segments_x<T>();
+        segs_y = hints.template segments_y<T>();
     }
 
     // Compute matrices for SVD
     std::vector<Eigen::MatrixX<T>> matrices() const override {
         std::vector<Eigen::MatrixX<T>> mats;
-
-        size_t n_rows = gauss_x.points.size();
-        size_t n_cols = gauss_y.points.size();
-
-        Eigen::MatrixXd A(n_rows, n_cols);
-
-        for (size_t i = 0; i < n_rows; ++i) {
-            for (size_t j = 0; j < n_cols; ++j) {
-                double x = gauss_x.points[i];
-                double y = gauss_y.points[j];
-                double wx = gauss_x.weights[i];
-                double wy = gauss_y.weights[j];
-
-                double K_xy = kernel.evaluate(x, y);
-                A(i, j) = std::sqrt(wx) * K_xy * std::sqrt(wy);
-            }
+        Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
+        // Element-wise multiplication with square roots of weights
+        for (int i = 0; i < gauss_x.w.size(); ++i)
+        {
+            A.row(i) *= std::sqrt(gauss_x.w[i]);
         }
-
+        for (int j = 0; j < gauss_y.w.size(); ++j)
+        {
+            A.col(j) *= std::sqrt(gauss_y.w[j]);
+        }
         mats.push_back(A);
         return mats;
     }
 
     // Postprocess to construct SVEResult
     SVEResult<K> postprocess(
-        const std::vector<Eigen::MatrixX<T>>& u_list,
-        const std::vector<Eigen::VectorX<T>>& s_list,
-        const std::vector<Eigen::MatrixX<T>>& v_list
-    ) const override {
+        const std::vector<Eigen::MatrixX<T>> &u_list,
+        const std::vector<Eigen::VectorX<T>> &s_list,
+        const std::vector<Eigen::MatrixX<T>> &v_list) const override
+    {
         // Assuming there's only one matrix in u_list, s_list, and v_list
-        const auto& u_mat = u_list[0];
-        const auto& s_vec = s_list[0];
-        const auto& v_mat = v_list[0];
+        const Eigen::MatrixX<T> &u = u_list[0];
+        const Eigen::VectorX<T> &s_ = s_list[0];
+        const Eigen::MatrixX<T> &v = v_list[0];
+        Eigen::VectorX<T> s = s_.template cast<double>();
 
-        // Number of segments
-        size_t n_segments_x = segs_x.size() - 1;
-        size_t n_segments_y = segs_y.size() - 1;
+        Eigen::VectorX<T> gauss_x_w = Eigen::VectorX<T>::Map(gauss_x.w.data(), gauss_x.w.size());
+        Eigen::VectorX<T> gauss_y_w = Eigen::VectorX<T>::Map(gauss_y.w.data(), gauss_y.w.size());
 
-        // Compute the Legendre coefficients for u and v
-        std::vector<Eigen::MatrixX<T>> u_data;
-        std::vector<Eigen::MatrixX<T>> v_data;
+        Eigen::MatrixX<T> u_x = u.array().colwise() / gauss_x_w.array().sqrt();
+        Eigen::MatrixX<T> v_y = v.array().colwise() / gauss_y_w.array().sqrt();
 
-        // For each segment, compute the Legendre coefficients
-        for (size_t seg = 0; seg < n_segments_x; ++seg) {
-            // Extract points and weights for the segment
-            std::vector<T> x_points = gauss_x.points_segment(seg);
-            std::vector<T> w_x = gauss_x.weights_segment(seg);
+        std::vector<T> u_x_flatten(u_x.data(), u_x.data() + u_x.size());
+        std::vector<T> v_y_flatten(v_y.data(), v_y.data() + v_y.size());
 
-            // Collocation matrix for Legendre polynomials
-            Eigen::MatrixXd cmat = legendre_collocation(rule);
+        Eigen::TensorMap<Eigen::Tensor<T, 3>> u_data(u_x_flatten.data(), n_gauss, segs_x.size() - 1, s.size());
+        Eigen::TensorMap<Eigen::Tensor<T, 3>> v_data(v_y_flatten.data(), n_gauss, segs_y.size() - 1, s.size());
 
-            // Compute coefficients for each singular function
-            Eigen::MatrixXd u_coeffs = cmat.colPivHouseholderQr().solve(u_mat);
-            u_data.push_back(u_coeffs);
+        Eigen::MatrixX<T> cmat = legendre_collocation(rule);
+
+        for (int j = 0; j < u_data.dimension(1); ++j)
+        {
+            for (int k = 0; k < u_data.dimension(2); ++k)
+            {
+                for (int i = 0; i < cmat.rows(); ++i)
+                {
+                    u_data(i, j, k) = T(0);
+                    for (int l = 0; l < cmat.cols(); ++l)
+                    {
+                        u_data(i, j, k) += cmat(i, l) * u_data(l, j, k);
+                    }
+                }
+            }
         }
 
-        for (size_t seg = 0; seg < n_segments_y; ++seg) {
-            std::vector<T> y_points = gauss_y.points_segment(seg);
-            std::vector<T> w_y = gauss_y.weights_segment(seg);
-
-            Eigen::MatrixXd cmat = legendre_collocation(rule);
-
-            Eigen::MatrixXd v_coeffs = cmat.colPivHouseholderQr().solve(v_mat);
-            v_data.push_back(v_coeffs);
+        for (int j = 0; j < v_data.dimension(1); ++j)
+        {
+            for (int k = 0; k < v_data.dimension(2); ++k)
+            {
+                for (int i = 0; i < cmat.rows(); ++i)
+                {
+                    v_data(i, j, k) = T(0);
+                    for (int l = 0; l < cmat.cols(); ++l)
+                    {
+                        v_data(i, j, k) += cmat(i, l) * v_data(l, j, k);
+                    }
+                }
+            }
         }
 
-        // Construct PiecewiseLegendrePolyVector for u and v
-        PiecewiseLegendrePolyVector u_pwv(u_data, segs_x);
-        PiecewiseLegendrePolyVector v_pwv(v_data, segs_y);
+        // Manually compute differences for dsegs_x and dsegs_y
+        Eigen::VectorX<T> dsegs_x(segs_x.size() - 1);
+        for (int i = 0; i < segs_x.size() - 1; ++i)
+        {
+            dsegs_x[i] = segs_x[i + 1] - segs_x[i];
+        }
 
-        // Create SVEResult
-        SVEResult<K> sve_result(u_pwv, s_vec, v_pwv, kernel, epsilon);
+        Eigen::VectorX<T> dsegs_y(segs_y.size() - 1);
+        for (int i = 0; i < segs_y.size() - 1; ++i)
+        {
+            dsegs_y[i] = segs_y[i + 1] - segs_y[i];
+        }
 
-        return sve_result;
+        //u_data_3d = u_data_3d * (T(0.5) * dsegs_x).sqrt().transpose().matrix().asDiagonal();
+        //v_data_3d = v_data_3d * (T(0.5) * dsegs_y).sqrt().transpose().matrix().asDiagonal();
+
+        // Using nested for loops to multiply u_data
+        for (int j = 0; j < u_data.dimension(1); ++j)
+        {
+            for (int k = 0; k < u_data.dimension(2); ++k)
+            {
+                for (int i = 0; i < u_data.dimension(0); ++i)
+                {
+                    u_data(i, j, k) *= std::sqrt(0.5 * dsegs_x[j]);
+                }
+            }
+        }
+
+        // Using nested for loops to multiply v_data
+        for (int j = 0; j < v_data.dimension(1); ++j)
+        {
+            for (int k = 0; k < v_data.dimension(2); ++k)
+            {
+                for (int i = 0; i < v_data.dimension(0); ++i)
+                {
+                    v_data(i, j, k) *= std::sqrt(0.5 * dsegs_y[j]);
+                }
+            }
+        }
+
+        std::vector<PiecewiseLegendrePoly> polyvec_u;
+        std::vector<PiecewiseLegendrePoly> polyvec_v;
+
+        for (int i = 0; i < u_data.dimension(2); ++i)
+        {
+            Eigen::MatrixXd slice_double(u_data.dimension(0), u_data.dimension(1));
+            for (int j = 0; j < u_data.dimension(1); ++j)
+            {
+                for (int k = 0; k < u_data.dimension(2); ++k)
+                {
+                    slice_double(j, k) = u_data(j, k, i);
+                }
+            }
+
+            polyvec_u.push_back(PiecewiseLegendrePoly(slice_double, Eigen::VectorXd::Map(segs_x.data(), segs_x.size()), i));
+        }
+
+        // Repeat similar changes for v_data
+        for (int i = 0; i < v_data.dimension(2); ++i)
+        {
+            Eigen::MatrixXd slice_double(v_data.dimension(0), v_data.dimension(1));
+            for (int j = 0; j < v_data.dimension(1); ++j)
+            {
+                for (int k = 0; k < v_data.dimension(2); ++k)
+                {
+                    slice_double(j, k) = v_data(j, k, i);
+                }
+            }
+
+            polyvec_v.push_back(PiecewiseLegendrePoly(slice_double, Eigen::VectorXd::Map(segs_y.data(), segs_y.size()), i));
+        }
+        PiecewiseLegendrePolyVector ulx(polyvec_u);
+        PiecewiseLegendrePolyVector vly(polyvec_v);
+        canonicalize(ulx, vly);
+        return SVEResult<K>(ulx, s, vly, *kernel, epsilon);
     }
 };
 
@@ -319,13 +406,13 @@ template <typename K>
 class SVEResult {
 public:
     PiecewiseLegendrePolyVector u;
-    std::vector<double> s;
+    Eigen::VectorXd s;
     PiecewiseLegendrePolyVector v;
 
     K kernel;
     double epsilon;
 
-    SVEResult(const PiecewiseLegendrePolyVector& u_, const std::vector<double>& s_,
+    SVEResult(const PiecewiseLegendrePolyVector& u_, const Eigen::VectorXd& s_,
               const PiecewiseLegendrePolyVector& v_, const K& kernel_, double epsilon_)
         : u(u_), s(s_), v(v_), kernel(kernel_), epsilon(epsilon_) {}
 };
@@ -452,17 +539,4 @@ template <typename K>
     }
 }
 
-
-
-// Function to canonicalize basis functions
-inline void canonicalize(
-    PiecewiseLegendrePolyVector& u,
-    PiecewiseLegendrePolyVector& v
-) {
-    for (size_t i = 0; i < u.size(); ++i) {
-        double gauge = std::copysign(1.0, u.polyvec[i](1.0));
-        u.polyvec[i].data *= gauge;
-        v.polyvec[i].data *= gauge;
-    }
-}
 } // namespace sparseir

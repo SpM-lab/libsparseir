@@ -56,6 +56,16 @@ void check_smooth(const std::function<double(double)>& u, const std::vector<doub
     */
 }
 
+TEST_CASE("AbstractSVE", "[sve]") {
+    //auto sve = sparseir::SamplingSVE<sparseir::LogisticKernel, double>(std::make_shared<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0)), 1e-6);
+    //REQUIRE(sve.nsvals_hint == 10);
+    //REQUIRE(sve.n_gauss == 10);
+    //REQUIRE(sve.segs_x.size() == 10);
+    //REQUIRE(sve.segs_y.size() == 10);
+    //REQUIRE(sve.gauss_x.size() == 10);
+    //REQUIRE(sve.gauss_y.size() == 10);
+}
+
 TEST_CASE("sve.cpp", "[sve]") {
 
     // Define a map to store SVEResult objects
