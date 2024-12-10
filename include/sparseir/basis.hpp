@@ -298,10 +298,11 @@ private:
 
     // Default sampling points function
     Eigen::VectorXd defaultSamplingPoints(const PiecewiseLegendrePolyVector& u, int L) const {
-        if (u.xmin != -1.0 || u.xmax != 1.0)
+        if (u.xmin() != -1.0 || u.xmax() != 1.0)
             throw std::runtime_error("Expecting unscaled functions here.");
 
         if (L < u.size()) {
+            // TODO: Resolve this errors.
             return u[L + 1].roots();  // Assuming indexing starts at 1
         } else {
             // Approximate roots by extrema
