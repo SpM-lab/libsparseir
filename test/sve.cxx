@@ -58,7 +58,18 @@ void check_smooth(const std::function<double(double)>& u, const std::vector<doub
 
 TEST_CASE("AbstractSVE", "[sve]"){
     sparseir::LogisticKernel lk(10.0);
-    //auto sve = sparseir::compute_sve(lk);
+    auto hints = sparseir::sve_hints(lk, 1e-6);
+    int nsvals_hint = hints.nsvals();
+    int n_gauss = hints.ngauss();
+    std::vector<double> segs_x = hints.template segments_x<double>();
+    std::vector<double> segs_y = hints.template segments_y<double>();
+
+    // Ensure `convert` is declared before this line
+    sparseir::Rule<double> rule = sparseir::convert<double>(sparseir::legendre(n_gauss));
+
+    sparseir::Rule<double> gauss_x = rule.piecewise(segs_x);
+    sparseir::Rule<double> gauss_y = rule.piecewise(segs_y);
+    sparseir::SamplingSVE<sparseir::LogisticKernel, double> sve(lk, 1e-6);
     //REQUIRE(true);
     // auto sve = sparseir::SamplingSVE<sparseir::LogisticKernel, double>(std::make_shared<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0)), 1e-6);
     // REQUIRE(sve.nsvals_hint == 10);
