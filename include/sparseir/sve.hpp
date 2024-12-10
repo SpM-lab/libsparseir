@@ -529,7 +529,11 @@ template <typename K>
     double safe_epsilon;
     std::string Twork_actual;
     std::string svd_strategy_actual;
+    std::cout << "Twork: " << Twork << std::endl;
+    std::cout << "svd_strat: " << svd_strat << std::endl;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = choose_accuracy(epsilon, Twork, svd_strat);
+    std::cout << "Twork_actual: " << Twork_actual << std::endl;
+    std::cout << "svd_strategy_actual: " << svd_strategy_actual << std::endl;
     if (Twork_actual == "Float64"){
         return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff, lmax);
     }
