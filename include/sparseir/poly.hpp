@@ -13,7 +13,6 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
-
 namespace sparseir {
 
 class PiecewiseLegendrePoly {
@@ -182,7 +181,7 @@ public:
     }
 
     // Roots function
-    std::vector<double> roots(double tol = 1e-10) const {
+    Eigen::VectorXd roots(double tol = 1e-10) const {
         std::vector<double> all_roots;
 
         // For each segment, find the roots of the polynomial
@@ -200,7 +199,10 @@ public:
             all_roots.insert(all_roots.end(), segment_roots.begin(), segment_roots.end());
         }
 
-        return all_roots;
+        // Convert std::vector to Eigen::VectorXd
+        Eigen::VectorXd roots = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(all_roots.data(), all_roots.size());
+
+        return roots;
     }
 
     // Overloaded operators
@@ -303,6 +305,228 @@ private:
 
 } // namespace sparseir
 
+namespace sparseir
+{
+
+    // Function to compute the spherical Bessel function of the first kind using recursion
+    inline double spherical_bessel_j(int l, double x)
+    {
+        if (l < 0)
+        {
+            throw std::invalid_argument("Order l must be non-negative");
+        }
+        if (x == 0.0)
+        {
+            return (l == 0) ? 1.0 : 0.0;
+        }
+
+        // Initial values for the recursion
+        double j0 = std::sin(x) / x;
+        if (l == 0)
+        {
+            return j0;
+        }
+
+        double j1 = (std::sin(x) / (x * x)) - (std::cos(x) / x);
+        if (l == 1)
+        {
+            return j1;
+        }
+
+        // Recursion relation:
+        // j_n(x) = ((2n - 1)/x) * j_{n-1}(x) - j_{n-2}(x)
+        double j_prev_prev = j0;
+        double j_prev = j1;
+        double j_curr = 0.0;
+
+        for (int n = 2; n <= l; ++n)
+        {
+            j_curr = ((2.0 * n - 1.0) / x) * j_prev - j_prev_prev;
+            j_prev_prev = j_prev;
+            j_prev = j_curr;
+        }
+        return j_curr;
+    }
+
+    inline std::complex<double> get_tnl(int l, double w)
+    {
+        double abs_w = std::abs(w);
+        // Compute spherical Bessel function of order l at abs_w
+        double sph_bessel = spherical_bessel_j(l, abs_w);
+
+        // Compute 2i^l
+        std::complex<double> im_unit(0.0, 1.0);
+        std::complex<double> im_power = std::pow(im_unit, l);
+        std::complex<double> result = 2.0 * im_power * sph_bessel;
+
+        if (w < 0.0)
+        {
+            return std::conj(result);
+        }
+        else
+        {
+            return result;
+        }
+    }
+
+    inline std::pair<std::vector<double>, std::vector<int>> shift_xmid(const std::vector<double> &knots, const std::vector<double> &delta_x)
+    {
+        size_t N = delta_x.size();
+        std::vector<double> delta_x_half(N);
+        for (size_t i = 0; i < N; ++i)
+        {
+            delta_x_half[i] = delta_x[i] / 2.0;
+        }
+
+        // Compute xmid_m1
+        std::vector<double> xmid_m1(N);
+        std::vector<double> cumsum(N);
+        cumsum[0] = delta_x[0];
+        for (size_t i = 1; i < N; ++i)
+        {
+            cumsum[i] = cumsum[i - 1] + delta_x[i];
+        }
+        for (size_t i = 0; i < N; ++i)
+        {
+            xmid_m1[i] = cumsum[i] - delta_x_half[i];
+        }
+
+        // Compute xmid_p1
+        std::vector<double> xmid_p1(N);
+        std::vector<double> rev_delta_x(N);
+        for (size_t i = 0; i < N; ++i)
+        {
+            rev_delta_x[N - 1 - i] = delta_x[i];
+        }
+        std::vector<double> rev_cumsum(N);
+        rev_cumsum[0] = rev_delta_x[0];
+        for (size_t i = 1; i < N; ++i)
+        {
+            rev_cumsum[i] = rev_cumsum[i - 1] + rev_delta_x[i];
+        }
+        for (size_t i = 0; i < N; ++i)
+        {
+            xmid_p1[i] = -rev_cumsum[N - 1 - i] + delta_x_half[i];
+        }
+
+        // Compute xmid_0
+        std::vector<double> xmid_0(N);
+        for (size_t i = 0; i < N; ++i)
+        {
+            xmid_0[i] = knots[i + 1] - delta_x_half[i]; // Assuming knots has length N + 1
+        }
+
+        // Compute shift
+        std::vector<int> shift(N);
+        for (size_t i = 0; i < N; ++i)
+        {
+            shift[i] = static_cast<int>(std::round(xmid_0[i]));
+        }
+
+        // Compute diff
+        std::vector<double> diff(N);
+        for (size_t i = 0; i < N; ++i)
+        {
+            int idx = shift[i] + 1; // shift can be -1, 0, 1; idx ranges from 0 to 2
+            if (idx == 0)
+            {
+                diff[i] = xmid_m1[i];
+            }
+            else if (idx == 1)
+            {
+                diff[i] = xmid_0[i];
+            }
+            else if (idx == 2)
+            {
+                diff[i] = xmid_p1[i];
+            }
+            else
+            {
+                // Should not happen
+                throw std::runtime_error("Invalid shift value");
+            }
+        }
+
+        return std::make_pair(diff, shift);
+    }
+
+    inline Eigen::VectorXcd phase_stable(const PiecewiseLegendrePoly &poly, int wn)
+    {
+        const std::vector<double> knots(poly.knots.data(), poly.knots.data() + poly.knots.size());
+        const std::vector<double> delta_x(poly.delta_x.data(), poly.delta_x.data() + poly.delta_x.size());
+
+        // Compute xmid_diff and extra_shift
+        std::pair<std::vector<double>, std::vector<int>> shift_result = shift_xmid(knots, delta_x);
+        const std::vector<double> &xmid_diff = shift_result.first;
+        const std::vector<int> &extra_shift = shift_result.second;
+
+        size_t N = delta_x.size();
+        Eigen::VectorXcd phase_wi(N);
+
+        for (size_t i = 0; i < N; ++i)
+        {
+            int exponent = wn * (extra_shift[i] + 1);
+            int exponent_mod4 = ((exponent % 4) + 4) % 4; // Ensure positive modulo
+
+            std::complex<double> im_power;
+            switch (exponent_mod4)
+            {
+            case 0:
+                im_power = std::complex<double>(1.0, 0.0);
+                break;
+            case 1:
+                im_power = std::complex<double>(0.0, 1.0);
+                break;
+            case 2:
+                im_power = std::complex<double>(-1.0, 0.0);
+                break;
+            case 3:
+                im_power = std::complex<double>(0.0, -1.0);
+                break;
+            }
+
+            double arg = M_PI * wn * xmid_diff[i] / 2.0;
+            std::complex<double> cispi = std::polar(1.0, arg); // exp(i * arg)
+
+            phase_wi(i) = im_power * cispi;
+        }
+
+        return phase_wi;
+    }
+
+    inline std::complex<double> compute_unl_inner(const PiecewiseLegendrePoly &poly, int wn)
+    {
+        double wred = M_PI / 4.0 * wn;
+        Eigen::VectorXcd phase_wi = phase_stable(poly, wn);
+
+        std::complex<double> res(0.0, 0.0);
+
+        int num_orders = poly.get_data().rows();
+        int num_j = poly.get_data().cols();
+
+        for (int order = 0; order < num_orders; ++order)
+        {
+            int l = order;
+            for (int j = 0; j < num_j; ++j)
+            {
+                double data_value = poly.get_data()(order, j);
+                double delta_x_j = poly.delta_x(j);
+                double norm_j = poly.norms(j);
+
+                double wred_delta_x = wred * delta_x_j;
+                std::complex<double> tnl = get_tnl(l, wred_delta_x);
+                std::complex<double> phase = phase_wi(j);
+
+                res += data_value * tnl * phase / norm_j;
+            }
+        }
+
+        res /= std::sqrt(2.0);
+
+        return res;
+    }
+} // namespace sparseir
+
 namespace sparseir {
 
 class PiecewiseLegendrePolyVector {
@@ -311,7 +535,7 @@ public:
     std::vector<PiecewiseLegendrePoly> polyvec;
 
     // Constructors
-    // PiecewiseLegendrePolyVector() {}
+    PiecewiseLegendrePolyVector() {}
 
     // Constructor with polyvec
     PiecewiseLegendrePolyVector(const std::vector<PiecewiseLegendrePoly>& polyvec)
@@ -468,3 +692,340 @@ public:
 };
 } // namespace sparseir
 
+namespace sparseir
+{
+
+    // Forward declarations
+    class PiecewiseLegendrePoly;
+    class Statistics;
+
+    // PowerModel class template
+    template <typename T>
+    class PowerModel
+    {
+    public:
+        std::vector<T> moments;
+
+        PowerModel(const std::vector<T> &moments_) : moments(moments_) {}
+    };
+
+    // Bosonic and Fermionic statistics classes
+    class BosonicStatistics : public Statistics
+    {
+    public:
+        int zeta() const override { return 1; }
+    };
+
+    // PiecewiseLegendreFT class template
+    template <typename StatisticsType, typename T = double>
+    class PiecewiseLegendreFT
+    {
+    public:
+        PiecewiseLegendrePoly poly;
+        T n_asymp;
+        PowerModel<T> model;
+
+        PiecewiseLegendreFT(const PiecewiseLegendrePoly &poly_, const StatisticsType &stat, T n_asymp_ = std::numeric_limits<T>::infinity())
+            : poly(poly_), n_asymp(n_asymp_)
+        {
+            if (poly.xmin != -1.0 || poly.xmax != 1.0)
+            {
+                throw std::invalid_argument("Only interval [-1, 1] is supported");
+            }
+            model = power_model(stat, poly);
+        }
+
+        T get_n_asymp() const { return n_asymp; }
+        int zeta() const { return static_cast<const Statistics &>(StatisticsType()).zeta(); }
+        const PiecewiseLegendrePoly &get_poly() const { return poly; }
+
+        // Overload operator() for MatsubaraFreq
+        std::complex<double> operator()(const MatsubaraFreq<StatisticsType> &omega) const
+        {
+            int n = static_cast<int>(omega);
+            if (std::abs(n) < n_asymp)
+            {
+                return compute_unl_inner(poly, n);
+            }
+            else
+            {
+                return giw(*this, n);
+            }
+        }
+
+        // Overload operator() for integer frequency
+        std::complex<double> operator()(int n) const
+        {
+            return (*this)(MatsubaraFreq<StatisticsType>(n));
+        }
+
+        // Overload operator() for a vector of frequencies
+        template <typename Container>
+        std::vector<std::complex<double>> operator()(const Container &ns) const
+        {
+            std::vector<std::complex<double>> res;
+            res.reserve(ns.size());
+            for (const auto &n : ns)
+            {
+                res.push_back((*this)(n));
+            }
+            return res;
+        }
+
+    private:
+        // Function to compute the Fourier transform for low frequencies
+        std::complex<double> compute_unl_inner(const PiecewiseLegendrePoly &poly, int wn) const;
+
+        // Function to compute the asymptotic model for high frequencies
+        std::complex<double> giw(const PiecewiseLegendreFT &polyFT, int wn) const;
+
+        // Function to evaluate a polynomial at a complex point
+        std::complex<double> evalpoly(const std::complex<double> &x, const std::vector<T> &coeffs) const;
+
+        // Power model computation
+        PowerModel<T> power_model(const Statistics &stat, const PiecewiseLegendrePoly &poly) const;
+    };
+
+    // Implementations of member functions
+
+    template <typename StatisticsType, typename T>
+    std::complex<double> PiecewiseLegendreFT<StatisticsType, T>::compute_unl_inner(const PiecewiseLegendrePoly &poly, int wn) const
+    {
+        double wred = M_PI / 4.0 * wn;
+        Eigen::VectorXcd phase_wi = phase_stable(poly, wn);
+        std::complex<double> res = 0.0;
+
+        int order_max = poly.data.rows();
+        int segment_count = poly.data.cols();
+        for (int order = 0; order < order_max; ++order)
+        {
+            for (int j = 0; j < segment_count; ++j)
+            {
+                double data_oj = poly.data(order, j);
+                std::complex<double> tnl = get_tnl(order, wred * poly.delta_x(j));
+                res += data_oj * tnl * phase_wi(j) / poly.norms(j);
+            }
+        }
+        return res / std::sqrt(2.0);
+    }
+
+    template <typename StatisticsType, typename T>
+    std::complex<double> PiecewiseLegendreFT<StatisticsType, T>::giw(const PiecewiseLegendreFT &polyFT, int wn) const
+    {
+        std::complex<double> iw(0.0, M_PI / 2.0 * wn);
+        if (wn == 0)
+            return std::complex<double>(0.0, 0.0);
+        std::complex<double> inv_iw = 1.0 / iw;
+        std::complex<double> result = inv_iw * evalpoly(inv_iw, model.moments);
+        return result;
+    }
+
+    template <typename StatisticsType, typename T>
+    std::complex<double> PiecewiseLegendreFT<StatisticsType, T>::evalpoly(const std::complex<double> &x, const std::vector<T> &coeffs) const
+    {
+        std::complex<double> result(0.0, 0.0);
+        for (auto it = coeffs.rbegin(); it != coeffs.rend(); ++it)
+        {
+            result = result * x + *it;
+        }
+        return result;
+    }
+
+    // Assume implementations of derivs, power_moments_, and power_model
+    // For the purpose of this example, they are simplified placeholders
+
+    // Placeholder for derivative computations at x = 1.0
+    std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
+
+    // Placeholder for power moments computation
+    std::vector<double> &power_moments_(const Statistics &stat, std::vector<double> &deriv_x1, int l);
+
+    // Power model computation function
+    template <typename StatisticsType, typename T>
+    PowerModel<T> PiecewiseLegendreFT<StatisticsType, T>::power_model(const Statistics &stat, const PiecewiseLegendrePoly &poly) const
+    {
+        std::vector<double> deriv_x1 = derivs(poly, 1.0);
+        std::vector<double> &moments = power_moments_(stat, deriv_x1, poly.l);
+        return PowerModel<T>(moments);
+    }
+
+    class FermionicStatistics : public Statistics
+    {
+    public:
+        int zeta() const override { return -1; }
+    };
+
+    // Assume implementations of derivs, power_moments_, and power_model
+    // For the purpose of this example, they are simplified placeholders
+
+    // Placeholder for derivative computations at x = 1.0
+    std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
+
+    // Placeholder for power moments computation
+    std::vector<double> &power_moments_(const Statistics &stat, std::vector<double> &deriv_x1, int l);
+
+    // Assume implementations of derivs, power_moments_, and power_model
+    // For the purpose of this example, they are simplified placeholders
+
+    // Placeholder for derivative computations at x = 1.0
+    std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
+
+    // Placeholder for power moments computation
+    std::vector<double> &power_moments_(const Statistics &stat, std::vector<double> &deriv_x1, int l);
+
+    // Assume implementations of derivs, power_moments_, and power_model
+    // For the purpose of this example, they are simplified placeholders
+
+    // Placeholder for derivative computations at x = 1.0
+    std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
+
+    // Placeholder for power moments computation
+    std::vector<double> &power_moments_(const Statistics &stat, std::vector<double> &deriv_x1, int l);
+
+
+} // namespace sparseir
+
+namespace sparseir {
+
+    // PiecewiseLegendreFTVector class in C++
+
+    template <typename S>
+    class PiecewiseLegendreFTVector
+    {
+    private:
+        std::vector<PiecewiseLegendreFT<S>> polyvec;
+
+    public:
+        // Default constructor
+        //PiecewiseLegendreFTVector() {}
+
+        // Constructor from vector of PiecewiseLegendreFT<S>
+        PiecewiseLegendreFTVector<S>(const std::vector<PiecewiseLegendreFT<S>> &polyvec_)
+            : polyvec(polyvec_) {}
+
+        /*
+        // Constructor from PiecewiseLegendrePolyVector and Statistics
+        PiecewiseLegendreFTVector(const PiecewiseLegendrePolyVector &polys,
+                                  const Statistics &stat,
+                                  double n_asymp = std::numeric_limits<double>::infinity())
+        {
+            polyvec.reserve(polys.size());
+            for (const auto &poly : polys)
+            {
+                polyvec.emplace_back(poly, stat, n_asymp);
+            }
+        }
+        */
+
+        // Get the size of the vector
+        size_t size() const
+        {
+            return polyvec.size();
+        }
+
+        // Indexing operator (non-const)
+        PiecewiseLegendreFT<S> &operator[](size_t i)
+        {
+            return polyvec[i];
+        }
+
+        // Indexing operator (const)
+        const PiecewiseLegendreFT<S> &operator[](size_t i) const
+        {
+            return polyvec[i];
+        }
+
+        // Indexing with a vector of indices
+        PiecewiseLegendreFTVector<S> operator[](const std::vector<size_t> &indices) const
+        {
+            std::vector<PiecewiseLegendreFT<S>> new_polyvec;
+            new_polyvec.reserve(indices.size());
+            for (size_t idx : indices)
+            {
+                new_polyvec.push_back(polyvec[idx]);
+            }
+            return PiecewiseLegendreFTVector<S>{std::move(new_polyvec)};
+        }
+
+        // Set element at index i
+        void set(size_t i, const PiecewiseLegendreFT<S> &p)
+        {
+            if (i < polyvec.size())
+            {
+                polyvec[i] = p;
+            }
+        }
+
+        // Create a similar PiecewiseLegendreFTVector
+        PiecewiseLegendreFTVector<S> similar() const
+        {
+            return PiecewiseLegendreFTVector<S>();
+        }
+
+        // Get n_asymp from the first element
+        double n_asymp() const
+        {
+            return polyvec.empty() ? std::numeric_limits<double>::infinity() : polyvec.front().n_asymp();
+        }
+
+        // Get statistics from the first element
+        S statistics() const
+        {
+            return polyvec.front().statistics();
+        }
+
+        // Get zeta from the first element
+        double zeta() const
+        {
+            return polyvec.empty() ? 0.0 : polyvec.front().zeta();
+        }
+
+        /*
+        // Get poly as PiecewiseLegendrePolyVector
+        PiecewiseLegendrePolyVector<S> poly() const
+        {
+            std::vector<PiecewiseLegendrePoly<S>> polys;
+            polys.reserve(polyvec.size());
+            for (const auto &pft : polyvec)
+            {
+                polys.push_back(pft.poly());
+            }
+            return PiecewiseLegendrePolyVector<S>{std::move(polys)};
+        }
+        */
+
+        // Overload operator() for MatsubaraFreq<S>
+        Eigen::VectorXcd operator()(const MatsubaraFreq<S> &omega) const
+        {
+            size_t num_funcs = polyvec.size();
+            Eigen::VectorXcd result(num_funcs);
+            for (size_t i = 0; i < num_funcs; ++i)
+            {
+                result(i) = polyvec[i](omega);
+            }
+            return result;
+        }
+
+        // Overload operator() for integer n
+        Eigen::VectorXcd operator()(int n) const
+        {
+            return (*this)(MatsubaraFreq<S>(n));
+        }
+
+        // Overload operator() for array of integers
+        Eigen::MatrixXcd operator()(const Eigen::ArrayXi &n_array) const
+        {
+            size_t num_funcs = polyvec.size();
+            size_t num_freqs = n_array.size();
+            Eigen::MatrixXcd result(num_funcs, num_freqs);
+            for (size_t i = 0; i < num_funcs; ++i)
+            {
+                for (size_t j = 0; j < num_freqs; ++j)
+                {
+                    result(i, j) = polyvec[i](n_array[j]);
+                }
+            }
+            return result;
+        }
+    };
+} // namespace sparseir

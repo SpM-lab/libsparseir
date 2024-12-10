@@ -203,6 +203,10 @@ namespace sparseir
     class LogisticKernel : public AbstractKernel
     {
     public:
+        double lambda_; ///< The kernel cutoff Λ.
+
+        // Constructor
+        LogisticKernel(){}
         /**
          * @brief Constructor for LogisticKernel.
          *
@@ -1012,6 +1016,16 @@ namespace sparseir
         {
             return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(kernel, sign);
         }
+    }
+
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(const LogisticKernel& kernel, int sign) {
+        auto kernel_ptr = std::make_shared<const LogisticKernel>(kernel);
+        return get_symmetrized(kernel_ptr, sign);
+    }
+
+    inline std::shared_ptr<AbstractKernel> get_symmetrized(const RegularizedBoseKernel& kernel, int sign) {
+        auto kernel_ptr = std::make_shared<const RegularizedBoseKernel>(kernel);
+        return get_symmetrized(kernel_ptr, sign);
     }
 
     inline void get_symmetrized(AbstractReducedKernel &kernel, int sign)
