@@ -43,6 +43,7 @@ Quadrature rule.
 template <typename T>
 class Rule {
 public:
+    // TODO: Define x and w as Eigen::VectorXd
     std::vector<T> x, w, x_forward, x_backward;
     T a, b;
     Rule(const std::vector<T>& x, const std::vector<T>& w, std::vector<T> x_forward, std::vector<T> x_backward, T a = -1, T b = 1)
@@ -194,7 +195,7 @@ Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1
 }
 
 template <typename TargetType, typename SourceType>
-Rule<TargetType> convert(const Rule<SourceType> &rule)
+inline Rule<TargetType> convert(const Rule<SourceType> &rule)
 {
     std::vector<TargetType> x(rule.x.begin(), rule.x.end());
     std::vector<TargetType> w(rule.w.begin(), rule.w.end());
