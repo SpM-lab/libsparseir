@@ -135,11 +135,11 @@ public:
         auto hints = kernel->sve_hints(epsilon);
         this->nsvals_hint = hints.nsvals_hint;
         n_gauss = (n_gauss_ > 0) ? n_gauss_ : hints.ngauss;
-        rule = GaussLegendreRule(n_gauss);
+        rule = Rule(n_gauss);
         segs_x = kernel->template segments_x<T>();
         segs_y = kernel->template segments_y<T>();
-        gauss_x = GaussLegendreQuadrature(rule, segs_x);
-        gauss_y = GaussLegendreQuadrature(rule, segs_y);
+        gauss_x = piecewise(rule, segs_x);
+        gauss_y = piecewise(rule, segs_y);
     }
 
     // Compute matrices for SVD
