@@ -164,11 +164,11 @@ public:
         // Element-wise multiplication with square roots of weights
         for (int i = 0; i < gauss_x.w.size(); ++i)
         {
-            A.row(i) *= std::sqrt(gauss_x.w[i]);
+            A.row(i) *= sqrt_impl(gauss_x.w[i]);
         }
         for (int j = 0; j < gauss_y.w.size(); ++j)
         {
-            A.col(j) *= std::sqrt(gauss_y.w[j]);
+            A.col(j) *= sqrt_impl(gauss_y.w[j]);
         }
         mats.push_back(A);
         return mats;
@@ -253,7 +253,7 @@ public:
             {
                 for (int i = 0; i < u_data.dimension(0); ++i)
                 {
-                    u_data(i, j, k) *= std::sqrt(0.5 * dsegs_x[j]);
+                    u_data(i, j, k) *= sqrt_impl(T(0.5) * dsegs_x[j]);
                 }
             }
         }
@@ -265,7 +265,7 @@ public:
             {
                 for (int i = 0; i < v_data.dimension(0); ++i)
                 {
-                    v_data(i, j, k) *= std::sqrt(0.5 * dsegs_y[j]);
+                    v_data(i, j, k) *= sqrt_impl(T(0.5) * dsegs_y[j]);
                 }
             }
         }
@@ -349,80 +349,6 @@ public:
         auto mats_odd = odd.matrices();
         return {mats_even[0], mats_odd[0]};
     }
-    /*
-    SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
-                                   const std::vector<Eigen::VectorX<T>>& s_list,
-                                   const std::vector<Eigen::MatrixX<T>>& v_list) const override {
-        SVEResult<K> result_even = even.postprocess({ u_list[0] }, { s_list[0] }, { v_list[0] });
-        SVEResult<K> result_odd = odd.postprocess({ u_list[1] }, { s_list[1] }, { v_list[1] });
-
-
-        // Merge results
-        auto u = result_even.u;
-        u.insert(u.end(), result_odd.u.begin(), result_odd.u.end());
-        auto s = result_even.s;
-        s.insert(s.end(), result_odd.s.begin(), result_odd.s.end());
-        auto v = result_even.v;
-        v.insert(v.end(), result_odd.v.begin(), result_odd.v.end());
-
-        std::vector<int> signs(result_even.s.size(), +1);
-        signs.insert(signs.end(), result_odd.s.size(), -1);
-
-        // Sort singular values and associated vectors
-        std::vector<size_t> indices(s.size());
-        std::iota(indices.begin(), indices.end(), 0);
-        std::stable_sort(indices.begin(), indices.end(), [&](size_t i1, size_t i2) {
-            return s[i1] > s[i2];
-        });
-
-        std::vector<PiecewiseLegendrePoly> u_sorted(u.size());
-        std::vector<double> s_sorted(s.size());
-        std::vector<PiecewiseLegendrePoly> v_sorted(v.size());
-        std::vector<int> signs_sorted(signs.size());
-        for (size_t i = 0; i < indices.size(); ++i) {
-            u_sorted[i] = u[indices[i]];
-            s_sorted[i] = s[indices[i]];
-            v_sorted[i] = v[indices[i]];
-            signs_sorted[i] = signs[indices[i]];
-        }
-
-        // Extend to negative side
-        // Assuming definitions of necessary functions and data structures
-        auto full_hints = sve_hints(kernel, epsilon);
-        auto segs_x_full = segments_x(full_hints);
-        auto segs_y_full = segments_y(full_hints);
-
-        std::vector<PiecewiseLegendrePoly> u_complete(u_sorted.size());
-        std::vector<PiecewiseLegendrePoly> v_complete(v_sorted.size());
-
-        Eigen::Array<T, Eigen::Dynamic, 1> poly_flip_x = Eigen::Array<T, Eigen::Dynamic, 1>::LinSpaced(u_sorted[0].data.rows(), 0, u_sorted[0].data.rows() - 1);
-        poly_flip_x = poly_flip_x.unaryExpr([](T x) { return std::pow(-1, x); });
-
-        for (size_t i = 0; i < u_sorted.size(); ++i) {
-            Eigen::MatrixX<T> u_pos_data = u_sorted[i].data / std::sqrt(T(2));
-            Eigen::MatrixX<T> v_pos_data = v_sorted[i].data / std::sqrt(T(2));
-
-            Eigen::MatrixX<T> u_neg_data = u_pos_data.rowwise().reverse().array().colwise() * poly_flip_x.array() * T(signs_sorted[i]);
-            Eigen::MatrixX<T> v_neg_data = v_pos_data.rowwise().reverse().array().colwise() * poly_flip_x.array() * T(signs_sorted[i]);
-
-            Eigen::MatrixX<T> u_data_full(u_pos_data.rows(), u_pos_data.cols() + u_neg_data.cols());
-            u_data_full << u_neg_data, u_pos_data;
-
-            Eigen::MatrixX<T> v_data_full(v_pos_data.rows(), v_pos_data.cols() + v_neg_data.cols());
-            v_data_full << v_neg_data, v_pos_data;
-
-            u_complete[i] = PiecewiseLegendrePoly(u_data_full, segs_x_full, static_cast<int>(i), signs_sorted[i]);
-            v_complete[i] = PiecewiseLegendrePoly(v_data_full, segs_y_full, static_cast<int>(i), signs_sorted[i]);
-        }
-
-
-        // Convert std::vector to Eigen::VectorXd
-        Eigen::Map<Eigen::VectorXd> s_eigen(s_sorted.data(), s_sorted.size());
-
-        // Then use the converted Eigen vector in the constructor
-        return SVEResult<T>(u_complete, s_eigen, v_complete, kernel, epsilon);
-    }
-    */
 
    // Replace the vector merging code with Eigen operations
     SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
@@ -487,15 +413,16 @@ std::shared_ptr<AbstractSVE<K, T>> determine_sve(const K& kernel, double safe_ep
 }
 
 // Function to truncate singular values
+template <typename T>
 inline void truncate_singular_values(
-    std::vector<Eigen::MatrixXd> &u_list,
-    std::vector<Eigen::VectorXd> &s_list,
-    std::vector<Eigen::MatrixXd> &v_list,
-    double rtol,
+    std::vector<Eigen::MatrixX<T>> &u_list,
+    std::vector<Eigen::VectorX<T>> &s_list,
+    std::vector<Eigen::MatrixX<T>> &v_list,
+    T rtol,
     int lmax)
 {
     // Collect all singular values
-    std::vector<double> all_singular_values;
+    std::vector<T> all_singular_values;
     for (const auto &s : s_list)
     {
         for (int i = 0; i < s.size(); ++i)
@@ -503,10 +430,10 @@ inline void truncate_singular_values(
             all_singular_values.push_back(s(i));
         }
     }
-    std::sort(all_singular_values.begin(), all_singular_values.end(), std::greater<double>());
+    std::sort(all_singular_values.begin(), all_singular_values.end(), std::greater<T>());
 
     // Determine cutoff
-    double cutoff = rtol * all_singular_values.front();
+    T cutoff = rtol * all_singular_values.front();
     if (lmax < static_cast<int>(all_singular_values.size()))
     {
         cutoff = std::max(cutoff, all_singular_values[lmax - 1]);
@@ -543,7 +470,7 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss, double cutoff 
 {
     auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
     // Compute SVDs
-    std::vector<Eigen::MatrixX<T>> matrices = sve.matrices();
+    std::vector<Eigen::MatrixX<T>> matrices = sve->matrices();
     std::vector<Eigen::BDCSVD<Eigen::MatrixX<T>>> svds;
     for (const auto& mat : matrices) {
         Eigen::BDCSVD<Eigen::MatrixX<T>> svd(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -560,18 +487,18 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss, double cutoff 
     }
 
     // Apply cutoff and lmax
-    T cutoff_actual = std::isnan(cutoff) ? 2 * std::numeric_limits<T>::epsilon() : cutoff;
-    //truncate_singular_values(u_list, s_list, v_list, cutoff_actual, lmax);
+    T cutoff_actual = std::isnan(cutoff) ? 2 * T(std::numeric_limits<double>::epsilon()) : T(cutoff);
+    truncate_singular_values(u_list, s_list, v_list, cutoff_actual, lmax);
     // Postprocess to get the SVEResult
-    return sve.postprocess(u_list, s_list, v_list);
+    return sve->postprocess(u_list, s_list, v_list);
 }
 
 // Function to compute SVE result
 template <typename K>
     auto compute_sve(K kernel,
-                            std::string Twork = "Floatt64",
-                            double cutoff = std::numeric_limits<double>::quiet_NaN(),
                             double epsilon = std::numeric_limits<double>::quiet_NaN(),
+                            double cutoff = std::numeric_limits<double>::quiet_NaN(),
+                            std::string Twork = "Floatt64",
                             int lmax = std::numeric_limits<int>::max(),
                             int n_gauss = -1,
                             const std::string& svd_strat = "auto") {

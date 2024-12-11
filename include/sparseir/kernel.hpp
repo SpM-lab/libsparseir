@@ -357,14 +357,14 @@ namespace sparseir
 
             if (v >= 0)
             {
-                numerator = std::exp(-u_plus * abs_v);
+                numerator = exp_impl(-u_plus * abs_v);
             }
             else
             {
-                numerator = std::exp(-u_minus * abs_v);
+                numerator = exp_impl(-u_minus * abs_v);
             }
 
-            denominator = 1.0 + std::exp(-abs_v);
+            denominator = 1.0 + exp_impl(-abs_v);
 
             return numerator / denominator;
         }
@@ -736,7 +736,7 @@ namespace sparseir
             // Calculate diffs using the inverse hyperbolic cosine
             std::vector<T> diffs(nzeros);
             for (int i = 0; i < nzeros; ++i) {
-                diffs[i] = 1.0 / std::cosh(temp[i]);
+                diffs[i] = 1.0 / cosh_impl(temp[i]);
             }
 
             // Calculate cumulative sum of diffs
@@ -781,7 +781,7 @@ namespace sparseir
             // Calculate trailing differences
             for (int i = 20; i < nzeros; ++i) {
                 T x = (T)0.141 * i;
-                diffs.push_back(0.25 * std::exp(-x));
+                diffs.push_back(0.25 * exp_impl(-x));
             }
 
             // Calculate cumulative sum of diffs
@@ -945,7 +945,7 @@ namespace sparseir
             bool sinh_range = 1e-200 < v_half && v_half < 85;
             if (xy_small && sinh_range)
             {
-                return y * std::sinh(xv_half) / std::sinh(v_half);
+                return y * sinh_impl(xv_half) / sinh_impl(v_half);
             }
             else
             {
@@ -1049,8 +1049,14 @@ namespace sparseir{
         for (size_t i = 0; i < n; ++i) {
             threads.emplace_back([&, i]() {
                 for (size_t j = 0; j < m; ++j) {
-                    res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j],
-                                    gauss_x.x_forward[i], gauss_x.x_backward[i]);
+                    // TODO: return type should be T
+                    double ko = kernel(
+                        static_cast<double>(gauss_x.x[i]),
+                        static_cast<double>(gauss_y.x[j]),
+                        static_cast<double>(gauss_x.x_forward[i]),
+                        static_cast<double>(gauss_x.x_backward[i])
+                    );
+                    res(i, j) = T(ko);
                 }
             });
         }
