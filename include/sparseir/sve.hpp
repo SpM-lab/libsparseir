@@ -184,7 +184,7 @@ public:
         const Eigen::MatrixX<T> &u = u_list[0];
         const Eigen::VectorX<T> &s_ = s_list[0];
         const Eigen::MatrixX<T> &v = v_list[0];
-        Eigen::VectorX<T> s = s_.template cast<double>();
+        Eigen::VectorXd s = s_.template cast<double>();
 
         Eigen::VectorX<T> gauss_x_w = Eigen::VectorX<T>::Map(gauss_x.w.data(), gauss_x.w.size());
         Eigen::VectorX<T> gauss_y_w = Eigen::VectorX<T>::Map(gauss_y.w.data(), gauss_y.w.size());
@@ -280,11 +280,19 @@ public:
             {
                 for (int k = 0; k < u_data.dimension(2); ++k)
                 {
-                    slice_double(j, k) = u_data(j, k, i);
+                    slice_double(j, k) = static_cast<double>(u_data(j, k, i));
                 }
             }
 
-            polyvec_u.push_back(PiecewiseLegendrePoly(slice_double, Eigen::VectorXd::Map(segs_x.data(), segs_x.size()), i));
+            std::vector<double> segs_x_double;
+            segs_x_double.reserve(segs_x.size());
+            for (const auto& x : segs_x) {
+                segs_x_double.push_back(static_cast<double>(x));
+            }
+
+            polyvec_u.push_back(PiecewiseLegendrePoly(slice_double,
+    Eigen::VectorXd::Map(segs_x_double.data(), segs_x_double.size()), i));
+
         }
 
         // Repeat similar changes for v_data
@@ -295,12 +303,20 @@ public:
             {
                 for (int k = 0; k < v_data.dimension(2); ++k)
                 {
-                    slice_double(j, k) = v_data(j, k, i);
+                    slice_double(j, k) = static_cast<double>(v_data(j, k, i));
                 }
             }
 
-            polyvec_v.push_back(PiecewiseLegendrePoly(slice_double, Eigen::VectorXd::Map(segs_y.data(), segs_y.size()), i));
+            std::vector<double> segs_y_double;
+            segs_y_double.reserve(segs_y.size());
+            for (const auto& y : segs_y) {
+                segs_y_double.push_back(static_cast<double>(y));
+            }
+
+            polyvec_v.push_back(PiecewiseLegendrePoly(slice_double,
+    Eigen::VectorXd::Map(segs_y_double.data(), segs_y_double.size()), i));
         }
+
         PiecewiseLegendrePolyVector ulx(polyvec_u);
         PiecewiseLegendrePolyVector vly(polyvec_v);
         canonicalize(ulx, vly);
