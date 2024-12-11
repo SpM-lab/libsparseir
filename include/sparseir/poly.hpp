@@ -544,6 +544,17 @@ public:
     PiecewiseLegendrePolyVector(const std::vector<PiecewiseLegendrePoly>& polyvec)
         : polyvec(polyvec) {}
 
+
+    // Add iterator support
+    using iterator = std::vector<PiecewiseLegendrePoly>::iterator;
+    using const_iterator = std::vector<PiecewiseLegendrePoly>::const_iterator;
+
+    // Iterator methods
+    iterator begin() { return polyvec.begin(); }
+    iterator end() { return polyvec.end(); }
+    const_iterator begin() const { return polyvec.begin(); }
+    const_iterator end() const { return polyvec.end(); }
+
     /*
     // Constructor with data tensor, knots, and optional symm vector
     PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3>& data,

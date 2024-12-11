@@ -325,7 +325,7 @@ public:
 };
 
 // CentrosymmSVE class
-template <typename K, typename T>
+template <typename K, typename T=double>
 class CentrosymmSVE : public AbstractSVE<K, T> {
 public:
     K kernel;
@@ -336,19 +336,20 @@ public:
 
     CentrosymmSVE(const K& kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_),
-          epsilon(epsilon_),
-          // n_gauss(n_gauss_),
-          even(get_symmetrized(kernel_, +1), epsilon_, n_gauss_),
-          odd(get_symmetrized(kernel_, -1), epsilon_, n_gauss_) {
+        epsilon(epsilon_),
+        // Use dynamic_cast instead of static_cast
+        even(dynamic_cast<const K&>(*get_symmetrized(kernel_, +1)), epsilon_, n_gauss_),
+        odd(dynamic_cast<const K&>(*get_symmetrized(kernel_, -1)), epsilon_, n_gauss_) {
         nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
     }
 
-    std::vector<Eigen::MatrixX<T>> matrices() const override {
-        Eigen::MatrixX<T> mats_even = even.matrices();
-        Eigen::MatrixX<T> mats_odd = odd.matrices();
-        return std::vector<Eigen::MatrixX<T>>{ mats_even[0], mats_odd[0] };
-    }
 
+    std::vector<Eigen::MatrixX<T>> matrices() const override {
+        auto mats_even = even.matrices();
+        auto mats_odd = odd.matrices();
+        return {mats_even[0], mats_odd[0]};
+    }
+    /*
     SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
                                    const std::vector<Eigen::VectorX<T>>& s_list,
                                    const std::vector<Eigen::MatrixX<T>>& v_list) const override {
@@ -414,7 +415,49 @@ public:
             v_complete[i] = PiecewiseLegendrePoly(v_data_full, segs_y_full, static_cast<int>(i), signs_sorted[i]);
         }
 
-        return SVEResult<T>(u_complete, s_sorted, v_complete, kernel, epsilon);
+
+        // Convert std::vector to Eigen::VectorXd
+        Eigen::Map<Eigen::VectorXd> s_eigen(s_sorted.data(), s_sorted.size());
+
+        // Then use the converted Eigen vector in the constructor
+        return SVEResult<T>(u_complete, s_eigen, v_complete, kernel, epsilon);
+    }
+    */
+
+   // Replace the vector merging code with Eigen operations
+    SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
+                        const std::vector<Eigen::VectorX<T>>& s_list,
+                        const std::vector<Eigen::MatrixX<T>>& v_list) const override {
+    SVEResult<K> result_even = even.postprocess({ u_list[0] }, { s_list[0] }, { v_list[0] });
+    SVEResult<K> result_odd = odd.postprocess({ u_list[1] }, { s_list[1] }, { v_list[1] });
+
+    // Merge results using vectors instead of insert
+    std::vector<PiecewiseLegendrePoly> u_merged;
+    u_merged.reserve(result_even.u.size() + result_odd.u.size());
+    u_merged.insert(u_merged.end(), result_even.u.begin(), result_even.u.end());
+    u_merged.insert(u_merged.end(), result_odd.u.begin(), result_odd.u.end());
+
+    // Concatenate singular values
+    Eigen::VectorXd s_merged(result_even.s.size() + result_odd.s.size());
+    s_merged << result_even.s, result_odd.s;
+
+    // Merge v vectors
+    std::vector<PiecewiseLegendrePoly> v_merged;
+    v_merged.reserve(result_even.v.size() + result_odd.v.size());
+    v_merged.insert(v_merged.end(), result_even.v.begin(), result_even.v.end());
+    v_merged.insert(v_merged.end(), result_odd.v.begin(), result_odd.v.end());
+
+    // For segments, use the hints from the kernel class
+    auto hints = sve_hints(kernel, epsilon);
+    auto segs_x_full = hints.template segments_x<T>();
+    auto segs_y_full = hints.template segments_y<T>();
+
+    // Rest of the implementation...
+    // Create PiecewiseLegendrePolyVector from merged vectors
+    PiecewiseLegendrePolyVector u_complete(u_merged);
+    PiecewiseLegendrePolyVector v_complete(v_merged);
+
+        return SVEResult<K>(u_complete, s_merged, v_complete, kernel, epsilon);
     }
 };
 
