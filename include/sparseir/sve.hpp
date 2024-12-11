@@ -148,7 +148,7 @@ public:
     {
         n_gauss = (n_gauss_ > 0) ? n_gauss_ : sve_hints(kernel, epsilon).ngauss();
         // TODO: Implement Rule<T>(n_gauss)
-        rule = convert<T>(legendre(n_gauss));
+        rule = legendre<T>(n_gauss);
         auto hints = sve_hints(kernel, epsilon);
         nsvals_hint = hints.nsvals();
         segs_x = hints.template segments_x<T>();
@@ -184,7 +184,7 @@ public:
         const Eigen::MatrixX<T> &u = u_list[0];
         const Eigen::VectorX<T> &s_ = s_list[0];
         const Eigen::MatrixX<T> &v = v_list[0];
-        Eigen::VectorX<T> s = s_.template cast<double>();
+        Eigen::VectorXd s = s_.template cast<double>();
 
         Eigen::VectorX<T> gauss_x_w = Eigen::VectorX<T>::Map(gauss_x.w.data(), gauss_x.w.size());
         Eigen::VectorX<T> gauss_y_w = Eigen::VectorX<T>::Map(gauss_y.w.data(), gauss_y.w.size());
@@ -198,7 +198,7 @@ public:
         Eigen::TensorMap<Eigen::Tensor<T, 3>> u_data(u_x_flatten.data(), n_gauss, segs_x.size() - 1, s.size());
         Eigen::TensorMap<Eigen::Tensor<T, 3>> v_data(v_y_flatten.data(), n_gauss, segs_y.size() - 1, s.size());
 
-        Eigen::MatrixX<T> cmat = legendre_collocation(rule);
+        Eigen::MatrixX<T> cmat = legendre_collocation<T>(rule);
 
         for (int j = 0; j < u_data.dimension(1); ++j)
         {
@@ -280,11 +280,19 @@ public:
             {
                 for (int k = 0; k < u_data.dimension(2); ++k)
                 {
-                    slice_double(j, k) = u_data(j, k, i);
+                    slice_double(j, k) = static_cast<double>(u_data(j, k, i));
                 }
             }
 
-            polyvec_u.push_back(PiecewiseLegendrePoly(slice_double, Eigen::VectorXd::Map(segs_x.data(), segs_x.size()), i));
+            std::vector<double> segs_x_double;
+            segs_x_double.reserve(segs_x.size());
+            for (const auto& x : segs_x) {
+                segs_x_double.push_back(static_cast<double>(x));
+            }
+
+            polyvec_u.push_back(PiecewiseLegendrePoly(slice_double,
+    Eigen::VectorXd::Map(segs_x_double.data(), segs_x_double.size()), i));
+
         }
 
         // Repeat similar changes for v_data
@@ -295,12 +303,20 @@ public:
             {
                 for (int k = 0; k < v_data.dimension(2); ++k)
                 {
-                    slice_double(j, k) = v_data(j, k, i);
+                    slice_double(j, k) = static_cast<double>(v_data(j, k, i));
                 }
             }
 
-            polyvec_v.push_back(PiecewiseLegendrePoly(slice_double, Eigen::VectorXd::Map(segs_y.data(), segs_y.size()), i));
+            std::vector<double> segs_y_double;
+            segs_y_double.reserve(segs_y.size());
+            for (const auto& y : segs_y) {
+                segs_y_double.push_back(static_cast<double>(y));
+            }
+
+            polyvec_v.push_back(PiecewiseLegendrePoly(slice_double,
+    Eigen::VectorXd::Map(segs_y_double.data(), segs_y_double.size()), i));
         }
+
         PiecewiseLegendrePolyVector ulx(polyvec_u);
         PiecewiseLegendrePolyVector vly(polyvec_v);
         canonicalize(ulx, vly);
@@ -309,35 +325,37 @@ public:
 };
 
 // CentrosymmSVE class
-template <typename K, typename T>
+template <typename K, typename T=double>
 class CentrosymmSVE : public AbstractSVE<K, T> {
 public:
     K kernel;
     double epsilon;
-    SamplingSVE<T, K> even;
-    SamplingSVE<T, K> odd;
+    SamplingSVE<K, T> even;
+    SamplingSVE<K, T> odd;
     int nsvals_hint;
 
     CentrosymmSVE(const K& kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_),
-          epsilon(epsilon_),
-          // n_gauss(n_gauss_),
-          even(get_symmetrized(kernel_, +1), epsilon_, n_gauss_),
-          odd(get_symmetrized(kernel_, -1), epsilon_, n_gauss_) {
+        epsilon(epsilon_),
+        // Use dynamic_cast instead of static_cast
+        even(dynamic_cast<const K&>(*get_symmetrized(kernel_, +1)), epsilon_, n_gauss_),
+        odd(dynamic_cast<const K&>(*get_symmetrized(kernel_, -1)), epsilon_, n_gauss_) {
         nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
     }
 
-    std::vector<Eigen::MatrixX<T>> matrices() const override {
-        Eigen::MatrixX<T> mats_even = even.matrices();
-        Eigen::MatrixX<T> mats_odd = odd.matrices();
-        return std::vector<Eigen::MatrixX<T>>{ mats_even[0], mats_odd[0] };
-    }
 
-    virtual SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
-                                     const std::vector<Eigen::VectorX<T>>& s_list,
-                                     const std::vector<Eigen::MatrixX<T>>& v_list) const override {
-        SVEResult<T> result_even = even.postprocess({ u_list[0] }, { s_list[0] }, { v_list[0] });
-        SVEResult<T> result_odd = odd.postprocess({ u_list[1] }, { s_list[1] }, { v_list[1] });
+    std::vector<Eigen::MatrixX<T>> matrices() const override {
+        auto mats_even = even.matrices();
+        auto mats_odd = odd.matrices();
+        return {mats_even[0], mats_odd[0]};
+    }
+    /*
+    SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
+                                   const std::vector<Eigen::VectorX<T>>& s_list,
+                                   const std::vector<Eigen::MatrixX<T>>& v_list) const override {
+        SVEResult<K> result_even = even.postprocess({ u_list[0] }, { s_list[0] }, { v_list[0] });
+        SVEResult<K> result_odd = odd.postprocess({ u_list[1] }, { s_list[1] }, { v_list[1] });
+
 
         // Merge results
         auto u = result_even.u;
@@ -397,7 +415,49 @@ public:
             v_complete[i] = PiecewiseLegendrePoly(v_data_full, segs_y_full, static_cast<int>(i), signs_sorted[i]);
         }
 
-        return SVEResult<T>(u_complete, s_sorted, v_complete, kernel, epsilon);
+
+        // Convert std::vector to Eigen::VectorXd
+        Eigen::Map<Eigen::VectorXd> s_eigen(s_sorted.data(), s_sorted.size());
+
+        // Then use the converted Eigen vector in the constructor
+        return SVEResult<T>(u_complete, s_eigen, v_complete, kernel, epsilon);
+    }
+    */
+
+   // Replace the vector merging code with Eigen operations
+    SVEResult<K> postprocess(const std::vector<Eigen::MatrixX<T>>& u_list,
+                        const std::vector<Eigen::VectorX<T>>& s_list,
+                        const std::vector<Eigen::MatrixX<T>>& v_list) const override {
+    SVEResult<K> result_even = even.postprocess({ u_list[0] }, { s_list[0] }, { v_list[0] });
+    SVEResult<K> result_odd = odd.postprocess({ u_list[1] }, { s_list[1] }, { v_list[1] });
+
+    // Merge results using vectors instead of insert
+    std::vector<PiecewiseLegendrePoly> u_merged;
+    u_merged.reserve(result_even.u.size() + result_odd.u.size());
+    u_merged.insert(u_merged.end(), result_even.u.begin(), result_even.u.end());
+    u_merged.insert(u_merged.end(), result_odd.u.begin(), result_odd.u.end());
+
+    // Concatenate singular values
+    Eigen::VectorXd s_merged(result_even.s.size() + result_odd.s.size());
+    s_merged << result_even.s, result_odd.s;
+
+    // Merge v vectors
+    std::vector<PiecewiseLegendrePoly> v_merged;
+    v_merged.reserve(result_even.v.size() + result_odd.v.size());
+    v_merged.insert(v_merged.end(), result_even.v.begin(), result_even.v.end());
+    v_merged.insert(v_merged.end(), result_odd.v.begin(), result_odd.v.end());
+
+    // For segments, use the hints from the kernel class
+    auto hints = sve_hints(kernel, epsilon);
+    auto segs_x_full = hints.template segments_x<T>();
+    auto segs_y_full = hints.template segments_y<T>();
+
+    // Rest of the implementation...
+    // Create PiecewiseLegendrePolyVector from merged vectors
+    PiecewiseLegendrePolyVector u_complete(u_merged);
+    PiecewiseLegendrePolyVector v_complete(v_merged);
+
+        return SVEResult<K>(u_complete, s_merged, v_complete, kernel, epsilon);
     }
 };
 
@@ -417,23 +477,13 @@ public:
         : u(u_), s(s_), v(v_), kernel(kernel_), epsilon(epsilon_) {}
 };
 
-template <typename K>
-bool iscentrosymmetric(const K& kernel) {
-    // TODO: Implement centrosymmetric kernel check
-    return true;
-}
 template <typename K, typename T>
-auto determine_sve(const K& kernel, double safe_epsilon, int n_gauss){
-    //if (iscentrosymmetric(kernel)){
-        auto sve = CentrosymmSVE<K, T>(kernel, safe_epsilon, n_gauss);
-        return sve;
-    //}
-    /*
-    else {
-        auto sve = SamplingSVE<K, T>(kernel, safe_epsilon, n_gauss);
-        return sve;
+std::shared_ptr<AbstractSVE<K, T>> determine_sve(const K& kernel, double safe_epsilon, int n_gauss) {
+    if (kernel.is_centrosymmetric()) {
+        return std::make_shared<CentrosymmSVE<K, T>>(kernel, safe_epsilon, n_gauss);
+    } else {
+        return std::make_shared<SamplingSVE<K, T>>(kernel, safe_epsilon, n_gauss);
     }
-    */
 }
 
 // Function to truncate singular values

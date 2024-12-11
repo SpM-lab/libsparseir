@@ -27,13 +27,13 @@ void gaussValidate(const sparseir::Rule<T>& rule) {
     if (!(rule.a <= rule.b)) {
         throw invalid_argument("a,b must be a valid interval");
     }
-    if (!all_of(rule.x.begin(), rule.x.end(), [rule](T xi) { return xi <= rule.b; })) {
+    if (!std::all_of(rule.x.begin(), rule.x.end(), [rule](T xi) { return xi <= rule.b; })) {
         throw invalid_argument("x must be smaller than b");
     }
-    if (!all_of(rule.x.begin(), rule.x.end(), [rule](T xi) { return xi >= rule.a; })) {
+    if (!std::all_of(rule.x.begin(), rule.x.end(), [rule](T xi) { return xi >= rule.a; })) {
         throw invalid_argument("x must be larger than a");
     }
-    if (!is_sorted(rule.x.begin(), rule.x.end())) {
+    if (!std::is_sorted(rule.x.begin(), rule.x.end())) {
         throw invalid_argument("x must be well-ordered");
     }
     if (rule.x.size() != rule.w.size()) {
@@ -50,8 +50,10 @@ TEST_CASE("gauss.cpp") {
         std::vector<DDouble> x(20), w(20);
         DDouble a = -1, b = 1;
         xprec::gauss_legendre(20, x.data(), w.data());
-        sparseir::Rule<DDouble> r1 = sparseir::Rule<DDouble>(x, w);
-        sparseir::Rule<DDouble> r2 = sparseir::Rule<DDouble>(x, w, a, b);
+        Eigen::VectorX<DDouble> x_eigen = Eigen::Map<Eigen::VectorX<DDouble>>(x.data(), x.size());
+        Eigen::VectorX<DDouble> w_eigen = Eigen::Map<Eigen::VectorX<DDouble>>(w.data(), w.size());
+        sparseir::Rule<DDouble> r1 = sparseir::Rule<DDouble>(x_eigen, w_eigen);
+        sparseir::Rule<DDouble> r2 = sparseir::Rule<DDouble>(x_eigen, w_eigen, a, b);
         REQUIRE(r1.a == r2.a);
         REQUIRE(r1.b == r2.b);
         REQUIRE(r1.x == r2.x);
@@ -106,7 +108,7 @@ TEST_CASE("gauss.cpp") {
 
     SECTION("legendre_collocation"){
         sparseir::Rule<DDouble> r = sparseir::legendre(2);
-        Eigen::MatrixX<DDouble> result = legendre_collocation(r);
+        Eigen::MatrixX<DDouble> result = sparseir::legendre_collocation(r);
         Eigen::MatrixX<DDouble> expected(2, 2);
         // expected is computed by
         // julia> using SparseIR; m = SparseIR.legendre_collocation(SparseIR.sparseir::legendre(2, SparseIR.Float64x2))
@@ -134,9 +136,10 @@ TEST_CASE("gauss.cpp") {
         gaussValidate(rule);
         std::vector<DDouble> x(n), w(n);
         xprec::gauss_legendre(n, x.data(), w.data());
-
-        REQUIRE(rule.x == x);
-        REQUIRE(rule.w == w);
+        Eigen::VectorX<DDouble> x_eigen = Eigen::Map<Eigen::VectorX<DDouble>>(x.data(), n);
+        Eigen::VectorX<DDouble> w_eigen = Eigen::Map<Eigen::VectorX<DDouble>>(w.data(), n);
+        REQUIRE(rule.x == x_eigen);
+        REQUIRE(rule.w == w_eigen);
     }
 
     SECTION("piecewise") {

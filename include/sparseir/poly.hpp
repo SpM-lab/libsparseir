@@ -31,6 +31,9 @@ public:
     Eigen::VectorXd inv_xs;
     Eigen::VectorXd norms;
 
+    // Default constructor
+    PiecewiseLegendrePoly() = default;
+
     // Constructor
     PiecewiseLegendrePoly(int polyorder, double xmin, double xmax,
                           const Eigen::VectorXd& knots,
@@ -540,6 +543,17 @@ public:
     // Constructor with polyvec
     PiecewiseLegendrePolyVector(const std::vector<PiecewiseLegendrePoly>& polyvec)
         : polyvec(polyvec) {}
+
+
+    // Add iterator support
+    using iterator = std::vector<PiecewiseLegendrePoly>::iterator;
+    using const_iterator = std::vector<PiecewiseLegendrePoly>::const_iterator;
+
+    // Iterator methods
+    iterator begin() { return polyvec.begin(); }
+    iterator end() { return polyvec.end(); }
+    const_iterator begin() const { return polyvec.begin(); }
+    const_iterator end() const { return polyvec.end(); }
 
     /*
     // Constructor with data tensor, knots, and optional symm vector
