@@ -31,6 +31,9 @@ public:
     Eigen::VectorXd inv_xs;
     Eigen::VectorXd norms;
 
+    // Default constructor
+    PiecewiseLegendrePoly() = default;
+
     // Constructor
     PiecewiseLegendrePoly(int polyorder, double xmin, double xmax,
                           const Eigen::VectorXd& knots,
