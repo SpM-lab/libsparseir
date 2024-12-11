@@ -24,7 +24,8 @@ TEST_CASE("freq", "[Integer value of MatsubaraFreq with explicit integer cast]")
     REQUIRE(bf.get_n() == 4);
 }
 
-TEST_CASE("freq", "[Exceptions for invalid FermionicFreq and BosonicFreq values]")
+TEST_CASE("freq",
+          "[Exceptions for invalid FermionicFreq and BosonicFreq values]")
 {
     REQUIRE_THROWS_AS(sparseir::FermionicFreq(4), std::domain_error);
     REQUIRE_THROWS_AS(sparseir::BosonicFreq(-7), std::domain_error);

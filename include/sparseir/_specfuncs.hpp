@@ -1,16 +1,17 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 namespace sparseir {
 
-using Eigen::Matrix;
 using Eigen::Dynamic;
+using Eigen::Matrix;
 
 template <typename T>
-T legval(T x, const std::vector<T>& c) {
+T legval(T x, const std::vector<T> &c)
+{
     int nd = c.size();
     if (nd < 2) {
         return c.back();
@@ -21,14 +22,15 @@ T legval(T x, const std::vector<T>& c) {
     for (int j = nd - 2; j >= 1; --j) {
         T k = T(j) / T(j + 1);
         T temp = c0;
-        c0 = c[j-1] - c1 * k;
+        c0 = c[j - 1] - c1 * k;
         c1 = temp + c1 * x * (k + 1);
     }
     return c0 + c1 * x;
 }
 
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T>& x, int deg) {
+Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T> &x, int deg)
+{
     if (deg < 0) {
         throw std::domain_error("degree needs to be non-negative");
     }
@@ -47,7 +49,8 @@ Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T>& x, int deg) {
         for (int i = 2; i <= deg; ++i) {
             T invi = T(1) / T(i);
             for (int j = 0; j < deg + 1; ++j) {
-                v(j, i) = v(j, i - 1) * x[j] * (2 - invi) - v(j, i - 2) * (1 - invi);
+                v(j, i) =
+                    v(j, i - 1) * x[j] * (2 - invi) - v(j, i - 2) * (1 - invi);
             }
         }
     }
@@ -57,18 +60,19 @@ Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T>& x, int deg) {
 
 // Add legder for accepting std::vector<T>
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T>& x, int deg) {
-    Eigen::VectorX<T> x_eigen = Eigen::Map<const Eigen::VectorX<T>>(x.data(), x.size());
+Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T> &x, int deg)
+{
+    Eigen::VectorX<T> x_eigen =
+        Eigen::Map<const Eigen::VectorX<T>>(x.data(), x.size());
     return legvander(x_eigen, deg);
 }
 
-
-
-
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt = 1) {
+Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt = 1)
+{
     if (cnt < 0) {
-        throw std::domain_error("The order of derivation needs to be non-negative");
+        throw std::domain_error(
+            "The order of derivation needs to be non-negative");
     }
     if (cnt == 0) {
         return c;
