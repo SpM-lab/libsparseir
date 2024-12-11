@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./_impl.hpp"
 #include "./_linalg.hpp"
 #include "./_root.hpp"
 #include "./_specfuncs.hpp"
