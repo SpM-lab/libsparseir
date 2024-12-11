@@ -413,13 +413,16 @@ std::shared_ptr<AbstractSVE<K, T>> determine_sve(const K& kernel, double safe_ep
 
 // Function to truncate singular values
 template <typename T>
-inline void truncate_singular_values(
+inline std::tuple<std::vector<Eigen::MatrixX<T>>, std::vector<Eigen::VectorX<T>>, std::vector<Eigen::MatrixX<T>>> truncate(
     std::vector<Eigen::MatrixX<T>> &u_list,
     std::vector<Eigen::VectorX<T>> &s_list,
     std::vector<Eigen::MatrixX<T>> &v_list,
-    T rtol,
-    int lmax)
+    T rtol=0.0,
+    int lmax=std::numeric_limits<int>::max())
 {
+    std::vector<Eigen::MatrixX<T>> u_list_truncated;
+    std::vector<Eigen::VectorX<T>> s_list_truncated;
+    std::vector<Eigen::MatrixX<T>> v_list_truncated;
     // Collect all singular values
     std::vector<T> all_singular_values;
     for (const auto &s : s_list)
@@ -456,11 +459,12 @@ inline void truncate_singular_values(
         }
         if (scount < s.size())
         {
-            u_list[idx] = u_list[idx].leftCols(scount);
-            s_list[idx] = s_list[idx].head(scount);
-            v_list[idx] = v_list[idx].leftCols(scount);
+            u_list_truncated.push_back(u_list[idx].leftCols(scount));
+            s_list_truncated.push_back(s_list[idx].head(scount));
+            v_list_truncated.push_back(v_list[idx].leftCols(scount));
         }
     }
+    return std::make_tuple(u_list_truncated, s_list_truncated, v_list_truncated);
 }
 
 
@@ -470,26 +474,33 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss, double cutoff 
     auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
     // Compute SVDs
     std::vector<Eigen::MatrixX<T>> matrices = sve->matrices();
-    std::vector<Eigen::BDCSVD<Eigen::MatrixX<T>>> svds;
+    // TODO: implement SVD Resutls
+    std::vector<std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>, Eigen::MatrixX<T>>> svds;
     for (const auto& mat : matrices) {
-        Eigen::BDCSVD<Eigen::MatrixX<T>> svd(mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        auto svd = sparseir::compute_svd(mat);
         svds.push_back(svd);
     }
 
     // Extract singular values and vectors
-    std::vector<Eigen::MatrixX<T>> u_list, v_list;
-    std::vector<Eigen::VectorX<T>> s_list;
+    std::vector<Eigen::MatrixX<T>> u_list_, v_list_;
+    std::vector<Eigen::VectorX<T>> s_list_;
     for (const auto& svd : svds) {
-        u_list.push_back(svd.matrixU());
-        s_list.push_back(svd.singularValues());
-        v_list.push_back(svd.matrixV());
+        auto u = std::get<0>(svd);
+        auto s = std::get<1>(svd);
+        auto v = std::get<2>(svd);
+        u_list_.push_back(u);
+        s_list_.push_back(s);
+        v_list_.push_back(v);
     }
 
     // Apply cutoff and lmax
     T cutoff_actual = std::isnan(cutoff) ? 2 * T(std::numeric_limits<double>::epsilon()) : T(cutoff);
-    truncate_singular_values(u_list, s_list, v_list, cutoff_actual, lmax);
+    std::vector<Eigen::MatrixX<T>> u_list_truncated;
+    std::vector<Eigen::VectorX<T>> s_list_truncated;
+    std::vector<Eigen::MatrixX<T>> v_list_truncated;
+    std::tie(u_list_truncated, s_list_truncated, v_list_truncated) = truncate(u_list_, s_list_, v_list_, cutoff_actual, lmax);
     // Postprocess to get the SVEResult
-    return sve->postprocess(u_list, s_list, v_list);
+    return sve->postprocess(u_list_truncated, s_list_truncated, v_list_truncated);
 }
 
 // Function to compute SVE result
