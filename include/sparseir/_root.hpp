@@ -1,15 +1,16 @@
 #pragma once
 
-#include <vector>
-#include <cmath>
 #include <algorithm>
-#include <functional>
 #include <bitset>
+#include <cmath>
+#include <functional>
+#include <vector>
 
 namespace sparseir {
 
 template <typename T>
-T midpoint(T lo, T hi) {
+T midpoint(T lo, T hi)
+{
     if (std::is_integral<T>::value) {
         return lo + ((hi - lo) >> 1);
     } else {
@@ -18,16 +19,20 @@ T midpoint(T lo, T hi) {
 }
 
 template <typename F, typename T>
-std::vector<T> find_all(F f, const std::vector<T>& xgrid) {
+std::vector<T> find_all(F f, const std::vector<T> &xgrid)
+{
     std::vector<double> fx;
-    std::transform(xgrid.begin(), xgrid.end(), std::back_inserter(fx), [&](T x) { return static_cast<double>(f(x)); });
+    std::transform(xgrid.begin(), xgrid.end(), std::back_inserter(fx),
+                   [&](T x) { return static_cast<double>(f(x)); });
 
     std::vector<bool> hit(fx.size());
-    std::transform(fx.begin(), fx.end(), hit.begin(), [](double val) { return val == 0.0; });
+    std::transform(fx.begin(), fx.end(), hit.begin(),
+                   [](double val) { return val == 0.0; });
 
     std::vector<T> x_hit;
     for (size_t i = 0; i < hit.size(); ++i) {
-        if (hit[i]) x_hit.push_back(xgrid[i]);
+        if (hit[i])
+            x_hit.push_back(xgrid[i]);
     }
 
     std::vector<bool> sign_change(fx.size() - 1);
@@ -39,7 +44,8 @@ std::vector<T> find_all(F f, const std::vector<T>& xgrid) {
         sign_change[i] = sign_change[i] && !hit[i] && !hit[i + 1];
     }
 
-    if (std::none_of(sign_change.begin(), sign_change.end(), [](bool v) { return v; })) {
+    if (std::none_of(sign_change.begin(), sign_change.end(),
+                     [](bool v) { return v; })) {
         return x_hit;
     }
 
@@ -62,7 +68,10 @@ std::vector<T> find_all(F f, const std::vector<T>& xgrid) {
         }
     }
 
-    double epsilon_x = std::numeric_limits<T>::epsilon() * *std::max_element(xgrid.begin(), xgrid.end(), [](T a, T b) { return std::abs(a) < std::abs(b); });
+    double epsilon_x =
+        std::numeric_limits<T>::epsilon() *
+        *std::max_element(xgrid.begin(), xgrid.end(),
+                          [](T a, T b) { return std::abs(a) < std::abs(b); });
 
     std::vector<T> x_bisect;
     for (size_t i = 0; i < a.size(); ++i) {
@@ -75,10 +84,12 @@ std::vector<T> find_all(F f, const std::vector<T>& xgrid) {
 }
 
 template <typename F, typename T>
-T bisect(F f, T a, T b, double fa, double epsilon_x) {
+T bisect(F f, T a, T b, double fa, double epsilon_x)
+{
     while (true) {
         T mid = midpoint(a, b);
-        if (closeenough(a, mid, epsilon_x)) return mid;
+        if (closeenough(a, mid, epsilon_x))
+            return mid;
         double fmid = f(mid);
         if (std::signbit(fa) != std::signbit(fmid)) {
             b = mid;
@@ -90,7 +101,8 @@ T bisect(F f, T a, T b, double fa, double epsilon_x) {
 }
 
 template <typename T>
-bool closeenough(T a, T b, double epsilon) {
+bool closeenough(T a, T b, double epsilon)
+{
     if (std::is_floating_point<T>::value) {
         return std::abs(a - b) <= epsilon;
     } else {
@@ -99,7 +111,8 @@ bool closeenough(T a, T b, double epsilon) {
 }
 
 template <typename T>
-std::vector<T> refine_grid(const std::vector<T>& grid, int alpha) {
+std::vector<T> refine_grid(const std::vector<T> &grid, int alpha)
+{
     size_t n = grid.size();
     size_t newn = alpha * (n - 1) + 1;
     std::vector<T> newgrid(newn);
@@ -117,13 +130,15 @@ std::vector<T> refine_grid(const std::vector<T>& grid, int alpha) {
     return newgrid;
 }
 
-
 template <typename F, typename T>
-T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b) {
+T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b)
+{
     T d = b - a;
 
-    if (d <= 1) return absf_a > absf_b ? a : b;
-    if (d == 2) return a + 1;
+    if (d <= 1)
+        return absf_a > absf_b ? a : b;
+    if (d == 2)
+        return a + 1;
 
     T m = midpoint(a, b);
     T n = m + 1;
@@ -138,12 +153,14 @@ T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b) {
 }
 
 template <typename F, typename T>
-std::vector<T> discrete_extrema(F f, const std::vector<T>& xgrid) {
+std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
+{
     std::vector<double> fx(xgrid.size());
     std::transform(xgrid.begin(), xgrid.end(), fx.begin(), f);
 
     std::vector<double> absfx(fx.size());
-    std::transform(fx.begin(), fx.end(), absfx.begin(), [](double val) { return std::abs(val); });
+    std::transform(fx.begin(), fx.end(), absfx.begin(),
+                   [](double val) { return std::abs(val); });
 
     std::vector<bool> signdfdx(fx.size() - 1);
     for (size_t i = 0; i < fx.size() - 1; ++i) {
@@ -155,8 +172,10 @@ std::vector<T> discrete_extrema(F f, const std::vector<T>& xgrid) {
         derivativesignchange[i] = signdfdx[i] != signdfdx[i + 1];
     }
 
-    std::vector<bool> derivativesignchange_a(derivativesignchange.size() + 2, false);
-    std::vector<bool> derivativesignchange_b(derivativesignchange.size() + 2, false);
+    std::vector<bool> derivativesignchange_a(derivativesignchange.size() + 2,
+                                             false);
+    std::vector<bool> derivativesignchange_b(derivativesignchange.size() + 2,
+                                             false);
     for (size_t i = 0; i < derivativesignchange.size(); ++i) {
         derivativesignchange_a[i] = derivativesignchange[i];
         derivativesignchange_b[i + 2] = derivativesignchange[i];
@@ -177,16 +196,19 @@ std::vector<T> discrete_extrema(F f, const std::vector<T>& xgrid) {
 
     std::vector<T> res;
     for (size_t i = 0; i < a.size(); ++i) {
-        res.push_back(bisect_discr_extremum(f, a[i], b[i], absf_a[i], absf_b[i]));
+        res.push_back(
+            bisect_discr_extremum(f, a[i], b[i], absf_a[i], absf_b[i]));
     }
 
     std::vector<bool> sfx(fx.size());
-    std::transform(fx.begin(), fx.end(), sfx.begin(), [](double val) { return std::signbit(val); });
+    std::transform(fx.begin(), fx.end(), sfx.begin(),
+                   [](double val) { return std::signbit(val); });
 
     if (absfx.front() > absfx[1] || sfx.front() != sfx[1]) {
         res.insert(res.begin(), xgrid.front());
     }
-    if (absfx.back() > absfx[absfx.size() - 2] || sfx.back() != sfx[sfx.size() - 2]) {
+    if (absfx.back() > absfx[absfx.size() - 2] ||
+        sfx.back() != sfx[sfx.size() - 2]) {
         res.push_back(xgrid.back());
     }
 
