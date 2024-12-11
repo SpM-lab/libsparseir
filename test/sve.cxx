@@ -177,30 +177,39 @@ TEST_CASE("sve.cpp", "[choose_accuracy]") {
     REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "auto") == std::make_tuple(1.0e-6, "Float64", "default"));
     REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "accurate") == std::make_tuple(1.0e-6, "Float64", "accurate"));
 
-    /*
-    SECTION("truncate") {
-        sparseir::CentrosymmSVE sve(LogisticKernel(5), 1e-6, "Float64");
 
-        auto svds = sparseir::compute_svd(sparseir::matrices(sve));
-        std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> svd_tuple = svds;
-        std::vector<double> u_ = std::get<0>(svd_tuple);
-        std::vector<double> s_ = std::get<1>(svd_tuple);
-        std::vector<double> v_ = std::get<2>(svd_tuple);
+    SECTION("truncate") {
+        sparseir::CentrosymmSVE<sparseir::LogisticKernel, double> sve(sparseir::LogisticKernel(5), 1e-6);
+        std::vector<Eigen::MatrixX<double>> matrices = sve.matrices();
+        REQUIRE(matrices.size() == 2);
+        std::vector<std::tuple<Eigen::MatrixX<double>, Eigen::MatrixX<double>, Eigen::MatrixX<double>>> svds;
+        for (const auto& mat : matrices) {
+            auto svd = sparseir::compute_svd(mat);
+            svds.push_back(svd);
+        }
+
+        // Extract singular values and vectors
+        std::vector<Eigen::MatrixX<double>> u_list, v_list;
+        std::vector<Eigen::VectorX<double>> s_list;
+        for (const auto& svd : svds) {
+            auto u = std::get<0>(svd);
+            auto s = std::get<1>(svd);
+            auto v = std::get<2>(svd);
+            u_list.push_back(u);
+            s_list.push_back(s);
+            v_list.push_back(v);
+        }
 
         for (int lmax = 3; lmax <= 20; ++lmax) {
-            std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> truncated = sparseir::truncate(u_, s_, v_, lmax);
-            std::vector<double> u = std::get<0>(truncated);
-            std::vector<double> s = std::get<1>(truncated);
-            std::vector<double> v = std::get<2>(truncated);
+        auto truncated = sparseir::truncate(u_list, s_list, v_list, 1e-8, lmax);
+        auto u = std::get<0>(truncated);
+        auto s = std::get<1>(truncated);
+        auto v = std::get<2>(truncated);
 
-            std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> postprocessed = sparseir::postprocess(sve, u, s, v);
-            std::vector<double> u_post = std::get<0>(postprocessed);
-            std::vector<double> s_post = std::get<1>(postprocessed);
-            std::vector<double> v_post = std::get<2>(postprocessed);
-            REQUIRE(u_post.size() == s_post.size());
-            REQUIRE(s_post.size() == v_post.size());
-            REQUIRE(s_post.size() <= static_cast<size_t>(lmax - 1));
+            auto sveresult = sve.postprocess(u, s, v);
+            REQUIRE(sveresult.u.size() == sveresult.s.size());
+            REQUIRE(sveresult.s.size() == sveresult.v.size());
+            REQUIRE(sveresult.s.size() <= static_cast<size_t>(lmax - 1));
         }
     }
-    */
 }
