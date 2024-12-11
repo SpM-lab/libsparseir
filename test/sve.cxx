@@ -93,10 +93,9 @@ TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]") {
 
     sparseir::Rule<double> rule = sparseir::legendre<double>(n_gauss);
 
-    // TODO: resole  std::bad_cast
-    //auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel>(lk, 1e-6);
-    //auto sve_double = sparseir::CentrosymmSVE<sparseir::LogisticKernel, double>(lk, 1e-6);
-    //auto sve_ddouble = sparseir::CentrosymmSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
+    auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel>(lk, 1e-6);
+    auto sve_double = sparseir::CentrosymmSVE<sparseir::LogisticKernel, double>(lk, 1e-6);
+    auto sve_ddouble = sparseir::CentrosymmSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
 }
 
 TEST_CASE("sve.cpp", "[compute_sve]") {
