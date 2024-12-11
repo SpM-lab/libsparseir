@@ -77,10 +77,10 @@ TEST_CASE("sve.cpp", "[SamplingSVE]") {
     auto ssve2_double = sparseir::SamplingSVE<sparseir::LogisticKernel, double>(lk, 1e-6, 12);
     REQUIRE(ssve2_double.n_gauss == 12);
 
-    //auto ssve1_ddouble = sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
-    //REQUIRE(ssve1_ddouble.n_gauss == n_gauss);
-    //auto ssve2_ddouble = sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6, 12);
-    //REQUIRE(ssve2_ddouble.n_gauss == 12);
+    auto ssve1_ddouble = sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
+    REQUIRE(ssve1_ddouble.n_gauss == n_gauss);
+    auto ssve2_ddouble = sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6, 12);
+    REQUIRE(ssve2_ddouble.n_gauss == 12);
 }
 
 TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]") {
@@ -93,6 +93,7 @@ TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]") {
 
     sparseir::Rule<double> rule = sparseir::legendre<double>(n_gauss);
 
+    // TODO: resole  std::bad_cast
     //auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel>(lk, 1e-6);
     //auto sve_double = sparseir::CentrosymmSVE<sparseir::LogisticKernel, double>(lk, 1e-6);
     //auto sve_ddouble = sparseir::CentrosymmSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
