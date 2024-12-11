@@ -1049,8 +1049,14 @@ namespace sparseir{
         for (size_t i = 0; i < n; ++i) {
             threads.emplace_back([&, i]() {
                 for (size_t j = 0; j < m; ++j) {
-                    res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j],
-                                    gauss_x.x_forward[i], gauss_x.x_backward[i]);
+                    // TODO: return type should be T
+                    double ko = kernel(
+                        static_cast<double>(gauss_x.x[i]),
+                        static_cast<double>(gauss_y.x[j]),
+                        static_cast<double>(gauss_x.x_forward[i]),
+                        static_cast<double>(gauss_x.x_backward[i])
+                    );
+                    res(i, j) = T(ko);
                 }
             });
         }
