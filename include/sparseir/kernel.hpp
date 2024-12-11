@@ -41,6 +41,7 @@ namespace sparseir
         double lambda_;
         // Constructor
         AbstractKernel(double lambda) : lambda_(lambda) {}
+
         /**
          * @brief Evaluate kernel at point (x, y).
          *
@@ -153,7 +154,7 @@ namespace sparseir
             { return 1.0; };
         }
 
-        virtual ~AbstractKernel() {}
+        virtual ~AbstractKernel() = default;
     };
 
     class AbstractReducedKernel : public AbstractKernel

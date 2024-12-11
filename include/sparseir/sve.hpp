@@ -337,9 +337,8 @@ public:
     CentrosymmSVE(const K& kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_),
         epsilon(epsilon_),
-        // Use dynamic_cast instead of static_cast
-        even(dynamic_cast<const K&>(*get_symmetrized(kernel_, +1)), epsilon_, n_gauss_),
-        odd(dynamic_cast<const K&>(*get_symmetrized(kernel_, -1)), epsilon_, n_gauss_) {
+        even(static_cast<K&>(*get_symmetrized(kernel_, +1)), epsilon_, n_gauss_),
+        odd(static_cast<K&>(*get_symmetrized(kernel_, -1)), epsilon_, n_gauss_) {
         nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
     }
 
