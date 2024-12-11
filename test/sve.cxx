@@ -98,18 +98,22 @@ TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]"){
     //auto sve_ddouble = sparseir::CentrosymmSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
 }
 
-TEST_CASE("sve.cpp", "[sve]")
+TEST_CASE("sve.cpp", "[compute_sve]")
 {
+
+    //auto sve = sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0));
 
     // Define a map to store SVEResult objects
     //auto sve_logistic = std::map < int, sparseir::SVEResult<sparseir::LogisticKernel>>{
     //                                            {10, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0))},
     //                                            {42, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(42.0))},
     //                                            {10000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0))},
-    //                                            {100000000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0), 1e-12)}};
+    //                                            //{100000000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0), 1e-12)},
+    //                                            };
 
     SECTION("smooth with Λ =") {
         for (int Lambda : {10, 42, 10000}) {
+            REQUIRE(true);
             // sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> basis(1, Lambda, sve_logistic[Lambda]);
             // TODO: Check that the maximum implementation  is defined
             // check_smooth(basis.u, basis.s, 2 * sparseir::maximum(basis.u(1)), 24);
@@ -155,8 +159,9 @@ TEST_CASE("sve.cpp", "[sve]")
         }
     }
     */
+}
 
-    SECTION("choose_accuracy") {
+TEST_CASE("sve.cpp", "[choose_accuracy]") {
             REQUIRE(sparseir::choose_accuracy(nullptr, nullptr) == std::make_tuple(2.2204460492503131e-16, "Float64x2", "default"));
             REQUIRE(sparseir::choose_accuracy(nullptr, "Float64") == std::make_tuple(1.4901161193847656e-8, "Float64", "default"));
             REQUIRE(sparseir::choose_accuracy(nullptr, "Float64x2") == std::make_tuple(2.2204460492503131e-16, "Float64x2", "default"));
@@ -172,8 +177,7 @@ TEST_CASE("sve.cpp", "[sve]")
 
             REQUIRE(sparseir::choose_accuracy(1e-6, "Float64") == std::make_tuple(1.0e-6, "Float64", "default"));
             REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "auto") == std::make_tuple(1.0e-6, "Float64", "default"));
-            REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "accurate") == std::make_tuple(1.0e-6, "Float64", "accurate"));
-    }
+    REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "accurate") == std::make_tuple(1.0e-6, "Float64", "accurate"));
 
     /*
     SECTION("truncate") {
