@@ -148,7 +148,7 @@ public:
     {
         n_gauss = (n_gauss_ > 0) ? n_gauss_ : sve_hints(kernel, epsilon).ngauss();
         // TODO: Implement Rule<T>(n_gauss)
-        rule = convert<T>(legendre(n_gauss));
+        rule = legendre<T>(n_gauss);
         auto hints = sve_hints(kernel, epsilon);
         nsvals_hint = hints.nsvals();
         segs_x = hints.template segments_x<T>();
