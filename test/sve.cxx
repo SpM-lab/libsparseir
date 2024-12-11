@@ -63,7 +63,7 @@ TEST_CASE("AbstractSVE", "[sve]"){
     std::vector<double> segs_y = hints.template segments_y<double>();
 
     // Ensure `convert` is declared before this line
-    sparseir::Rule<double> rule = sparseir::convert<double>(sparseir::legendre(n_gauss));
+    sparseir::Rule<double> rule = sparseir::legendre<double>(n_gauss);
 
     sparseir::Rule<double> gauss_x = rule.piecewise(segs_x);
     sparseir::Rule<double> gauss_y = rule.piecewise(segs_y);

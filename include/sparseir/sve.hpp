@@ -198,7 +198,7 @@ public:
         Eigen::TensorMap<Eigen::Tensor<T, 3>> u_data(u_x_flatten.data(), n_gauss, segs_x.size() - 1, s.size());
         Eigen::TensorMap<Eigen::Tensor<T, 3>> v_data(v_y_flatten.data(), n_gauss, segs_y.size() - 1, s.size());
 
-        Eigen::MatrixX<T> cmat = legendre_collocation(rule);
+        Eigen::MatrixX<T> cmat = legendre_collocation<T>(rule);
 
         for (int j = 0; j < u_data.dimension(1); ++j)
         {

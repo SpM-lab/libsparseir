@@ -28,7 +28,7 @@ T legval(T x, const std::vector<T>& c) {
 }
 
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T>& x, int deg) {
+Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T>& x, int deg) {
     if (deg < 0) {
         throw std::domain_error("degree needs to be non-negative");
     }
@@ -54,6 +54,16 @@ Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T>& x, int deg) {
 
     return v;
 }
+
+// Add legder for accepting std::vector<T>
+template <typename T>
+Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T>& x, int deg) {
+    Eigen::VectorX<T> x_eigen = Eigen::Map<const Eigen::VectorX<T>>(x.data(), x.size());
+    return legvander(x_eigen, deg);
+}
+
+
+
 
 template <typename T>
 Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt = 1) {

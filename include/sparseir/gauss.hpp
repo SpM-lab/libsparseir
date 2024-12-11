@@ -47,6 +47,17 @@ public:
     T a, b;
     // Default constructor
     Rule() {};
+
+    Rule(const std::vector<T>& x, const std::vector<T>& w, T a = -1, T b = 1)
+        : x(Eigen::Map<const Eigen::VectorX<T>>(x.data(), x.size())),
+          w(Eigen::Map<const Eigen::VectorX<T>>(w.data(), w.size())),
+          a(a), b(b) {
+        this->x_forward = Eigen::VectorX<T>::Zero(x.size());
+        this->x_backward = Eigen::VectorX<T>::Zero(x.size());
+        std::transform(this->x.data(), this->x.data() + this->x.size(), this->x_forward.data(), [a](T xi) { return xi - a; });
+        std::transform(this->x.data(), this->x.data() + this->x.size(), this->x_backward.data(), [b](T xi) { return b - xi; });
+    }
+
     // Constructor with x, w, x_forward, x_backward, a, b
     Rule(const Eigen::VectorX<T>& x, const Eigen::VectorX<T>& w, Eigen::VectorX<T> x_forward, Eigen::VectorX<T> x_backward, T a = -1, T b = 1)
         : x(x), w(w), x_forward(x_forward), x_backward(x_backward), a(a), b(b) {}
@@ -62,6 +73,16 @@ public:
             std::transform(x.data(), x.data() + x.size(), this->x_backward.data(), [b](T xi) { return b - xi; });
         }
     }
+
+
+    template <typename U>
+    Rule(const Rule<U>& other)
+        : x(other.x.template cast<T>()),
+          w(other.w.template cast<T>()),
+          x_forward(other.x_forward.template cast<T>()),
+        x_backward(other.x_backward.template cast<T>()),
+          a(static_cast<T>(other.a)),
+          b(static_cast<T>(other.b)) {}
 
     Rule<T> reseat(T a, T b) const {
         T scaling = (b - a) / (this->b - this->a);
@@ -177,16 +198,13 @@ inline Rule<T> legendre(int n){
     return Rule<T>(new_x, new_w);
 }
 
-}
-
-
 template <typename T>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1) {
     if (n < 0) {
         n = rule.x.size();
     }
     // Compute the Legendre Vandermonde matrix
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> lv = legvander(rule.x, n-1);
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> lv = sparseir::legvander<T>(rule.x, n-1);
     for (size_t i = 0; i < rule.w.size(); ++i) {
         for (size_t j = 0; j < lv.cols(); ++j) {
             lv(i, j) *= rule.w[i];
@@ -210,8 +228,8 @@ Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> legendre_collocation(const Rule
     return res;
 }
 
-template <typename TargetType, typename SourceType>
-inline Rule<TargetType> convert(const Rule<SourceType> &rule)
+/*template <typename TargetType, typename SourceType>
+inline sparseir::Rule<TargetType> convert(const sparseir::Rule<SourceType> &rule)
 {
     // Convert vectors using Eigen::Map to handle the conversion properly
     Eigen::VectorX<TargetType> x = rule.x.template cast<TargetType>();
@@ -221,7 +239,7 @@ inline Rule<TargetType> convert(const Rule<SourceType> &rule)
     TargetType a = static_cast<TargetType>(rule.a);
     TargetType b = static_cast<TargetType>(rule.b);
 
-    return Rule<TargetType>(x, w, x_forward, x_backward, a, b);
-}
+    return sparseir::Rule<TargetType>(x, w, x_forward, x_backward, a, b);
+}*/
 
 } // namespace sparseir
