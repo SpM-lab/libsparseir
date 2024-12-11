@@ -10,7 +10,6 @@
 
 namespace sparseir {
 
-using namespace Eigen;
 using xprec::DDouble;
 
 class slice {
@@ -44,39 +43,60 @@ template <typename T>
 class Rule {
 public:
     // TODO: Define x and w as Eigen::VectorXd
-    std::vector<T> x, w, x_forward, x_backward;
+    Eigen::VectorX<T> x, w, x_forward, x_backward;
     T a, b;
     // Default constructor
     Rule() {};
+
+    Rule(const std::vector<T>& x, const std::vector<T>& w, T a = -1, T b = 1)
+        : x(Eigen::Map<const Eigen::VectorX<T>>(x.data(), x.size())),
+          w(Eigen::Map<const Eigen::VectorX<T>>(w.data(), w.size())),
+          a(a), b(b) {
+        this->x_forward = Eigen::VectorX<T>::Zero(x.size());
+        this->x_backward = Eigen::VectorX<T>::Zero(x.size());
+        std::transform(this->x.data(), this->x.data() + this->x.size(), this->x_forward.data(), [a](T xi) { return xi - a; });
+        std::transform(this->x.data(), this->x.data() + this->x.size(), this->x_backward.data(), [b](T xi) { return b - xi; });
+    }
+
     // Constructor with x, w, x_forward, x_backward, a, b
-    Rule(const std::vector<T>& x, const std::vector<T>& w, std::vector<T> x_forward, std::vector<T> x_backward, T a = -1, T b = 1)
+    Rule(const Eigen::VectorX<T>& x, const Eigen::VectorX<T>& w, Eigen::VectorX<T> x_forward, Eigen::VectorX<T> x_backward, T a = -1, T b = 1)
         : x(x), w(w), x_forward(x_forward), x_backward(x_backward), a(a), b(b) {}
     // Constructor with x, w, a, b
-    Rule(const std::vector<T>& x, const std::vector<T>& w, T a = -1, T b = 1)
+    Rule(const Eigen::VectorX<T>& x, const Eigen::VectorX<T>& w, T a = -1, T b = 1)
         : x(x), w(w), a(a), b(b) {
-        this->x_forward = x_forward.empty() ? std::vector<T>(x.size(), 0) : x_forward;
-        this->x_backward = x_backward.empty() ? std::vector<T>(x.size(), 0) : x_backward;
-        if (x_forward.empty()) {
-            transform(x.begin(), x.end(), this->x_forward.begin(), [a](T xi) { return xi - a; });
+        this->x_forward = x_forward.size() == 0 ? Eigen::VectorX<T>::Zero(x.size()) : x_forward;
+        this->x_backward = x_backward.size() == 0 ? Eigen::VectorX<T>::Zero(x.size()) : x_backward;
+        if (x_forward.size() == 0) {
+            std::transform(x.data(), x.data() + x.size(), this->x_forward.data(), [a](T xi) { return xi - a; });
         }
-        if (x_backward.empty()) {
-            transform(x.begin(), x.end(), this->x_backward.begin(), [b](T xi) { return b - xi; });
+        if (x_backward.size() == 0) {
+            std::transform(x.data(), x.data() + x.size(), this->x_backward.data(), [b](T xi) { return b - xi; });
         }
     }
 
+
+    template <typename U>
+    Rule(const Rule<U>& other)
+        : x(other.x.template cast<T>()),
+          w(other.w.template cast<T>()),
+          x_forward(other.x_forward.template cast<T>()),
+        x_backward(other.x_backward.template cast<T>()),
+          a(static_cast<T>(other.a)),
+          b(static_cast<T>(other.b)) {}
+
     Rule<T> reseat(T a, T b) const {
         T scaling = (b - a) / (this->b - this->a);
-        std::vector<T> new_x(x.size()), new_w(w.size()), new_x_forward(x_forward.size()), new_x_backward(x_backward.size());
-        transform(x.begin(), x.end(), new_x.begin(), [this, scaling, a, b](T xi) { return scaling * (xi - (this->b + this->a) / 2) + (b + a) / 2; });
-        transform(w.begin(), w.end(), new_w.begin(), [scaling](T wi) { return wi * scaling; });
-        transform(x_forward.begin(), x_forward.end(), new_x_forward.begin(), [scaling](T xi) { return xi * scaling; });
-        transform(x_backward.begin(), x_backward.end(), new_x_backward.begin(), [scaling](T xi) { return xi * scaling; });
+        Eigen::VectorX<T> new_x(x.size()), new_w(w.size()), new_x_forward(x_forward.size()), new_x_backward(x_backward.size());
+        std::transform(x.data(), x.data() + x.size(), new_x.data(), [this, scaling, a, b](T xi) { return scaling * (xi - (this->b + this->a) / 2) + (b + a) / 2; });
+        std::transform(w.data(), w.data() + w.size(), new_w.data(), [scaling](T wi) { return wi * scaling; });
+        std::transform(x_forward.data(), x_forward.data() + x_forward.size(), new_x_forward.data(), [scaling](T xi) { return xi * scaling; });
+        std::transform(x_backward.data(), x_backward.data() + x_backward.size(), new_x_backward.data(), [scaling](T xi) { return xi * scaling; });
         return Rule<T>(new_x, new_w, new_x_forward, new_x_backward, a, b);
     }
 
     Rule<T> scale(T factor) const {
-        std::vector<T> new_w(w.size());
-        transform(w.begin(), w.end(), new_w.begin(), [factor](T wi) { return wi * factor; });
+        Eigen::VectorX<T> new_w(w.size());
+        transform(w.data(), w.data() + w.size(), new_w.data(), [factor](T wi) { return wi * factor; });
         return Rule<T>(x, new_w, x_forward, x_backward, a, b);
     }
 
@@ -99,26 +119,30 @@ public:
 
     static Rule<T> join(const std::vector<Rule<T>>& gauss_list) {
         if (gauss_list.empty()) {
-            return Rule<T>({}, {});
+            return Rule<T>(Eigen::VectorX<T>(), Eigen::VectorX<T>());
         }
 
         T a = gauss_list.front().a;
         T b = gauss_list.back().b;
         T prev_b = a;
-        std::vector<T> x, w, x_forward, x_backward;
+        Eigen::VectorX<T> x, w, x_forward, x_backward;
 
         for (const auto& curr : gauss_list) {
             if (curr.a != prev_b) {
                 throw std::invalid_argument("Gauss rules must be ascending");
             }
             prev_b = curr.b;
-            std::vector<T> curr_x_forward(curr.x_forward.size()), curr_x_backward(curr.x_backward.size());
-            transform(curr.x_forward.begin(), curr.x_forward.end(), curr_x_forward.begin(), [a, curr](T xi) { return xi + (curr.a - a); });
-            transform(curr.x_backward.begin(), curr.x_backward.end(), curr_x_backward.begin(), [b, curr](T xi) { return xi + (b - curr.b); });
-            x.insert(x.end(), curr.x.begin(), curr.x.end());
-            w.insert(w.end(), curr.w.begin(), curr.w.end());
-            x_forward.insert(x_forward.end(), curr_x_forward.begin(), curr_x_forward.end());
-            x_backward.insert(x_backward.end(), curr_x_backward.begin(), curr_x_backward.end());
+            Eigen::VectorX<T> curr_x_forward(curr.x_forward.size()), curr_x_backward(curr.x_backward.size());
+            std::transform(curr.x_forward.data(), curr.x_forward.data() + curr.x_forward.size(), curr_x_forward.data(), [a, curr](T xi) { return xi + (curr.a - a); });
+            std::transform(curr.x_backward.data(), curr.x_backward.data() + curr.x_backward.size(), curr_x_backward.data(), [b, curr](T xi) { return xi + (b - curr.b); });
+            x.conservativeResize(x.size() + curr.x.size());
+            w.conservativeResize(w.size() + curr.w.size());
+            x_forward.conservativeResize(x_forward.size() + curr_x_forward.size());
+            x_backward.conservativeResize(x_backward.size() + curr_x_backward.size());
+            x.tail(curr.x.size()) = curr.x;
+            w.tail(curr.w.size()) = curr.w;
+            x_forward.tail(curr_x_forward.size()) = curr_x_forward;
+            x_backward.tail(curr_x_backward.size()) = curr_x_backward;
         }
 
         return Rule<T>(x, w, x_forward, x_backward, a, b);
@@ -161,20 +185,26 @@ public:
 
 Gauss-Legendre quadrature with `n` points on [-1, 1].
 */
-inline Rule<DDouble> legendre(int n){
-    std::vector<DDouble> x(n), w(n);
+template <typename T=xprec::DDouble>
+inline Rule<T> legendre(int n){
+    std::vector<xprec::DDouble> x(n), w(n);
     xprec::gauss_legendre(n, x.data(), w.data());
-    return Rule<DDouble>(x, w);
+    // cast to T
+    //Eigen::VectorX<T> new_x = Eigen::Map<Eigen::VectorX<T>>(x.data(), x.size());
+    Eigen::VectorX<T> new_x(x.size());
+    std::transform(x.begin(), x.end(), new_x.data(), [](const xprec::DDouble& xi) { return static_cast<T>(xi); });
+    Eigen::VectorX<T> new_w(w.size());
+    std::transform(w.begin(), w.end(), new_w.data(), [](const xprec::DDouble& wi) { return static_cast<T>(wi); });
+    return Rule<T>(new_x, new_w);
 }
 
-
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1) {
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1) {
     if (n < 0) {
         n = rule.x.size();
     }
     // Compute the Legendre Vandermonde matrix
-    Matrix<T, Dynamic, Dynamic> lv = legvander(rule.x, n-1);
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> lv = sparseir::legvander<T>(rule.x, n-1);
     for (size_t i = 0; i < rule.w.size(); ++i) {
         for (size_t j = 0; j < lv.cols(); ++j) {
             lv(i, j) *= rule.w[i];
@@ -187,7 +217,7 @@ Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1
     auto res = lv.transpose();
 
     // Normalize the matrix rows
-    VectorXd invnorm = VectorXd::LinSpaced(n, 0.5, n - 0.5);
+    Eigen::VectorXd invnorm = Eigen::VectorXd::LinSpaced(n, 0.5, n - 0.5);
 
     for (size_t i = 0; i < invnorm.size(); ++i) {
         for (size_t j = 0; j < lv.cols(); ++j) {
@@ -198,17 +228,18 @@ Matrix<T, Dynamic, Dynamic> legendre_collocation(const Rule<T>& rule, int n = -1
     return res;
 }
 
-template <typename TargetType, typename SourceType>
-inline Rule<TargetType> convert(const Rule<SourceType> &rule)
+/*template <typename TargetType, typename SourceType>
+inline sparseir::Rule<TargetType> convert(const sparseir::Rule<SourceType> &rule)
 {
-    std::vector<TargetType> x(rule.x.begin(), rule.x.end());
-    std::vector<TargetType> w(rule.w.begin(), rule.w.end());
+    // Convert vectors using Eigen::Map to handle the conversion properly
+    Eigen::VectorX<TargetType> x = rule.x.template cast<TargetType>();
+    Eigen::VectorX<TargetType> w = rule.w.template cast<TargetType>();
+    Eigen::VectorX<TargetType> x_forward = rule.x_forward.template cast<TargetType>();
+    Eigen::VectorX<TargetType> x_backward = rule.x_backward.template cast<TargetType>();
     TargetType a = static_cast<TargetType>(rule.a);
     TargetType b = static_cast<TargetType>(rule.b);
-    std::vector<TargetType> x_forward(rule.x_forward.begin(), rule.x_forward.end());
-    std::vector<TargetType> x_backward(rule.x_backward.begin(), rule.x_backward.end());
 
-    return Rule<TargetType>(x, w, x_forward, x_backward, a, b);
-}
+    return sparseir::Rule<TargetType>(x, w, x_forward, x_backward, a, b);
+}*/
 
 } // namespace sparseir

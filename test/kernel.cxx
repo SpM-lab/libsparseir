@@ -19,8 +19,8 @@ std::tuple<bool, bool> kernel_accuracy_test(Kernel &K) {
 
     // Convert Rule to type T
     auto ddouble_rule = sparseir::legendre(10);
-    auto double_rule = sparseir::convert<double>(ddouble_rule);
-    auto rule = sparseir::convert<T>(double_rule);
+    auto double_rule = sparseir::Rule<double>(ddouble_rule);
+    auto rule = sparseir::Rule<T>(double_rule);
 
     // Obtain SVE hints for the kernel
     auto hints = sparseir::sve_hints(K, 2.2e-16);
@@ -43,8 +43,8 @@ std::tuple<bool, bool> kernel_accuracy_test(Kernel &K) {
     auto result = sparseir::matrix_from_gauss<T>(K, gauss_x, gauss_y);
 
     // Convert gauss_x and gauss_y to higher precision T_x
-    auto gauss_x_Tx = sparseir::convert<T_x>(gauss_x);
-    auto gauss_y_Tx = sparseir::convert<T_x>(gauss_y);
+    auto gauss_x_Tx = sparseir::Rule<T_x>(gauss_x);
+    auto gauss_y_Tx = sparseir::Rule<T_x>(gauss_y);
 
     // Compute the matrix in higher precision
     auto result_x = sparseir::matrix_from_gauss<T_x>(K, gauss_x_Tx, gauss_y_Tx);

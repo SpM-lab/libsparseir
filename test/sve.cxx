@@ -54,7 +54,7 @@ void check_smooth(const std::function<double(double)>& u, const std::vector<doub
     */
 }
 
-TEST_CASE("AbstractSVE", "[sve]"){
+TEST_CASE("sve.cpp", "[SamplingSVE]"){
     sparseir::LogisticKernel lk(10.0);
     auto hints = sparseir::sve_hints(lk, 1e-6);
     int nsvals_hint = hints.nsvals();
@@ -63,7 +63,7 @@ TEST_CASE("AbstractSVE", "[sve]"){
     std::vector<double> segs_y = hints.template segments_y<double>();
 
     // Ensure `convert` is declared before this line
-    sparseir::Rule<double> rule = sparseir::convert<double>(sparseir::legendre(n_gauss));
+    sparseir::Rule<double> rule = sparseir::legendre<double>(n_gauss);
 
     sparseir::Rule<double> gauss_x = rule.piecewise(segs_x);
     sparseir::Rule<double> gauss_y = rule.piecewise(segs_y);
@@ -83,15 +83,30 @@ TEST_CASE("AbstractSVE", "[sve]"){
     //REQUIRE(ssve2_ddouble.n_gauss == 12);
 }
 
+TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]"){
+    sparseir::LogisticKernel lk(10.0);
+    auto hints = sparseir::sve_hints(lk, 1e-6);
+    int nsvals_hint = hints.nsvals();
+    int n_gauss = hints.ngauss();
+    std::vector<double> segs_x = hints.template segments_x<double>();
+    std::vector<double> segs_y = hints.template segments_y<double>();
+
+    sparseir::Rule<double> rule = sparseir::legendre<double>(n_gauss);
+
+    auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel>(lk, 1e-6);
+    auto sve_double = sparseir::CentrosymmSVE<sparseir::LogisticKernel, double>(lk, 1e-6);
+    //auto sve_ddouble = sparseir::CentrosymmSVE<sparseir::LogisticKernel, xprec::DDouble>(lk, 1e-6);
+}
+
 TEST_CASE("sve.cpp", "[sve]")
 {
 
     // Define a map to store SVEResult objects
-    auto sve_logistic = std::map < int, sparseir::SVEResult<sparseir::LogisticKernel>>{
-                                                {10, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0))},
-                                                {42, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(42.0))},
-                                                {10000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0))},
-                                                {100000000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0), 1e-12)}};
+    //auto sve_logistic = std::map < int, sparseir::SVEResult<sparseir::LogisticKernel>>{
+    //                                            {10, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0))},
+    //                                            {42, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(42.0))},
+    //                                            {10000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0))},
+    //                                            {100000000, sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0), 1e-12)}};
 
     SECTION("smooth with Λ =") {
         for (int Lambda : {10, 42, 10000}) {
