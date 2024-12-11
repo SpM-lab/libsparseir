@@ -4,9 +4,9 @@
 #include <cstdint>
 
 #include "sparseir/sparseir.h"
-#include <xprec/ddouble.h>
 #include <Eigen/Core>
 #include <Eigen/SVD>
+#include <xprec/ddouble.h>
 
 using namespace xprec;
 
@@ -28,10 +28,8 @@ TEST_CASE(" test ", "[test]")
     using MatrixXdd = Eigen::Matrix<DDouble, Eigen::Dynamic, Eigen::Dynamic>;
     auto N = 20;
     auto m = MatrixXdd(N, N);
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < N; j++)
-        {
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
             m(i, j) = 1 / double(i + j + 1);
         }
     }

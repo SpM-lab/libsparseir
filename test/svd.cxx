@@ -1,25 +1,25 @@
 #include <Eigen/Dense>
-#include <vector>
 #include <algorithm>
-#include <random>
 #include <cmath>
-#include <stdexcept>
 #include <iostream>
+#include <random>
+#include <stdexcept>
+#include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <xprec/ddouble-header-only.hpp>
 #include <sparseir/sparseir-header-only.hpp>
+#include <xprec/ddouble-header-only.hpp>
 
 // test_piecewise_legendre_poly.cpp
 
-#include <catch2/catch_test_macros.hpp>
 #include <Eigen/Dense>
-#include <iostream>
-#include <vector>
+#include <catch2/catch_test_macros.hpp>
 #include <cmath>
-#include <random>
 #include <functional>
+#include <iostream>
+#include <random>
+#include <vector>
 
 TEST_CASE("svd.cpp")
 {
@@ -27,15 +27,18 @@ TEST_CASE("svd.cpp")
     using namespace Eigen;
     using namespace xprec;
 
-    // Create a matrix of Float64x2 equivalent (here just Eigen::MatrixXd for simplicity)
+    // Create a matrix of Float64x2 equivalent (here just Eigen::MatrixXd for
+    // simplicity)
     /**
     Eigen::MatrixXd mat64x2 = Eigen::MatrixXd::Random(4, 6);
     REQUIRE_NOTHROW(sparseir::compute_svd(mat64x2, "accurate", 2));
-    std::cout << "n_sv_hint is set but will not be used in the current implementation!" << std::endl;
+    std::cout << "n_sv_hint is set but will not be used in the current
+    implementation!" << std::endl;
 
     REQUIRE_NOTHROW({
         compute_svd(mat64x2, "accurate");
-        std::cout << "strategy is set but will not be used in the current implementation!" << std::endl;
+        std::cout << "strategy is set but will not be used in the current
+    implementation!" << std::endl;
     });
     */
 
