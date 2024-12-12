@@ -1,39 +1,80 @@
 #pragma once
 
 #include <algorithm>
-#include <bitset>
 #include <cmath>
 #include <functional>
+#include <limits>
+#include <type_traits>
 #include <vector>
+
+#include <iostream>
+
+#include <Eigen/Dense>
 
 namespace sparseir {
 
-template <typename T>
-inline T midpoint(T lo, T hi)
-{
-    return lo + ((hi - lo) * static_cast<T>(0.5));
+// Midpoint function for floating-point types
+template<typename T1, typename T2>
+typename std::enable_if<
+    std::is_floating_point<T1>::value && std::is_floating_point<T2>::value,
+    typename std::common_type<T1, T2>::type
+>::type
+inline midpoint(T1 a, T2 b) {
+    typedef typename std::common_type<T1, T2>::type CommonType;
+    return static_cast<CommonType>(a) +
+           (static_cast<CommonType>(b) - static_cast<CommonType>(a)) *
+           static_cast<CommonType>(0.5);
 }
 
-inline int midpoint(int lo, int hi)
-{
-    return lo + ((hi - lo) >> 1);
+// Midpoint function for integral types
+template<typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type
+inline midpoint(T a, T b) {
+    return a + ((b - a) / 2);
 }
 
-
-
-template <typename T>
-inline bool closeenough(T a, T b, double epsilon)
-{
-    if (std::is_floating_point<T>::value) {
-        return std::abs(a - b) <= epsilon;  // matches isapprox with rtol=0, atol=ϵ
-    }
+// Close enough function for floating-point types
+template<typename T>
+inline bool closeenough(T a, T b, T epsilon) {
+    return std::abs(a - b) <= epsilon;
 }
 
-inline bool closeenough(int a, int b, double epsilon)
-{
+template<typename T>
+inline bool closeenough(int a, int b, T _dummyepsilon) {
     return a == b;
 }
 
+// Signbit function (handles both floating-point and integral types)
+template<typename T>
+inline bool signbit(T x) {
+    return x < static_cast<T>(0);
+}
+
+// Bisection method to find a root of function f in [a, b]
+template<typename F>
+double bisect(F f, double a, double b, double fa, double epsilon_x) {
+    //while (true) {
+    double mid = midpoint(a, b);
+    double fmid = f(mid);
+    for (int dummy = 0; dummy < 100; ++dummy) {
+        double mid = midpoint(a, b);
+        if (closeenough(a, mid, epsilon_x)) {
+            return mid;
+        }
+        fmid = f(mid);
+        std::cout << "a = " << a << ", b = " << b << ", mid = " << mid << ", fmid = " << fmid << ", epsilon_x = " << epsilon_x << std::endl;
+        std::cout << "a, mid, epsilon_x = " << a << ", " << mid << ", " << epsilon_x << std::endl;
+        std::cout << "std::abs(a - mid) = " << std::abs(a - mid) << std::endl;
+        std::cout << "closeenough(a, mid, epsilon_x) = " << closeenough(a, mid, epsilon_x) << std::endl;
+        if (signbit(fa) != signbit(fmid)) {
+            b = mid;
+        } else {
+            a = mid;
+            fa = fmid;
+        }
+    }
+    return fmid;
+}
 
 template <typename F, typename T>
 std::vector<T> find_all(F f, const std::vector<T> &xgrid)
@@ -92,29 +133,13 @@ std::vector<T> find_all(F f, const std::vector<T> &xgrid)
 
     std::vector<T> x_bisect;
     for (size_t i = 0; i < a.size(); ++i) {
-        x_bisect.push_back(bisect(f, a[i], b[i], fa[i], epsilon_x));
+        double root = bisect(f, a[i], b[i], fa[i], epsilon_x);
+        x_bisect.push_back(static_cast<T>(root));
     }
 
     x_hit.insert(x_hit.end(), x_bisect.begin(), x_bisect.end());
     std::sort(x_hit.begin(), x_hit.end());
     return x_hit;
-}
-
-template <typename F, typename T>
-T bisect(F f, T a, T b, double fa, double epsilon_x)
-{
-    while (true) {
-        T mid = midpoint(a, b);
-        if (closeenough(a, mid, epsilon_x))
-            return mid;
-        double fmid = f(mid);
-        if (std::signbit(fa) != std::signbit(fmid)) {
-            b = mid;
-        } else {
-            a = mid;
-            fa = fmid;
-        }
-    }
 }
 
 template <typename T>
