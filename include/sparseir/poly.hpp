@@ -213,33 +213,112 @@ public:
         return PiecewiseLegendrePoly(ddata, *this, new_symm);
     }
 
+
+    Eigen::VectorXd refine_grid(const Eigen::VectorXd& grid, int alpha) const {
+        Eigen::VectorXd refined(grid.size() * alpha);
+
+        for (size_t i = 0; i < grid.size() - 1; ++i) {
+            double start = grid[i];
+            double step = (grid[i + 1] - grid[i]) / alpha;
+            for (int j = 0; j < alpha; ++j) {
+                refined[i * alpha + j] = start + j * step;
+            }
+        }
+        refined[refined.size() - 1] = grid[grid.size() - 1];
+        return refined;
+    }
+
+    double bisect(double a, double b, double fa, double eps_x) const {
+        while (true) {
+            double mid = static_cast<double>(midpoint(a, b));
+            if (closeenough(a, mid, eps_x)) {
+                return mid;
+            }
+
+            double fmid = (*this)(mid);
+            if (std::signbit(fa) != std::signbit(fmid)) {
+                b = mid;
+            } else {
+                a = mid;
+                fa = fmid;
+            }
+        }
+    }
+
+    // Equivalent to find_all function in julia above
+    Eigen::VectorXd find_all(const Eigen::VectorXd& xgrid) const {
+        Eigen::VectorXd fx(xgrid.size());
+        for (size_t i = 0; i < xgrid.size(); ++i) {
+            fx(i) = static_cast<double>((*this)(xgrid[i]));
+        }
+        // Find direct hits (zeros)
+        std::vector<bool> hit(fx.size(), false);
+        std::vector<double> x_hit;
+        for (Eigen::Index i = 0; i < fx.size(); ++i) {
+            hit[i] = (fx(i) == 0.0);
+            if (hit[i]) {
+                x_hit.push_back(xgrid(i));
+            }
+        }
+
+        // Check for sign changes
+        std::vector<bool> sign_change(fx.size() - 1, false);
+        bool found_sign_change = false;
+
+        for (Eigen::Index i = 0; i < fx.size() - 1; ++i) {
+            bool different_signs = std::signbit(fx(i)) != std::signbit(fx(i + 1));
+            bool neither_zero = fx(i) != 0.0 && fx(i + 1) != 0.0;
+            sign_change[i] = different_signs && neither_zero;
+            if (sign_change[i]) {
+                found_sign_change = true;
+            }
+        }
+
+        if (!found_sign_change) {
+            // convert to Eigen::VectorXd
+            return Eigen::Map<Eigen::VectorXd>(x_hit.data(), x_hit.size());
+        }
+
+        // Collect points for bisection
+        std::vector<double> a, b;
+        std::vector<double> fa;
+
+        for (size_t i = 0; i < sign_change.size(); ++i) {
+            if (sign_change[i]) {
+                a.push_back(xgrid(i));
+                b.push_back(xgrid(i + 1));
+                fa.push_back(fx(i));
+            }
+        }
+
+        // Calculate epsilon for floating point types
+        double eps_x;
+        if (std::is_floating_point<double>::value) {
+            eps_x = std::numeric_limits<double>::epsilon() * xgrid.cwiseAbs().maxCoeff();
+        } else {
+            eps_x = 0;
+        }
+
+        // Perform bisection for each interval
+        std::vector<double> x_bisect;
+        for (size_t i = 0; i < a.size(); ++i) {
+            x_bisect.push_back(bisect(a[i], b[i], fa[i], eps_x));
+        }
+
+        // Combine and sort results
+        x_hit.insert(x_hit.end(), x_bisect.begin(), x_bisect.end());
+        std::sort(x_hit.begin(), x_hit.end());
+        // convert to Eigen::VectorXd
+        return Eigen::Map<Eigen::VectorXd>(x_hit.data(), x_hit.size());
+    }
+
     // Roots function
     Eigen::VectorXd roots(double tol = 1e-10) const
     {
-        std::vector<double> all_roots;
-
-        // For each segment, find the roots of the polynomial
-        for (int i = 0; i < data.cols(); ++i) {
-            // Create a function for the polynomial in this segment
-            auto segment_poly = [this, i](double x) {
-                double x_tilde = (x - xm[i]) * inv_xs[i];
-                Eigen::VectorXd coeffs = data.col(i);
-                double value = legval(x_tilde, coeffs) * norms[i];
-                return value;
-            };
-
-            // Find roots in the interval [knots[i], knots[i+1]]
-            std::vector<double> segment_roots = find_roots_in_interval(
-                segment_poly, knots[i], knots[i + 1], tol);
-            all_roots.insert(all_roots.end(), segment_roots.begin(),
-                             segment_roots.end());
-        }
-
-        // Convert std::vector to Eigen::VectorXd
-        Eigen::VectorXd roots = Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(
-            all_roots.data(), all_roots.size());
-
-        return roots;
+        Eigen::VectorXd grid = this->knots;
+        Eigen::VectorXd refined_grid = refine_grid(grid, 2);
+        std::cout << "refined_grid: " << refined_grid.size() << "\n";
+        return find_all(refined_grid);
     }
 
     // Overloaded operators
