@@ -146,7 +146,9 @@ public:
         double x_tilde;
         std::tie(i, x_tilde) = split(x);
         Eigen::VectorXd coeffs = data.col(i);
-        double value = legval(x_tilde, coeffs) * norms[i];
+        // convert coeffs to std::vector<double>
+        std::vector<double> coeffs_vec(coeffs.data(), coeffs.data() + coeffs.size());
+        double value = legval<double>(x_tilde, coeffs_vec) * norms[i];
         return value;
     }
 
@@ -305,6 +307,7 @@ public:
     int get_polyorder() const { return polyorder; }
 
 private:
+    /*
     // Helper function to compute legval
     static double legval(double x, const Eigen::VectorXd &coeffs)
     {
@@ -324,6 +327,7 @@ private:
         }
         return result;
     }
+    */
 
     // Helper function to split x into segment index i and x_tilde
     std::pair<int, double> split(double x) const
