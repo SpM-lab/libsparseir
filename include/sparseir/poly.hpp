@@ -245,80 +245,22 @@ public:
         }
     }
 
-    // Equivalent to find_all function in julia above
-    Eigen::VectorXd find_all(const Eigen::VectorXd& xgrid) const {
-        Eigen::VectorXd fx(xgrid.size());
-        for (size_t i = 0; i < xgrid.size(); ++i) {
-            fx(i) = static_cast<double>((*this)(xgrid[i]));
-        }
-        // Find direct hits (zeros)
-        std::vector<bool> hit(fx.size(), false);
-        std::vector<double> x_hit;
-        for (Eigen::Index i = 0; i < fx.size(); ++i) {
-            hit[i] = (fx(i) == 0.0);
-            if (hit[i]) {
-                x_hit.push_back(xgrid(i));
-            }
-        }
-
-        // Check for sign changes
-        std::vector<bool> sign_change(fx.size() - 1, false);
-        bool found_sign_change = false;
-
-        for (Eigen::Index i = 0; i < fx.size() - 1; ++i) {
-            bool different_signs = std::signbit(fx(i)) != std::signbit(fx(i + 1));
-            bool neither_zero = fx(i) != 0.0 && fx(i + 1) != 0.0;
-            sign_change[i] = different_signs && neither_zero;
-            if (sign_change[i]) {
-                found_sign_change = true;
-            }
-        }
-
-        if (!found_sign_change) {
-            // convert to Eigen::VectorXd
-            return Eigen::Map<Eigen::VectorXd>(x_hit.data(), x_hit.size());
-        }
-
-        // Collect points for bisection
-        std::vector<double> a, b;
-        std::vector<double> fa;
-
-        for (size_t i = 0; i < sign_change.size(); ++i) {
-            if (sign_change[i]) {
-                a.push_back(xgrid(i));
-                b.push_back(xgrid(i + 1));
-                fa.push_back(fx(i));
-            }
-        }
-
-        // Calculate epsilon for floating point types
-        double eps_x;
-        if (std::is_floating_point<double>::value) {
-            eps_x = std::numeric_limits<double>::epsilon() * xgrid.cwiseAbs().maxCoeff();
-        } else {
-            eps_x = 0;
-        }
-
-        // Perform bisection for each interval
-        std::vector<double> x_bisect;
-        for (size_t i = 0; i < a.size(); ++i) {
-            x_bisect.push_back(bisect(a[i], b[i], fa[i], eps_x));
-        }
-
-        // Combine and sort results
-        x_hit.insert(x_hit.end(), x_bisect.begin(), x_bisect.end());
-        std::sort(x_hit.begin(), x_hit.end());
-        // convert to Eigen::VectorXd
-        return Eigen::Map<Eigen::VectorXd>(x_hit.data(), x_hit.size());
-    }
-
     // Roots function
     Eigen::VectorXd roots(double tol = 1e-10) const
     {
         Eigen::VectorXd grid = this->knots;
+
+        std::cout << "grid: " << grid.transpose() << "\n";
+
         Eigen::VectorXd refined_grid = refine_grid(grid, 2);
-        std::cout << "refined_grid: " << refined_grid.size() << "\n";
-        return find_all(refined_grid);
+        auto f = [this](double x) { return this->operator()(x); };
+        // convert to std::vector<double>
+        std::vector<double> refined_grid_vec(refined_grid.data(),
+                                             refined_grid.data() +
+                                                 refined_grid.size());
+        std::vector<double> roots = find_all(f, refined_grid_vec);
+        std::cout << "roots: " << roots.size() << "\n";
+        return Eigen::Map<Eigen::VectorXd>(roots.data(), roots.size());
     }
 
     // Overloaded operators
