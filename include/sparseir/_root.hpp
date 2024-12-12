@@ -72,6 +72,9 @@ T bisect(F f, T a, T b, T fa, T epsilon_x) {
 template <typename F, typename T>
 std::vector<T> find_all(F f, const std::vector<T> &xgrid)
 {
+    if (xgrid.empty()) {
+        return {};
+    }
     std::vector<double> fx;
     std::transform(xgrid.begin(), xgrid.end(), std::back_inserter(fx),
                    [&](T x) { return static_cast<double>(f(x)); });

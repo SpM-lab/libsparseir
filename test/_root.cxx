@@ -97,7 +97,7 @@ TEST_CASE("find_all") {
         REQUIRE(const_roots.empty());
     }
 
-    /*
+
     SECTION("Edge cases") {
         // Empty grid
         std::vector<double> empty_grid;
@@ -110,7 +110,6 @@ TEST_CASE("find_all") {
         auto single_roots = find_all(f, single_grid);
         REQUIRE(single_roots == std::vector<double>{0.0});
     }
-    */
 
     SECTION("Multiple close roots") {
         std::vector<double> xgrid;
