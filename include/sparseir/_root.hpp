@@ -51,21 +51,15 @@ inline bool signbit(T x) {
 }
 
 // Bisection method to find a root of function f in [a, b]
-template<typename F>
-double bisect(F f, double a, double b, double fa, double epsilon_x) {
-    //while (true) {
-    double mid = midpoint(a, b);
-    double fmid = f(mid);
-    for (int dummy = 0; dummy < 100; ++dummy) {
-        double mid = midpoint(a, b);
+template<typename F, typename T>
+T bisect(F f, T a, T b, T fa, T epsilon_x) {
+    while (true) {
+        T mid = midpoint(a, b);
+        assert(epsilon_x > 0);
         if (closeenough(a, mid, epsilon_x)) {
             return mid;
         }
-        fmid = f(mid);
-        std::cout << "a = " << a << ", b = " << b << ", mid = " << mid << ", fmid = " << fmid << ", epsilon_x = " << epsilon_x << std::endl;
-        std::cout << "a, mid, epsilon_x = " << a << ", " << mid << ", " << epsilon_x << std::endl;
-        std::cout << "std::abs(a - mid) = " << std::abs(a - mid) << std::endl;
-        std::cout << "closeenough(a, mid, epsilon_x) = " << closeenough(a, mid, epsilon_x) << std::endl;
+        T fmid = static_cast<T>(f(mid));
         if (signbit(fa) != signbit(fmid)) {
             b = mid;
         } else {
@@ -73,7 +67,6 @@ double bisect(F f, double a, double b, double fa, double epsilon_x) {
             fa = fmid;
         }
     }
-    return fmid;
 }
 
 template <typename F, typename T>
@@ -126,10 +119,11 @@ std::vector<T> find_all(F f, const std::vector<T> &xgrid)
         }
     }
 
-    double epsilon_x =
-        std::numeric_limits<T>::epsilon() *
-        *std::max_element(xgrid.begin(), xgrid.end(),
-                          [](T a, T b) { return std::abs(a) < std::abs(b); });
+    T max_elm = std::abs(xgrid[0]);
+    for (size_t i = 1; i < xgrid.size(); ++i) {
+        max_elm = std::max(max_elm, std::abs(xgrid[i]));
+    }
+    T epsilon_x =std::numeric_limits<T>::epsilon() * max_elm;
 
     std::vector<T> x_bisect;
     for (size_t i = 0; i < a.size(); ++i) {
@@ -162,18 +156,18 @@ std::vector<T> refine_grid(const std::vector<T> &grid, int alpha)
     return newgrid;
 }
 
-template <typename F, typename T>
-T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b)
+template <typename F>
+double bisect_discr_extremum(F absf, double a, double b, double absf_a, double absf_b)
 {
-    T d = b - a;
+    double d = b - a;
 
     if (d <= 1)
         return absf_a > absf_b ? a : b;
     if (d == 2)
         return a + 1;
 
-    T m = midpoint(a, b);
-    T n = m + 1;
+    double m = midpoint(a, b);
+    double n = m + 1;
     double absf_m = absf(m);
     double absf_n = absf(n);
 
@@ -184,19 +178,22 @@ T bisect_discr_extremum(F absf, T a, T b, double absf_a, double absf_b)
     }
 }
 
-template <typename F, typename T>
-std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
+template <typename F>
+std::vector<double> discrete_extrema(F f, const std::vector<double> &xgrid)
 {
     std::vector<double> fx(xgrid.size());
-    std::transform(xgrid.begin(), xgrid.end(), fx.begin(), f);
+    for (size_t i = 0; i < xgrid.size(); ++i) {
+        fx[i] = f(xgrid[i]);
+    }
 
     std::vector<double> absfx(fx.size());
-    std::transform(fx.begin(), fx.end(), absfx.begin(),
-                   [](double val) { return std::abs(val); });
+    for (size_t i = 0; i < fx.size(); ++i) {
+        absfx[i] = std::abs(fx[i]);
+    }
 
     std::vector<bool> signdfdx(fx.size() - 1);
     for (size_t i = 0; i < fx.size() - 1; ++i) {
-        signdfdx[i] = std::signbit(fx[i]) != std::signbit(fx[i + 1]);
+        signdfdx[i] = std::signbit(fx[i + 1] - fx[i]);
     }
 
     std::vector<bool> derivativesignchange(signdfdx.size() - 1);
@@ -204,16 +201,22 @@ std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
         derivativesignchange[i] = signdfdx[i] != signdfdx[i + 1];
     }
 
-    std::vector<bool> derivativesignchange_a(derivativesignchange.size() + 2,
-                                             false);
-    std::vector<bool> derivativesignchange_b(derivativesignchange.size() + 2,
-                                             false);
-    for (size_t i = 0; i < derivativesignchange.size(); ++i) {
-        derivativesignchange_a[i] = derivativesignchange[i];
-        derivativesignchange_b[i + 2] = derivativesignchange[i];
-    }
+    // create copy of derivativesignchange and add two false at the end
+    std::vector<bool> derivativesignchange_a(derivativesignchange);
+    derivativesignchange_a.push_back(false);
+    derivativesignchange_a.push_back(false);
 
-    std::vector<T> a, b;
+    std::vector<bool> derivativesignchange_b;
+    derivativesignchange_b.reserve(derivativesignchange.size() + 2);
+    derivativesignchange_b.push_back(false);
+    derivativesignchange_b.push_back(false);
+    derivativesignchange_b.insert(
+        derivativesignchange_b.end(),
+        derivativesignchange.begin(),
+        derivativesignchange.end()
+    );
+
+    std::vector<double> a, b;
     std::vector<double> absf_a, absf_b;
     for (size_t i = 0; i < derivativesignchange_a.size(); ++i) {
         if (derivativesignchange_a[i]) {
@@ -226,15 +229,21 @@ std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
         }
     }
 
-    std::vector<T> res;
+    std::vector<double> res;
     for (size_t i = 0; i < a.size(); ++i) {
+        // abs ∘ f
+        auto abf = [f](double x) { return std::abs(f(x)); };
         res.push_back(
-            bisect_discr_extremum(f, a[i], b[i], absf_a[i], absf_b[i]));
+            bisect_discr_extremum(abf, a[i], b[i], absf_a[i], absf_b[i]));
     }
 
+    // We consider the outer points to be extrema if there is a decrease
+    // in magnitude or a sign change inwards
+
     std::vector<bool> sfx(fx.size());
-    std::transform(fx.begin(), fx.end(), sfx.begin(),
-                   [](double val) { return std::signbit(val); });
+    for (size_t i = 0; i < fx.size(); ++i) {
+        sfx[i] = std::signbit(fx[i]);
+    }
 
     if (absfx.front() > absfx[1] || sfx.front() != sfx[1]) {
         res.insert(res.begin(), xgrid.front());

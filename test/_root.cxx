@@ -35,9 +35,9 @@ TEST_CASE("bisect") {
     }
 
     SECTION("Test with integer inputs") {
-        auto f_int = [](int x) { return x - 5.; };
+        auto f_int = [](double x) { return x - 5.; };
         double root_int = bisect(f_int, 0., 10., f_int(0.), 1e-10);
-        REQUIRE(root_int == 5.);
+        REQUIRE(std::abs(root_int - 5.) < 1e-10);
     }
 
     SECTION("Test with different epsilon values") {
@@ -157,32 +157,32 @@ TEST_CASE("midpoint") {
 TEST_CASE("discrete_extrema") {
     using namespace sparseir;
 
-    std::vector<int> nonnegative = {0, 1, 2, 3, 4, 5, 6, 7, 8};
-    std::vector<int> symmetric = {-8, -7, -6, -5, -4, -3, -2, -1, 0,
+    std::vector<double> nonnegative = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector<double> symmetric = {-8, -7, -6, -5, -4, -3, -2, -1, 0,
                                  1, 2, 3, 4, 5, 6, 7, 8};
 
     SECTION("Identity function") {
-        auto identity = [](int x) { return x; };
+        auto identity = [](double x) { return x; };
         auto result = discrete_extrema(identity, nonnegative);
-        REQUIRE(result == std::vector<int>{8});
+        REQUIRE(result == std::vector<double>{8});
     }
 
     SECTION("Shifted identity function") {
-        auto shifted_identity = [](int x) {
+        auto shifted_identity = [](double x) {
             return static_cast<double>(x) - std::numeric_limits<double>::epsilon();
         };
         auto result = discrete_extrema(shifted_identity, nonnegative);
-        REQUIRE(result == std::vector<int>{0, 8});
+        REQUIRE(result == std::vector<double>{0, 8});
     }
 
     SECTION("Square function") {
-        auto square = [](int x) { return x * x; };
+        auto square = [](double x) { return x * x; };
         auto result = discrete_extrema(square, symmetric);
-        REQUIRE(result == std::vector<int>{-8, 0, 8});
+        REQUIRE(result == std::vector<double>{-8, 0, 8});
     }
 
     SECTION("Constant function") {
-        auto constant = [](int) { return 1; };
+        auto constant = [](double) { return 1; };
         auto result = discrete_extrema(constant, symmetric);
         REQUIRE(result.empty());
     }
