@@ -532,7 +532,7 @@ template <typename K>
 auto compute_sve(K kernel,
                  double epsilon = std::numeric_limits<double>::quiet_NaN(),
                  double cutoff = std::numeric_limits<double>::quiet_NaN(),
-                 std::string Twork = "Floatt64",
+                 std::string Twork = "Float64",
                  int lmax = std::numeric_limits<int>::max(), int n_gauss = -1,
                  const std::string &svd_strat = "auto")
 {
