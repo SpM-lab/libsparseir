@@ -250,8 +250,6 @@ public:
     {
         Eigen::VectorXd grid = this->knots;
 
-        std::cout << "grid: " << grid.transpose() << "\n";
-
         Eigen::VectorXd refined_grid = refine_grid(grid, 2);
         auto f = [this](double x) { return this->operator()(x); };
         // convert to std::vector<double>

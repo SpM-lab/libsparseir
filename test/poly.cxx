@@ -329,10 +329,13 @@ TEST_CASE("Roots")
 
     REQUIRE(roots.size() == expected_roots.size());
     for(Eigen::Index i = 0; i < roots.size(); ++i) {
-        REQUIRE(std::abs(roots[i] - expected_roots[i]) < 1e-10);
-        //Verify roots are in domain
+        REQUIRE(std::fabs(roots[i] - expected_roots[i]) < 1e-10);
+        // Verifying the polynomial evaluates to zero
+        //at the roots with tight tolerance
+        REQUIRE(std::fabs(pwlp(roots[i])) < 1e-10);
+        // Verify roots are in domain
         REQUIRE(roots[i] >= knots[0]);
-        REQUIRE(roots[i] <= knots[knots.size()-1]);
+        REQUIRE(roots[i] <= knots[knots.size() - 1]);
         // Verify these are actually roots
         REQUIRE(std::abs(pwlp(roots[i])) < 1e-10);
     }
