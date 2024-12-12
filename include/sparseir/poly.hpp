@@ -259,7 +259,6 @@ public:
                                              refined_grid.data() +
                                                  refined_grid.size());
         std::vector<double> roots = find_all(f, refined_grid_vec);
-        std::cout << "roots: " << roots.size() << "\n";
         return Eigen::Map<Eigen::VectorXd>(roots.data(), roots.size());
     }
 
