@@ -311,7 +311,7 @@ TEST_CASE("Roots")
         2.8518324490258146e-10, 1.7090590205708293e-11, 5.0081401126025e-14,
         2.1244236198427895e-15, -2.0478095258000225e-16, -2.676573801530628e-16,
         -2.338165820094204e-16, -1.2050663212312096e-16;
-    data.resize(16, 2);
+    //data.resize(16, 2);
 
     Eigen::VectorXd knots(3);
     knots << 0.0, 0.5, 1.0;
@@ -322,12 +322,13 @@ TEST_CASE("Roots")
     // Find roots
     Eigen::VectorXd roots = pwlp.roots();
 
-    // Expected roots (from Julia code)
-    Eigen::VectorXd expected_roots(3);
-    expected_roots << 0.1118633448586015, 0.4999999999999998,
-        0.8881366551413985;
+    // Print roots for debugging
+    std::cout << "Found roots: " << roots << "\n";
 
-    // fails
-    // REQUIRE(roots.size() == expected_roots.size());
-    // REQUIRE(roots.isApprox(expected_roots));
+    // Expected roots from Julia
+    Eigen::VectorXd expected_roots(3);
+    expected_roots << 0.1118633448586015, 0.4999999999999998, 0.8881366551413985;
+
+    //REQUIRE(roots.size() == expected_roots.size());
+    //REQUIRE(roots.isApprox(expected_roots));
 }

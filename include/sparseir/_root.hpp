@@ -9,14 +9,31 @@
 namespace sparseir {
 
 template <typename T>
-T midpoint(T lo, T hi)
+inline T midpoint(T lo, T hi)
 {
-    if (std::is_integral<T>::value) {
-        return lo + ((hi - lo) >> 1);
-    } else {
-        return lo + ((hi - lo) * static_cast<T>(0.5));
+    return lo + ((hi - lo) * static_cast<T>(0.5));
+}
+
+inline int midpoint(int lo, int hi)
+{
+    return lo + ((hi - lo) >> 1);
+}
+
+
+
+template <typename T>
+inline bool closeenough(T a, T b, double epsilon)
+{
+    if (std::is_floating_point<T>::value) {
+        return std::abs(a - b) <= epsilon;  // matches isapprox with rtol=0, atol=ϵ
     }
 }
+
+inline bool closeenough(int a, int b, double epsilon)
+{
+    return a == b;
+}
+
 
 template <typename F, typename T>
 std::vector<T> find_all(F f, const std::vector<T> &xgrid)
@@ -97,16 +114,6 @@ T bisect(F f, T a, T b, double fa, double epsilon_x)
             a = mid;
             fa = fmid;
         }
-    }
-}
-
-template <typename T>
-bool closeenough(T a, T b, double epsilon)
-{
-    if (std::is_floating_point<T>::value) {
-        return std::abs(a - b) <= epsilon;
-    } else {
-        return a == b;
     }
 }
 

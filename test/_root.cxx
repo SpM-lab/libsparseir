@@ -13,9 +13,6 @@
 // template <typename F, typename T>
 // std::vector<T> discrete_extrema(F f, const std::vector<T>& xgrid);
 
-template <typename T>
-T midpoint(T lo, T hi);
-
 TEST_CASE("DiscreteExtrema")
 {
     std::vector<int> nonnegative = {0, 1, 2, 3, 4, 5, 6, 7, 8};
@@ -40,23 +37,27 @@ TEST_CASE("DiscreteExtrema")
 TEST_CASE("Midpoint")
 {
     // fails
-    // REQUIRE(midpoint(std::numeric_limits<int>::max(),
-    // std::numeric_limits<int>::max()) == std::numeric_limits<int>::max());
-    // REQUIRE(midpoint(std::numeric_limits<int>::min(),
-    // std::numeric_limits<int>::max()) == -1); fails
-    // REQUIRE(midpoint(std::numeric_limits<int>::min(),
-    // std::numeric_limits<int>::min()) == std::numeric_limits<int>::min());
-    // REQUIRE(midpoint(static_cast<int16_t>(1000), static_cast<int32_t>(2000))
-    // == static_cast<int32_t>(1500));
-    // REQUIRE(midpoint(std::numeric_limits<double>::max(),
-    // std::numeric_limits<double>::max()) ==
-    // std::numeric_limits<double>::max());
-    // REQUIRE(midpoint(static_cast<float>(0),
-    // std::numeric_limits<float>::max()) == std::numeric_limits<float>::max() /
-    // 2); REQUIRE(midpoint(static_cast<float>(0), std::numeric_limits<long
-    // double>::max()) == std::numeric_limits<long double>::max() / 2);
-    // REQUIRE(midpoint(static_cast<int16_t>(0),
+    REQUIRE(sparseir::midpoint(std::numeric_limits<int>::max(),
+                               std::numeric_limits<int>::max()) ==
+            std::numeric_limits<int>::max());
+    //REQUIRE(sparseir::midpoint(std::numeric_limits<int>::min(),
+    //                           std::numeric_limits<int>::max()) == -1);
+    //REQUIRE(sparseir::midpoint(std::numeric_limits<int>::min(),
+    //                           std::numeric_limits<int>::min()) ==
+    //        std::numeric_limits<int>::min());
+    //REQUIRE(sparseir::midpoint(static_cast<int16_t>(1000), static_cast<int32_t>(2000))
+    //== static_cast<int32_t>(1500));
+    //REQUIRE(sparseir::midpoint(std::numeric_limits<double>::max(),
+    //                           std::numeric_limits<double>::max()) ==
+    //        std::numeric_limits<double>::max());
+    //REQUIRE(sparseir::midpoint(static_cast<float>(0),
+    //                           std::numeric_limits<float>::max()) ==
+    //        std::numeric_limits<float>::max() / 2);
+    //REQUIRE(sparseir::midpoint(static_cast<float>(0),
+    //                           std::numeric_limits<long double>::max()) ==
+    //        std::numeric_limits<long double>::max() / 2);
+    // REQUIRE(sparseir::midpoint(static_cast<int16_t>(0),
     // static_cast<int64_t>(99999999999999999999ULL)) ==
     // static_cast<int64_t>(99999999999999999999ULL) / 2);
-    // REQUIRE(midpoint<double>(-10.0, 1.0) == -4.5);
+    REQUIRE(sparseir::midpoint<double>(-10.0, 1.0) == -4.5);
 }
