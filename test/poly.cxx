@@ -299,8 +299,8 @@ TEST_CASE("Overlap")
 TEST_CASE("Roots")
 {
     // Initialize data and knots (from Julia code)
-    Eigen::MatrixXd data(16, 2);
-    data << 0.16774734206553019, 0.49223680914312595, -0.8276728567928646,
+    Eigen::VectorXd v(32);
+    v << 0.16774734206553019, 0.49223680914312595, -0.8276728567928646,
         0.16912891046582143, -0.0016231275318572044, 0.00018381683946452256,
         -9.699355027805034e-7, 7.60144228530804e-8, -2.8518324490258146e-10,
         1.7090590205708293e-11, -5.0081401126025e-14, 2.1244236198427895e-15,
@@ -311,32 +311,34 @@ TEST_CASE("Roots")
         2.8518324490258146e-10, 1.7090590205708293e-11, 5.0081401126025e-14,
         2.1244236198427895e-15, -2.0478095258000225e-16, -2.676573801530628e-16,
         -2.338165820094204e-16, -1.2050663212312096e-16;
-    //data.resize(16, 2);
+
+    Eigen::Map<Eigen::MatrixXd> data(v.data(), 16, 2);
 
     Eigen::VectorXd knots(3);
     knots << 0.0, 0.5, 1.0;
     int l = 3;
 
     sparseir::PiecewiseLegendrePoly pwlp(data, knots, l);
-    /*
+
     // Find roots
     Eigen::VectorXd roots = pwlp.roots();
 
-    // Print roots for debugging
-    std::cout << "Found roots: " << roots.transpose() << "\n";
-
+    /*
     // Expected roots from Julia
     Eigen::VectorXd expected_roots(3);
     expected_roots << 0.1118633448586015, 0.4999999999999998, 0.8881366551413985;
 
-    // REQUIRE(roots.size() == expected_roots.size());
+    REQUIRE(roots.size() == expected_roots.size());
     for(Eigen::Index i = 0; i < roots.size(); ++i) {
-        //REQUIRE(std::abs(roots[i] - expected_roots[i]) < 1e-10);
+        REQUIRE(std::fabs(roots[i] - expected_roots[i]) < 1e-10);
+        // Verifying the polynomial evaluates to zero
+        //at the roots with tight tolerance
+        REQUIRE(std::fabs(pwlp(roots[i])) < 1e-10);
         // Verify roots are in domain
-        //REQUIRE(roots[i] >= knots[0]);
-        //REQUIRE(roots[i] <= knots[knots.size()-1]);
+        REQUIRE(roots[i] >= knots[0]);
+        REQUIRE(roots[i] <= knots[knots.size() - 1]);
         // Verify these are actually roots
-        //REQUIRE(std::abs(pwlp(roots[i])) < 1e-10);
+        REQUIRE(std::abs(pwlp(roots[i])) < 1e-10);
     }
     */
 }

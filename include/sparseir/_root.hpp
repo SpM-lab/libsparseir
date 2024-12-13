@@ -235,7 +235,7 @@ std::vector<double> discrete_extrema(F f, const std::vector<double> &xgrid)
     std::vector<double> res;
     for (size_t i = 0; i < a.size(); ++i) {
         // abs ∘ f
-        auto abf = [f](double x) { return std::abs(f(x)); };
+        auto abf = [f](double x) { return std::fabs(f(x)); };
         res.push_back(
             bisect_discr_extremum(abf, a[i], b[i], absf_a[i], absf_b[i]));
     }
