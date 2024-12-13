@@ -25,6 +25,7 @@ project(
 
 # Eigen3
 find_package (Eigen3 3.4 REQUIRED NO_MODULE)
+find_package(Threads REQUIRED)
 
 # libxprec
 include(FetchContent)
@@ -52,7 +53,7 @@ set_target_properties(sparseir PROPERTIES
     CXX_STANDARD_REQUIRED ON
     )
 
-target_link_libraries(sparseir Eigen3::Eigen XPrec::xprec)
+target_link_libraries(sparseir Eigen3::Eigen XPrec::xprec Threads::Threads)
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)

@@ -217,7 +217,7 @@ public:
 
 
     Eigen::VectorXd refine_grid(const Eigen::VectorXd& grid, int alpha) const {
-        Eigen::VectorXd refined(grid.size() * alpha);
+        Eigen::VectorXd refined((grid.size() - 1) * alpha + 1);
 
         for (size_t i = 0; i < grid.size() - 1; ++i) {
             double start = grid[i];
