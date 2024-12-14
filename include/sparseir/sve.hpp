@@ -412,12 +412,36 @@ public:
 
     K kernel;
     double epsilon;
-
+    // Default constructor
+    SVEResult() {}
+    // Constructor
     SVEResult(const PiecewiseLegendrePolyVector &u_, const Eigen::VectorXd &s_,
               const PiecewiseLegendrePolyVector &v_, const K &kernel_,
               double epsilon_)
         : u(u_), s(s_), v(v_), kernel(kernel_), epsilon(epsilon_)
     {
+    }
+
+    std::tuple<PiecewiseLegendrePolyVector, Eigen::VectorXd, PiecewiseLegendrePolyVector>
+    part(double eps = std::numeric_limits<double>::quiet_NaN(),
+         int max_size = -1) const
+    {
+        eps = std::isnan(eps) ? this->epsilon : eps;
+        double threshold = eps * s(0);
+
+        int cut =
+            std::count_if(s.data(), s.data() + s.size(),
+                          [threshold](double val) { return val >= threshold; });
+
+        if (max_size > 0) {
+            cut = std::min(cut, max_size);
+        }
+        std::vector<PiecewiseLegendrePoly> u_part_(u.begin(), u.begin() + cut);
+        PiecewiseLegendrePolyVector u_part(u_part_);
+        Eigen::VectorXd s_part(s.head(cut));
+        std::vector<PiecewiseLegendrePoly> v_part_(v.begin(), v.begin() + cut);
+        PiecewiseLegendrePolyVector v_part(v_part_);
+        return std::make_tuple(u_part, s_part, v_part);
     }
 };
 
@@ -529,12 +553,11 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss,
 
 // Function to compute SVE result
 template <typename K>
-auto compute_sve(K kernel,
-                 double epsilon = std::numeric_limits<double>::quiet_NaN(),
-                 double cutoff = std::numeric_limits<double>::quiet_NaN(),
-                 std::string Twork = "Float64",
-                 int lmax = std::numeric_limits<int>::max(), int n_gauss = -1,
-                 const std::string &svd_strat = "auto")
+SVEResult<K> compute_sve(K kernel, double epsilon = std::numeric_limits<double>::quiet_NaN(),
+            double cutoff = std::numeric_limits<double>::quiet_NaN(),
+            std::string Twork = "Float64",
+            int lmax = std::numeric_limits<int>::max(), int n_gauss = -1,
+            const std::string &svd_strat = "auto")
 {
     // Choose accuracy parameters
     double safe_epsilon;

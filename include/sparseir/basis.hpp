@@ -10,7 +10,9 @@
 
 namespace sparseir {
 
-template <typename T>
+
+// Abstract class with S = Fermionic or Bosonic
+template <typename S>
 class AbstractBasis {
 public:
     virtual ~AbstractBasis() { }
@@ -28,7 +30,7 @@ public:
      * @param tau Imaginary time variable.
      * @return Value of the l-th basis function at time tau.
      */
-    virtual T u(int l, T tau) const = 0;
+    //virtual S u(int l, double tau) const = 0;
 
     /**
      * @brief Basis functions on the reduced Matsubara frequency axis.
@@ -46,14 +48,14 @@ public:
      * @param wn Reduced Matsubara frequency (integer multiplier).
      * @return Value of the l-th basis function at frequency wn.
      */
-    virtual T uhat(int l, int wn) const = 0;
+    //virtual S uhat(int l, int wn) const = 0;
 
     /**
      * @brief Quantum statistic ("F" for fermionic, "B" for bosonic).
      *
      * @return Character representing the quantum statistics.
      */
-    virtual char statistics() const = 0;
+    //virtual S statistics() const = 0;
 
     /**
      * @brief Access basis functions/singular values for given index/indices.
@@ -64,21 +66,21 @@ public:
      * @param index Index or range of indices.
      * @return Pointer to the truncated basis (implementation-defined).
      */
-    virtual AbstractBasis<T> *operator[](int index) const = 0;
+    //virtual AbstractBasis<S> *operator[](int index) const = 0;
 
     /**
      * @brief Shape of the basis function set.
      *
      * @return Pair representing the shape (rows, columns).
      */
-    virtual std::pair<int, int> shape() const = 0;
+    //virtual std::pair<int, int> shape() const = 0;
 
     /**
      * @brief Number of basis functions / singular values.
      *
      * @return Size of the basis function set.
      */
-    virtual int size() const = 0;
+    //virtual int size() const = 0;
 
     /**
      * @brief Significances of the basis functions.
@@ -89,7 +91,7 @@ public:
      *
      * @return Vector of significance values.
      */
-    virtual const std::vector<T> &significance() const = 0;
+    virtual const Eigen::VectorXd significance() const = 0;
 
     /**
      * @brief Accuracy of the basis.
@@ -99,10 +101,10 @@ public:
      *
      * @return Accuracy value.
      */
-    virtual T accuracy() const
+    virtual double accuracy() const
     {
-        const auto &sig = significance();
-        return !sig.empty() ? sig.back() : static_cast<T>(0);
+        const Eigen::VectorXd sig = significance();
+        return sig.size() > 0 ? sig(sig.size() - 1) : static_cast<double>(0);
     }
 
     /**
@@ -110,21 +112,21 @@ public:
      *
      * @return Cutoff parameter Λ.
      */
-    virtual T lambda() const = 0;
+    //virtual double lambda() const = 0;
 
     /**
      * @brief Inverse temperature.
      *
      * @return Value of β.
      */
-    virtual T beta() const = 0;
+    //virtual double beta() const = 0;
 
     /**
      * @brief Real frequency cutoff or NaN if not present.
      *
      * @return Maximum real frequency wmax.
      */
-    virtual T wmax() const = 0;
+    //virtual double wmax() const = 0;
 
     /**
      * @brief Default sampling points on the imaginary time axis.
@@ -132,8 +134,8 @@ public:
      * @param npoints Minimum number of sampling points to return.
      * @return Vector of sampling points on the τ-axis.
      */
-    virtual std::vector<T>
-    default_tau_sampling_points(int npoints = 0) const = 0;
+    //virtual Eigen::VectorXd
+    //default_tau_sampling_points(int npoints = 0) const = 0;
 
     /**
      * @brief Default sampling points on the imaginary frequency axis.
@@ -142,23 +144,23 @@ public:
      * @param positive_only If true, only return non-negative frequencies.
      * @return Vector of sampling points on the Matsubara axis.
      */
-    virtual std::vector<int>
-    default_matsubara_sampling_points(int npoints = 0,
-                                      bool positive_only = false) const = 0;
+    //virtual Eigen::VectorXd
+    //default_matsubara_sampling_points(int npoints = 0,
+    //                                  bool positive_only = false) const = 0;
 
     /**
      * @brief Returns true if the sampling is expected to be well-conditioned.
      *
      * @return True if well-conditioned.
      */
-    virtual bool is_well_conditioned() const { return true; }
+    //virtual bool is_well_conditioned() const { return true; }
 };
 
 } // namespace sparseir
 
 namespace sparseir {
 
-template <typename S, typename K>
+template <typename S, typename K=LogisticKernel>
 class FiniteTempBasis : public AbstractBasis<S> {
 public:
     K kernel;
@@ -167,11 +169,154 @@ public:
     double beta; // β
     PiecewiseLegendrePolyVector u;
     PiecewiseLegendrePolyVector v;
-    std::vector<double> s;
+    Eigen::VectorXd s;
     PiecewiseLegendreFTVector<S> uhat;
     PiecewiseLegendreFTVector<S> uhat_full;
 
     // Constructor
+    /*
+    """
+    FiniteTempBasis{S}(β, ωmax, ε=nothing; max_size=nothing, args...)
+
+    Construct a finite temperature basis suitable for the given `S` (`Fermionic`
+    or `Bosonic`) and cutoffs `β` and `ωmax`.
+    """
+    function FiniteTempBasis{S}(β::Real, ωmax::Real, ε=nothing; max_size=nothing,
+            kernel=LogisticKernel(β * ωmax),
+            sve_result=SVEResult(kernel; ε)) where {S}
+        FiniteTempBasis(S(), β, ωmax, ε; max_size, kernel, sve_result)
+    end
+
+    function FiniteTempBasis(statistics::Statistics, β::Real, ωmax::Real, ε=nothing;
+            max_size=nothing, kernel=LogisticKernel(β * ωmax),
+            sve_result=SVEResult(kernel; ε))
+        β > 0 || throw(DomainError(β, "Inverse temperature β must be positive"))
+        ωmax ≥ 0 || throw(DomainError(ωmax, "Frequency cutoff ωmax must be
+    non-negative"))
+
+        u_, s_, v_ = part(sve_result; ε, max_size)
+
+        accuracy = if length(sve_result.s) > length(s_)
+            sve_result.s[length(s_) + 1] / first(sve_result.s)
+        else
+            last(sve_result.s) / first(sve_result.s)
+        end
+
+        # The polynomials are scaled to the new variables by transforming the
+        # knots according to: tau = β/2 * (x + 1), w = ωmax * y. Scaling
+        # the data is not necessary as the normalization is inferred.
+        ωmax = Λ(kernel) / β
+        u_knots = (β / 2) .* (knots(u_) .+ 1)
+        v_knots = ωmax .* knots(v_)
+        u = PiecewiseLegendrePolyVector(u_, u_knots; Δx=(β / 2) .* Δx(u_),
+    symm=symm(u_)) v = PiecewiseLegendrePolyVector(v_, v_knots; Δx=ωmax .* Δx(v_),
+    symm=symm(v_))
+
+        # The singular values are scaled to match the change of variables, with
+        # the additional complexity that the kernel may have an additional
+        # power of w.
+        s = (sqrt(β / 2 * ωmax) * ωmax^(-ypower(kernel))) .* s_
+
+        # HACK: as we don't yet support Fourier transforms on anything but the
+        # unit interval, we need to scale the underlying data.
+        û_base_full = PiecewiseLegendrePolyVector(sqrt(β) .* data(sve_result.u),
+    sve_result.u) û_full = PiecewiseLegendreFTVector(û_base_full, statistics;
+            n_asymp=conv_radius(kernel))
+        û = û_full[1:length(s)]
+
+        return FiniteTempBasis(kernel, sve_result, accuracy, float(β), u, v, s, û,
+    û_full) end
+    */
+    FiniteTempBasis<S>(
+        double beta, double omega_max,
+        double epsilon = std::numeric_limits<double>::quiet_NaN(),
+        int max_size = -1)
+    {
+        K kernel = LogisticKernel(beta * omega_max);
+        SVEResult<K> sve_result = compute_sve<K>(kernel, epsilon);
+        FiniteTempBasis<S, K>(beta, omega_max, epsilon, kernel, sve_result, max_size);
+    }
+
+    FiniteTempBasis<S, K>(
+        double beta, double omega_max,
+        double epsilon,
+        K kernel)
+    {
+        SVEResult<K> sve_result = compute_sve<K>(kernel, epsilon);
+        int max_size = -1;
+        FiniteTempBasis<S, K>(beta, omega_max, epsilon, kernel, sve_result, max_size);
+    }
+
+    FiniteTempBasis<S, K>(
+        double beta,
+        double omega_max,
+        double epsilon,
+        K kernel,
+        SVEResult<K> sve_result,
+        int max_size = -1)
+    {
+        if (beta <= 0.0) {
+            throw std::domain_error(
+                "Inverse temperature beta must be positive");
+        }
+        if (omega_max < 0.0) {
+            throw std::domain_error(
+                "Frequency cutoff omega_max must be non-negative");
+        }
+
+        this->beta = beta;
+        this->kernel = kernel;
+        this->sve_result = sve_result;
+
+        // std::tuple<
+        //     PiecewiseLegendrePolyVector,
+        //     Eigen::VectorXd,
+        //  PiecewiseLegendrePolyVector
+        // >
+        auto part_result = sve_result.part(epsilon, max_size);
+        PiecewiseLegendrePolyVector u_ = std::get<0>(part_result);
+        Eigen::VectorXd s_ = std::get<1>(part_result);
+        PiecewiseLegendrePolyVector v_ = std::get<2>(part_result);
+
+        this->accuracy = (sve_result.s.size() > s_.size())
+                             ? sve_result.s[s_.size()] / sve_result.s[0]
+                             : sve_result.s[s.size()-1] / sve_result.s[0];
+
+        double wmax = kernel.lambda_ / beta;
+        Eigen::VectorXd u_knots = u_[0].knots;
+        Eigen::VectorXd v_knots = v_[0].knots;
+        Eigen::VectorXd u_delta_x = u_[0].delta_x;
+        Eigen::VectorXd v_delta_x = v_[0].delta_x;
+        int u_symm = u_[0].symm;
+        int v_symm = v_[0].symm;
+        u_knots = (beta / 2) * (u_knots.array() + 1);
+        v_knots = wmax * v_knots;
+
+        this->u = PiecewiseLegendrePolyVector(
+            u_, u_knots, u_delta_x, u_symm);
+        this->v = PiecewiseLegendrePolyVector(
+            v_, v_knots, v_delta_x, v_symm);
+
+        this -> s = std::sqrt(beta / 2 * wmax) *
+                              std::pow(wmax, -kernel.ypower()) * s_;
+
+        Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
+
+        PiecewiseLegendrePolyVector uhat_base_full =
+            PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, sve_result.u);
+        S statistics = S();
+        this->uhat_full = PiecewiseLegendreFTVector<S>(
+            uhat_base_full, statistics,
+            kernel.conv_radius()
+        );
+
+        std::vector<PiecewiseLegendreFT<S>> uhat_polyvec;
+        for (int i = 0; i < s.size(); ++i) {
+            uhat_polyvec.push_back(this->uhat_full[i]);
+        }
+        this->uhat = PiecewiseLegendreFTVector<S>(uhat_polyvec);
+    }
+    /*
     FiniteTempBasis(S statistics, double beta, double omega_max,
                     double epsilon = 0.0, int max_size = -1, K kernel = K(),
                     SVEResult<K> sve_result = SVEResult<K>())
@@ -222,40 +367,26 @@ public:
                                                  kernel.convRadius());
         uhat = uhat_full.slice(0, L);
     }
-
-    // Show function (for printing)
-    void show() const
-    {
-        std::cout << s.size() << "-element FiniteTempBasis<" << typeid(S).name()
-                  << "> with "
-                  << "β = " << beta << ", ωmax = " << getOmegaMax()
-                  << " and singular values:\n";
-        for (size_t i = 0; i < s.size() - 1; ++i)
-            std::cout << " " << s[i] << "\n";
-        std::cout << " " << s.back() << "\n";
-    }
-
+    */
     // Overload operator[] for indexing (get a subset of the basis)
     FiniteTempBasis<S, K> operator[](const std::pair<int, int> &range) const
     {
         int new_size = range.second - range.first + 1;
-        return FiniteTempBasis<S, K>(statistics(), beta, getOmegaMax(), 0.0,
+        return FiniteTempBasis<S, K>(statistics(), beta, get_wmax(), 0.0,
                                      new_size, kernel, sve_result);
     }
 
     // Calculate significance
-    Eigen::VectorXd significance() const
+    const Eigen::VectorXd significance() const override
     {
-        Eigen::VectorXd s_vec =
-            Eigen::Map<const Eigen::VectorXd>(s.data(), s.size());
-        return s_vec / s_vec[0];
+        return s / s[0];
     }
 
     // Getter for accuracy
-    double getAccuracy() const { return accuracy; }
+    double get_accuracy() const { return accuracy; }
 
     // Getter for ωmax
-    double getOmegaMax() const { return kernel.Lambda() / beta; }
+    double get_wmax() const { return kernel.lambda_ / beta; }
 
     // Getter for SVEResult
     const SVEResult<K> &getSVEResult() const { return sve_result; }
@@ -264,7 +395,7 @@ public:
     const K &getKernel() const { return kernel; }
 
     // Getter for Λ
-    double Lambda() const { return kernel.Lambda(); }
+    double Lambda() const { return kernel.lambda_; }
 
     // Default τ sampling points
     Eigen::VectorXd defaultTauSamplingPoints() const
@@ -287,16 +418,15 @@ public:
     {
         Eigen::VectorXd y =
             default_sampling_points(sve_result.v, static_cast<int>(s.size()));
-        return getOmegaMax() * y.array();
+        return get_wmax() * y.array();
     }
 
     // Rescale function
     FiniteTempBasis<S, K> rescale(double new_beta) const
     {
-        double new_omega_max = kernel.Lambda() / new_beta;
-        return FiniteTempBasis<S, K>(statistics(), new_beta, new_omega_max, 0.0,
-                                     static_cast<int>(s.size()), kernel,
-                                     sve_result);
+        double new_omega_max = kernel.lambda_ / new_beta;
+        return FiniteTempBasis<S, K>(new_beta, new_omega_max, 0.0, kernel,
+                                     sve_result, static_cast<int>(s.size()));
     }
 
 private:
@@ -389,4 +519,28 @@ private:
     }
 };
 
+/*
+std::pair<FiniteTempBasis<Fermionic, LogisticKernel>, FiniteTempBasis<Bosonic, LogisticKernel>>
+finite_temp_bases(
+    double beta,
+    double omega_max,
+    double epsilon = std::numeric_limits<double>::quiet_NaN()
+)
+{
+    return std::make_pair(FiniteTempBasis<Fermionic, LogisticKernel>(beta, omega_max, epsilon),
+                          FiniteTempBasis<Bosonic, LogisticKernel>(beta, omega_max, epsilon));
+}
+*/
+
+std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
+          FiniteTempBasis<Bosonic, LogisticKernel>>
+inline finite_temp_bases(double beta, double omega_max,
+                  double epsilon = std::numeric_limits<double>::quiet_NaN(),
+                  SVEResult<LogisticKernel> sve_result = SVEResult<LogisticKernel>())
+{
+    LogisticKernel kernel(beta * omega_max);
+    return std::make_pair(
+        FiniteTempBasis<Fermionic, LogisticKernel>(beta, omega_max, epsilon, kernel, sve_result),
+        FiniteTempBasis<Bosonic, LogisticKernel>(beta, omega_max, epsilon, kernel, sve_result));
+}
 } // namespace sparseir
