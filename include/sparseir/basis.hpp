@@ -159,13 +159,13 @@ public:
 
 namespace sparseir {
 
-template <typename S, typename K = LogisticKernel>
+template <typename S, typename K=LogisticKernel>
 class FiniteTempBasis : public AbstractBasis<S> {
 public:
     K kernel;
     SVEResult<K> sve_result;
     double accuracy;
-    double beta; // β
+    double beta;
     PiecewiseLegendrePolyVector u;
     PiecewiseLegendrePolyVector v;
     Eigen::VectorXd s;
@@ -173,8 +173,7 @@ public:
     PiecewiseLegendreFTVector<S> uhat_full;
 
     // Constructor
-    FiniteTempBasis<S>(
-        double beta, double omega_max,
+    FiniteTempBasis(double beta, double omega_max,
         double epsilon = std::numeric_limits<double>::quiet_NaN(),
         int max_size = -1)
     {
@@ -185,8 +184,8 @@ public:
                                            sve_result, max_size);
     }
 
-    FiniteTempBasis<S, K>(double beta, double omega_max, double epsilon,
-                          K kernel)
+    FiniteTempBasis(double beta, double omega_max, double epsilon,
+                          K& kernel)
     {
         SVEResult<K> sve_result = compute_sve<K>(kernel, epsilon);
         int max_size = -1;
@@ -194,7 +193,7 @@ public:
                               max_size);
     }
 
-    FiniteTempBasis<S, K>(double beta, double omega_max, double epsilon,
+    FiniteTempBasis(double beta, double omega_max, double epsilon,
                           K kernel, SVEResult<K> sve_result, int max_size = -1)
     {
         if (beta <= 0.0) {
@@ -455,14 +454,14 @@ private:
 };
 
 /*
-std::pair<FiniteTempBasis<Fermionic, LogisticKernel>, FiniteTempBasis<Bosonic,
+inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>, FiniteTempBasis<Bosonic,
 LogisticKernel>> finite_temp_bases( double beta, double omega_max, double
 epsilon = std::numeric_limits<double>::quiet_NaN()
 )
 {
-    return std::make_pair(FiniteTempBasis<Fermionic, LogisticKernel>(beta,
+    return std::make_pair<FiniteTempBasis<Fermionic, LogisticKernel>>(beta,
 omega_max, epsilon), FiniteTempBasis<Bosonic, LogisticKernel>(beta, omega_max,
-epsilon));
+epsilon);
 }
 */
 
