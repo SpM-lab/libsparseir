@@ -185,7 +185,7 @@ public:
     }
 
     FiniteTempBasis(double beta, double omega_max, double epsilon,
-                          K& kernel)
+                          K kernel)
     {
         SVEResult<K> sve_result = compute_sve<K>(kernel, epsilon);
         int max_size = -1;
@@ -461,17 +461,24 @@ private:
     }
 };
 
-/*
-inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>, FiniteTempBasis<Bosonic,
-LogisticKernel>> finite_temp_bases( double beta, double omega_max, double
-epsilon = std::numeric_limits<double>::quiet_NaN()
-)
+inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
+                 FiniteTempBasis<Bosonic, LogisticKernel>>
+    finite_temp_bases(
+        double beta, double omega_max,
+        double epsilon,
+        SVEResult<LogisticKernel> sve_result
+    )
 {
-    return std::make_pair<FiniteTempBasis<Fermionic, LogisticKernel>>(beta,
-omega_max, epsilon), FiniteTempBasis<Bosonic, LogisticKernel>(beta, omega_max,
-epsilon);
+    LogisticKernel kernel(beta * omega_max);
+    std::cout << "sve_result.s.size() = " << sve_result.s.size() << std::endl;
+    auto basis_f = FiniteTempBasis<Fermionic, LogisticKernel>(
+        beta, omega_max, epsilon, kernel, sve_result);
+    std::cout << "basis_f.s.size() = " << basis_f.s.size() << std::endl;
+    auto basis_b = FiniteTempBasis<Bosonic, LogisticKernel>(
+        beta, omega_max, epsilon, kernel, sve_result);
+    std::cout << "basis_b.s.size() = " << basis_b.s.size() << std::endl;
+    return std::make_pair(basis_f, basis_b);
 }
-*/
 
 inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
                  FiniteTempBasis<Bosonic, LogisticKernel>>
