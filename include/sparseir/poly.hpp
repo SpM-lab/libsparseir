@@ -846,6 +846,7 @@ inline Eigen::VectorXd power_moments_inplace(const Statistics &stat,
     return deriv_x1;
 }
 
+/*
 inline PowerModel<double> power_model(const Statistics &stat,
                                const PiecewiseLegendrePoly &poly)
 {
@@ -853,6 +854,7 @@ inline PowerModel<double> power_model(const Statistics &stat,
     Eigen::VectorXd moments = power_moments_inplace(stat, deriv_x1, poly.l);
     return PowerModel<double>(moments);
 }
+*/
 
 // Bosonic and Fermionic statistics classes
 class BosonicStatistics : public Statistics {
@@ -915,15 +917,14 @@ public:
         return res;
     }
 
-    /*
-    // Power model computation function
-    PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
+
+    inline PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
     {
         Eigen::VectorXd deriv_x1 = poly.derivs(1.0);
-        Eigen::VectorXd &moments = power_moments(stat, deriv_x1, poly.l);
+        Eigen::VectorXd moments = power_moments_inplace(stat, deriv_x1, poly.l);
         return PowerModel<double>(moments);
     }
-    */
+
 
 private:
     // Function to compute the Fourier transform for low frequencies
