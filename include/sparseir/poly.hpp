@@ -837,13 +837,22 @@ public:
     PowerModel(const Eigen::VectorXd &moments_) : moments(moments_) { }
 };
 
+/*
+function power_moments!(stat, deriv_x1, l)
+    statsign = zeta(stat) == 1 ? -1 : 1
+    @inbounds for m in 1:length(deriv_x1)
+        deriv_x1[m] *= -(statsign * (-1)^m + (-1)^l) / sqrt(2)
+    end
+    deriv_x1
+end
+*/
 inline Eigen::VectorXd power_moments(const Statistics &stat,
                                       Eigen::VectorXd &deriv_x1, int l)
 {
-    Eigen::VectorXd moments = Eigen::VectorXd::Zero(deriv_x1.size());
     int statsign = stat.zeta() == 1 ? -1 : 1;
+    Eigen::VectorXd moments = Eigen::VectorXd::Zero(deriv_x1.size());
     for (int m = 1; m <= deriv_x1.size(); m++) {
-        moments[m] = deriv_x1[m] *
+        moments[m-1] = deriv_x1[m-1] *
             -(statsign * std::pow(-1, m) + std::pow(-1, l)) / std::sqrt(2);
     }
     return moments;
@@ -1021,13 +1030,13 @@ public:
                               S &stat,
                               double n_asymp = std::numeric_limits<double>::infinity())
     {
-        std::cout << "GOMAGOMA" << std::endl;
-        polyvec.reserve(polys.size());
+        std::vector<PiecewiseLegendreFT<S>> polyvec_;
+        polyvec_.reserve(polys.size());
         for (const auto &poly : polys)
         {
-            polyvec.emplace_back(poly, stat, n_asymp);
+            polyvec_.push_back(PiecewiseLegendreFT<S>(poly, stat, n_asymp));
         }
-        std::cout << "KYUKKYU" << std::endl;
+        polyvec = polyvec_;
     }
 
 
