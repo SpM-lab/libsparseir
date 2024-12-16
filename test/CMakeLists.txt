@@ -1,5 +1,7 @@
 include(FetchContent)
 
+set(CMAKE_CXX_STANDARD 11)
+
 # Require Catch2 for tests
 FetchContent_Declare(
     Catch2
