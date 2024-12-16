@@ -219,20 +219,28 @@ public:
         Eigen::VectorXd s_ = std::get<1>(part_result);
         PiecewiseLegendrePolyVector v_ = std::get<2>(part_result);
 
-        this->accuracy = (sve_result.s.size() > s_.size())
-                             ? sve_result.s[s_.size()] / sve_result.s[0]
-                             : sve_result.s[s.size() - 1] / sve_result.s[0];
+        double sve_result_s0 = sve_result.s(0);
+
+        if (sve_result.s.size() > s_.size()) {
+            this->accuracy = sve_result.s(s_.size()) / sve_result_s0;
+        } else {
+            this->accuracy = sve_result.s(s_.size() - 1) / sve_result_s0;
+        }
 
         double wmax = kernel.lambda_ / beta;
         Eigen::VectorXd u_knots = u_[0].knots;
         Eigen::VectorXd v_knots = v_[0].knots;
         Eigen::VectorXd u_delta_x = u_[0].delta_x;
         Eigen::VectorXd v_delta_x = v_[0].delta_x;
-        int u_symm = u_[0].symm;
-        int v_symm = v_[0].symm;
+        Eigen::VectorXi u_symm = Eigen::VectorXi::Zero(u_.size());
+        Eigen::VectorXi v_symm = Eigen::VectorXi::Zero(v_.size());
+        for (int i = 0; i < u_.size(); ++i) {
+            u_symm[i] = u_[i].symm;
+            v_symm[i] = v_[i].symm;
+        }
+
         u_knots = (beta / 2) * (u_knots.array() + 1);
         v_knots = wmax * v_knots;
-
         this->u = PiecewiseLegendrePolyVector(u_, u_knots, u_delta_x, u_symm);
         this->v = PiecewiseLegendrePolyVector(v_, v_knots, v_delta_x, v_symm);
 
@@ -240,10 +248,10 @@ public:
             std::sqrt(beta / 2 * wmax) * std::pow(wmax, -kernel.ypower()) * s_;
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
-
         PiecewiseLegendrePolyVector uhat_base_full =
             PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, sve_result.u);
         S statistics = S();
+
         this->uhat_full = PiecewiseLegendreFTVector<S>(
             uhat_base_full, statistics, kernel.conv_radius());
 
@@ -467,15 +475,20 @@ epsilon);
 
 inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
                  FiniteTempBasis<Bosonic, LogisticKernel>>
-finite_temp_bases(
-    double beta, double omega_max,
-    double epsilon = std::numeric_limits<double>::quiet_NaN(),
-    SVEResult<LogisticKernel> sve_result = SVEResult<LogisticKernel>())
+    finite_temp_bases(
+        double beta, double omega_max,
+        double epsilon = std::numeric_limits<double>::quiet_NaN()
+    )
 {
     LogisticKernel kernel(beta * omega_max);
-    return std::make_pair(FiniteTempBasis<Fermionic, LogisticKernel>(
-                              beta, omega_max, epsilon, kernel, sve_result),
-                          FiniteTempBasis<Bosonic, LogisticKernel>(
-                              beta, omega_max, epsilon, kernel, sve_result));
+    SVEResult<LogisticKernel> sve_result = compute_sve(kernel, epsilon);
+    std::cout << "sve_result.s.size() = " << sve_result.s.size() << std::endl;
+    auto basis_f = FiniteTempBasis<Fermionic, LogisticKernel>(
+        beta, omega_max, epsilon, kernel, sve_result);
+    std::cout << "basis_f.s.size() = " << basis_f.s.size() << std::endl;
+    auto basis_b = FiniteTempBasis<Bosonic, LogisticKernel>(
+        beta, omega_max, epsilon, kernel, sve_result);
+    std::cout << "basis_b.s.size() = " << basis_b.s.size() << std::endl;
+    return std::make_pair(basis_f, basis_b);
 }
 } // namespace sparseir

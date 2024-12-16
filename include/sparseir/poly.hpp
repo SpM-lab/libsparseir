@@ -8,7 +8,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <vector>
-
+#include <iostream>
 // Eigen headers
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
@@ -121,13 +121,13 @@ public:
             throw std::invalid_argument("Invalid knots array");
         }
 
-        delta_x = delta_x_.size() > 0 ? delta_x_ : knots.tail(knots.size() - 1) - knots.head(knots.size() - 1);
-        xm = 0.5 * (knots.head(knots.size() - 1) + knots.tail(knots.size() - 1));
-        inv_xs = 2.0 / delta_x.array();
-        norms = inv_xs.array().sqrt();
+        this->delta_x = delta_x_.size() > 0 ? delta_x_ : knots.tail(knots.size() - 1) - knots.head(knots.size() - 1);
+        this->xm = 0.5 * (knots.head(knots.size() - 1) + knots.tail(knots.size() - 1));
+        this->inv_xs = 2.0 / this->delta_x.array();
+        this->norms = this->inv_xs.array().sqrt();
 
-        xmin = knots[0];
-        xmax = knots[knots.size() - 1];
+        this->xmin = knots(0);
+        this->xmax = knots(knots.size() - 1);
     }
 
     // Factory method for creating a new PiecewiseLegendrePoly instance
@@ -148,7 +148,7 @@ public:
         Eigen::VectorXd coeffs = data.col(i);
         // convert coeffs to std::vector<double>
         std::vector<double> coeffs_vec(coeffs.data(), coeffs.data() + coeffs.size());
-        double value = legval<double>(x_tilde, coeffs_vec) * norms[i];
+        double value = legval<double>(x_tilde, coeffs_vec) * norms(i);
         return value;
     }
 
@@ -219,7 +219,6 @@ public:
     Eigen::VectorXd derivs(double x) const {
         std::vector<double> res;
         res.push_back((*this)(x)); // Assuming operator() is overloaded for evaluation
-
         PiecewiseLegendrePoly newppoly = *this;
         for (int i = 2; i <= polyorder; ++i) {
             newppoly = newppoly.deriv();
@@ -662,18 +661,19 @@ public:
     PiecewiseLegendrePolyVector(const PiecewiseLegendrePolyVector &polys,
                                 const Eigen::VectorXd &knots,
                                 const Eigen::VectorXd &Δx,
-                                int symm = 0)
+                                const Eigen::VectorXi &symm = Eigen::VectorXi())
         : polyvec(polys.size())
     {
-        if (polys.size() != symm) {
-            throw std::invalid_argument("Sizes of polys and symm don't match");
+        if (polys.size() != symm.size()) {
+            throw std::invalid_argument(
+                "Sizes of polys and symm don't match " + std::to_string(polys.size()) + " " + std::to_string(symm.size()));
         }
         for (size_t i = 0; i < polys.size(); ++i) {
             polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(),
                                                polys[i].get_knots(),
                                                polys[i].get_polyorder(),
                                                polys[i].get_delta_x(),
-                                               symm);
+                                               symm(i));
         }
     }
 
@@ -690,20 +690,22 @@ public:
     */
     PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3> &data,
                                 const PiecewiseLegendrePolyVector &polys)
-        : polyvec(data.size())
     {
-        if (data.size() != polys.size()) {
+        std::vector<PiecewiseLegendrePoly> polyvec;
+        if (data.dimension(2) != polys.size()) {
             throw std::invalid_argument("Sizes of data and polys don't match");
         }
-        for (size_t i = 0; i < data.size(); ++i) {
+        for (size_t i = 0; i < data.dimension(2); ++i) {
             Eigen::MatrixXd data2d(data.dimension(0), data.dimension(1));
             for (int j = 0; j < data.dimension(0); ++j) {
                 for (int k = 0; k < data.dimension(1); ++k) {
                     data2d(j, k) = data(j, k, i);
                 }
             }
-            polyvec[i] = PiecewiseLegendrePoly(data2d, polys[i]);
+            auto p = PiecewiseLegendrePoly(data2d, polys[i]);
+            polyvec.push_back(p);
         }
+        this->polyvec = polyvec;
     }
 
 
@@ -835,15 +837,25 @@ public:
     PowerModel(const Eigen::VectorXd &moments_) : moments(moments_) { }
 };
 
-inline Eigen::VectorXd power_moments_inplace(const Statistics &stat,
+/*
+function power_moments!(stat, deriv_x1, l)
+    statsign = zeta(stat) == 1 ? -1 : 1
+    @inbounds for m in 1:length(deriv_x1)
+        deriv_x1[m] *= -(statsign * (-1)^m + (-1)^l) / sqrt(2)
+    end
+    deriv_x1
+end
+*/
+inline Eigen::VectorXd power_moments(const Statistics &stat,
                                       Eigen::VectorXd &deriv_x1, int l)
 {
     int statsign = stat.zeta() == 1 ? -1 : 1;
+    Eigen::VectorXd moments = Eigen::VectorXd::Zero(deriv_x1.size());
     for (int m = 1; m <= deriv_x1.size(); m++) {
-        deriv_x1[m] *=
+        moments[m-1] = deriv_x1[m-1] *
             -(statsign * std::pow(-1, m) + std::pow(-1, l)) / std::sqrt(2);
     }
-    return deriv_x1;
+    return moments;
 }
 
 /*
@@ -921,7 +933,7 @@ public:
     inline PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
     {
         Eigen::VectorXd deriv_x1 = poly.derivs(1.0);
-        Eigen::VectorXd moments = power_moments_inplace(stat, deriv_x1, poly.l);
+        Eigen::VectorXd moments = power_moments(stat, deriv_x1, poly.l);
         return PowerModel<double>(moments);
     }
 
@@ -1018,11 +1030,13 @@ public:
                               S &stat,
                               double n_asymp = std::numeric_limits<double>::infinity())
     {
-        polyvec.reserve(polys.size());
+        std::vector<PiecewiseLegendreFT<S>> polyvec_;
+        polyvec_.reserve(polys.size());
         for (const auto &poly : polys)
         {
-            polyvec.emplace_back(poly, stat, n_asymp);
+            polyvec_.push_back(PiecewiseLegendreFT<S>(poly, stat, n_asymp));
         }
+        polyvec = polyvec_;
     }
 
 
