@@ -174,67 +174,14 @@ public:
     PiecewiseLegendreFTVector<S> uhat_full;
 
     // Constructor
-    /*
-    """
-    FiniteTempBasis{S}(β, ωmax, ε=nothing; max_size=nothing, args...)
-
-    Construct a finite temperature basis suitable for the given `S` (`Fermionic`
-    or `Bosonic`) and cutoffs `β` and `ωmax`.
-    """
-    function FiniteTempBasis{S}(β::Real, ωmax::Real, ε=nothing; max_size=nothing,
-            kernel=LogisticKernel(β * ωmax),
-            sve_result=SVEResult(kernel; ε)) where {S}
-        FiniteTempBasis(S(), β, ωmax, ε; max_size, kernel, sve_result)
-    end
-
-    function FiniteTempBasis(statistics::Statistics, β::Real, ωmax::Real, ε=nothing;
-            max_size=nothing, kernel=LogisticKernel(β * ωmax),
-            sve_result=SVEResult(kernel; ε))
-        β > 0 || throw(DomainError(β, "Inverse temperature β must be positive"))
-        ωmax ≥ 0 || throw(DomainError(ωmax, "Frequency cutoff ωmax must be
-    non-negative"))
-
-        u_, s_, v_ = part(sve_result; ε, max_size)
-
-        accuracy = if length(sve_result.s) > length(s_)
-            sve_result.s[length(s_) + 1] / first(sve_result.s)
-        else
-            last(sve_result.s) / first(sve_result.s)
-        end
-
-        # The polynomials are scaled to the new variables by transforming the
-        # knots according to: tau = β/2 * (x + 1), w = ωmax * y. Scaling
-        # the data is not necessary as the normalization is inferred.
-        ωmax = Λ(kernel) / β
-        u_knots = (β / 2) .* (knots(u_) .+ 1)
-        v_knots = ωmax .* knots(v_)
-        u = PiecewiseLegendrePolyVector(u_, u_knots; Δx=(β / 2) .* Δx(u_),
-    symm=symm(u_)) v = PiecewiseLegendrePolyVector(v_, v_knots; Δx=ωmax .* Δx(v_),
-    symm=symm(v_))
-
-        # The singular values are scaled to match the change of variables, with
-        # the additional complexity that the kernel may have an additional
-        # power of w.
-        s = (sqrt(β / 2 * ωmax) * ωmax^(-ypower(kernel))) .* s_
-
-        # HACK: as we don't yet support Fourier transforms on anything but the
-        # unit interval, we need to scale the underlying data.
-        û_base_full = PiecewiseLegendrePolyVector(sqrt(β) .* data(sve_result.u),
-    sve_result.u) û_full = PiecewiseLegendreFTVector(û_base_full, statistics;
-            n_asymp=conv_radius(kernel))
-        û = û_full[1:length(s)]
-
-        return FiniteTempBasis(kernel, sve_result, accuracy, float(β), u, v, s, û,
-    û_full) end
-    */
     FiniteTempBasis<S>(
         double beta, double omega_max,
         double epsilon = std::numeric_limits<double>::quiet_NaN(),
         int max_size = -1)
     {
-        K kernel = LogisticKernel(beta * omega_max);
-        SVEResult<K> sve_result = compute_sve<K>(kernel, epsilon);
-        FiniteTempBasis<S, K>(beta, omega_max, epsilon, kernel, sve_result, max_size);
+        LogisticKernel kernel = LogisticKernel(beta * omega_max);
+        SVEResult<LogisticKernel> sve_result = compute_sve<LogisticKernel>(kernel, epsilon);
+        FiniteTempBasis<S, LogisticKernel>(beta, omega_max, epsilon, kernel, sve_result, max_size);
     }
 
     FiniteTempBasis<S, K>(
