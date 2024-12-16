@@ -148,7 +148,7 @@ public:
         Eigen::VectorXd coeffs = data.col(i);
         // convert coeffs to std::vector<double>
         std::vector<double> coeffs_vec(coeffs.data(), coeffs.data() + coeffs.size());
-        double value = legval<double>(x_tilde, coeffs_vec) * norms[i];
+        double value = legval<double>(x_tilde, coeffs_vec) * norms(i);
         return value;
     }
 
@@ -219,14 +219,10 @@ public:
     Eigen::VectorXd derivs(double x) const {
         std::vector<double> res;
         res.push_back((*this)(x)); // Assuming operator() is overloaded for evaluation
-        std::cout << "x = " << x << std::endl;
-        std::cout << "(*this)(x) = " << (*this)(x) << std::endl;
         PiecewiseLegendrePoly newppoly = *this;
         for (int i = 2; i <= polyorder; ++i) {
             newppoly = newppoly.deriv();
-            auto y = newppoly(x);
-            std::cout << "y = " << y << std::endl;
-            res.push_back(y);
+            res.push_back(newppoly(x));
         }
         //convert to Eigen::VectorXd
         return Eigen::Map<Eigen::VectorXd>(res.data(), res.size());
@@ -841,15 +837,16 @@ public:
     PowerModel(const Eigen::VectorXd &moments_) : moments(moments_) { }
 };
 
-inline Eigen::VectorXd power_moments_inplace(const Statistics &stat,
+inline Eigen::VectorXd power_moments(const Statistics &stat,
                                       Eigen::VectorXd &deriv_x1, int l)
 {
+    Eigen::VectorXd moments = Eigen::VectorXd::Zero(deriv_x1.size());
     int statsign = stat.zeta() == 1 ? -1 : 1;
     for (int m = 1; m <= deriv_x1.size(); m++) {
-        deriv_x1[m] *=
+        moments[m] = deriv_x1[m] *
             -(statsign * std::pow(-1, m) + std::pow(-1, l)) / std::sqrt(2);
     }
-    return deriv_x1;
+    return moments;
 }
 
 /*
@@ -883,7 +880,6 @@ public:
         if (poly.xmin != -1.0 || poly.xmax != 1.0) {
             throw std::invalid_argument("Only interval [-1, 1] is supported");
         }
-        std::cout << "GOMAGOMA KYUKKYU" << std::endl;
         this->model = power_model(stat, poly);
     }
 
@@ -928,8 +924,7 @@ public:
     inline PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
     {
         Eigen::VectorXd deriv_x1 = poly.derivs(1.0);
-        std::cout << "deriv_x1 = " << deriv_x1 << std::endl;
-        Eigen::VectorXd moments = power_moments_inplace(stat, deriv_x1, poly.l);
+        Eigen::VectorXd moments = power_moments(stat, deriv_x1, poly.l);
         return PowerModel<double>(moments);
     }
 
@@ -1026,11 +1021,13 @@ public:
                               S &stat,
                               double n_asymp = std::numeric_limits<double>::infinity())
     {
+        std::cout << "GOMAGOMA" << std::endl;
         polyvec.reserve(polys.size());
         for (const auto &poly : polys)
         {
             polyvec.emplace_back(poly, stat, n_asymp);
         }
+        std::cout << "KYUKKYU" << std::endl;
     }
 
 

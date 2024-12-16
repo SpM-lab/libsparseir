@@ -248,10 +248,8 @@ public:
             std::sqrt(beta / 2 * wmax) * std::pow(wmax, -kernel.ypower()) * s_;
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
-
         PiecewiseLegendrePolyVector uhat_base_full =
             PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, sve_result.u);
-
         S statistics = S();
 
         this->uhat_full = PiecewiseLegendreFTVector<S>(

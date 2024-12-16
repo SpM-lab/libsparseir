@@ -241,6 +241,8 @@ TEST_CASE("Deriv")
     int l = 3;
     sparseir::PiecewiseLegendrePoly pwlp(data, knots, l);
 
+    REQUIRE(std::abs(pwlp(0.6) - 0.9409047338158947) < 1e-10);
+
     // Compute derivative
     int n = 1;
     Eigen::MatrixXd ddata = pwlp.data;
@@ -256,6 +258,7 @@ TEST_CASE("Deriv")
     // Test that derivative data matches
     REQUIRE(deriv_pwlp.data.isApprox(ddata));
     REQUIRE(deriv_pwlp.symm == 0);
+    REQUIRE(std::abs(deriv_pwlp(0.6) - 1.9876646271069893) < 1e-10);
 
     // Check that other fields match
     REQUIRE(pwlp.polyorder == deriv_pwlp.polyorder);
@@ -267,6 +270,11 @@ TEST_CASE("Deriv")
     REQUIRE(pwlp.xm.isApprox(deriv_pwlp.xm));
     REQUIRE(pwlp.inv_xs.isApprox(deriv_pwlp.inv_xs));
     REQUIRE(pwlp.norms.isApprox(deriv_pwlp.norms));
+
+    std::vector<double> ref{0.9409047338158947, 1.9876646271069893, 954.4275060248603};
+    for (int i = 0; i < 3; i++) {
+        REQUIRE(std::abs(pwlp.derivs(0.6)[i] - ref[i]) < 1e-10);
+    }
 }
 
 TEST_CASE("Overlap")
