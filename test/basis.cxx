@@ -22,7 +22,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>;
         using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic, sparseir::LogisticKernel>;
 
-        //std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon);
+        std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon);
 
         // Ensure FiniteTempBasisSet is properly instantiated with the kernel type
         /*

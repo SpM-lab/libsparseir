@@ -56,17 +56,15 @@ choose_accuracy(double epsilon, std::nullptr_t)
     if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
         return std::make_tuple(epsilon, "Float64", "default");
     } else {
-        /*
         // This should work, but catch2 can't catch this warning
         // Therefore we suppress this block
         if (epsilon < std::sqrt(std::numeric_limits<double>::epsilon())) {
-            std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is
-        below √ε with ε = "
+            std::cerr << "Warning: Basis cutoff is " << epsilon << ", which is"
+                      << " below √ε with ε = "
                       << std::numeric_limits<double>::epsilon() << ".\n"
-                      << "Expect singular values and basis functions for large l
-        to have lower precision than the cutoff.\n";
+                      << "Expect singular values and basis functions for large l"
+                      << " to have lower precision than the cutoff.\n";
         }
-        */
         return std::make_tuple(epsilon, "Float64x2", "default");
     }
 }
@@ -75,6 +73,21 @@ choose_accuracy(double epsilon, std::nullptr_t)
 // julia> choose_accuracy(::Nothing, Twork) = sqrt(eps(Twork)), Twork, :default
 inline std::tuple<double, std::string, std::string>
 choose_accuracy(std::nullptr_t, std::string Twork)
+{
+    if (Twork == "Float64x2") {
+        const double epsilon =
+            2.220446049250313e-16; // julia> using MultiFloats;
+                                   // Float64(sqrt(eps(Float64x2)))
+        return std::make_tuple(epsilon, Twork, "default");
+    } else {
+        return std::make_tuple(
+            std::sqrt(std::numeric_limits<double>::epsilon()), Twork,
+            "default");
+    }
+}
+
+inline std::tuple<double, std::string, std::string>
+choose_accuracy_epsilon_nan(std::string Twork)
 {
     if (Twork == "Float64x2") {
         const double epsilon =
@@ -104,9 +117,14 @@ inline std::tuple<double, std::string, std::string>
 choose_accuracy(double epsilon, std::string Twork, std::string svd_strat)
 {
     std::string auto_svd_strat;
-    std::tie(epsilon, Twork, auto_svd_strat) = choose_accuracy(epsilon, Twork);
-    std::string final_svd_strat =
-        (svd_strat == "auto") ? auto_svd_strat : svd_strat;
+    if (std::isnan(epsilon)) {
+        std::tie(epsilon, Twork, auto_svd_strat) =
+            choose_accuracy_epsilon_nan(Twork);
+    } else {
+        std::tie(epsilon, Twork, auto_svd_strat) =
+            choose_accuracy(epsilon, Twork);
+    }
+    std::string final_svd_strat = (svd_strat == "auto") ? auto_svd_strat : svd_strat;
     return std::make_tuple(epsilon, Twork, final_svd_strat);
 }
 
@@ -541,6 +559,8 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss,
     T cutoff_actual = std::isnan(cutoff)
                           ? 2 * T(std::numeric_limits<double>::epsilon())
                           : T(cutoff);
+    std::cout << "Cutoff: " << cutoff_actual << std::endl;
+
     std::vector<Eigen::MatrixX<T>> u_list_truncated;
     std::vector<Eigen::VectorX<T>> s_list_truncated;
     std::vector<Eigen::MatrixX<T>> v_list_truncated;
@@ -569,6 +589,7 @@ SVEResult<K> compute_sve(K kernel, double epsilon = std::numeric_limits<double>:
         choose_accuracy(epsilon, Twork, svd_strat);
     std::cout << "Twork_actual: " << Twork_actual << std::endl;
     std::cout << "svd_strategy_actual: " << svd_strategy_actual << std::endl;
+
     if (Twork_actual == "Float64") {
         return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff,
                                           lmax);
