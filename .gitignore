@@ -33,3 +33,6 @@
 
 # CMake
 build
+
+.DS_Store
+.vscode/settings.json
