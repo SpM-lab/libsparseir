@@ -174,8 +174,7 @@ public:
     PiecewiseLegendreFTVector<S> uhat_full;
 
     // Constructor
-    FiniteTempBasis<S>(
-        double beta, double omega_max,
+    FiniteTempBasis<S>(double beta, double omega_max,
         double epsilon = std::numeric_limits<double>::quiet_NaN(),
         int max_size = -1)
     {
