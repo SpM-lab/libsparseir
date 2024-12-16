@@ -37,7 +37,8 @@ class AbstractKernel {
 public:
     double lambda_;
     // Constructor
-    AbstractKernel(double lambda) : lambda_(lambda) { }
+    AbstractKernel(){}
+    AbstractKernel(double lambda) : lambda_(lambda) {}
 
     /**
      * @brief Evaluate kernel at point (x, y).
@@ -203,6 +204,9 @@ inline double callreduced(const AbstractReducedKernel &kernel, double x,
 class LogisticKernel : public AbstractKernel {
 public:
     double lambda_; ///< The kernel cutoff Λ.
+
+    // Default constructor
+    LogisticKernel() : AbstractKernel() {}
 
     /**
      * @brief Constructor for LogisticKernel.

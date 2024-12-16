@@ -34,14 +34,18 @@ public:
     // Default constructor
     PiecewiseLegendrePoly() = default;
 
-    // Constructor
-    PiecewiseLegendrePoly(int polyorder, double xmin, double xmax,
-                          const Eigen::VectorXd &knots,
-                          const Eigen::VectorXd &delta_x,
-                          const Eigen::MatrixXd &data, int symm, int l,
-                          const Eigen::VectorXd &xm,
-                          const Eigen::VectorXd &inv_xs,
-                          const Eigen::VectorXd &norms)
+    // Constructor for full initialization
+    PiecewiseLegendrePoly(int polyorder,
+                          double xmin,
+                          double xmax,
+                          const Eigen::VectorXd& knots,
+                          const Eigen::VectorXd& delta_x,
+                          const Eigen::MatrixXd& data,
+                          int symm,
+                          int l,
+                          const Eigen::VectorXd& xm,
+                          const Eigen::VectorXd& inv_xs,
+                          const Eigen::VectorXd& norms)
         : polyorder(polyorder),
           xmin(xmin),
           xmax(xmax),
@@ -52,91 +56,87 @@ public:
           l(l),
           xm(xm),
           inv_xs(inv_xs),
-          norms(norms)
-    {
-        // Check for NaN in data
-        if (data.unaryExpr([](double x) { return std::isnan(x); }).any()) {
-            throw std::runtime_error("data contains NaN");
+          norms(norms) {
+
+        if (!data.allFinite()) {
+            throw std::invalid_argument("data contains NaN or Inf");
         }
 
-        // Check that knots are sorted
         if (!std::is_sorted(knots.data(), knots.data() + knots.size())) {
-            throw std::runtime_error("knots must be monotonically increasing");
+            throw std::invalid_argument("knots must be monotonically increasing");
         }
 
-        // Check that delta_x[i] == knots[i+1] - knots[i]
-        const double tol = 1e-12;
         for (int i = 0; i < delta_x.size(); ++i) {
-            double diff = knots[i + 1] - knots[i];
-            if (std::abs(delta_x[i] - diff) > tol) {
-                throw std::runtime_error("delta_x must work with knots");
+            if (std::abs(delta_x[i] - (knots[i + 1] - knots[i])) > 1e-10) {
+                throw std::invalid_argument("delta_x must work with knots");
             }
         }
     }
 
-    // Constructor: PiecewiseLegendrePoly(data, p; symm=symm(p))
-    PiecewiseLegendrePoly(const Eigen::MatrixXd &data,
-                          const PiecewiseLegendrePoly &p, int symm)
+    // Constructor for copying existing PiecewiseLegendrePoly with new data and symmetry
+    PiecewiseLegendrePoly(const Eigen::MatrixXd& new_data,
+                          const PiecewiseLegendrePoly& p)
         : polyorder(p.polyorder),
           xmin(p.xmin),
           xmax(p.xmax),
           knots(p.knots),
           delta_x(p.delta_x),
-          data(data),
-          symm(symm),
+          data(new_data),
+          symm(p.symm),
           l(p.l),
           xm(p.xm),
           inv_xs(p.inv_xs),
-          norms(p.norms)
-    {
-        // Copy constructor with new data and symm
-    }
+          norms(p.norms) {}
 
-    // Constructor: PiecewiseLegendrePoly(data::Matrix, knots::Vector,
-    // l::Integer;
-    //      delta_x=diff(knots), symm=0)
-    PiecewiseLegendrePoly(const Eigen::MatrixXd &data,
-                          const Eigen::VectorXd &knots, int l,
-                          const Eigen::VectorXd &delta_x = Eigen::VectorXd(),
+    // Constructor used in the deriv function
+    PiecewiseLegendrePoly(const Eigen::MatrixXd& new_data,
+                          const PiecewiseLegendrePoly& p,
+                          int new_symm)
+        : polyorder(p.polyorder),
+          xmin(p.xmin),
+          xmax(p.xmax),
+          knots(p.knots),
+          delta_x(p.delta_x),
+          data(new_data),
+          symm(new_symm),
+          l(p.l),
+          xm(p.xm),
+          inv_xs(p.inv_xs),
+          norms(p.norms) {}
+
+    // Constructor for building from data and knots with optional delta_x and symmetry
+    PiecewiseLegendrePoly(const Eigen::MatrixXd& data,
+                          const Eigen::VectorXd& knots,
+                          int l,
+                          const Eigen::VectorXd& delta_x_ = Eigen::VectorXd(),
                           int symm = 0)
-        : data(data), knots(knots), symm(symm), l(l)
-    {
+        : data(data),
+          knots(knots),
+          l(l),
+          symm(symm) {
         polyorder = data.rows();
         int nsegments = data.cols();
+
         if (knots.size() != nsegments + 1) {
-            throw std::runtime_error("Invalid knots array");
-        }
-        xmin = knots[0];
-        xmax = knots[knots.size() - 1];
-
-        if (delta_x.size() == 0) {
-            // delta_x = diff(knots)
-            this->delta_x = knots.segment(1, knots.size() - 1) -
-                            knots.segment(0, knots.size() - 1);
-        } else {
-            this->delta_x = delta_x;
+            throw std::invalid_argument("Invalid knots array");
         }
 
-        // xm = (knots[1:end-1] + knots[2:end]) / 2
-        xm = (knots.segment(0, knots.size() - 1) +
-              knots.segment(1, knots.size() - 1)) /
-             2.0;
-
-        // inv_xs = 2 ./ delta_x
-        inv_xs = 2.0 / this->delta_x.array();
-
-        // norms = sqrt.(inv_xs)
+        delta_x = delta_x_.size() > 0 ? delta_x_ : knots.tail(knots.size() - 1) - knots.head(knots.size() - 1);
+        xm = 0.5 * (knots.head(knots.size() - 1) + knots.tail(knots.size() - 1));
+        inv_xs = 2.0 / delta_x.array();
         norms = inv_xs.array().sqrt();
 
-        // Check for NaN in data
-        if (data.unaryExpr([](double x) { return std::isnan(x); }).any()) {
-            throw std::runtime_error("data contains NaN");
-        }
+        xmin = knots[0];
+        xmax = knots[knots.size() - 1];
+    }
 
-        // Check that knots are sorted
-        if (!std::is_sorted(knots.data(), knots.data() + knots.size())) {
-            throw std::runtime_error("knots must be monotonically increasing");
-        }
+    // Factory method for creating a new PiecewiseLegendrePoly instance
+    static PiecewiseLegendrePoly create(const Eigen::MatrixXd& data,
+                                        const Eigen::VectorXd& knots,
+                                        int l,
+                                        const Eigen::VectorXd& delta_x_ = Eigen::VectorXd(),
+                                        int symm = 0) {
+        return PiecewiseLegendrePoly(data, knots, l, delta_x_, symm);
     }
 
     // Function call operator: evaluate the polynomial at x
@@ -215,6 +215,19 @@ public:
         return PiecewiseLegendrePoly(ddata, *this, new_symm);
     }
 
+    // Function to compute derivatives at a point x
+    Eigen::VectorXd derivs(double x) const {
+        std::vector<double> res;
+        res.push_back((*this)(x)); // Assuming operator() is overloaded for evaluation
+
+        PiecewiseLegendrePoly newppoly = *this;
+        for (int i = 2; i <= polyorder; ++i) {
+            newppoly = newppoly.deriv();
+            res.push_back(newppoly(x));
+        }
+        //convert to Eigen::VectorXd
+        return Eigen::Map<Eigen::VectorXd>(res.data(), res.size());
+    }
 
     Eigen::VectorXd refine_grid(const Eigen::VectorXd& grid, int alpha) const {
         Eigen::VectorXd refined((grid.size() - 1) * alpha + 1);
@@ -376,6 +389,20 @@ private:
         return roots;
     }
 };
+
+/*
+Eigen::VectorXd derivs(PiecewiseLegendrePoly ppoly, double x){
+    std::vector<double> res;
+    res.push_back(ppoly(x));
+
+    PiecewiseLegendrePoly ppnew = ppoly;
+    for (int i = 2; i <= ppoly.polyorder; i++){
+        ppnew = ppnew.deriv();
+        res.push_back(ppnew(x));
+    }
+    return Eigen::Map<Eigen::VectorXd>(res.data(), res.size());
+}
+*/
 
 } // namespace sparseir
 
@@ -586,15 +613,99 @@ public:
     // Member variable
     std::vector<PiecewiseLegendrePoly> polyvec;
 
-    // Constructors
-    PiecewiseLegendrePolyVector() { }
+public:
+    // Default constructor
+    PiecewiseLegendrePolyVector() = default;
 
-    // Constructor with polyvec
-    PiecewiseLegendrePolyVector(
+    // Constructor with a vector of PiecewiseLegendrePoly
+    explicit PiecewiseLegendrePolyVector(
         const std::vector<PiecewiseLegendrePoly> &polyvec)
         : polyvec(polyvec)
     {
     }
+
+    // Constructor with a 3D array, knots, and symmetry vector
+    PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3> &data3d,
+                                const Eigen::VectorXd &knots,
+                                const std::vector<int> &symm = {})
+        : polyvec(data3d.size())
+    {
+        if (!symm.empty() && symm.size() != data3d.size()) {
+            throw std::invalid_argument("Sizes of data and symm don't match");
+        }
+        for (size_t i = 0; i < data3d.size(); ++i) {
+            Eigen::MatrixXd data(data3d.dimension(0), data3d.dimension(1));
+            for (int j = 0; j < data3d.dimension(0); ++j) {
+                for (int k = 0; k < data3d.dimension(1); ++k) {
+                    data(j, k) = data3d(j, k, i);
+                }
+            }
+
+            Eigen::VectorXd delta_x = (knots.tail(knots.size() - 1) - knots.head(knots.size() - 1)).matrix();
+            polyvec[i] =
+                PiecewiseLegendrePoly(data, knots, static_cast<int>(i),
+                                     delta_x, symm.empty() ? 0 : symm[i]);
+        }
+    }
+
+    /*
+    function PiecewiseLegendrePolyVector(polys::PiecewiseLegendrePolyVector,
+            knots::AbstractVector; Δx=diff(knots), symm=0)
+        length(polys) == length(symm) ||
+            throw(DimensionMismatch("Sizes of polys and symm don't match"))
+
+        PiecewiseLegendrePolyVector(map(zip(polys, symm)) do (poly, sym)
+            PiecewiseLegendrePoly(poly.data, knots, poly.l; Δx, symm=sym)
+        end)
+    end
+    */
+    PiecewiseLegendrePolyVector(const PiecewiseLegendrePolyVector &polys,
+                                const Eigen::VectorXd &knots,
+                                const Eigen::VectorXd &Δx,
+                                int symm = 0)
+        : polyvec(polys.size())
+    {
+        if (polys.size() != symm) {
+            throw std::invalid_argument("Sizes of polys and symm don't match");
+        }
+        for (size_t i = 0; i < polys.size(); ++i) {
+            polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(),
+                                               polys[i].get_knots(),
+                                               polys[i].get_polyorder(),
+                                               polys[i].get_delta_x(),
+                                               symm);
+        }
+    }
+
+    /*
+    function PiecewiseLegendrePolyVector(data::AbstractArray{T,3},
+        polys::PiecewiseLegendrePolyVector) where {T}
+    size(data, 3) == length(polys) ||
+        throw(DimensionMismatch("Sizes of data and polys don't match"))
+
+    PiecewiseLegendrePolyVector(map(eachindex(polys)) do i
+        PiecewiseLegendrePoly(data[:, :, i], polys[i])
+    end)
+    }
+    */
+    PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3> &data,
+                                const PiecewiseLegendrePolyVector &polys)
+        : polyvec(data.size())
+    {
+        if (data.size() != polys.size()) {
+            throw std::invalid_argument("Sizes of data and polys don't match");
+        }
+        for (size_t i = 0; i < data.size(); ++i) {
+            Eigen::MatrixXd data2d(data.dimension(0), data.dimension(1));
+            for (int j = 0; j < data.dimension(0); ++j) {
+                for (int k = 0; k < data.dimension(1); ++k) {
+                    data2d(j, k) = data(j, k, i);
+                }
+            }
+            polyvec[i] = PiecewiseLegendrePoly(data2d, polys[i]);
+        }
+    }
+
 
     // Add iterator support
     using iterator = std::vector<PiecewiseLegendrePoly>::iterator;
@@ -605,72 +716,6 @@ public:
     iterator end() { return polyvec.end(); }
     const_iterator begin() const { return polyvec.begin(); }
     const_iterator end() const { return polyvec.end(); }
-
-    /*
-    // Constructor with data tensor, knots, and optional symm vector
-    PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3>& data,
-                                const Eigen::VectorXd& knots,
-                                const std::vector<int>& symm =
-    std::vector<int>())
-    {
-        int npolys = data.dimension(2);
-        if (!symm.empty() && symm.size() != npolys) {
-            throw std::runtime_error("Sizes of data and symm don't match");
-        }
-
-
-        int nrows = data.dimension(0);
-        int ncols = data.dimension(1);
-
-        polyvec.reserve(npolys);
-        for (int i = 0; i < npolys; ++i) {
-        // Evaluate the tensor slice
-        Eigen::Tensor<double, 2> data_i_tensor = data.chip(i, 2).eval();
-
-        // Create an Eigen::MatrixXd
-        Eigen::MatrixXd data_i(nrows, ncols);
-
-        // Copy data from the tensor to the matrix
-        for (int r = 0; r < nrows; ++r) {
-            for (int c = 0; c < ncols; ++c) {
-                data_i(r, c) = data_i_tensor(r, c);
-            }
-        }
-                    int sym = symm.empty() ? 0 : symm[i];
-            polyvec.emplace_back(data_i, knots, i, Eigen::VectorXd(), sym);
-        }
-    }
-    // Constructor with data tensor and existing polys
-    PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3>& data,
-                                const PiecewiseLegendrePolyVector& polys)
-    {
-        int npolys = polys.size();
-        if (data.dimension(2) != npolys) {
-            throw std::runtime_error("Sizes of data and polys don't match");
-        }
-        polyvec.reserve(npolys);
-
-        int nrows = data.dimension(0);
-        int ncols = data.dimension(1);
-
-        for (int i = 0; i < npolys; ++i) {
-                    // Evaluate the tensor slice
-        Eigen::Tensor<double, 2> data_i_tensor = data.chip(i, 2).eval();
-
-        // Create an Eigen::MatrixXd
-        Eigen::MatrixXd data_i(nrows, ncols);
-
-        // Copy data from the tensor to the matrix
-        for (int r = 0; r < nrows; ++r) {
-            for (int c = 0; c < ncols; ++c) {
-                data_i(r, c) = data_i_tensor(r, c);
-            }
-        }
-            // TODO: fix me.
-            polyvec.emplace_back(data_i, polys.polyvec[i]);
-        }
-    }
-    */
 
     // Accessors
     size_t size() const { return polyvec.size(); }
@@ -783,10 +828,33 @@ class Statistics;
 template <typename T>
 class PowerModel {
 public:
-    std::vector<T> moments;
-
-    PowerModel(const std::vector<T> &moments_) : moments(moments_) { }
+    Eigen::VectorXd moments;
+    // Default constructor
+    PowerModel() = default;
+    // Constructor with moments
+    PowerModel(const Eigen::VectorXd &moments_) : moments(moments_) { }
 };
+
+inline Eigen::VectorXd power_moments_inplace(const Statistics &stat,
+                                      Eigen::VectorXd &deriv_x1, int l)
+{
+    int statsign = stat.zeta() == 1 ? -1 : 1;
+    for (int m = 1; m <= deriv_x1.size(); m++) {
+        deriv_x1[m] *=
+            -(statsign * std::pow(-1, m) + std::pow(-1, l)) / std::sqrt(2);
+    }
+    return deriv_x1;
+}
+
+/*
+inline PowerModel<double> power_model(const Statistics &stat,
+                               const PiecewiseLegendrePoly &poly)
+{
+    Eigen::VectorXd deriv_x1 = poly.derivs(1.0);
+    Eigen::VectorXd moments = power_moments_inplace(stat, deriv_x1, poly.l);
+    return PowerModel<double>(moments);
+}
+*/
 
 // Bosonic and Fermionic statistics classes
 class BosonicStatistics : public Statistics {
@@ -795,34 +863,33 @@ public:
 };
 
 // PiecewiseLegendreFT class template
-template <typename StatisticsType, typename T = double>
+template <typename S>
 class PiecewiseLegendreFT {
 public:
     PiecewiseLegendrePoly poly;
-    T n_asymp;
-    PowerModel<T> model;
-
+    double n_asymp;
+    PowerModel<double> model;
     PiecewiseLegendreFT(const PiecewiseLegendrePoly &poly_,
-                        const StatisticsType &stat,
-                        T n_asymp_ = std::numeric_limits<T>::infinity())
+                        const S &stat,
+                        double n_asymp_ = std::numeric_limits<double>::infinity())
         : poly(poly_), n_asymp(n_asymp_)
     {
         if (poly.xmin != -1.0 || poly.xmax != 1.0) {
             throw std::invalid_argument("Only interval [-1, 1] is supported");
         }
-        model = power_model(stat, poly);
+        this->model = power_model(stat, poly);
     }
 
-    T get_n_asymp() const { return n_asymp; }
+    double get_n_asymp() const { return n_asymp; }
     int zeta() const
     {
-        return static_cast<const Statistics &>(StatisticsType()).zeta();
+        return static_cast<const Statistics &>(S()).zeta();
     }
     const PiecewiseLegendrePoly &get_poly() const { return poly; }
 
     // Overload operator() for MatsubaraFreq
     std::complex<double>
-    operator()(const MatsubaraFreq<StatisticsType> &omega) const
+    operator()(const MatsubaraFreq<S> &omega) const
     {
         int n = static_cast<int>(omega);
         if (std::abs(n) < n_asymp) {
@@ -835,7 +902,7 @@ public:
     // Overload operator() for integer frequency
     std::complex<double> operator()(int n) const
     {
-        return (*this)(MatsubaraFreq<StatisticsType>(n));
+        return (*this)(MatsubaraFreq<S>(n));
     }
 
     // Overload operator() for a vector of frequencies
@@ -850,6 +917,15 @@ public:
         return res;
     }
 
+
+    inline PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
+    {
+        Eigen::VectorXd deriv_x1 = poly.derivs(1.0);
+        Eigen::VectorXd moments = power_moments_inplace(stat, deriv_x1, poly.l);
+        return PowerModel<double>(moments);
+    }
+
+
 private:
     // Function to compute the Fourier transform for low frequencies
     std::complex<double> compute_unl_inner(const PiecewiseLegendrePoly &poly,
@@ -860,17 +936,13 @@ private:
 
     // Function to evaluate a polynomial at a complex point
     std::complex<double> evalpoly(const std::complex<double> &x,
-                                  const std::vector<T> &coeffs) const;
-
-    // Power model computation
-    PowerModel<T> power_model(const Statistics &stat,
-                              const PiecewiseLegendrePoly &poly) const;
+                                  const std::vector<double> &coeffs) const;
 };
 
 // Implementations of member functions
 
-template <typename StatisticsType, typename T>
-std::complex<double> PiecewiseLegendreFT<StatisticsType, T>::compute_unl_inner(
+template <typename StatisticsType>
+std::complex<double> PiecewiseLegendreFT<StatisticsType>::compute_unl_inner(
     const PiecewiseLegendrePoly &poly, int wn) const
 {
     double wred = M_PI / 4.0 * wn;
@@ -889,10 +961,10 @@ std::complex<double> PiecewiseLegendreFT<StatisticsType, T>::compute_unl_inner(
     return res / std::sqrt(2.0);
 }
 
-template <typename StatisticsType, typename T>
+template <typename StatisticsType>
 std::complex<double>
-PiecewiseLegendreFT<StatisticsType, T>::giw(const PiecewiseLegendreFT &polyFT,
-                                            int wn) const
+PiecewiseLegendreFT<StatisticsType>::giw(const PiecewiseLegendreFT &polyFT,
+                                        int wn) const
 {
     std::complex<double> iw(0.0, M_PI / 2.0 * wn);
     if (wn == 0)
@@ -902,9 +974,9 @@ PiecewiseLegendreFT<StatisticsType, T>::giw(const PiecewiseLegendreFT &polyFT,
     return result;
 }
 
-template <typename StatisticsType, typename T>
-std::complex<double> PiecewiseLegendreFT<StatisticsType, T>::evalpoly(
-    const std::complex<double> &x, const std::vector<T> &coeffs) const
+template <typename StatisticsType>
+std::complex<double> PiecewiseLegendreFT<StatisticsType>::evalpoly(
+    const std::complex<double> &x, const std::vector<double> &coeffs) const
 {
     std::complex<double> result(0.0, 0.0);
     for (auto it = coeffs.rbegin(); it != coeffs.rend(); ++it) {
@@ -913,60 +985,10 @@ std::complex<double> PiecewiseLegendreFT<StatisticsType, T>::evalpoly(
     return result;
 }
 
-// Assume implementations of derivs, power_moments_, and power_model
-// For the purpose of this example, they are simplified placeholders
-
-// Placeholder for derivative computations at x = 1.0
-std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
-
-// Placeholder for power moments computation
-std::vector<double> &power_moments_(const Statistics &stat,
-                                    std::vector<double> &deriv_x1, int l);
-
-// Power model computation function
-template <typename StatisticsType, typename T>
-PowerModel<T> PiecewiseLegendreFT<StatisticsType, T>::power_model(
-    const Statistics &stat, const PiecewiseLegendrePoly &poly) const
-{
-    std::vector<double> deriv_x1 = derivs(poly, 1.0);
-    std::vector<double> &moments = power_moments_(stat, deriv_x1, poly.l);
-    return PowerModel<T>(moments);
-}
-
 class FermionicStatistics : public Statistics {
 public:
     int zeta() const override { return -1; }
 };
-
-// Assume implementations of derivs, power_moments_, and power_model
-// For the purpose of this example, they are simplified placeholders
-
-// Placeholder for derivative computations at x = 1.0
-std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
-
-// Placeholder for power moments computation
-std::vector<double> &power_moments_(const Statistics &stat,
-                                    std::vector<double> &deriv_x1, int l);
-
-// Assume implementations of derivs, power_moments_, and power_model
-// For the purpose of this example, they are simplified placeholders
-
-// Placeholder for derivative computations at x = 1.0
-std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
-
-// Placeholder for power moments computation
-std::vector<double> &power_moments_(const Statistics &stat,
-                                    std::vector<double> &deriv_x1, int l);
-
-// Assume implementations of derivs, power_moments_, and power_model
-// For the purpose of this example, they are simplified placeholders
-
-// Placeholder for derivative computations at x = 1.0
-std::vector<double> derivs(const PiecewiseLegendrePoly &ppoly, double x);
-
-// Placeholder for power moments computation
-std::vector<double> &power_moments_(const Statistics &stat,
-                                    std::vector<double> &deriv_x1, int l);
 
 } // namespace sparseir
 
@@ -981,7 +1003,7 @@ private:
 
 public:
     // Default constructor
-    // PiecewiseLegendreFTVector() {}
+    PiecewiseLegendreFTVector() = default;
 
     // Constructor from vector of PiecewiseLegendreFT<S>
     PiecewiseLegendreFTVector<S>(
@@ -990,12 +1012,11 @@ public:
     {
     }
 
-    /*
+
     // Constructor from PiecewiseLegendrePolyVector and Statistics
-    PiecewiseLegendreFTVector(const PiecewiseLegendrePolyVector &polys,
-                              const Statistics &stat,
-                              double n_asymp =
-    std::numeric_limits<double>::infinity())
+    PiecewiseLegendreFTVector<S>(PiecewiseLegendrePolyVector &polys,
+                              S &stat,
+                              double n_asymp = std::numeric_limits<double>::infinity())
     {
         polyvec.reserve(polys.size());
         for (const auto &poly : polys)
@@ -1003,7 +1024,7 @@ public:
             polyvec.emplace_back(poly, stat, n_asymp);
         }
     }
-    */
+
 
     // Get the size of the vector
     size_t size() const { return polyvec.size(); }
