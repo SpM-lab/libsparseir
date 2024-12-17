@@ -77,19 +77,15 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
                   sparseir::LogisticKernel(beta * omega_max));
         sparseir::SVEResult<sparseir::LogisticKernel> sve =
             sparseir::compute_sve(sparseir::LogisticKernel(beta * omega_max));
-
+        REQUIRE(sve.s.size() > 0);
+        REQUIRE(basis.s.size() > 0);
         double scale = std::sqrt(beta / 2.0 * omega_max);
-        /*
-        std::cout << "scale = " << scale << std::endl;
         // Ensure the correct function or member is used for singular values
         Eigen::VectorXd scaled_s_eigen = sve.s * scale;
-        std::cout << "scaled_s_eigen " << scaled_s_eigen << std::endl;
-        std::cout << "basis.s.size()" << basis.s.size() << std::endl;
+        REQUIRE(basis.s.size() == sve.s.size());
         REQUIRE(basis.s.isApprox(scaled_s_eigen));
-
         // Access accuracy as a member variable if it's not a function
-        REQUIRE(basis.accuracy == sve.s(sve.s.size() - 1) / sve.s(0));
-        */
+        REQUIRE(std::abs(basis.accuracy - sve.s(sve.s.size() - 1) / sve.s(0)) < 1e-10);
     }
 
     SECTION("Rescaling test") {
@@ -98,9 +94,9 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double epsilon = 1e-6;
 
         // Specify both template parameters
-        //sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> basis(beta, omega_max, epsilon, sparseir::LogisticKernel(beta * omega_max));
-        //sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> rescaled_basis = basis.rescale(2.0);
-
-        //REQUIRE(rescaled_basis.get_wmax() == 6.0);
+        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> basis(beta, omega_max, epsilon, sparseir::LogisticKernel(beta * omega_max));
+        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> rescaled_basis = basis.rescale(2.0);
+        REQUIRE(rescaled_basis.sve_result->s.size() == basis.sve_result->s.size());
+        REQUIRE(rescaled_basis.get_wmax() == 6.0);
     }
 }

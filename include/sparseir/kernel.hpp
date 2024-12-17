@@ -203,8 +203,6 @@ inline double callreduced(const AbstractReducedKernel &kernel, double x,
  */
 class LogisticKernel : public AbstractKernel {
 public:
-    double lambda_; ///< The kernel cutoff Λ.
-
     // Default constructor
     LogisticKernel() : AbstractKernel() {}
 

@@ -60,6 +60,7 @@ void check_smooth(const std::function<double(double)> &u,
 TEST_CASE("sve.cpp", "[SamplingSVE]")
 {
     sparseir::LogisticKernel lk(10.0);
+    REQUIRE(lk.lambda_ == 10.0);
     auto hints = sparseir::sve_hints(lk, 1e-6);
     int nsvals_hint = hints.nsvals();
     int n_gauss = hints.ngauss();
@@ -116,18 +117,18 @@ TEST_CASE("sve.cpp", "[compute_sve]")
 {
 
     // Define a map to store SVEResult objects
-    auto sve_logistic = std::map < int,
-    sparseir::SVEResult<sparseir::LogisticKernel>>{
-                                                {10,
-                                                sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0))},
-                                                {42,
-                                                sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(42.0))},
-                                                {10000,
-                                                sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0))},
-                                                //{100000000,
-                                                // sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0),
-                                                // 1e-12)},
-                                                };
+    //auto sve_logistic = std::map < int,
+    //sparseir::SVEResult<sparseir::LogisticKernel>>{
+      //                                          {10,
+      //                                          sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10.0))},
+      //                                          {42,
+      //                                          sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(42.0))},
+      //                                          {10000,
+      //                                          sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0))},
+      //                                          {100000000,
+      //                                          sparseir::compute_sve<sparseir::LogisticKernel>(sparseir::LogisticKernel(10000.0),
+      //                                          1e-12)},
+      //                                          };
 
     SECTION("smooth with Λ =")
     {
@@ -214,43 +215,44 @@ TEST_CASE("sve.cpp", "[choose_accuracy]")
     REQUIRE(sparseir::choose_accuracy(1e-6, "Float64", "accurate") ==
             std::make_tuple(1.0e-6, "Float64", "accurate"));
 
-    SECTION("truncate")
-    {
-        sparseir::CentrosymmSVE<sparseir::LogisticKernel, double> sve(
-            sparseir::LogisticKernel(5), 1e-6);
-        std::vector<Eigen::MatrixX<double>> matrices = sve.matrices();
-        REQUIRE(matrices.size() == 2);
-        std::vector<std::tuple<Eigen::MatrixX<double>, Eigen::MatrixX<double>,
-                               Eigen::MatrixX<double>>>
-            svds;
-        for (const auto &mat : matrices) {
-            auto svd = sparseir::compute_svd(mat);
-            svds.push_back(svd);
-        }
+}
 
-        // Extract singular values and vectors
-        std::vector<Eigen::MatrixX<double>> u_list, v_list;
-        std::vector<Eigen::VectorX<double>> s_list;
-        for (const auto &svd : svds) {
-            auto u = std::get<0>(svd);
-            auto s = std::get<1>(svd);
-            auto v = std::get<2>(svd);
-            u_list.push_back(u);
-            s_list.push_back(s);
-            v_list.push_back(v);
-        }
+TEST_CASE("sve.cpp", "[truncate]")
+{
+    sparseir::CentrosymmSVE<sparseir::LogisticKernel, double> sve(
+    sparseir::LogisticKernel(5), 1e-6);
+    std::vector<Eigen::MatrixX<double>> matrices = sve.matrices();
+    REQUIRE(matrices.size() == 2);
+    std::vector<std::tuple<Eigen::MatrixX<double>, Eigen::MatrixX<double>,
+                            Eigen::MatrixX<double>>>
+        svds;
+    for (const auto &mat : matrices) {
+        auto svd = sparseir::compute_svd(mat);
+        svds.push_back(svd);
+    }
 
-        for (int lmax = 3; lmax <= 20; ++lmax) {
-            auto truncated =
-                sparseir::truncate(u_list, s_list, v_list, 1e-8, lmax);
-            auto u = std::get<0>(truncated);
-            auto s = std::get<1>(truncated);
-            auto v = std::get<2>(truncated);
 
-            auto sveresult = sve.postprocess(u, s, v);
-            REQUIRE(sveresult.u.size() == sveresult.s.size());
-            REQUIRE(sveresult.s.size() == sveresult.v.size());
-            REQUIRE(sveresult.s.size() <= static_cast<size_t>(lmax - 1));
-        }
+    // Extract singular values and vectors
+    std::vector<Eigen::MatrixX<double>> u_list, v_list;
+    std::vector<Eigen::VectorX<double>> s_list;
+    for (const auto &svd : svds) {
+        auto u = std::get<0>(svd);
+        auto s = std::get<1>(svd);
+        auto v = std::get<2>(svd);
+        u_list.push_back(u);
+        s_list.push_back(s);
+        v_list.push_back(v);
+    }
+    for (int lmax = 3; lmax <= 20; ++lmax) {
+        auto truncated =
+            sparseir::truncate(u_list, s_list, v_list, 1e-8, lmax);
+        auto u = std::get<0>(truncated);
+        auto s = std::get<1>(truncated);
+        auto v = std::get<2>(truncated);
+
+        auto sveresult = sve.postprocess(u, s, v);
+        REQUIRE(sveresult.u.size() == sveresult.s.size());
+        REQUIRE(sveresult.s.size() == sveresult.v.size());
+        REQUIRE(sveresult.s.size() <= static_cast<size_t>(lmax - 1));
     }
 }

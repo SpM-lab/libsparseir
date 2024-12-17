@@ -216,8 +216,8 @@ public:
         const Eigen::MatrixX<T> &u = u_list[0];
         const Eigen::VectorX<T> &s_ = s_list[0];
         const Eigen::MatrixX<T> &v = v_list[0];
-        Eigen::VectorXd s = s_.template cast<double>();
 
+        Eigen::VectorXd s = s_.template cast<double>();
         Eigen::VectorX<T> gauss_x_w =
             Eigen::VectorX<T>::Map(gauss_x.w.data(), gauss_x.w.size());
         Eigen::VectorX<T> gauss_y_w =
@@ -257,7 +257,6 @@ public:
                 }
             }
         }
-
         // Manually compute differences for dsegs_x and dsegs_y
         Eigen::VectorX<T> dsegs_x(segs_x.size() - 1);
         for (int i = 0; i < segs_x.size() - 1; ++i) {
@@ -298,18 +297,16 @@ public:
         for (int i = 0; i < u_data.dimension(2); ++i) {
             Eigen::MatrixXd slice_double(u_data.dimension(0),
                                          u_data.dimension(1));
-            for (int j = 0; j < u_data.dimension(1); ++j) {
-                for (int k = 0; k < u_data.dimension(2); ++k) {
+            for (int j = 0; j < u_data.dimension(0); ++j) {
+                for (int k = 0; k < u_data.dimension(1); ++k) {
                     slice_double(j, k) = static_cast<double>(u_data(j, k, i));
                 }
             }
-
             std::vector<double> segs_x_double;
             segs_x_double.reserve(segs_x.size());
             for (const auto &x : segs_x) {
                 segs_x_double.push_back(static_cast<double>(x));
             }
-
             polyvec_u.push_back(PiecewiseLegendrePoly(
                 slice_double,
                 Eigen::VectorXd::Map(segs_x_double.data(),
@@ -317,12 +314,13 @@ public:
                 i));
         }
 
+
         // Repeat similar changes for v_data
         for (int i = 0; i < v_data.dimension(2); ++i) {
             Eigen::MatrixXd slice_double(v_data.dimension(0),
                                          v_data.dimension(1));
-            for (int j = 0; j < v_data.dimension(1); ++j) {
-                for (int k = 0; k < v_data.dimension(2); ++k) {
+            for (int j = 0; j < v_data.dimension(0); ++j) {
+                for (int k = 0; k < v_data.dimension(1); ++k) {
                     slice_double(j, k) = static_cast<double>(v_data(j, k, i));
                 }
             }
@@ -339,6 +337,9 @@ public:
                                      segs_y_double.size()),
                 i));
         }
+
+
+
 
         PiecewiseLegendrePolyVector ulx(polyvec_u);
         PiecewiseLegendrePolyVector vly(polyvec_v);
@@ -559,8 +560,6 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss,
     T cutoff_actual = std::isnan(cutoff)
                           ? 2 * T(std::numeric_limits<double>::epsilon())
                           : T(cutoff);
-    std::cout << "Cutoff: " << cutoff_actual << std::endl;
-
     std::vector<Eigen::MatrixX<T>> u_list_truncated;
     std::vector<Eigen::VectorX<T>> s_list_truncated;
     std::vector<Eigen::MatrixX<T>> v_list_truncated;
@@ -583,12 +582,12 @@ SVEResult<K> compute_sve(K kernel, double epsilon = std::numeric_limits<double>:
     double safe_epsilon;
     std::string Twork_actual;
     std::string svd_strategy_actual;
-    std::cout << "Twork: " << Twork << std::endl;
-    std::cout << "svd_strat: " << svd_strat << std::endl;
+    //std::cout << "Twork: " << Twork << std::endl;
+    //std::cout << "svd_strat: " << svd_strat << std::endl;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
         choose_accuracy(epsilon, Twork, svd_strat);
-    std::cout << "Twork_actual: " << Twork_actual << std::endl;
-    std::cout << "svd_strategy_actual: " << svd_strategy_actual << std::endl;
+    //std::cout << "Twork_actual: " << Twork_actual << std::endl;
+    //std::cout << "svd_strategy_actual: " << svd_strategy_actual << std::endl;
 
     if (Twork_actual == "Float64") {
         return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff,
