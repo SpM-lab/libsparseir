@@ -250,9 +250,7 @@ TEST_CASE("sve.cpp", "[truncate]")
         auto s = std::get<1>(truncated);
         auto v = std::get<2>(truncated);
 
-        std::cout << "test" << std::endl;
         auto sveresult = sve.postprocess(u, s, v);
-        std::cout << "test2" << std::endl;
         REQUIRE(sveresult.u.size() == sveresult.s.size());
         REQUIRE(sveresult.s.size() == sveresult.v.size());
         REQUIRE(sveresult.s.size() <= static_cast<size_t>(lmax - 1));

@@ -44,9 +44,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
 
         sparseir::LogisticKernel kernel(beta * omega_max);
         // Specify the template argument for SVEResult
-        std::cout << "kernel = " << kernel.lambda_ << std::endl;
-        std::cout << "kernel.ypower() = " << kernel.ypower() << std::endl;
-
         sparseir::SVEResult<sparseir::LogisticKernel> sve_result = sparseir::compute_sve(kernel);
 
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>;
@@ -85,12 +82,10 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double scale = std::sqrt(beta / 2.0 * omega_max);
         // Ensure the correct function or member is used for singular values
         Eigen::VectorXd scaled_s_eigen = sve.s * scale;
-        std::cout << "basis.s = " << basis.s << std::endl;
-        std::cout << "sve.s = " << sve.s << std::endl;
         REQUIRE(basis.s.size() == sve.s.size());
-        //REQUIRE(basis.s.isApprox(scaled_s_eigen));
+        REQUIRE(basis.s.isApprox(scaled_s_eigen));
         // Access accuracy as a member variable if it's not a function
-        //REQUIRE(basis.accuracy == sve.s(sve.s.size() - 1) / sve.s(0));
+        REQUIRE(std::abs(basis.accuracy - sve.s(sve.s.size() - 1) / sve.s(0)) < 1e-10);
     }
 
     SECTION("Rescaling test") {
@@ -102,6 +97,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> basis(beta, omega_max, epsilon, sparseir::LogisticKernel(beta * omega_max));
         sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> rescaled_basis = basis.rescale(2.0);
         REQUIRE(rescaled_basis.sve_result->s.size() == basis.sve_result->s.size());
-        //REQUIRE(rescaled_basis.get_wmax() == 6.0);
+        REQUIRE(rescaled_basis.get_wmax() == 6.0);
     }
 }

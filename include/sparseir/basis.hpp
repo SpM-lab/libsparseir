@@ -163,7 +163,7 @@ namespace sparseir {
 template <typename S, typename K=LogisticKernel>
 class FiniteTempBasis : public AbstractBasis<S> {
 public:
-    std::shared_ptr<K> kernel;
+    K kernel;
     std::shared_ptr<SVEResult<K>> sve_result;
     double accuracy;
     double beta;
@@ -174,7 +174,7 @@ public:
     PiecewiseLegendreFTVector<S> uhat_full;
 
     FiniteTempBasis(double beta, double omega_max, double epsilon,
-               K &kernel, SVEResult<K> sve_result, int max_size = -1)
+               K kernel, SVEResult<K> sve_result, int max_size = -1)
     {
         if (sve_result.s.size() == 0) {
             throw std::runtime_error("SVE result sve_result.s is empty");
@@ -188,10 +188,10 @@ public:
                 "Frequency cutoff omega_max must be non-negative");
         }
         this->beta = beta;
-        this->kernel = std::make_shared<K>(kernel);
+        this->kernel = kernel;
         this->sve_result = std::make_shared<SVEResult<K>>(sve_result);
 
-        double wmax = this->kernel->lambda_ / beta;
+        double wmax = this->kernel.lambda_ / beta;
 
         auto part_result = sve_result.part(epsilon, max_size);
         PiecewiseLegendrePolyVector u_ = std::get<0>(part_result);
@@ -205,14 +205,7 @@ public:
             this->accuracy = sve_result.s(s_.size() - 1) / sve_result_s0;
         }
 
-        std::cout << "ypower = " << this->kernel->ypower() << std::endl;
-        std::cout << "wmax = " << wmax << std::endl;
-        std::cout << "beta = " << beta << std::endl;
-        std::cout << "s_ = " << s_ << std::endl;
-        std::cout << "sve_result_s0 = " << sve_result_s0 << std::endl;
-        std::cout << "sve_result.s.size() = " << sve_result.s.size() << std::endl;
-
-        this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(this->kernel->ypower()))) * s_;
+        this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(this->kernel.ypower()))) * s_;
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
         PiecewiseLegendrePolyVector uhat_base_full =
@@ -259,7 +252,7 @@ public:
     double get_accuracy() const { return accuracy; }
 
     // Getter for ωmax
-    double get_wmax() const { return kernel->lambda_ / beta; }
+    double get_wmax() const { return kernel.lambda_ / beta; }
 
     // Getter for SVEResult
     const SVEResult<K> &getSVEResult() const { return sve_result; }
@@ -268,7 +261,7 @@ public:
     const K &getKernel() const { return kernel; }
 
     // Getter for Λ
-    double Lambda() const { return kernel->lambda_; }
+    double Lambda() const { return kernel.lambda_; }
 
     // Default τ sampling points
     Eigen::VectorXd defaultTauSamplingPoints() const
@@ -297,15 +290,12 @@ public:
     // Rescale function
     FiniteTempBasis<S, K> rescale(double new_beta) const
     {
-        std::cout << "Rescaling..." << std::endl;
-        std::cout << "kernel->lambda_ = " << kernel->lambda_ << std::endl;
-        double new_omega_max = kernel->lambda_ / new_beta;
-        std::cout << "new_omega_max = " << new_omega_max << std::endl;
+        double new_omega_max = kernel.lambda_ / new_beta;
         return FiniteTempBasis<S, K>(
             new_beta,
             new_omega_max,
             std::numeric_limits<double>::quiet_NaN(),
-            *kernel,
+            kernel,
             *sve_result,
             static_cast<int>(s.size())
         );
