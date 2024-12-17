@@ -216,8 +216,8 @@ public:
         const Eigen::MatrixX<T> &u = u_list[0];
         const Eigen::VectorX<T> &s_ = s_list[0];
         const Eigen::MatrixX<T> &v = v_list[0];
-        Eigen::VectorXd s = s_.template cast<double>();
 
+        Eigen::VectorXd s = s_.template cast<double>();
         Eigen::VectorX<T> gauss_x_w =
             Eigen::VectorX<T>::Map(gauss_x.w.data(), gauss_x.w.size());
         Eigen::VectorX<T> gauss_y_w =
@@ -257,7 +257,6 @@ public:
                 }
             }
         }
-
         // Manually compute differences for dsegs_x and dsegs_y
         Eigen::VectorX<T> dsegs_x(segs_x.size() - 1);
         for (int i = 0; i < segs_x.size() - 1; ++i) {
@@ -298,18 +297,16 @@ public:
         for (int i = 0; i < u_data.dimension(2); ++i) {
             Eigen::MatrixXd slice_double(u_data.dimension(0),
                                          u_data.dimension(1));
-            for (int j = 0; j < u_data.dimension(1); ++j) {
-                for (int k = 0; k < u_data.dimension(2); ++k) {
+            for (int j = 0; j < u_data.dimension(0); ++j) {
+                for (int k = 0; k < u_data.dimension(1); ++k) {
                     slice_double(j, k) = static_cast<double>(u_data(j, k, i));
                 }
             }
-
             std::vector<double> segs_x_double;
             segs_x_double.reserve(segs_x.size());
             for (const auto &x : segs_x) {
                 segs_x_double.push_back(static_cast<double>(x));
             }
-
             polyvec_u.push_back(PiecewiseLegendrePoly(
                 slice_double,
                 Eigen::VectorXd::Map(segs_x_double.data(),
@@ -317,12 +314,13 @@ public:
                 i));
         }
 
+
         // Repeat similar changes for v_data
         for (int i = 0; i < v_data.dimension(2); ++i) {
             Eigen::MatrixXd slice_double(v_data.dimension(0),
                                          v_data.dimension(1));
-            for (int j = 0; j < v_data.dimension(1); ++j) {
-                for (int k = 0; k < v_data.dimension(2); ++k) {
+            for (int j = 0; j < v_data.dimension(0); ++j) {
+                for (int k = 0; k < v_data.dimension(1); ++k) {
                     slice_double(j, k) = static_cast<double>(v_data(j, k, i));
                 }
             }
@@ -339,6 +337,9 @@ public:
                                      segs_y_double.size()),
                 i));
         }
+
+
+
 
         PiecewiseLegendrePolyVector ulx(polyvec_u);
         PiecewiseLegendrePolyVector vly(polyvec_v);

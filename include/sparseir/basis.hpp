@@ -173,8 +173,8 @@ public:
     PiecewiseLegendreFTVector<S> uhat;
     PiecewiseLegendreFTVector<S> uhat_full;
 
-FiniteTempBasis(double beta, double omega_max, double epsilon,
-               K kernel, SVEResult<K> sve_result, int max_size = -1)
+    FiniteTempBasis(double beta, double omega_max, double epsilon,
+               K &kernel, SVEResult<K> sve_result, int max_size = -1)
     {
         if (sve_result.s.size() == 0) {
             throw std::runtime_error("SVE result sve_result.s is empty");

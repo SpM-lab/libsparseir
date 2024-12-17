@@ -44,6 +44,9 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
 
         sparseir::LogisticKernel kernel(beta * omega_max);
         // Specify the template argument for SVEResult
+        std::cout << "kernel = " << kernel.lambda_ << std::endl;
+        std::cout << "kernel.ypower() = " << kernel.ypower() << std::endl;
+
         sparseir::SVEResult<sparseir::LogisticKernel> sve_result = sparseir::compute_sve(kernel);
 
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>;
