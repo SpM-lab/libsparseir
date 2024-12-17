@@ -11,4 +11,4 @@
 #include "./kernel.hpp"
 #include "./sve.hpp"
 #include "./basis.hpp"
-
+#include "./augment.hpp"
