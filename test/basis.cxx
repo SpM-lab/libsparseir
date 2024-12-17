@@ -49,7 +49,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>;
         using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic, sparseir::LogisticKernel>;
 
-        //std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon, sve_result);
+        std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon, sve_result);
         /*
         sparseir::FiniteTempBasisSet<sparseir::LogisticKernel> bs(beta, omega_max, epsilon, sve_result);
 
@@ -72,7 +72,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double beta = 1e-3;
         double omega_max = 1e-3;
         double epsilon = 1e-100;
-        /*
         sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>
             basis(beta, omega_max, epsilon,
                   sparseir::LogisticKernel(beta * omega_max));
@@ -80,12 +79,16 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
             sparseir::compute_sve(sparseir::LogisticKernel(beta * omega_max));
 
         double scale = std::sqrt(beta / 2.0 * omega_max);
+        /*
+        std::cout << "scale = " << scale << std::endl;
         // Ensure the correct function or member is used for singular values
         Eigen::VectorXd scaled_s_eigen = sve.s * scale;
+        std::cout << "scaled_s_eigen " << scaled_s_eigen << std::endl;
+        std::cout << "basis.s.size()" << basis.s.size() << std::endl;
         REQUIRE(basis.s.isApprox(scaled_s_eigen));
 
         // Access accuracy as a member variable if it's not a function
-        REQUIRE(basis.accuracy == sve.s(sve.s.size() - 1) / sve.s[0]);
+        REQUIRE(basis.accuracy == sve.s(sve.s.size() - 1) / sve.s(0));
         */
     }
 
