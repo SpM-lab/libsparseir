@@ -1,94 +1,139 @@
 #pragma once
 
+#include <Eigen/Dense>
 #include <memory>
 #include <vector>
-#include <Eigen/Dense>
 
-namespace sparseir{
+namespace sparseir {
 
-    template <typename FB, typename FA>
-    struct AbstractAugmentedFunction
+// Forward declaration of AbstractAugmentation
+template <typename T>
+class AbstractAugmentation;
+
+// AbstractAugmentation base class
+template <typename T>
+class AbstractAugmentation {
+public:
+    virtual ~AbstractAugmentation() { }
+
+    // Evaluate the augmentation function at point x
+    virtual T operator()(T x) const = 0;
+
+    // Evaluate the derivative of the augmentation function at point x
+    // n is the order of the derivative
+    virtual T deriv(T x, int n = 1) const = 0;
+
+    // Evaluate the Fourier transform of the augmentation function at Matsubara
+    // frequency n
+    virtual std::complex<T> hat(int n) const = 0;
+
+    // Clone method for creating copies of derived classes
+    virtual std::unique_ptr<AbstractAugmentation<T>> clone() const = 0;
+};
+
+// Example augmentation functions
+// TauConst augmentation (constant function in tau)
+template <typename T>
+class TauConst : public AbstractAugmentation<T> {
+public:
+    TauConst(T beta) : beta_(beta), norm_(1.0 / std::sqrt(beta)) { }
+
+    virtual T operator()(T tau) const override { return norm_; }
+
+    virtual T deriv(T tau, int n = 1) const override { return T(0); }
+
+    virtual std::complex<T> hat(int n) const override
     {
-        FB fbasis;
-        FA faug;
-
-        // Default constructor
-        AbstractAugmentedFunction() = default;
-
-        Eigen::VectorXd operator()(const Eigen::VectorXd &x) const
-        {
-            Eigen::VectorXd fbasis_x = fbasis(x);
-            Eigen::VectorXd faug_x(faug.size());
-            for (size_t i = 0; i < faug.size(); ++i) {
-                faug_x[i] = faug[i](x[i]);
-            }
-            Eigen::VectorXd result(faug_x.size() + fbasis_x.size());
-            result << faug_x, fbasis_x; // Concatenate vectors
-            return result;
+        int zeta = 1; // Fermionic (zeta = 1) or Bosonic (zeta = 0)
+        if (n == 0 && zeta == 0) {
+            return norm_ * beta_; // Handle n=0 separately for bosonic case
         }
-
-        Eigen::VectorXd operator()(double x) const
-        {
-            Eigen::VectorXd fbasis_x = fbasis(Eigen::VectorXd::Constant(1, x));
-            Eigen::VectorXd faug_x(faug.size());
-            for (size_t i = 0; i < faug.size(); ++i) {
-                faug_x[i] = faug[i](x);
-            }
-            Eigen::VectorXd result(faug_x.size() + fbasis_x.size());
-            result << faug_x, fbasis_x; // Concatenate vectors
-            return result;
-        }
-
-        // Virtual function using base type pointers
-        virtual AbstractAugmentedFunction<FB, FA> augmentedfunction()
-        {
-            // Implement functionality here
-            return *this;
-        }
-
-        virtual FB get_fbasis(AbstractAugmentedFunction a) {
-            return a.augmented_basis.fbasis;
-        }
-        virtual FA get_abasis(AbstractAugmentedFunction a) {
-            return a.augmented_basis.faug;
-        }
-
-
-    };
-
-    // Make AugmentedFunction a template class
-    template <typename FB, typename FA>
-    struct AugmentedFunction : AbstractAugmentedFunction<FB, FA>
-    {
-        // Override augmentedfunction
-        AugmentedFunction<FB, FA> augmentedfunction() override { return *this; }
-    };
-
-    /*
-    template <typename FB, typename FA>
-    struct AugmentedTauFunction : AbstractAugmentedFunction{
-
+        T wn = M_PI * n / beta_;
+        return norm_ * beta_ * 2.0 * wn /
+               (wn * wn * beta_ * beta_ + (M_PI * M_PI));
     }
-    */
 
-    /*
-    template <typename S, typename B, typename F, typename FT>
-    struct AugmentedBasis: AbstractBasis<S> {
-        S basis;
-        std::vector<AbstractAugmentedFunction> augmentations;
-        F u;
-        FT uhat;
+    virtual std::unique_ptr<AbstractAugmentation<T>> clone() const override
+    {
+        return std::make_unique<TauConst<T>>(*this);
+    }
 
-        // Constructor
-        template <typename A>
-        AugmentedBasis(
-            AbstractBasis<S> basis,
-            std::vector<A> augmentations)
-        {
-            basis->basis;
-            this-> augmentations = augmentations;
+private:
+    T beta_;
+    T norm_;
+};
 
+// MatsubaraConst augmentation (constant in Matsubara frequency)
+template <typename T>
+class MatsubaraConst : public AbstractAugmentation<T> {
+public:
+    MatsubaraConst(T beta) : beta_(beta) { }
+
+    virtual T operator()(T tau) const override
+    {
+        return std::numeric_limits<T>::quiet_NaN(); // Undefined in tau
+    }
+
+    virtual T deriv(T tau, int n = 1) const override
+    {
+        return std::numeric_limits<T>::quiet_NaN(); // Undefined in tau
+    }
+
+    virtual std::complex<T> hat(int n) const override
+    {
+        return std::complex<T>(1.0, 0.0);
+    }
+
+    virtual std::unique_ptr<AbstractAugmentation<T>> clone() const override
+    {
+        return std::make_unique<MatsubaraConst<T>>(*this);
+    }
+
+private:
+    T beta_;
+};
+
+// AugmentedBasis class
+template <typename T>
+class AugmentedBasis {
+public:
+    using BasisPtr = std::shared_ptr<AbstractBasis<T>>;
+    using AugmentationPtr = std::unique_ptr<AbstractAugmentation<T>>;
+
+    AugmentedBasis(BasisPtr basis,
+                   const std::vector<AugmentationPtr> &augmentations)
+        : basis_(basis)
+    {
+        for (const auto &aug : augmentations) {
+            augmentations.push_back(aug->clone());
         }
-    };
-    */
+    }
+
+    // Evaluate the l-th basis function at imaginary time tau
+    T u(size_t l, T tau) const
+    {
+        if (l < augmentations.size()) {
+            return (*augmentations[l])(tau);
+        } else {
+            return basis_->u(l - augmentations.size(), tau);
+        }
+    }
+
+    // Evaluate the l-th basis function at Matsubara frequency n
+    std::complex<T> uhat(size_t l, int n) const
+    {
+        if (l < augmentations.size()) {
+            return augmentations[l]->hat(n);
+        } else {
+            return basis_->uhat(l - augmentations.size(), n);
+        }
+    }
+
+    size_t size() const { return augmentations.size() + basis_->size(); }
+
+private:
+    BasisPtr basis_;
+    std::vector<AugmentationPtr> augmentations;
+};
+
 } // namespace sparseir
