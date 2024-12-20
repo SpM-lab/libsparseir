@@ -1,59 +1,42 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <cmath>
+#include <complex>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 namespace sparseir {
 
-// Forward declaration of AbstractAugmentation
-template <typename T>
-class AbstractAugmentation;
-
-// AbstractAugmentation base class
+// AbstractAugmentation class
 template <typename T>
 class AbstractAugmentation {
 public:
-    virtual ~AbstractAugmentation() { }
+    virtual ~AbstractAugmentation() = default;
 
-    // Evaluate the augmentation function at point x
-    virtual T operator()(T x) const = 0;
-
-    // Evaluate the derivative of the augmentation function at point x
-    // n is the order of the derivative
-    virtual T deriv(T x, int n = 1) const = 0;
-
-    // Evaluate the Fourier transform of the augmentation function at Matsubara
-    // frequency n
+    virtual T operator()(T tau) const = 0;
+    virtual T deriv(T tau, int n = 1) const = 0;
     virtual std::complex<T> hat(int n) const = 0;
-
-    // Clone method for creating copies of derived classes
     virtual std::unique_ptr<AbstractAugmentation<T>> clone() const = 0;
 };
 
-// Example augmentation functions
-// TauConst augmentation (constant function in tau)
+// TauConst augmentation
 template <typename T>
 class TauConst : public AbstractAugmentation<T> {
 public:
     TauConst(T beta) : beta_(beta), norm_(1.0 / std::sqrt(beta)) { }
 
-    virtual T operator()(T tau) const override { return norm_; }
+    T operator()(T tau) const override { return norm_; }
 
-    virtual T deriv(T tau, int n = 1) const override { return T(0); }
+    T deriv(T tau, int n = 1) const override { return T(0); }
 
-    virtual std::complex<T> hat(int n) const override
+    std::complex<T> hat(int n) const override
     {
-        int zeta = 1; // Fermionic (zeta = 1) or Bosonic (zeta = 0)
-        if (n == 0 && zeta == 0) {
-            return norm_ * beta_; // Handle n=0 separately for bosonic case
-        }
-        T wn = M_PI * n / beta_;
-        return norm_ * beta_ * 2.0 * wn /
-               (wn * wn * beta_ * beta_ + (M_PI * M_PI));
+        return std::sqrt(beta_) * (n == 0 ? 1.0 : 0.0);
     }
 
-    virtual std::unique_ptr<AbstractAugmentation<T>> clone() const override
+    std::unique_ptr<AbstractAugmentation<T>> clone() const override
     {
         return std::make_unique<TauConst<T>>(*this);
     }
@@ -63,28 +46,70 @@ private:
     T norm_;
 };
 
-// MatsubaraConst augmentation (constant in Matsubara frequency)
+// TauLinear augmentation
+template <typename T>
+class TauLinear : public AbstractAugmentation<T> {
+public:
+    TauLinear(T beta) : beta_(beta), norm_(std::sqrt(3 / beta)) { }
+
+    T operator()(T tau) const override
+    {
+        T x = 2 / beta_ * tau - 1;
+        return norm_ * x;
+    }
+
+    T deriv(T tau, int n = 1) const override
+    {
+        if (n == 0) {
+            return (*this)(tau);
+        } else if (n == 1) {
+            return norm_ * 2 / beta_;
+        } else {
+            return T(0);
+        }
+    }
+
+    std::complex<T> hat(int n) const override
+    {
+        std::complex<T> inv_w = M_PI / beta_ * n;
+        if (n != 0) {
+            inv_w = 1.0 / inv_w;
+        }
+        return norm_ * 2.0 / std::complex<T>(0, 1) * inv_w;
+    }
+
+    std::unique_ptr<AbstractAugmentation<T>> clone() const override
+    {
+        return std::make_unique<TauLinear<T>>(*this);
+    }
+
+private:
+    T beta_;
+    T norm_;
+};
+
+// MatsubaraConst augmentation
 template <typename T>
 class MatsubaraConst : public AbstractAugmentation<T> {
 public:
     MatsubaraConst(T beta) : beta_(beta) { }
 
-    virtual T operator()(T tau) const override
+    T operator()(T tau) const override
     {
         return std::numeric_limits<T>::quiet_NaN(); // Undefined in tau
     }
 
-    virtual T deriv(T tau, int n = 1) const override
+    T deriv(T tau, int n = 1) const override
     {
         return std::numeric_limits<T>::quiet_NaN(); // Undefined in tau
     }
 
-    virtual std::complex<T> hat(int n) const override
+    std::complex<T> hat(int n) const override
     {
         return std::complex<T>(1.0, 0.0);
     }
 
-    virtual std::unique_ptr<AbstractAugmentation<T>> clone() const override
+    std::unique_ptr<AbstractAugmentation<T>> clone() const override
     {
         return std::make_unique<MatsubaraConst<T>>(*this);
     }
@@ -93,47 +118,52 @@ private:
     T beta_;
 };
 
-// AugmentedBasis class
+// _AugmentedFunction class
 template <typename T>
-class AugmentedBasis {
+class _AugmentedFunction {
 public:
-    using BasisPtr = std::shared_ptr<AbstractBasis<T>>;
-    using AugmentationPtr = std::unique_ptr<AbstractAugmentation<T>>;
-
-    AugmentedBasis(BasisPtr basis,
-                   const std::vector<AugmentationPtr> &augmentations)
-        : basis_(basis)
+    _AugmentedFunction(
+        const Eigen::VectorXd &fbasis,
+        const std::vector<
+            std::function<Eigen::VectorXd(const Eigen::VectorXd &)>> &faug)
+        : fbasis_(fbasis), faug_(faug), naug_(faug.size())
     {
-        for (const auto &aug : augmentations) {
-            augmentations.push_back(aug->clone());
+        if (fbasis_.size() == 0) {
+            throw std::invalid_argument(
+                "must have vector of functions as fbasis");
         }
     }
 
-    // Evaluate the l-th basis function at imaginary time tau
-    T u(size_t l, T tau) const
+    size_t size() const { return naug_ + fbasis_.size(); }
+
+    Eigen::MatrixXd operator()(const Eigen::VectorXd &x) const
     {
-        if (l < augmentations.size()) {
-            return (*augmentations[l])(tau);
+        Eigen::MatrixXd fbasis_x = fbasis_(x);
+        std::vector<Eigen::MatrixXd> faug_x;
+        for (const auto &faug_l : faug_) {
+            faug_x.push_back(faug_l(x));
+        }
+        Eigen::MatrixXd f_x(fbasis_x.rows() + faug_x.size(), x.size());
+        for (size_t i = 0; i < faug_x.size(); ++i) {
+            f_x.row(i) = faug_x[i];
+        }
+        f_x.bottomRows(fbasis_x.rows()) = fbasis_x;
+        return f_x;
+    }
+
+    const Eigen::VectorXd &operator[](size_t l) const
+    {
+        if (l < naug_) {
+            return faug_[l];
         } else {
-            return basis_->u(l - augmentations.size(), tau);
+            return fbasis_[l - naug_];
         }
     }
-
-    // Evaluate the l-th basis function at Matsubara frequency n
-    std::complex<T> uhat(size_t l, int n) const
-    {
-        if (l < augmentations.size()) {
-            return augmentations[l]->hat(n);
-        } else {
-            return basis_->uhat(l - augmentations.size(), n);
-        }
-    }
-
-    size_t size() const { return augmentations.size() + basis_->size(); }
 
 private:
-    BasisPtr basis_;
-    std::vector<AugmentationPtr> augmentations;
+    Eigen::VectorXd fbasis_;
+    std::vector<std::function<Eigen::VectorXd(const Eigen::VectorXd &)>> faug_;
+    size_t naug_;
 };
 
 } // namespace sparseir
