@@ -13,8 +13,11 @@ namespace sparseir {
 template <typename T>
 class AbstractAugmentation {
 public:
-  virtual ~AbstractAugmentation() = default;
-  virtual std::unique_ptr<AbstractAugmentation<T>> clone() const = 0;
+    virtual T operator()(T tau) const = 0; // Ensure this is virtual
+    virtual T deriv(T tau, int n = 1) const = 0; // Add this line
+    virtual std::complex<T> hat(int n) const = 0; // Add this line
+    virtual ~AbstractAugmentation() = default;
+    virtual std::unique_ptr<AbstractAugmentation<T>> clone() const = 0;
 };
 
 template <typename T>
@@ -37,7 +40,7 @@ public:
 
     size_t size() const override { return _basis->size() + _naug; }
 
-    Eigen::VectorXd u(const Eigen::VectorXd& tau) const override {
+    Eigen::VectorXd u(const Eigen::VectorXd& tau) const {
         Eigen::VectorXd result(size());
         for (size_t i = 0; i < _naug; ++i) {
             result(i) = (*_augmentations[i])(tau(i));
@@ -48,7 +51,7 @@ public:
         return result;
     }
 
-    Eigen::VectorXcf uhat(const Eigen::VectorXcf& wn) const override {
+    Eigen::VectorXcf uhat(const Eigen::VectorXcf& wn) const {
         Eigen::VectorXcf result(size());
         for (size_t i = 0; i < _naug; ++i) {
             result(i) = (*_augmentations[i]).hat(wn(i));
@@ -93,11 +96,11 @@ public:
         check_tau_range(tau, beta_);
         return norm_;
     }
-    T deriv(T tau, int n = 1) const override {
+    T deriv(T tau, int n = 1) const  {
         if (n == 0) return (*this)(tau);
         return 0.0;
     }
-    std::complex<T> hat(int n) const override {
+    std::complex<T> hat(int n) const  {
         return norm_ * std::sqrt(beta_);
     }
     std::unique_ptr<AbstractAugmentation<T>> clone() const override {
