@@ -20,11 +20,11 @@ public:
     virtual std::unique_ptr<AbstractAugmentation<T>> clone() const = 0;
 };
 
-template <typename T>
-class AugmentedBasis : public AbstractBasis<T> {
+template <typename S>
+class AugmentedBasis : public AbstractBasis<S> {
 public:
-    AugmentedBasis(std::shared_ptr<AbstractBasis<T>> basis,
-                   const std::vector<std::unique_ptr<AbstractAugmentation<T>>>& augmentations)
+    AugmentedBasis(std::shared_ptr<AbstractBasis<S>> basis,
+                   const std::vector<std::unique_ptr<AbstractAugmentation<S>>>& augmentations)
         : _basis(basis), _augmentations(augmentations), _naug(augmentations.size()) {
         //Error Handling: Check for null basis pointer
         if (!_basis) {
@@ -38,7 +38,7 @@ public:
         }
     }
 
-    size_t size() const override { return _basis->size() + _naug; }
+    size_t size() const { return _basis->size() + _naug; }
 
     Eigen::VectorXd u(const Eigen::VectorXd& tau) const {
         Eigen::VectorXd result(size());
@@ -62,23 +62,23 @@ public:
         return result;
     }
 
-    Eigen::VectorXd v(const Eigen::VectorXd& w) const override {
+    Eigen::VectorXd v(const Eigen::VectorXd& w) const {
         return _basis->v(w);
     }
 
-    Eigen::VectorXd s() const override { return _basis->s(); }
+    Eigen::VectorXd s() const { return _basis->s(); }
 
-    double beta() const override { return _basis->beta(); }
+    double beta() const { return _basis->beta(); }
 
-    double wmax() const override { return _basis->wmax(); }
+    double wmax() const { return _basis->wmax(); }
 
-    std::shared_ptr<Statistics> statistics() const override {
+    std::shared_ptr<Statistics> statistics() const {
         return _basis->statistics(); // Assuming _basis also returns a shared_ptr
     }
 
 private:
-    std::shared_ptr<AbstractBasis<T>> _basis;
-    std::vector<std::unique_ptr<AbstractAugmentation<T>>> _augmentations;
+    std::shared_ptr<AbstractBasis<S>> _basis;
+    std::vector<std::unique_ptr<AbstractAugmentation<S>>> _augmentations;
     size_t _naug;
 };
 
@@ -131,7 +131,7 @@ public:
     }
     std::complex<T> hat(int n) const override {
         if (n == 0) return 0.0;
-        return norm_ * 2.0 * beta_ / (n * M_PI * 1i);
+        return norm_ * 2.0 * beta_ / (n * M_PI * std::complex<T>(0, 1));
     }
     std::unique_ptr<AbstractAugmentation<T>> clone() const override {
         return std::make_unique<TauLinear<T>>(*this);
