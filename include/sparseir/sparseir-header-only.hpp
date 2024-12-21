@@ -13,3 +13,4 @@
 #include "./basis.hpp"
 #include "./augment.hpp"
 #include "./sampling.hpp"
+#include "./basis_set.hpp"
