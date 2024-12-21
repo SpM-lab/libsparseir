@@ -3,41 +3,104 @@
 #include <Eigen/Dense>
 #include <cmath>
 #include <complex>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <vector>
 
 namespace sparseir {
 
-// AbstractAugmentation class
 template <typename T>
 class AbstractAugmentation {
 public:
-    virtual ~AbstractAugmentation() = default;
-
-    virtual T operator()(T tau) const = 0;
-    virtual T deriv(T tau, int n = 1) const = 0;
-    virtual std::complex<T> hat(int n) const = 0;
-    virtual std::unique_ptr<AbstractAugmentation<T>> clone() const = 0;
+  virtual ~AbstractAugmentation() = default;
+  virtual std::unique_ptr<AbstractAugmentation<T>> clone() const = 0;
 };
 
-// TauConst augmentation
+template <typename T>
+class AugmentedBasis : public AbstractBasis<T> {
+public:
+    AugmentedBasis(std::shared_ptr<AbstractBasis<T>> basis,
+                   const std::vector<std::unique_ptr<AbstractAugmentation<T>>>& augmentations)
+        : _basis(basis), _augmentations(augmentations), _naug(augmentations.size()) {
+        //Error Handling: Check for null basis pointer
+        if (!_basis) {
+            throw std::invalid_argument("Basis cannot be null");
+        }
+        //Check for valid augmentations
+        for (const auto& aug : _augmentations) {
+            if (!aug) {
+                throw std::invalid_argument("Augmentation cannot be null");
+            }
+        }
+    }
+
+    size_t size() const override { return _basis->size() + _naug; }
+
+    Eigen::VectorXd u(const Eigen::VectorXd& tau) const override {
+        Eigen::VectorXd result(size());
+        for (size_t i = 0; i < _naug; ++i) {
+            result(i) = (*_augmentations[i])(tau(i));
+        }
+        for (size_t i = _naug; i < size(); ++i) {
+            result(i) = _basis->u(tau(i - _naug))(i - _naug);
+        }
+        return result;
+    }
+
+    Eigen::VectorXcf uhat(const Eigen::VectorXcf& wn) const override {
+        Eigen::VectorXcf result(size());
+        for (size_t i = 0; i < _naug; ++i) {
+            result(i) = (*_augmentations[i]).hat(wn(i));
+        }
+        for (size_t i = _naug; i < size(); ++i) {
+            result(i) = _basis->uhat(wn(i - _naug))(i - _naug);
+        }
+        return result;
+    }
+
+    Eigen::VectorXd v(const Eigen::VectorXd& w) const override {
+        return _basis->v(w);
+    }
+
+    Eigen::VectorXd s() const override { return _basis->s(); }
+
+    double beta() const override { return _basis->beta(); }
+
+    double wmax() const override { return _basis->wmax(); }
+
+    std::shared_ptr<Statistics> statistics() const override {
+        return _basis->statistics(); // Assuming _basis also returns a shared_ptr
+    }
+
+private:
+    std::shared_ptr<AbstractBasis<T>> _basis;
+    std::vector<std::unique_ptr<AbstractAugmentation<T>>> _augmentations;
+    size_t _naug;
+};
+
+
 template <typename T>
 class TauConst : public AbstractAugmentation<T> {
 public:
-    TauConst(T beta) : beta_(beta), norm_(1.0 / std::sqrt(beta)) { }
-
-    T operator()(T tau) const override { return norm_; }
-
-    T deriv(T tau, int n = 1) const override { return T(0); }
-
-    std::complex<T> hat(int n) const override
-    {
-        return std::sqrt(beta_) * (n == 0 ? 1.0 : 0.0);
+    TauConst(T beta) : beta_(beta), norm_(1.0 / std::sqrt(beta)) {
+        if (beta_ <= 0) {
+            throw std::invalid_argument("beta must be positive");
+        }
     }
 
-    std::unique_ptr<AbstractAugmentation<T>> clone() const override
-    {
+    T operator()(T tau) const override {
+        check_tau_range(tau, beta_);
+        return norm_;
+    }
+    T deriv(T tau, int n = 1) const override {
+        if (n == 0) return (*this)(tau);
+        return 0.0;
+    }
+    std::complex<T> hat(int n) const override {
+        return norm_ * std::sqrt(beta_);
+    }
+    std::unique_ptr<AbstractAugmentation<T>> clone() const override {
         return std::make_unique<TauConst<T>>(*this);
     }
 
@@ -46,40 +109,28 @@ private:
     T norm_;
 };
 
-// TauLinear augmentation
 template <typename T>
 class TauLinear : public AbstractAugmentation<T> {
 public:
-    TauLinear(T beta) : beta_(beta), norm_(std::sqrt(3 / beta)) { }
-
-    T operator()(T tau) const override
-    {
-        T x = 2 / beta_ * tau - 1;
-        return norm_ * x;
-    }
-
-    T deriv(T tau, int n = 1) const override
-    {
-        if (n == 0) {
-            return (*this)(tau);
-        } else if (n == 1) {
-            return norm_ * 2 / beta_;
-        } else {
-            return T(0);
+    TauLinear(T beta) : beta_(beta), norm_(std::sqrt(3.0 / beta)) {
+        if (beta_ <= 0) {
+            throw std::invalid_argument("beta must be positive");
         }
     }
 
-    std::complex<T> hat(int n) const override
-    {
-        std::complex<T> inv_w = M_PI / beta_ * n;
-        if (n != 0) {
-            inv_w = 1.0 / inv_w;
-        }
-        return norm_ * 2.0 / std::complex<T>(0, 1) * inv_w;
+    T operator()(T tau) const override {
+        check_tau_range(tau, beta_);
+        return norm_ * (2.0 * tau / beta_ - 1.0);
     }
-
-    std::unique_ptr<AbstractAugmentation<T>> clone() const override
-    {
+    T deriv(T tau, int n = 1) const override {
+        if (n == 1) return norm_ * 2.0 / beta_;
+        return 0.0;
+    }
+    std::complex<T> hat(int n) const override {
+        if (n == 0) return 0.0;
+        return norm_ * 2.0 * beta_ / (n * M_PI * 1i);
+    }
+    std::unique_ptr<AbstractAugmentation<T>> clone() const override {
         return std::make_unique<TauLinear<T>>(*this);
     }
 
@@ -88,29 +139,19 @@ private:
     T norm_;
 };
 
-// MatsubaraConst augmentation
 template <typename T>
 class MatsubaraConst : public AbstractAugmentation<T> {
 public:
-    MatsubaraConst(T beta) : beta_(beta) { }
-
-    T operator()(T tau) const override
-    {
-        return std::numeric_limits<T>::quiet_NaN(); // Undefined in tau
+    MatsubaraConst(T beta) : beta_(beta) {
+        if (beta_ <= 0) {
+            throw std::invalid_argument("beta must be positive");
+        }
     }
 
-    T deriv(T tau, int n = 1) const override
-    {
-        return std::numeric_limits<T>::quiet_NaN(); // Undefined in tau
-    }
-
-    std::complex<T> hat(int n) const override
-    {
-        return std::complex<T>(1.0, 0.0);
-    }
-
-    std::unique_ptr<AbstractAugmentation<T>> clone() const override
-    {
+    T operator()(T tau) const override { return std::numeric_limits<T>::quiet_NaN(); }
+    T deriv(T tau, int n = 1) const override { return std::numeric_limits<T>::quiet_NaN(); }
+    std::complex<T> hat(int n) const override { return 1.0; }
+    std::unique_ptr<AbstractAugmentation<T>> clone() const override {
         return std::make_unique<MatsubaraConst<T>>(*this);
     }
 
@@ -118,52 +159,5 @@ private:
     T beta_;
 };
 
-// _AugmentedFunction class
-template <typename T>
-class _AugmentedFunction {
-public:
-    _AugmentedFunction(
-        const Eigen::VectorXd &fbasis,
-        const std::vector<
-            std::function<Eigen::VectorXd(const Eigen::VectorXd &)>> &faug)
-        : fbasis_(fbasis), faug_(faug), naug_(faug.size())
-    {
-        if (fbasis_.size() == 0) {
-            throw std::invalid_argument(
-                "must have vector of functions as fbasis");
-        }
-    }
-
-    size_t size() const { return naug_ + fbasis_.size(); }
-
-    Eigen::MatrixXd operator()(const Eigen::VectorXd &x) const
-    {
-        Eigen::MatrixXd fbasis_x = fbasis_(x);
-        std::vector<Eigen::MatrixXd> faug_x;
-        for (const auto &faug_l : faug_) {
-            faug_x.push_back(faug_l(x));
-        }
-        Eigen::MatrixXd f_x(fbasis_x.rows() + faug_x.size(), x.size());
-        for (size_t i = 0; i < faug_x.size(); ++i) {
-            f_x.row(i) = faug_x[i];
-        }
-        f_x.bottomRows(fbasis_x.rows()) = fbasis_x;
-        return f_x;
-    }
-
-    const Eigen::VectorXd &operator[](size_t l) const
-    {
-        if (l < naug_) {
-            return faug_[l];
-        } else {
-            return fbasis_[l - naug_];
-        }
-    }
-
-private:
-    Eigen::VectorXd fbasis_;
-    std::vector<std::function<Eigen::VectorXd(const Eigen::VectorXd &)>> faug_;
-    size_t naug_;
-};
 
 } // namespace sparseir
