@@ -12,3 +12,4 @@
 #include "./sve.hpp"
 #include "./basis.hpp"
 #include "./augment.hpp"
+#include "./sampling.hpp"
