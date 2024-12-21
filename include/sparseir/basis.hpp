@@ -303,7 +303,7 @@ public:
 
 private:
     // Placeholder statistics function
-    S statistics() const { return S(); }
+    std::shared_ptr<S> statistics() const { return std::make_shared<S>(); }
 
     // Default sampling points function
     Eigen::VectorXd
