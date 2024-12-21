@@ -872,6 +872,7 @@ inline PowerModel<double> power_model(const Statistics &stat,
 class BosonicStatistics : public Statistics {
 public:
     int zeta() const override { return 1; }
+    bool allowed(int n) const override { return n % 2 == 0 && n != 0; }
 };
 
 // PiecewiseLegendreFT class template
@@ -1000,6 +1001,7 @@ std::complex<double> PiecewiseLegendreFT<StatisticsType>::evalpoly(
 class FermionicStatistics : public Statistics {
 public:
     int zeta() const override { return -1; }
+    bool allowed(int n) const override { return n % 2 != 0; }
 };
 
 } // namespace sparseir
