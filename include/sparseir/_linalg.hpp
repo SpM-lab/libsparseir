@@ -172,7 +172,7 @@ Dynamic, 1>& taus) : factors(factors), taus(taus) {}
 
 // TODO: FIX THIS
 template <typename T>
-auto getPropertyP(const QRPivoted<T> &F)
+MatrixX<T> getPropertyP(const QRPivoted<T> &F)
 {
     int m = F.factors.rows();
     int n = F.factors.cols();

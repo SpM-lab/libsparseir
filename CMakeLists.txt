@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
@@ -26,6 +26,7 @@ project(
     DESCRIPTION "SparseIR library"
     )
 
+
 # Eigen3
 find_package (Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(Threads REQUIRED)
@@ -42,7 +43,7 @@ FetchContent_MakeAvailable(XPrec)
 # Building
 
 add_library(sparseir SHARED
-    src/sparseir.cxx
+    src/sparseir.cpp
     )
 
 target_include_directories(sparseir PUBLIC
@@ -52,11 +53,13 @@ target_include_directories(sparseir PUBLIC
 set_target_properties(sparseir PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
-    CXX_STANDARD 11
+    CXX_STANDARD 14
     CXX_STANDARD_REQUIRED ON
     )
 
 target_link_libraries(sparseir Eigen3::Eigen XPrec::xprec Threads::Threads)
+
+#target_compile_features(sparseir PUBLIC cxx_std_14) # Force C++14
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)

@@ -1,7 +1,5 @@
 include(FetchContent)
 
-set(CMAKE_CXX_STANDARD 11)
-
 # Require Catch2 for tests
 FetchContent_Declare(
     Catch2
@@ -14,7 +12,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(libsparseirtests
-    example.cxx
     _linalg.cxx
     _specfuncs.cxx
     _root.cxx
@@ -28,6 +25,7 @@ add_executable(libsparseirtests
     augment.cxx
     sampling.cxx
     basis_set.cxx
+    dlr.cxx
 )
 
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)

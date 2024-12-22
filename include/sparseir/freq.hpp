@@ -31,13 +31,19 @@ public:
     inline bool allowed(int n) const override { return n % 2 == 0; }
 };
 
+
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 // Factory function to create Statistics object
 inline std::unique_ptr<Statistics> create_statistics(int zeta)
 {
     if (zeta == 1)
-        return std::make_unique<Fermionic>();
+        return make_unique<Fermionic>();
     if (zeta == 0)
-        return std::make_unique<Bosonic>();
+        return make_unique<Bosonic>();
     throw std::domain_error("Unknown statistics type");
 }
 
