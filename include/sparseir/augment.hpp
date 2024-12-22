@@ -100,6 +100,7 @@ public:
         if (tau < 0 || tau > beta) {
             throw std::domain_error("tau must be in [0, beta].");
         }
+        // TODO: Fix this formula
         return std::numeric_limits<double>::quiet_NaN();
     }
 

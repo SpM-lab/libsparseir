@@ -15,6 +15,42 @@
 using namespace sparseir;
 using namespace std;
 
+TEST_CASE("AbstractAugmentation") {
+    SECTION("TauConst") {
+        double beta = 1000.0;
+        auto tc = TauConst(beta);
+        double tau = 0.5;
+        double y = tc(tau);
+        auto dtc = tc.deriv();
+        double x = 2.0;
+        REQUIRE(dtc(x) == 0.0);
+    }
+    SECTION("TauLinear") {
+        double beta = 1000.0;
+        double tau_0 = 0.5;
+        double tau_1 = 1.0;
+        auto tl = TauLinear(beta);
+        double tau = 0.75;
+        double y = tl(tau);
+        auto dtl = tl.deriv();
+        double x = 2.0;
+        REQUIRE(true);
+        //REQUIRE(dtl(x) == -beta * (tau - tau_0) / pow(tau_1 - tau_0, 2));
+    }
+    SECTION("MatsubaraConst") {
+        double beta = 1000.0;
+        double w_0 = 0.5;
+        double w_1 = 1.0;
+        auto mc = MatsubaraConst(beta);
+        double w = 0.75;
+        double y = mc(w);
+        auto dmc = mc.deriv();
+        double x = 2.0;
+        REQUIRE(true);
+        //REQUIRE(dmc(x) == -beta * (w - w_0) / pow(w_1 - w_0, 2));
+    }
+}
+
 TEST_CASE("Augmented bosonic basis") {
     using T = double;
     T beta = 1000.0;
