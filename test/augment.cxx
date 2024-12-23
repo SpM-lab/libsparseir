@@ -23,6 +23,7 @@ TEST_CASE("AbstractAugmentation") {
         double y = tc(tau);
         auto dtc = tc.deriv();
         double x = 2.0;
+        REQUIRE(tc.beta == beta);
         REQUIRE(dtc(x) == 0.0);
     }
     SECTION("TauLinear") {

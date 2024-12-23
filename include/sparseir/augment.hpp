@@ -14,7 +14,8 @@ namespace sparseir {
 class AbstractAugmentation : public std::enable_shared_from_this<AbstractAugmentation> {
 public:
     virtual double operator()(double tau) const = 0;
-    virtual double operator()(int bosonicFreq) const = 0;
+    virtual std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const = 0;
+    virtual std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const = 0;
     virtual std::function<double(double)> deriv(int order = 1) const = 0;
     virtual ~AbstractAugmentation() = default;
 };
@@ -37,8 +38,13 @@ public:
         return 1.0 / std::sqrt(beta);
     }
 
-    double operator()(int bosonicFreq) const override {
-        return (bosonicFreq == 0) ? std::sqrt(beta) : 0.0;
+    std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
+        return is_zero(n) ? std::sqrt(beta) : 0.0;
+    }
+
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
+        std::invalid_argument("TauConst is not a Fermionic basis.");
+        return std::numeric_limits<std::complex<double>>::quiet_NaN();
     }
 
     std::function<double(double)> deriv(int order = 1) const override {
@@ -69,10 +75,15 @@ public:
         return norm * x;
     }
 
-    double operator()(int bosonicFreq) const override {
-        double inv_w = (bosonicFreq == 0) ? std::numeric_limits<double>::infinity() : 1.0 / bosonicFreq;
-        std::complex<double> imag_unit(0.0, 1.0); // 複素数の虚数単位
-        return norm * 2.0 / imag_unit.imag() * inv_w;
+    std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
+        double inv_w = n.n * (M_PI / beta);
+        inv_w = is_zero(n) ? inv_w : 1.0 / inv_w;
+        return norm * 2.0 / std::complex<double>(0, 1) * inv_w;
+    }
+
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
+        std::invalid_argument("TauConst is not a Fermionic basis.");
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
     std::function<double(double)> deriv(int order = 1) const override {
@@ -100,11 +111,14 @@ public:
         if (tau < 0 || tau > beta) {
             throw std::domain_error("tau must be in [0, beta].");
         }
-        // TODO: Fix this formula
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    double operator()(int matsubaraFreq) const override {
+    std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
+        return 1.0;
+    }
+
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
         return 1.0;
     }
 
