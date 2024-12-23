@@ -15,23 +15,65 @@
 using namespace sparseir;
 using namespace std;
 
+TEST_CASE("AbstractAugmentation") {
+    SECTION("TauConst") {
+        double beta = 1000.0;
+        auto tc = TauConst(beta);
+        double tau = 0.5;
+        double y = tc(tau);
+        auto dtc = tc.deriv();
+        double x = 2.0;
+        REQUIRE(tc.beta == beta);
+        REQUIRE(dtc(x) == 0.0);
+    }
+    SECTION("TauLinear") {
+        double beta = 1000.0;
+        double tau_0 = 0.5;
+        double tau_1 = 1.0;
+        auto tl = TauLinear(beta);
+        double tau = 0.75;
+        double y = tl(tau);
+        auto dtl = tl.deriv();
+        double x = 2.0;
+        REQUIRE(true);
+        //REQUIRE(dtl(x) == -beta * (tau - tau_0) / pow(tau_1 - tau_0, 2));
+    }
+    SECTION("MatsubaraConst") {
+        double beta = 1000.0;
+        double w_0 = 0.5;
+        double w_1 = 1.0;
+        auto mc = MatsubaraConst(beta);
+        double w = 0.75;
+        double y = mc(w);
+        auto dmc = mc.deriv();
+        double x = 2.0;
+        REQUIRE(true);
+        //REQUIRE(dmc(x) == -beta * (w - w_0) / pow(w_1 - w_0, 2));
+    }
+}
+
 TEST_CASE("Augmented bosonic basis") {
     using T = double;
     T beta = 1000.0;
     T wmax = 2.0;
 
     // Create bosonic basis
-    auto kernel = LogisticKernel(beta * wmax);
+    LogisticKernel kernel(beta * wmax);
     auto sve_result = compute_sve(kernel, 1e-6);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
+    shared_ptr<FiniteTempBasis<Bosonic>> basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
     // Create augmented basis with TauConst and TauLinear
-    /*
-    vector<unique_ptr<AbstractAugmentation<T>>> augmentations;
-    //augmentations.push_back(make_unique<TauConst<T>>(beta));
-    //augmentations.push_back(make_unique<TauLinear<T>>(beta));
-    AugmentedBasis<T> basis_aug(basis, augmentations);
+    vector<shared_ptr<AbstractAugmentation>> augmentations;
+    augmentations.push_back(make_shared<TauConst>(beta));
+    augmentations.push_back(make_shared<TauLinear>(beta));
+    PiecewiseLegendrePolyVector u = basis->u;
+    PiecewiseLegendreFTVector<Bosonic> uhat = basis->uhat;
+    using S = FiniteTempBasis<Bosonic>;
+    using B = Bosonic;
 
-    REQUIRE(basis_aug.size() == basis->size() + 2);
+    AugmentedBasis<S, B,PiecewiseLegendrePolyVector, PiecewiseLegendreFTVector<Bosonic>> basis_aug(basis, augmentations, u, uhat);
+
+    REQUIRE(basis_aug.size() == basis->s.size() + 2);
+    /*
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     T pole = 1.0;

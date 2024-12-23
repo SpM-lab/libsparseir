@@ -14,7 +14,8 @@ namespace sparseir {
 class AbstractAugmentation : public std::enable_shared_from_this<AbstractAugmentation> {
 public:
     virtual double operator()(double tau) const = 0;
-    virtual double operator()(int bosonicFreq) const = 0;
+    virtual std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const = 0;
+    virtual std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const = 0;
     virtual std::function<double(double)> deriv(int order = 1) const = 0;
     virtual ~AbstractAugmentation() = default;
 };
@@ -37,8 +38,13 @@ public:
         return 1.0 / std::sqrt(beta);
     }
 
-    double operator()(int bosonicFreq) const override {
-        return (bosonicFreq == 0) ? std::sqrt(beta) : 0.0;
+    std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
+        return is_zero(n) ? std::sqrt(beta) : 0.0;
+    }
+
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
+        std::invalid_argument("TauConst is not a Fermionic basis.");
+        return std::numeric_limits<std::complex<double>>::quiet_NaN();
     }
 
     std::function<double(double)> deriv(int order = 1) const override {
@@ -69,10 +75,15 @@ public:
         return norm * x;
     }
 
-    double operator()(int bosonicFreq) const override {
-        double inv_w = (bosonicFreq == 0) ? std::numeric_limits<double>::infinity() : 1.0 / bosonicFreq;
-        std::complex<double> imag_unit(0.0, 1.0); // 複素数の虚数単位
-        return norm * 2.0 / imag_unit.imag() * inv_w;
+    std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
+        double inv_w = n.n * (M_PI / beta);
+        inv_w = is_zero(n) ? inv_w : 1.0 / inv_w;
+        return norm * 2.0 / std::complex<double>(0, 1) * inv_w;
+    }
+
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
+        std::invalid_argument("TauConst is not a Fermionic basis.");
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
     std::function<double(double)> deriv(int order = 1) const override {
@@ -103,7 +114,11 @@ public:
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    double operator()(int matsubaraFreq) const override {
+    std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
+        return 1.0;
+    }
+
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
         return 1.0;
     }
 
@@ -160,21 +175,21 @@ public:
 };
 
 // AugmentedBasis
-template <typename S, typename B, typename A, typename F, typename FHAT>
+template <typename S, typename B, typename F, typename FHAT>
 class AugmentedBasis : public AbstractBasis<S> {
 public:
-    std::shared_ptr<B> basis;
-    std::vector<std::shared_ptr<A>> augmentations;
+    std::shared_ptr<FiniteTempBasis<B>> basis;
+    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
     F u;
     FHAT uhat;
 
-    AugmentedBasis(std::shared_ptr<B> basis,
-                   std::vector<std::shared_ptr<A>> augmentations,
+    AugmentedBasis(std::shared_ptr<FiniteTempBasis<B>> basis,
+                   std::vector<std::shared_ptr<AbstractAugmentation>> augmentations,
                    F u, FHAT uhat)
-        : AbstractBasis<S>(basis->beta), basis(basis), augmentations(augmentations), u(u), uhat(uhat) {}
+        : basis(basis), augmentations(augmentations), u(u), uhat(uhat) {}
 
-    size_t size() const override {
-        return nAug() + basis->size();
+    size_t size() const {
+        return nAug() + basis->s.size();
     }
 
     size_t nAug() const {
@@ -182,37 +197,34 @@ public:
     }
 
     double accuracy() const override {
-        return basis->accuracy();
+        // TODO: Implement accuracy calculation
+        return 0;
+        //return basis->accuracy();
     }
 
-    double omegaMax() const override {
+    double omegaMax() const {
         return basis->omegaMax();
     }
 
+    const Eigen::VectorXd significance() const override{
+        // TODO: Implement significance calculation
+        return Eigen::VectorXd::Zero(10);
+    };
+
     static std::shared_ptr<AugmentedBasis> create(std::shared_ptr<B> basis,
-                                                  std::vector<std::shared_ptr<A>> augmentations) {
-        auto augs = createAugmentations(augmentations, basis);
+                                                  std::vector<std::shared_ptr<AbstractAugmentation>> augs) {
         auto u = createAugmentedTauFunction(basis->u, augs);
         auto uhat = createAugmentedMatsubaraFunction(basis->uhat, augs);
         return std::make_shared<AugmentedBasis>(basis, augs, u, uhat);
     }
 
 private:
-    static std::vector<std::shared_ptr<A>> createAugmentations(const std::vector<std::shared_ptr<A>> &augmentations,
-                                                               std::shared_ptr<B> basis) {
-        std::vector<std::shared_ptr<A>> augs;
-        for (const auto &aug : augmentations) {
-            augs.push_back(aug->create(basis));
-        }
-        return augs;
-    }
-
-    static F createAugmentedTauFunction(const F &basisFunc, const std::vector<std::shared_ptr<A>> &augmentations) {
+    static F createAugmentedTauFunction(const F &basisFunc, const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations) {
         // Placeholder for actual implementation
         return basisFunc;
     }
 
-    static FHAT createAugmentedMatsubaraFunction(const FHAT &basisFunc, const std::vector<std::shared_ptr<A>> &augmentations) {
+    static FHAT createAugmentedMatsubaraFunction(const FHAT &basisFunc, const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations) {
         // Placeholder for actual implementation
         return basisFunc;
     }
