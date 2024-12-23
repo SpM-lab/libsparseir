@@ -189,7 +189,7 @@ public:
         : basis(basis), augmentations(augmentations), u(u), uhat(uhat) {}
 
     size_t size() const {
-        return nAug() + basis->size();
+        return nAug() + basis->s.size();
     }
 
     size_t nAug() const {

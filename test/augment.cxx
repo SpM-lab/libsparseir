@@ -72,8 +72,8 @@ TEST_CASE("Augmented bosonic basis") {
 
     AugmentedBasis<S, B,PiecewiseLegendrePolyVector, PiecewiseLegendreFTVector<Bosonic>> basis_aug(basis, augmentations, u, uhat);
 
+    REQUIRE(basis_aug.size() == basis->s.size() + 2);
     /*
-    REQUIRE(basis_aug.size() == basis->size() + 2);
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     T pole = 1.0;
