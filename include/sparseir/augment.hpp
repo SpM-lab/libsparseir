@@ -175,20 +175,20 @@ public:
 };
 
 // AugmentedBasis
-template <typename S, typename B, typename A, typename F, typename FHAT>
+template <typename S, typename B, typename F, typename FHAT>
 class AugmentedBasis : public AbstractBasis<S> {
 public:
-    std::shared_ptr<B> basis;
-    std::vector<std::shared_ptr<A>> augmentations;
+    std::shared_ptr<FiniteTempBasis<B>> basis;
+    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
     F u;
     FHAT uhat;
 
-    AugmentedBasis(std::shared_ptr<B> basis,
-                   std::vector<std::shared_ptr<A>> augmentations,
+    AugmentedBasis(std::shared_ptr<FiniteTempBasis<B>> basis,
+                   std::vector<std::shared_ptr<AbstractAugmentation>> augmentations,
                    F u, FHAT uhat)
-        : AbstractBasis<S>(basis->beta), basis(basis), augmentations(augmentations), u(u), uhat(uhat) {}
+        : basis(basis), augmentations(augmentations), u(u), uhat(uhat) {}
 
-    size_t size() const override {
+    size_t size() const {
         return nAug() + basis->size();
     }
 
@@ -197,37 +197,34 @@ public:
     }
 
     double accuracy() const override {
-        return basis->accuracy();
+        // TODO: Implement accuracy calculation
+        return 0;
+        //return basis->accuracy();
     }
 
-    double omegaMax() const override {
+    double omegaMax() const {
         return basis->omegaMax();
     }
 
+    const Eigen::VectorXd significance() const override{
+        // TODO: Implement significance calculation
+        return Eigen::VectorXd::Zero(10);
+    };
+
     static std::shared_ptr<AugmentedBasis> create(std::shared_ptr<B> basis,
-                                                  std::vector<std::shared_ptr<A>> augmentations) {
-        auto augs = createAugmentations(augmentations, basis);
+                                                  std::vector<std::shared_ptr<AbstractAugmentation>> augs) {
         auto u = createAugmentedTauFunction(basis->u, augs);
         auto uhat = createAugmentedMatsubaraFunction(basis->uhat, augs);
         return std::make_shared<AugmentedBasis>(basis, augs, u, uhat);
     }
 
 private:
-    static std::vector<std::shared_ptr<A>> createAugmentations(const std::vector<std::shared_ptr<A>> &augmentations,
-                                                               std::shared_ptr<B> basis) {
-        std::vector<std::shared_ptr<A>> augs;
-        for (const auto &aug : augmentations) {
-            augs.push_back(aug->create(basis));
-        }
-        return augs;
-    }
-
-    static F createAugmentedTauFunction(const F &basisFunc, const std::vector<std::shared_ptr<A>> &augmentations) {
+    static F createAugmentedTauFunction(const F &basisFunc, const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations) {
         // Placeholder for actual implementation
         return basisFunc;
     }
 
-    static FHAT createAugmentedMatsubaraFunction(const FHAT &basisFunc, const std::vector<std::shared_ptr<A>> &augmentations) {
+    static FHAT createAugmentedMatsubaraFunction(const FHAT &basisFunc, const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations) {
         // Placeholder for actual implementation
         return basisFunc;
     }

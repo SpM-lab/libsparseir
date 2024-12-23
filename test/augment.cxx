@@ -58,16 +58,21 @@ TEST_CASE("Augmented bosonic basis") {
     T wmax = 2.0;
 
     // Create bosonic basis
-    auto kernel = LogisticKernel(beta * wmax);
+    LogisticKernel kernel(beta * wmax);
     auto sve_result = compute_sve(kernel, 1e-6);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
+    shared_ptr<FiniteTempBasis<Bosonic>> basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
     // Create augmented basis with TauConst and TauLinear
-    /*
-    vector<unique_ptr<AbstractAugmentation<T>>> augmentations;
-    //augmentations.push_back(make_unique<TauConst<T>>(beta));
-    //augmentations.push_back(make_unique<TauLinear<T>>(beta));
-    AugmentedBasis<T> basis_aug(basis, augmentations);
+    vector<shared_ptr<AbstractAugmentation>> augmentations;
+    augmentations.push_back(make_shared<TauConst>(beta));
+    augmentations.push_back(make_shared<TauLinear>(beta));
+    PiecewiseLegendrePolyVector u = basis->u;
+    PiecewiseLegendreFTVector<Bosonic> uhat = basis->uhat;
+    using S = FiniteTempBasis<Bosonic>;
+    using B = Bosonic;
 
+    AugmentedBasis<S, B,PiecewiseLegendrePolyVector, PiecewiseLegendreFTVector<Bosonic>> basis_aug(basis, augmentations, u, uhat);
+
+    /*
     REQUIRE(basis_aug.size() == basis->size() + 2);
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
