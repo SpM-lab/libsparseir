@@ -50,12 +50,22 @@ TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
         REQUIRE_THROWS_AS(tl(-3), std::domain_error);
         REQUIRE_THROWS_AS(tl(321), std::domain_error);
         REQUIRE(tl.norm == Approx(std::sqrt(3.0 / 123.0)));
-        REQUIRE(tl(100) == std::sqrt(3.0 / 123.0) * (2.0 / (123. * 100.) - 1.));
-        // REQUIRE(tl(MatsubaraFreq(0)) == Approx(0.0));
-        // REQUIRE(tl(MatsubaraFreq(92)) ==
-        //         Approx(std::sqrt(3 / 123) * 2 / std::complex<double>(0, 1) *
-        //                123 / (92 * M_PI)));
-        // REQUIRE_THROWS_AS(tl(MatsubaraFreq(93)), std::runtime_error);
+        double tau = 100;
+        REQUIRE(tl(tau) == std::sqrt(3.0 / 123.0) * (2.0 / 123. * tau - 1.));
+
+        MatsubaraFreq<Bosonic> freq0(0);
+        REQUIRE(tl(freq0) == 0.0);
+        MatsubaraFreq<Bosonic> freq92(92);
+        // Calculate the expected complex value
+        std::complex<double> expected_value = std::sqrt(3. / 123.) * 2. / std::complex<double>(0, 1) * 123. / (92. * M_PI);
+        // Get the actual value from the function
+        std::complex<double> actual_value = tl(freq92);
+
+        REQUIRE(actual_value.real() == Approx(expected_value.real()));
+        REQUIRE(actual_value.imag() == Approx(expected_value.imag()));
+
+        MatsubaraFreq<Fermionic> freq93(93);
+        REQUIRE_THROWS_AS(tl(freq93), std::invalid_argument);
 
         //REQUIRE(sparseir::deriv(tl, 0) == tl);
         //REQUIRE(sparseir::deriv(tl)(4.2) ==
@@ -74,9 +84,12 @@ TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
         REQUIRE_THROWS_AS(mc(321), std::domain_error);
 
         REQUIRE(std::isnan(mc(100)));
-        //REQUIRE(mc(MatsubaraFreq(0)) == Approx(1.0));
-        //REQUIRE(mc(MatsubaraFreq(92)) == Approx(1.0));
-        //REQUIRE(mc(MatsubaraFreq(93)) == Approx(1.0));
+        MatsubaraFreq<Bosonic> freq0(0);
+        REQUIRE(mc(freq0) == 1.0);
+        MatsubaraFreq<Bosonic> freq92(0);
+        REQUIRE(mc(freq92) == 1.0);
+        MatsubaraFreq<Fermionic> freq93(93);
+        REQUIRE(mc(freq93) == 1.0);
 
         //REQUIRE(sparseir::deriv(mc) == mc);
         //REQUIRE(sparseir::deriv(mc, 0) == mc);
