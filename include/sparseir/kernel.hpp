@@ -548,6 +548,7 @@ public:
         if (!inner_kernel_->is_centrosymmetric()) {
             throw std::invalid_argument("Inner kernel must be centrosymmetric");
         }
+        std::cout << "sign: " << sign << std::endl;
         if (sign != 1 && sign != -1) {
             throw std::invalid_argument("sign must be -1 or 1");
         }
@@ -938,6 +939,8 @@ public:
     LogisticKernelOdd(std::shared_ptr<const LogisticKernel> inner, int sign)
         : AbstractReducedKernel(inner, sign)
     {
+        std::cout << "LogisticKernelOdd" << sign << std::endl;
+        std::cout << this->operator()(0.5, 0.5) << std::endl;
     }
     // Implement the pure virtual function from the parent class
     double operator()(double x, double y,
@@ -966,8 +969,10 @@ inline std::shared_ptr<AbstractKernel>
 get_symmetrized(std::shared_ptr<const LogisticKernel> kernel, int sign)
 {
     if (sign == -1) {
+        std::cout << "LogisticKernelOdd" << std::endl;
         return std::make_shared<LogisticKernelOdd>(kernel, sign);
     } else {
+        std::cout << "LogisticKernelEven" << std::endl;
         return std::make_shared<ReducedKernel<LogisticKernel>>(kernel, sign);
     }
 }

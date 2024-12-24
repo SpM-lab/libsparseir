@@ -195,6 +195,7 @@ public:
     {
         std::vector<Eigen::MatrixX<T>> mats;
         Eigen::MatrixX<T> A = matrix_from_gauss(kernel, gauss_x, gauss_y);
+        std::cout << "before scaling" << A(0, 0) << std::endl;
         // Element-wise multiplication with square roots of weights
         for (int i = 0; i < gauss_x.w.size(); ++i) {
             A.row(i) *= sqrt_impl(gauss_x.w[i]);
@@ -366,6 +367,20 @@ public:
           odd(static_cast<K &>(*get_symmetrized(kernel_, -1)), epsilon_,
               n_gauss_)
     {
+        auto evenk_ = get_symmetrized(kernel_, +1);
+        auto oddk_ = get_symmetrized(kernel_, -1);
+        SamplingSVE<K, T> even_(static_cast<K &>(*evenk_), epsilon_, n_gauss_);
+        SamplingSVE<K, T> odd_(static_cast<K &>(*oddk_), epsilon_, n_gauss_);
+        auto evenk_copy_ = K(static_cast<K &>(*evenk_));
+        auto oddk_copy_ = K(static_cast<K &>(*oddk_));
+        std::cout << typeid(even.kernel).name() << std::endl;
+        std::cout << typeid(odd.kernel).name() << std::endl;
+        std::cout << "even at 0.5, 0.5 " << (*evenk_)(0.5, 0.5) << std::endl;
+        std::cout << "odd at 0.5, 0.5 " << (*oddk_)(0.5, 0.5) << std::endl;
+        std::cout << "even at 0.5, 0.5 " << (evenk_copy_)(0.5, 0.5) << std::endl;
+        std::cout << "odd at 0.5, 0.5 " << (oddk_copy_)(0.5, 0.5) << std::endl;
+        std::cout << "even at 0.5, 0.5 " << even_.kernel(0.5, 0.5) << std::endl;
+        std::cout << "odd at 0.5, 0.5 " << odd_.kernel(0.5, 0.5) << std::endl;
         nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
     }
 
@@ -373,6 +388,8 @@ public:
     {
         auto mats_even = even.matrices();
         auto mats_odd = odd.matrices();
+        std::cout << "matrices even: " << mats_even[0].sum() << std::endl;
+        std::cout << "matrices odd: " << mats_odd[0].sum() << std::endl;
         return {mats_even[0], mats_odd[0]};
     }
 
@@ -469,9 +486,11 @@ std::shared_ptr<AbstractSVE<K, T>>
 determine_sve(const K &kernel, double safe_epsilon, int n_gauss)
 {
     if (kernel.is_centrosymmetric()) {
+        std::cout << "Centrosymmetric kernel detected." << std::endl;
         return std::make_shared<CentrosymmSVE<K, T>>(kernel, safe_epsilon,
                                                      n_gauss);
     } else {
+        std::cout << "Non-centrosymmetric kernel detected." << std::endl;
         return std::make_shared<SamplingSVE<K, T>>(kernel, safe_epsilon,
                                                    n_gauss);
     }
@@ -534,12 +553,15 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss,
 {
     auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
     // Compute SVDs
+    std::cout << "Computing SVDs..." << std::endl;
     std::vector<Eigen::MatrixX<T>> matrices = sve->matrices();
     // TODO: implement SVD Resutls
     std::vector<
         std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>, Eigen::MatrixX<T>>>
         svds;
     for (const auto &mat : matrices) {
+        std::cout << mat(0, 0) << std::endl;
+        std::cout << mat(1, 0) << std::endl;
         auto svd = sparseir::compute_svd(mat);
         svds.push_back(svd);
     }
@@ -574,7 +596,7 @@ auto pre_postprocess(K &kernel, double safe_epsilon, int n_gauss,
 template <typename K>
 SVEResult<K> compute_sve(K kernel, double epsilon = std::numeric_limits<double>::quiet_NaN(),
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
-            std::string Twork = "Float64",
+            std::string Twork = "",
             int lmax = std::numeric_limits<int>::max(), int n_gauss = -1,
             const std::string &svd_strat = "auto")
 {
@@ -582,8 +604,8 @@ SVEResult<K> compute_sve(K kernel, double epsilon = std::numeric_limits<double>:
     double safe_epsilon;
     std::string Twork_actual;
     std::string svd_strategy_actual;
-    //std::cout << "Twork: " << Twork << std::endl;
-    //std::cout << "svd_strat: " << svd_strat << std::endl;
+    std::cout << "Twork: " << Twork << std::endl;
+    std::cout << "svd_strat: " << svd_strat << std::endl;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
         choose_accuracy(epsilon, Twork, svd_strat);
     //std::cout << "Twork_actual: " << Twork_actual << std::endl;
