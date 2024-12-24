@@ -389,6 +389,13 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
         }
     }
 
+template <typename S>
+inline Eigen::VectorXd default_tau_sampling_points(std::shared_ptr<FiniteTempBasis<S>> basis){
+    int sz = basis.sve_result.s.size();
+    auto x = default_samplint_points(basis.sve_result.u, sz);
+    return (basis.beta / 2.0) * (x.array() + 1.0);
+}
+
 inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
                  FiniteTempBasis<Bosonic, LogisticKernel>>
     finite_temp_bases(

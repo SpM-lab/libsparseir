@@ -231,4 +231,11 @@ private:
 };
 
 
+template <typename S, typename B, typename F, typename FHAT>
+inline Eigen::VectorXd default_tau_sampling_points(AugmentedBasis<S, B, F, FHAT> basis){
+    int sz = basis.basis.sve_result.s.size() + basis.augmentations.size();
+    auto x = default_samplint_points(basis.basis.sve_result.u, sz);
+    return (basis.beta / 2.0) * (x.array() + 1.0);
+}
+
 } // namespace sparseir

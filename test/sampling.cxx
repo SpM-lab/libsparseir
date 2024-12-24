@@ -17,7 +17,7 @@ TEST_CASE("sampling", "[Sampling]") {
         auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>>(
             beta, omega_max, std::numeric_limits<double>::quiet_NaN(), sparseir::LogisticKernel(beta * omega_max), sve_result);
 
-        //sparseir::TauSampling<double> tau_sampling(basis);
+        // sparseir::TauSampling<sparseir::Fermionic> TauSampling(basis);
         // Here we can check the type or properties of tau_sampling if needed
         REQUIRE(true); // Placeholder
     }
