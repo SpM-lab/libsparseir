@@ -224,7 +224,7 @@ public:
 
     // Delegating constructor 1
     FiniteTempBasis(double beta, double omega_max,
-                    double epsilon, int max_size)
+                    double epsilon, int max_size=-1)
         : FiniteTempBasis(beta, omega_max, epsilon,
                         LogisticKernel(beta * omega_max),
                         compute_sve<LogisticKernel>(LogisticKernel(beta * omega_max), epsilon),
@@ -305,39 +305,6 @@ private:
     // Placeholder statistics function
     std::shared_ptr<S> statistics() const { return std::make_shared<S>(); }
 
-    // Default sampling points function
-    Eigen::VectorXd
-    default_sampling_points(const PiecewiseLegendrePolyVector &u, int L) const
-    {
-        if (u.xmin() != -1.0 || u.xmax() != 1.0)
-            throw std::runtime_error("Expecting unscaled functions here.");
-
-        if (L < u.size()) {
-            // TODO: Resolve this errors.
-            return u.polyvec[L].roots();
-        } else {
-            // Approximate roots by extrema
-            // TODO: resolve this error
-            PiecewiseLegendrePoly poly = u.polyvec.back();
-            Eigen::VectorXd maxima = poly.deriv().roots();
-
-            double left = (maxima[0] + poly.xmin) / 2.0;
-            double right = (maxima[maxima.size() - 1] + poly.xmax) / 2.0;
-
-            Eigen::VectorXd x0(maxima.size() + 2);
-            x0[0] = left;
-            x0.tail(maxima.size()) = maxima;
-            x0[x0.size() - 1] = right;
-
-            if (x0.size() != L) {
-                std::cerr << "Warning: Expected " << L
-                          << " sampling points, got " << x0.size() << ".\n";
-            }
-
-            return x0;
-        }
-    }
-
     // Default Matsubara sampling points function
     Eigen::VectorXd defaultMatsubaraSamplingPoints(
         const PiecewiseLegendreFTVector<S> &u_hat_full, int L,
@@ -390,6 +357,37 @@ private:
         // Implement fencing logic here...
     }
 };
+
+    // Default sampling points function
+inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector &u, int L) {
+        if (u.xmin() != -1.0 || u.xmax() != 1.0)
+            throw std::runtime_error("Expecting unscaled functions here.");
+
+        if (L < u.size()) {
+            // TODO: Resolve this errors.
+            return u.polyvec[L].roots();
+        } else {
+            // Approximate roots by extrema
+            // TODO: resolve this error
+            PiecewiseLegendrePoly poly = u.polyvec.back();
+            Eigen::VectorXd maxima = poly.deriv().roots();
+
+            double left = (maxima[0] + poly.xmin) / 2.0;
+            double right = (maxima[maxima.size() - 1] + poly.xmax) / 2.0;
+
+            Eigen::VectorXd x0(maxima.size() + 2);
+            x0[0] = left;
+            x0.tail(maxima.size()) = maxima;
+            x0[x0.size() - 1] = right;
+
+            if (x0.size() != L) {
+                std::cerr << "Warning: Expected " << L
+                          << " sampling points, got " << x0.size() << ".\n";
+            }
+
+            return x0;
+        }
+    }
 
 inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
                  FiniteTempBasis<Bosonic, LogisticKernel>>
