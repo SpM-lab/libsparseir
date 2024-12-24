@@ -99,4 +99,17 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         REQUIRE(rescaled_basis.sve_result->s.size() == basis.sve_result->s.size());
         REQUIRE(rescaled_basis.get_wmax() == 6.0);
     }
+
+    SECTION("default_sampling_points") {
+        auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>(3., 4., 1e-6);
+        auto sve = basis.sve_result;
+        auto s = sve->s;
+        //std::cout << "Singular values: " << s.transpose() << std::endl;
+        int L = 10;
+        Eigen::VectorXd pts_L = default_sampling_points(sve->u, L);
+        REQUIRE(pts_L.size() == L);
+        Eigen::VectorXd pts_100 = default_sampling_points(sve->u, 100);
+        REQUIRE(pts_100.size() == 24);
+    }
+
 }
