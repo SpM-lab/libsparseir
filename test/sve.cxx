@@ -113,6 +113,13 @@ TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]")
                                                                           1e-6);
 }
 
+TEST_CASE("compute_sve", "[compute_sve]"){
+    sparseir::LogisticKernel lk(12.0);
+    auto sve = sparseir::compute_sve<sparseir::LogisticKernel>(lk);
+    auto s = sve.s;
+    //std::cout << "S values: \n" << s << std::endl;
+}
+
 TEST_CASE("sve.cpp", "[compute_sve]")
 {
 
