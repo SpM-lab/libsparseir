@@ -134,12 +134,12 @@ TEST_CASE("Augmented bosonic basis") {
     AugmentedBasis<S, B,PiecewiseLegendrePolyVector, PiecewiseLegendreFTVector<Bosonic>> basis_aug(basis, augmentations, u, uhat);
 
     REQUIRE(basis_aug.size() == basis->s.size() + 2);
-    /*
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     T pole = 1.0;
     T c = 1e-2;
 
+    /*
     // Create tau sampling points
     auto tau_sampling = make_tau_sampling(basis_aug);
     auto tau = tau_sampling.tau;
@@ -170,11 +170,12 @@ TEST_CASE("Augmented bosonic basis") {
 
 
 TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
-     /*
-     for (const shared_ptr<Statistics>& stat : {make_shared<Fermionic>(), make_shared<Bosonic>()}) {
+
+     for (const shared_ptr<Statistics>& stat : {static_pointer_cast<Statistics>(make_shared<Fermionic>()), static_pointer_cast<Statistics>(make_shared<Bosonic>())}) {
         using T = double;
         T beta = 1000.0;
         T wmax = 2.0;
+        /*
         auto basis = make_shared<FiniteTempBasis<T>>(stat, beta, wmax, 1e-6);
         vector<unique_ptr<AbstractAugmentation<T>>> augmentations;
         augmentations.push_back(make_unique<MatsubaraConst<T>>(beta));
@@ -193,11 +194,13 @@ TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
         Eigen::VectorXcf gl = fit(matsu_sampling, gi_n);
         Eigen::VectorXcf gi_n_reconst = evaluate(matsu_sampling, gl);
         REQUIRE(gi_n_reconst.isApprox(gi_n, gi_n.maxCoeff() * 1e-7));
+        */
     }
 }
 
 
 TEST_CASE("unit tests", "[augment]") {
+    /*
     using T = double;
     T beta = 1000.0;
     T wmax = 2.0;
