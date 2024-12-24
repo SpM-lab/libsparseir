@@ -32,10 +32,12 @@ TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
         REQUIRE_THROWS_AS(tc(321), std::domain_error);
 
         REQUIRE(tc(100) == 1 / std::sqrt(123));
-        //REQUIRE(tc(MatsubaraFreq(0)) == std::sqrt(123));
-        //REQUIRE(tc(MatsubaraFreq(92)) == 0.0);
-        //REQUIRE_THROWS_AS(tc(MatsubaraFreq(93)), std::runtime_error);
-
+        MatsubaraFreq<Bosonic> freq0(0);
+        MatsubaraFreq<Bosonic> freq92(92);
+        REQUIRE(tc(freq0) == std::sqrt(123));
+        REQUIRE(tc(freq92) == 0.0);
+        MatsubaraFreq<Fermionic> freq93(93);
+        REQUIRE_THROWS_AS(tc(freq93), std::invalid_argument);
         //REQUIRE(sparseir::deriv(tc)(4.2) == 0.0);
         //REQUIRE(sparseir::deriv(tc, 0) == tc);
     }
