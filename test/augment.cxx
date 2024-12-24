@@ -7,48 +7,79 @@
 #include <stdexcept>
 #include <vector>
 
-#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp> // for Approx
 
+#include <catch2/catch_test_macros.hpp>
 #include <sparseir/sparseir-header-only.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
 using namespace sparseir;
 using namespace std;
 
-TEST_CASE("AbstractAugmentation") {
-    SECTION("TauConst") {
-        double beta = 1000.0;
-        auto tc = TauConst(beta);
-        double tau = 0.5;
-        double y = tc(tau);
-        auto dtc = tc.deriv();
-        double x = 2.0;
-        REQUIRE(tc.beta == beta);
-        REQUIRE(dtc(x) == 0.0);
+TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
+{
+    using Catch::Approx;
+    using namespace sparseir;
+
+    SECTION("TauConst")
+    {
+        REQUIRE_THROWS_AS(TauConst(-34), std::domain_error);
+
+        TauConst tc(123);
+        REQUIRE(tc.beta == 123.0);
+
+        REQUIRE_THROWS_AS(tc(-3), std::domain_error);
+        REQUIRE_THROWS_AS(tc(321), std::domain_error);
+
+        REQUIRE(tc(100) == 1 / std::sqrt(123));
+        //REQUIRE(tc(MatsubaraFreq(0)) == std::sqrt(123));
+        //REQUIRE(tc(MatsubaraFreq(92)) == 0.0);
+        //REQUIRE_THROWS_AS(tc(MatsubaraFreq(93)), std::runtime_error);
+
+        //REQUIRE(sparseir::deriv(tc)(4.2) == 0.0);
+        //REQUIRE(sparseir::deriv(tc, 0) == tc);
     }
-    SECTION("TauLinear") {
-        double beta = 1000.0;
-        double tau_0 = 0.5;
-        double tau_1 = 1.0;
-        auto tl = TauLinear(beta);
-        double tau = 0.75;
-        double y = tl(tau);
-        auto dtl = tl.deriv();
-        double x = 2.0;
-        REQUIRE(true);
-        //REQUIRE(dtl(x) == -beta * (tau - tau_0) / pow(tau_1 - tau_0, 2));
+
+    SECTION("TauLinear")
+    {
+        REQUIRE_THROWS_AS(TauLinear(-34), std::domain_error);
+
+        TauLinear tl(123);
+        REQUIRE(tl.beta == Approx(123.0));
+
+        REQUIRE_THROWS_AS(tl(-3), std::domain_error);
+        REQUIRE_THROWS_AS(tl(321), std::domain_error);
+        REQUIRE(tl.norm == Approx(std::sqrt(3.0 / 123.0)));
+        REQUIRE(tl(100) == std::sqrt(3.0 / 123.0) * (2.0 / (123. * 100.) - 1.));
+        // REQUIRE(tl(MatsubaraFreq(0)) == Approx(0.0));
+        // REQUIRE(tl(MatsubaraFreq(92)) ==
+        //         Approx(std::sqrt(3 / 123) * 2 / std::complex<double>(0, 1) *
+        //                123 / (92 * M_PI)));
+        // REQUIRE_THROWS_AS(tl(MatsubaraFreq(93)), std::runtime_error);
+
+        //REQUIRE(sparseir::deriv(tl, 0) == tl);
+        //REQUIRE(sparseir::deriv(tl)(4.2) ==
+        //        Approx(std::sqrt(3 / 123) * 2 / 123));
+        //REQUIRE(sparseir::deriv(tl, 2)(4.2) == Approx(0.0));
     }
-    SECTION("MatsubaraConst") {
-        double beta = 1000.0;
-        double w_0 = 0.5;
-        double w_1 = 1.0;
-        auto mc = MatsubaraConst(beta);
-        double w = 0.75;
-        double y = mc(w);
-        auto dmc = mc.deriv();
-        double x = 2.0;
-        REQUIRE(true);
-        //REQUIRE(dmc(x) == -beta * (w - w_0) / pow(w_1 - w_0, 2));
+
+    SECTION("MatsubaraConst")
+    {
+        REQUIRE_THROWS_AS(MatsubaraConst(-34), std::domain_error);
+
+        MatsubaraConst mc(123);
+        REQUIRE(mc.beta == Approx(123.0));
+
+        REQUIRE_THROWS_AS(mc(-3), std::domain_error);
+        REQUIRE_THROWS_AS(mc(321), std::domain_error);
+
+        REQUIRE(std::isnan(mc(100)));
+        //REQUIRE(mc(MatsubaraFreq(0)) == Approx(1.0));
+        //REQUIRE(mc(MatsubaraFreq(92)) == Approx(1.0));
+        //REQUIRE(mc(MatsubaraFreq(93)) == Approx(1.0));
+
+        //REQUIRE(sparseir::deriv(mc) == mc);
+        //REQUIRE(sparseir::deriv(mc, 0) == mc);
     }
 }
 
