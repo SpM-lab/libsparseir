@@ -38,8 +38,13 @@ TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
         REQUIRE(tc(freq92) == 0.0);
         MatsubaraFreq<Fermionic> freq93(93);
         REQUIRE_THROWS_AS(tc(freq93), std::invalid_argument);
-        //REQUIRE(sparseir::deriv(tc)(4.2) == 0.0);
-        //REQUIRE(sparseir::deriv(tc, 0) == tc);
+        auto tdc = tc.deriv();
+        REQUIRE(tdc(4.2) == 0.0);
+
+        tdc = tc.deriv(0);
+        double x = 4.2;
+        // Expected tdc == tc
+        REQUIRE(tdc(x) == tc(x));
     }
 
     SECTION("TauLinear")
@@ -69,10 +74,14 @@ TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
         MatsubaraFreq<Fermionic> freq93(93);
         REQUIRE_THROWS_AS(tl(freq93), std::invalid_argument);
 
-        //REQUIRE(sparseir::deriv(tl, 0) == tl);
-        //REQUIRE(sparseir::deriv(tl)(4.2) ==
-        //        Approx(std::sqrt(3 / 123) * 2 / 123));
-        //REQUIRE(sparseir::deriv(tl, 2)(4.2) == Approx(0.0));
+        double x = 4.2;
+        auto d0tl = tl.deriv(0);
+        REQUIRE(d0tl(x) == tl(x));
+        auto dtl = tl.deriv();
+        REQUIRE(dtl(4.2) ==
+                Approx(std::sqrt(3. / 123.) * 2. / 123.));
+        auto ddtl = tl.deriv(2);
+        REQUIRE(ddtl(4.2) == 0.0);
     }
 
     SECTION("MatsubaraConst")
@@ -93,8 +102,14 @@ TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
         MatsubaraFreq<Fermionic> freq93(93);
         REQUIRE(mc(freq93) == 1.0);
 
-        //REQUIRE(sparseir::deriv(mc) == mc);
-        //REQUIRE(sparseir::deriv(mc, 0) == mc);
+        auto d0mc = mc.deriv(0);
+        auto dmc = mc.deriv();
+        double x = 4.2;
+        // Expected dmc == mc
+        REQUIRE(std::isnan(d0mc(x)));
+        REQUIRE(std::isnan(mc(x)));
+        REQUIRE(std::isnan(dmc(x)));
+        REQUIRE(std::isnan(mc(x)));
     }
 }
 
