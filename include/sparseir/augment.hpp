@@ -43,7 +43,7 @@ public:
     }
 
     std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
-        std::invalid_argument("TauConst is not a Fermionic basis.");
+        throw std::invalid_argument("TauConst is not a Fermionic basis.");
         return std::numeric_limits<std::complex<double>>::quiet_NaN();
     }
 
