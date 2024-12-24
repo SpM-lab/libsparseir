@@ -41,7 +41,7 @@ inline std::unique_ptr<Statistics> create_statistics(int zeta)
     throw std::domain_error("Unknown statistics type");
 }
 
-// Matsubara frequency class template
+// MatsubaraFreq class template
 template <typename S>
 class MatsubaraFreq {
     static_assert(std::is_base_of<Statistics, S>::value,
@@ -50,21 +50,36 @@ class MatsubaraFreq {
 public:
     int n;
 
-    inline MatsubaraFreq(int n) : n(n)
-    {
+    // コンストラクタ
+    inline MatsubaraFreq(int n) : n(n) {
+        static_assert(std::is_same<S, Fermionic>::value || std::is_same<S, Bosonic>::value,
+                      "S must be Fermionic or Bosonic");
         S stat;
-        if (!stat.allowed(n))
+        if (!stat.allowed(n)) {
             throw std::domain_error("Frequency is not allowed for this type");
+        }
+        instance_ = std::make_shared<S>(stat); // 適切な型のインスタンスを保持
     }
 
-    inline double value(double beta) const { return n * M_PI / beta; }
-    inline std::complex<double> value_im(double beta) const
-    {
+    // 値の計算
+    inline double value(double beta) const {
+        return n * M_PI / beta;
+    }
+
+    // 複素数の値
+    inline std::complex<double> value_im(double beta) const {
         return std::complex<double>(0, value(beta));
     }
 
-    inline S statistics() const { return S(); }
+    // 統計型の取得
+    inline S statistics() const { return *std::static_pointer_cast<S>(instance_); }
+
+    // n の取得
     inline int get_n() const { return n; }
+
+private:
+    // インスタンスを保持する共有ポインタ
+    std::shared_ptr<Statistics> instance_;
 };
 
 // Typedefs for convenience
