@@ -59,13 +59,14 @@ void check_smooth(const std::function<double(double)> &u,
 
 TEST_CASE("sve.cpp", "[SamplingSVE]")
 {
-    sparseir::LogisticKernel lk(10.0);
-    REQUIRE(lk.lambda_ == 10.0);
+    //sparseir::LogisticKernel lk(10.0);
+    auto lk = std::make_shared<sparseir::LogisticKernel>(10.0);
+    REQUIRE(lk->lambda_ == 10.0);
     auto hints = sparseir::sve_hints(lk, 1e-6);
-    int nsvals_hint = hints.nsvals();
-    int n_gauss = hints.ngauss();
-    std::vector<double> segs_x = hints.template segments_x<double>();
-    std::vector<double> segs_y = hints.template segments_y<double>();
+    int nsvals_hint = hints->nsvals();
+    int n_gauss = hints->ngauss();
+    std::vector<double> segs_x = hints->segments_x();
+    std::vector<double> segs_y = hints->segments_y();
 
     // Ensure `convert` is declared before this line
     sparseir::Rule<double> rule = sparseir::legendre<double>(n_gauss);
@@ -96,9 +97,10 @@ TEST_CASE("sve.cpp", "[SamplingSVE]")
 
 
 TEST_CASE("compute_sve", "[compute_sve]"){
-    sparseir::LogisticKernel lk(12.0);
-    std::cout << "logistic kernel " << lk(0.0, 0.0) << std::endl;
-    std::cout << "logistic kernel " << lk(0.1, 0.1) << std::endl;
+    //sparseir::LogisticKernel lk(12.0);
+    auto lk = std::make_shared<sparseir::LogisticKernel>(12.0);
+    std::cout << "logistic kernel " << (*lk)(0.0, 0.0) << std::endl;
+    std::cout << "logistic kernel " << (*lk)(0.1, 0.1) << std::endl;
     auto sve = sparseir::compute_sve<sparseir::LogisticKernel>(lk);
     auto s = sve.s;
     //std::cout << "S values: \n" << s << std::endl;

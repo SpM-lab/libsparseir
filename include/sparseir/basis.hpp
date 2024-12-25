@@ -164,7 +164,7 @@ template <typename S, typename K=LogisticKernel>
 class FiniteTempBasis : public AbstractBasis<S> {
 public:
     K kernel;
-    std::shared_ptr<SVEResult<K>> sve_result;
+    std::shared_ptr<SVEResult> sve_result;
     double accuracy;
     double beta;
     PiecewiseLegendrePolyVector u;
@@ -174,7 +174,7 @@ public:
     PiecewiseLegendreFTVector<S> uhat_full;
 
     FiniteTempBasis(double beta, double omega_max, double epsilon,
-               K kernel, SVEResult<K> sve_result, int max_size = -1)
+               K kernel, SVEResult sve_result, int max_size = -1)
     {
         if (sve_result.s.size() == 0) {
             throw std::runtime_error("SVE result sve_result.s is empty");
@@ -189,7 +189,7 @@ public:
         }
         this->beta = beta;
         this->kernel = kernel;
-        this->sve_result = std::make_shared<SVEResult<K>>(sve_result);
+        this->sve_result = std::make_shared<SVEResult>(sve_result);
 
         double wmax = this->kernel.lambda_ / beta;
 
@@ -255,7 +255,7 @@ public:
     double get_wmax() const { return kernel.lambda_ / beta; }
 
     // Getter for SVEResult
-    const SVEResult<K> &getSVEResult() const { return sve_result; }
+    const SVEResult &getSVEResult() const { return sve_result; }
 
     // Getter for kernel
     const K &getKernel() const { return kernel; }
@@ -267,7 +267,7 @@ public:
     Eigen::VectorXd defaultTauSamplingPoints() const
     {
         Eigen::VectorXd x =
-            default_sampling_points(sve_result.u, static_cast<int>(s.size()));
+            default_sampling_points(sve_result->u, static_cast<int>(s.size()));
         return (beta / 2.0) * (x.array() + 1.0);
     }
 
@@ -283,7 +283,7 @@ public:
     Eigen::VectorXd defaultOmegaSamplingPoints() const
     {
         Eigen::VectorXd y =
-            default_sampling_points(sve_result.v, static_cast<int>(s.size()));
+            default_sampling_points(sve_result->v, static_cast<int>(s.size()));
         return get_wmax() * y.array();
     }
 
@@ -401,7 +401,7 @@ inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
     finite_temp_bases(
         double beta, double omega_max,
         double epsilon,
-        SVEResult<LogisticKernel> sve_result
+        SVEResult sve_result
     )
 {
     LogisticKernel kernel(beta * omega_max);
@@ -420,7 +420,7 @@ inline std::pair<FiniteTempBasis<Fermionic, LogisticKernel>,
     )
 {
     LogisticKernel kernel(beta * omega_max);
-    SVEResult<LogisticKernel> sve_result = compute_sve<LogisticKernel>(kernel, epsilon);
+    SVEResult sve_result = compute_sve<LogisticKernel>(kernel, epsilon);
     auto basis_f = FiniteTempBasis<Fermionic, LogisticKernel>(
         beta, omega_max, epsilon, kernel, sve_result);
     auto basis_b = FiniteTempBasis<Bosonic, LogisticKernel>(

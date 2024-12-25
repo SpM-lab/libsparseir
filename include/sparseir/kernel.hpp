@@ -13,7 +13,7 @@ namespace sparseir {
 // Forward declaration of ReducedKernel
 template <typename K>
 class ReducedKernel;
-class AbstractSVEHints;
+// template<typename T> class AbstractSVEHints<T>;
 class SVEHintsLogistic;
 class SVEHintsRegularizedBose;
 
@@ -33,12 +33,13 @@ class SVEHintsRegularizedBose;
  *
  * where ρ'(y) = w(y) ρ(y).
  */
-class AbstractKernel {
+class AbstractKernel
+{
 public:
     double lambda_;
     // Constructor
-    AbstractKernel(){}
-    AbstractKernel(double lambda) : lambda_(lambda) {}
+    AbstractKernel() { }
+    AbstractKernel(double lambda) : lambda_(lambda) { }
 
     /**
      * @brief Evaluate kernel at point (x, y).
@@ -204,7 +205,7 @@ inline double callreduced(const AbstractReducedKernel &kernel, double x,
 class LogisticKernel : public AbstractKernel {
 public:
     // Default constructor
-    LogisticKernel() : AbstractKernel() {}
+    LogisticKernel() : AbstractKernel() { }
 
     /**
      * @brief Constructor for LogisticKernel.
@@ -659,31 +660,30 @@ namespace sparseir {
 
 Discretization hints for singular value expansion of a given kernel.
 */
+
+template <typename T>
 class AbstractSVEHints {
 public:
     virtual ~AbstractSVEHints() = default;
 
-    // Functions to compute segments for x and y
-    // template <typename T = double>
-    // virtual std::vector<T> segments_x() const = 0;
-    // template <typename T = double>
-    // virtual std::vector<T> segments_y() const = 0;
+    virtual std::vector<T> segments_x() const = 0;
+    virtual std::vector<T> segments_y() const = 0;
 
     // Additional methods if needed
     virtual int nsvals() const = 0;
     virtual int ngauss() const = 0;
 };
 
-class SVEHintsLogistic final : public AbstractSVEHints {
+class SVEHintsLogistic final : public AbstractSVEHints<double> {
 public:
     SVEHintsLogistic(const LogisticKernel &kernel, double epsilon)
         : kernel_(kernel), epsilon_(epsilon)
     {
     }
 
-    template <typename T = double>
-    std::vector<T> segments_x() const
+    std::vector<double> segments_x() const override
     {
+        using T = double;
         int nzeros = std::max(
             static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 1);
 
@@ -721,9 +721,10 @@ public:
         return segments;
     };
 
-    template <typename T = double>
-    std::vector<T> segments_y() const
+    std::vector<double> segments_y() const override
     {
+        using T = double;
+
         // Calculate the number of zeros
         int nzeros = std::max(
             static_cast<int>(std::round(20 * std::log10(kernel_.lambda_))), 2);
@@ -796,16 +797,16 @@ private:
     double epsilon_;
 };
 
-class SVEHintsRegularizedBose : public AbstractSVEHints {
+class SVEHintsRegularizedBose : public AbstractSVEHints<double> {
 public:
     SVEHintsRegularizedBose(const RegularizedBoseKernel &kernel, double epsilon)
         : kernel_(kernel), epsilon_(epsilon)
     {
     }
 
-    template <typename T = double>
-    std::vector<T> segments_x() const
+    std::vector<double> segments_x() const override
     {
+        using T = double;
         int nzeros = std::max(
             static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 15);
         std::vector<T> temp(nzeros);
@@ -832,9 +833,10 @@ public:
         return result;
     }
 
-    template <typename T = double>
-    std::vector<T> segments_y() const
+    std::vector<double> segments_y() const override
     {
+        using T = double;
+
         int nzeros = std::max(
             static_cast<int>(std::round(20 * std::log10(kernel_.lambda_))), 20);
         std::vector<T> diffs(nzeros);
@@ -896,7 +898,7 @@ private:
 
 class RegularizedBoseKernelOdd : public AbstractReducedKernel {
 public:
-    RegularizedBoseKernelOdd(std::shared_ptr<const RegularizedBoseKernel> inner,
+    RegularizedBoseKernelOdd(std::shared_ptr<RegularizedBoseKernel> inner,
                              int sign)
         : AbstractReducedKernel(inner, sign)
     {
@@ -962,50 +964,57 @@ public:
 inline std::shared_ptr<AbstractKernel>
 get_symmetrized(std::shared_ptr<AbstractKernel> kernel, int sign)
 {
+    if (auto logisticKernel =
+            std::dynamic_pointer_cast<const LogisticKernel>(kernel)) {
+        if (sign == -1) {
+            std::cout << "LogisticKernelOdd" << std::endl;
+            return std::make_shared<LogisticKernelOdd>(logisticKernel, sign);
+        } else {
+            std::cout << "LogisticKernelEven" << std::endl;
+            return std::make_shared<ReducedKernel<LogisticKernel>>(
+                logisticKernel, sign);
+        }
+    }
+    else if (auto regularizedbosonickernel =
+            std::dynamic_pointer_cast<RegularizedBoseKernel>(kernel)) {
+                    if (sign == -1) {
+        return std::make_shared<RegularizedBoseKernelOdd>(regularizedbosonickernel, sign);
+    } else {
+        return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(regularizedbosonickernel,
+                                                                      sign);
+    }
+        }
     return std::make_shared<ReducedKernel<AbstractKernel>>(kernel, sign);
 }
 
-inline std::shared_ptr<AbstractKernel>
-get_symmetrized(std::shared_ptr<const LogisticKernel> kernel, int sign)
-{
-    if (sign == -1) {
-        std::cout << "LogisticKernelOdd" << std::endl;
-        return std::make_shared<LogisticKernelOdd>(kernel, sign);
-    } else {
-        std::cout << "LogisticKernelEven" << std::endl;
-        return std::make_shared<ReducedKernel<LogisticKernel>>(kernel, sign);
-    }
-}
+//inline std::shared_ptr<AbstractKernel>
+//get_symmetrized(std::shared_ptr<const RegularizedBoseKernel> kernel, int sign)
+//{
+    //if (sign == -1) {
+        //return std::make_shared<RegularizedBoseKernelOdd>(kernel, sign);
+    //} else {
+        //return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(kernel,
+                                                                      //sign);
+    //}
+//}
 
-inline std::shared_ptr<AbstractKernel>
-get_symmetrized(std::shared_ptr<const RegularizedBoseKernel> kernel, int sign)
-{
-    if (sign == -1) {
-        return std::make_shared<RegularizedBoseKernelOdd>(kernel, sign);
-    } else {
-        return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(kernel,
-                                                                      sign);
-    }
-}
+//inline std::shared_ptr<AbstractKernel>
+//get_symmetrized(std::shared_ptr<LogisticKernel> kernel, int sign)
+//{
+    //return get_symmetrized(kernel, sign);
+//}
+//
+//inline std::shared_ptr<AbstractKernel>
+//get_symmetrized(const RegularizedBoseKernel &kernel, int sign)
+//{
+    //auto kernel_ptr = std::make_shared<const RegularizedBoseKernel>(kernel);
+    //return get_symmetrized(kernel_ptr, sign);
+//}
 
-inline std::shared_ptr<AbstractKernel>
-get_symmetrized(const LogisticKernel &kernel, int sign)
-{
-    auto kernel_ptr = std::make_shared<const LogisticKernel>(kernel);
-    return get_symmetrized(kernel_ptr, sign);
-}
-
-inline std::shared_ptr<AbstractKernel>
-get_symmetrized(const RegularizedBoseKernel &kernel, int sign)
-{
-    auto kernel_ptr = std::make_shared<const RegularizedBoseKernel>(kernel);
-    return get_symmetrized(kernel_ptr, sign);
-}
-
-inline void get_symmetrized(AbstractReducedKernel &kernel, int sign)
-{
-    throw std::runtime_error("cannot symmetrize twice");
-}
+//inline void get_symmetrized(AbstractReducedKernel &kernel, int sign)
+//{
+    //throw std::runtime_error("cannot symmetrize twice");
+//}
 
 } // namespace sparseir
 
@@ -1045,7 +1054,30 @@ Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel,
     return res;
 }
 
-class SVEHintsReduced : public AbstractSVEHints {
+// Function to validate symmetry and extract the right-hand side of the segments
+template <typename T>
+std::vector<T> symm_segments(const std::vector<T> &x)
+{
+    // Check if the vector x is symmetric
+    for (size_t i = 0, n = x.size(); i < n / 2; ++i) {
+        if (std::abs(x[i] + x[n - i - 1]) > std::numeric_limits<T>::epsilon()) {
+            throw std::runtime_error("segments must be symmetric");
+        }
+    }
+
+    // Extract the second half of the vector starting from the middle
+    size_t mid = x.size() / 2;
+    std::vector<T> xpos(x.begin() + mid, x.end());
+
+    // Ensure the first element of xpos is zero; if not, prepend zero
+    if (xpos.empty() || std::abs(xpos[0]) > std::numeric_limits<T>::epsilon()) {
+        xpos.insert(xpos.begin(), T(0));
+    }
+
+    return xpos;
+}
+
+class SVEHintsReduced : public AbstractSVEHints<double> {
 public:
     SVEHintsReduced(std::shared_ptr<AbstractSVEHints> inner_hints)
         : inner(inner_hints)
@@ -1067,6 +1099,16 @@ public:
         return inner->ngauss();
     }
 
+    std::vector<double> segments_x() const override
+    {
+        return symm_segments(inner->segments_x());
+    }
+
+    std::vector<double> segments_y() const override
+    {
+        return symm_segments(inner->segments_x());
+    }
+
 private:
     std::shared_ptr<AbstractSVEHints> inner;
 };
@@ -1083,7 +1125,7 @@ inline SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel &kernel,
     return SVEHintsRegularizedBose(kernel, epsilon);
 }
 
-inline std::shared_ptr<AbstractSVEHints>
+inline std::shared_ptr<AbstractSVEHints<double>>
 sve_hints(std::shared_ptr<const AbstractKernel> kernel, double epsilon)
 {
     if (auto logisticKernel =
@@ -1124,4 +1166,23 @@ double epsilon) {
     return std::make_shared<SVEHintsReduced>(innerHints);
 }
 */
+
+template <typename K>
+struct EvenKernelType
+{
+    using type = ReducedKernel<K>;
+};
+
+template <typename K>
+struct OddKernelType
+{
+    using type = K;
+};
+
+template <>
+struct OddKernelType<LogisticKernel>
+{
+    using type = LogisticKernelOdd;
+};
+
 } // namespace sparseir

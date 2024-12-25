@@ -15,7 +15,7 @@ public:
 
     // Constructors
     FiniteTempBasisSet(Scalar beta, Scalar omega_max, Scalar epsilon = std::numeric_limits<Scalar>::quiet_NaN(),
-                       const SVEResult<Scalar>& sve_result = SVEResult<Scalar>())
+                       const SVEResult& sve_result = SVEResult())
         : beta_(beta), omega_max_(omega_max), epsilon_(epsilon) {
         initialize(sve_result);
     }
@@ -38,10 +38,10 @@ public:
     const std::vector<int>& wn_f() const { return smpl_wn_f_->sampling_frequencies(); }
     const std::vector<int>& wn_b() const { return smpl_wn_b_->sampling_frequencies(); }
 
-    const SVEResult<Scalar>& sve_result() const { return sve_result_; }
+    const SVEResult& sve_result() const { return sve_result_; }
 
 private:
-     void initialize(const SVEResult<Scalar>& sve_result_input) {
+     void initialize(const SVEResult& sve_result_input) {
         if (std::isnan(epsilon_)) {
             epsilon_ = std::numeric_limits<Scalar>::epsilon();
         }
@@ -75,7 +75,7 @@ private:
     MatsubaraSamplingPtr smpl_wn_f_;
     MatsubaraSamplingPtr smpl_wn_b_;
 
-    SVEResult<Scalar> sve_result_;
+    SVEResult sve_result_;
 };
 
 } // namespace sparseir
