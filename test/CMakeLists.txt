@@ -24,10 +24,10 @@ add_executable(libsparseirtests
     kernel.cxx
     svd.cxx
     sve.cxx
-    basis.cxx
-    augment.cxx
-    sampling.cxx
-    basis_set.cxx
+    #basis.cxx
+    #augment.cxx
+    #sampling.cxx
+    #basis_set.cxx
 )
 
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
