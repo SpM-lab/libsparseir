@@ -829,6 +829,8 @@ public:
 
     std::vector<T> segments_x() const override
     {
+        using std::cosh;
+
         int nzeros = std::max(
             static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 15);
         std::vector<T> temp(nzeros);
@@ -837,7 +839,7 @@ public:
 
         for (int i = 0; i < nzeros; ++i) {
             temp[i] = T(0.18) * i;
-            diffs[i] = 1.0 / std::cosh(temp[i]);
+            diffs[i] = 1.0 / cosh(temp[i]);
         }
 
         std::partial_sum(diffs.begin(), diffs.end(), zeros.begin());
@@ -923,10 +925,11 @@ public:
                              int sign)
         : AbstractReducedKernel<T>(inner, sign)
     {
+        using std::abs;
         if (!this->is_centrosymmetric()) {
             throw std::runtime_error("inner kernel must be centrosymmetric");
         }
-        if (std::abs(sign) != 1) {
+        if (abs(sign) != 1) {
             throw std::domain_error("sign must be -1 or 1");
         }
     }
@@ -972,7 +975,8 @@ public:
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const override
     {
-        using std::cosh, std::sinh;
+        using std::cosh;
+        using std::sinh;
         T v_half = this->inner->lambda_ * 0.5 * y;
         bool xy_small = x * v_half < 1;
         bool cosh_finite = v_half < 85;
@@ -1077,9 +1081,10 @@ Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel<T> &kernel,
 template <typename T>
 std::vector<T> symm_segments(const std::vector<T> &x)
 {
+    using std::abs;
     // Check if the vector x is symmetric
     for (size_t i = 0, n = x.size(); i < n / 2; ++i) {
-        if (std::abs(x[i] + x[n - i - 1]) > std::numeric_limits<T>::epsilon()) {
+        if (abs(x[i] + x[n - i - 1]) > std::numeric_limits<T>::epsilon()) {
             throw std::runtime_error("segments must be symmetric");
         }
     }
@@ -1089,7 +1094,7 @@ std::vector<T> symm_segments(const std::vector<T> &x)
     std::vector<T> xpos(x.begin() + mid, x.end());
 
     // Ensure the first element of xpos is zero; if not, prepend zero
-    if (xpos.empty() || std::abs(xpos[0]) > std::numeric_limits<T>::epsilon()) {
+    if (xpos.empty() || abs(xpos[0]) > std::numeric_limits<T>::epsilon()) {
         xpos.insert(xpos.begin(), T(0));
     }
 

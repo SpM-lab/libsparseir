@@ -99,12 +99,26 @@ TEST_CASE("sve.cpp", "[SamplingSVE]")
 
 
 TEST_CASE("compute_sve", "[compute_sve]"){
-    //sparseir::LogisticKernel lk(12.0);
+    auto epsilon = std::numeric_limits<double>::quiet_NaN();
+
+    double safe_epsilon;
+    std::string Twork_actual;
+    std::string svd_strategy_actual;
+    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = sparseir::auto_choose_accuracy(epsilon, "Float64x2");
+
+    std::cout << Twork_actual << std::endl;
+    REQUIRE(Twork_actual == "Float64x2");
+
     using T = xprec::DDouble;
     auto lk = std::make_shared<sparseir::LogisticKernel<T>>(12.0);
-    std::cout << "logistic kernel " << (*lk)(0.0, 0.0) << std::endl;
-    std::cout << "logistic kernel " << (*lk)(0.1, 0.1) << std::endl;
-    auto sve = sparseir::compute_sve<sparseir::LogisticKernel<T>>(lk);
-    auto s = sve.s;
-    std::cout << "S values: \n" << s << std::endl;
+    auto sve = sparseir::compute_sve<T>(lk, safe_epsilon);
+
+
+    //using T = xprec::DDouble;
+    //auto lk = std::make_shared<sparseir::LogisticKernel<T>>(12.0);
+    //std::cout << "logistic kernel " << (*lk)(0.0, 0.0) << std::endl;
+    //std::cout << "logistic kernel " << (*lk)(0.1, 0.1) << std::endl;
+    //auto sve = sparseir::compute_sve<sparseir::LogisticKernel<T>>(lk);
+    //auto s = sve.s;
+    //std::cout << "S values: \n" << s << std::endl;
 }

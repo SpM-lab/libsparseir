@@ -61,7 +61,7 @@ public:
 
 
 inline std::tuple<double, std::string, std::string>
-choose_accuracy(double epsilon, std::string Twork)
+choose_accuracy(double epsilon, const std::string &Twork)
 {
     if (Twork != "Float64" && Twork != "Float64x2") {
         throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
@@ -156,10 +156,9 @@ choose_accuracy(std::nullptr_t, std::nullptr_t)
 }
 
 inline std::tuple<double, std::string, std::string>
-choose_accuracy(double epsilon, std::string Twork, std::string svd_strat)
+auto_choose_accuracy(double epsilon, std::string Twork, std::string svd_strat = "auto")
 {
     std::string auto_svd_strat;
-    std::cout << "isnan "<< std::isnan(epsilon) << std::endl;
     if (std::isnan(epsilon)) {
         std::tie(epsilon, Twork, auto_svd_strat) =
             choose_accuracy_epsilon_nan(Twork);
@@ -203,7 +202,7 @@ public:
  * quadrature rules and approximating the integrals in the SVE equations
  * by finite sums.
  */
-template <typename K, typename T = double>
+template <typename K, typename T>
 class SamplingSVE : public AbstractSVE<T> {
 public:
     std::shared_ptr<K> kernel;
@@ -221,31 +220,14 @@ public:
     SamplingSVE(std::shared_ptr<K> kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_), epsilon(epsilon_)
     {
-        auto hints = sve_hints(kernel, epsilon);
+        auto hints = sve_hints<T>(kernel, epsilon);
         n_gauss =
             (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
         // TODO: Implement Rule<T>(n_gauss)
         rule = legendre<T>(n_gauss);
         nsvals_hint = hints->nsvals();
-        auto segs_x_ = hints->segments_x();
-        auto segs_y_ = hints->segments_y();
-        segs_x.resize(segs_x_.size());
-        segs_y.resize(segs_y_.size());
-        std::transform(segs_x_.begin(), segs_x_.end(), segs_x.begin(),
-                       [](double x) { return static_cast<T>(x); });
-        std::transform(segs_y_.begin(), segs_y_.end(), segs_y.begin(),
-                       [](double x) { return static_cast<T>(x); });
-        //std::cout << "segs_x: " << segs_x.size() << std::endl;
-        //std::cout << "segs_y: " << segs_y.size() << std::endl;
-        //for (const auto &x : segs_x_) {
-            //std::cout << x << " " << std::endl;
-        //}
-        //for (const auto &y : segs_y_) {
-            //std::cout << y << " " << std::endl;
-        //}
-        //segs_y = hints->segments_y();
-        //segs_x = hints->segments_x();
-        //segs_y = hints->segments_y();
+        segs_x = hints->segments_x();
+        segs_y = hints->segments_y();
         gauss_x = rule.piecewise(segs_x);
         gauss_y = rule.piecewise(segs_y);
     }
@@ -619,6 +601,19 @@ auto pre_postprocess(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss
                             v_list_truncated);
 }
 
+
+// Function to compute SVE result
+template <typename T>
+SVEResult compute_sve(std::shared_ptr<AbstractKernel<T>> kernel, double epsilon,
+            double cutoff = std::numeric_limits<double>::quiet_NaN(),
+            int lmax = std::numeric_limits<int>::max(),
+            int n_gauss = -1)
+{
+    return pre_postprocess<AbstractKernel<T>, T>(kernel, epsilon, n_gauss, cutoff, lmax);
+}
+
+
+/*
 // Function to compute SVE result
 template <typename K>
 SVEResult compute_sve(std::shared_ptr<K> kernel, double epsilon = std::numeric_limits<double>::quiet_NaN(),
@@ -651,5 +646,6 @@ SVEResult compute_sve(std::shared_ptr<K> kernel, double epsilon = std::numeric_l
                                                   cutoff, lmax);
     }
 }
+*/
 
 } // namespace sparseir
