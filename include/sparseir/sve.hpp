@@ -237,13 +237,14 @@ public:
     {
         std::vector<Eigen::MatrixX<T>> mats;
         Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
-        std::cout << "matrix_from_gauss " << A(0, 0) << std::endl;
-        std::cout << "x[0]" << gauss_x.x[0] << std::endl;
-        std::cout << "y[0]" << gauss_y.x[0] << std::endl;
-        std::cout << "debug" << gauss_x.x_forward[0] << " " << gauss_x.x_backward[0] << std::endl;
-        std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0]) << std::endl;
-        std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0], gauss_x.x_forward[0], gauss_y.x_backward[0]) << std::endl;
-        std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0], gauss_x.x_forward[0], gauss_y.x_forward[0]) << std::endl;
+        //std::cout << "matrix_from_gauss " << A(99, 99) << std::endl;
+        //std::cout << "matrix_from_gauss " << A(A.rows()-1, A.cols()-1) << std::endl;
+        //std::cout << "matrix_from_gauss with w/o (50, 350)" << A(50, 350) << std::endl;
+        //std::cout << "x[50]" << gauss_x.x[50] << std::endl;
+        //std::cout << "y[350]" << gauss_y.x[350] << std::endl;
+        //std::cout << "debug" << gauss_x.x_forward[0] << " " << gauss_x.x_backward[0] << std::endl;
+        //std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0]) << std::endl;
+        //std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0], gauss_x.x_forward[0], gauss_y.x_backward[0]) << std::endl;
         //for (int i = 0; i < gauss_x.w.size(); ++i) {
             //std::cout << "gauss_x.w " << gauss_x.w[i] << std::endl;
             //std::cout << "gauss_x.x " << gauss_x.x[i] << std::endl;
@@ -260,6 +261,7 @@ public:
         for (int j = 0; j < gauss_y.w.size(); ++j) {
             A.col(j) *= sqrt_impl(gauss_y.w[j]);
         }
+        //std::cout << "matrix_from_gauss with w (50, 350)" << A(50, 350) << std::endl;
         mats.push_back(A);
         return mats;
     }
@@ -446,13 +448,24 @@ public:
     std::vector<Eigen::MatrixX<T>> matrices() const override
     {
         auto mats_even = even.matrices();
+        //std::cout << std::endl;
         auto mats_odd = odd.matrices();
-        std::cout << "even(0, 0)" << mats_even[0](0, 0) << std::endl;
-        std::cout << "sum matrices even: " << mats_even[0].sum() << std::endl;
-        std::cout << mats_even[0].rows() << std::endl;
-        std::cout << mats_even[0].cols() << std::endl;
-        std::cout << "odd(0, 0)" << mats_odd[0](0, 0) << std::endl;
-        std::cout << "sum matrices odd: " << mats_odd[0].sum() << std::endl;
+        //std::cout << std::endl;
+        //std::cout << "even(0, 0)" << mats_even[0](0, 0) << std::endl;
+        //std::cout << "sum matrices even: " << mats_even[0].sum() << std::endl;
+        //std::cout << mats_even[0].rows() << std::endl;
+        //std::cout << mats_even[0].cols() << std::endl;
+        //std::cout << "odd(0, 0)" << mats_odd[0](0, 0) << std::endl;
+        //std::cout << "odd(end, end)" << mats_odd[0](mats_odd[0].rows() - 1, mats_odd[0].cols() - 1) << std::endl;
+        //std::cout << "odd(50, 350)" << mats_odd[0](50, 350) << std::endl;
+        //std::cout << "sum matrices odd: " << mats_odd[0].sum() << std::endl;
+        //std::cout << "size matrices odd: " << mats_odd[0].rows() << std::endl;
+        //std::cout << "size matrices odd: " << mats_odd[0].cols() << std::endl;
+        //for (int i = 0; i < mats_odd[0].rows(); i += 50) {
+            //for (int j = 0; j < mats_odd[0].cols(); j += 50) {
+                //std::cout << " i " << i << " j " << j << " " << double(mats_odd[0](i, j)) << std::endl;
+            //}
+        //}
         return {mats_even[0], mats_odd[0]};
     }
 
@@ -476,6 +489,7 @@ public:
                         result_odd.u.end());
 
         // Concatenate singular values
+        // TODO: sort singular values
         Eigen::VectorXd s_merged(result_even.s.size() + result_odd.s.size());
         s_merged << result_even.s, result_odd.s;
 
@@ -571,7 +585,7 @@ auto pre_postprocess(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss
 {
     auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
     // Compute SVDs
-    std::cout << "Computing SVDs..." << std::endl;
+    //std::cout << "Computing SVDs..." << std::endl;
     std::vector<Eigen::MatrixX<T>> matrices = sve->matrices();
     // TODO: implement SVD Resutls
     std::vector<

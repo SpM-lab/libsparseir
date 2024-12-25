@@ -194,7 +194,8 @@ T callreduced(const AbstractReducedKernel<T> &kernel, T x,
     x_plus += 1;
     auto K_plus = (*kernel.inner)(x, +y, x_plus, x_minus);
     auto K_minus = (*kernel.inner)(x, -y, x_plus, x_minus);
-    //////std::cout << "K_plus " << K_plus << std::endl;
+    //std::cout << x << " " << y << " " << x_plus << " " << x_minus << std::endl;
+    //std::cout << "K_plus " << K_plus << std::endl;
     //std::cout << "K_minus " << K_minus << std::endl;
     return K_plus + kernel.sign * K_minus;
 }
@@ -977,6 +978,9 @@ public:
     LogisticKernelOdd(std::shared_ptr<const LogisticKernel<T>> inner, int sign)
         : AbstractReducedKernel<T>(inner, sign)
     {
+        if (sign != -1) {
+            throw std::invalid_argument("sign must be -1");
+        }
     }
     // Implement the pure virtual function from the parent class
     T operator()(T x, T y,
@@ -992,7 +996,7 @@ public:
         if (xy_small && cosh_finite) {
             return -sinh(v_half * x) / cosh(v_half);
         } else {
-            return callreduced(*this, x, x, x_plus, x_minus);
+            return callreduced(*this, x, y, x_plus, x_minus);
         }
     }
 };
@@ -1072,6 +1076,7 @@ Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel<T> &kernel,
         threads.emplace_back([&, i]() {
             for (size_t j = 0; j < m; ++j) {
                 res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
+                //res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j]);
             }
         });
     }

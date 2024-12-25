@@ -117,22 +117,31 @@ TEST_CASE("compute_sve", "[compute_sve]"){
     //std::cout << "logistic kernel " << (*lk)(x, y) << std::endl;
     //std::cout << "logistic kernel " << (*lk)(x, y, x + 1.0, 1.0 - x) << std::endl;
 
-    auto lkeven = sparseir::ReducedKernel<sparseir::LogisticKernel<T>, T>(lk, 1);
+    //auto lkeven = sparseir::ReducedKernel<sparseir::LogisticKernel<T>, T>(lk, 1);
+    //auto lkodd = sparseir::LogisticKernelOdd<T>(lk, -1);
 
-    auto x = xprec::DDouble(5.3168114454740182e-04,4.7935591542849864e-20);
-    auto y = xprec::DDouble(7.5138745175870199e-05,4.4864960587403202e-21);
-    auto x_forward = xprec::DDouble(5.3168114454740182e-04,4.7935591542850225e-20);
-    auto x_backward = xprec::DDouble(9.9946831885545262e-01,-2.1731979041252942e-17);
+    //auto x = xprec::DDouble(0.9998771972664386, 0.0);
+    //auto y = xprec::DDouble(0.9999115760739907, 0.0);
 
-    std::cout << x + 1 << std::endl;
-    std::cout << 1 - x << std::endl;
-    x_forward = x + 1;
-    auto res = (lkeven)(x, y);
-    std::cout << "logistic kernel " << res << std::endl;
+    //auto x = xprec::DDouble(3.0215757428655904e-01,-1.2440040515081731e-18);
+    //auto y = xprec::DDouble(9.9953761071802327e-01,1.1162040525118495e-18);
+    //auto res_odd =(lkodd)(x, y);
+    //std::cout << "logistic kernel odd " << res_odd << std::endl;
 
-    std::cout << std::endl;
-    auto res2 =(lkeven)(x, y, x_forward - 1, x_backward);
-    std::cout << "logistic kernel " << res2 << std::endl;
+    ////auto x = xprec::DDouble(5.3168114454740182e-04,4.7935591542849864e-20);
+    //auto y = xprec::DDouble(7.5138745175870199e-05,4.4864960587403202e-21);
+    //auto x_forward = xprec::DDouble(5.3168114454740182e-04,4.7935591542850225e-20);
+    //auto x_backward = xprec::DDouble(9.9946831885545262e-01,-2.1731979041252942e-17);
+
+    //std::cout << x + 1 << std::endl;
+    //std::cout << 1 - x << std::endl;
+    //x_forward = x + 1;
+    //auto res = (lkeven)(x, y);
+    //std::cout << "logistic kernel " << res << std::endl;
+
+    //std::cout << std::endl;
+    //auto res2 =(lkeven)(x, y, x_forward - 1, x_backward);
+    //std::cout << "logistic kernel " << res2 << std::endl;
 
     auto sve = sparseir::compute_sve<T>(lk, safe_epsilon);
     //using T = xprec::DDouble;
@@ -140,6 +149,6 @@ TEST_CASE("compute_sve", "[compute_sve]"){
     //std::cout << "logistic kernel " << (*lk)(0.0, 0.0) << std::endl;
     //std::cout << "logistic kernel " << (*lk)(0.1, 0.1) << std::endl;
     //auto sve = sparseir::compute_sve<sparseir::LogisticKernel<T>>(lk);
-    //auto s = sve.s;
-    //std::cout << "S values: \n" << s << std::endl;
+    auto s = sve.s;
+    std::cout << "S values: \n" << s << std::endl;
 }
