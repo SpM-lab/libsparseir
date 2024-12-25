@@ -123,15 +123,17 @@ TEST_CASE("compute_sve", "[compute_sve]"){
     std::string svd_strategy_actual;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = sparseir::auto_choose_accuracy(epsilon, "Float64x2");
 
-    std::cout << Twork_actual << std::endl;
     REQUIRE(Twork_actual == "Float64x2");
 
     using T = xprec::DDouble;
     auto lk = sparseir::LogisticKernel(12.0);
 
-    auto sve = sparseir::compute_sve<T>(lk, safe_epsilon);
+    auto sve = sparseir::compute_sve<sparseir::LogisticKernel, T>(lk, safe_epsilon);
     auto s = sve.s;
-    std::cout << "S values: \n" << s << std::endl;
+    //std::cout << "S values: \n" << s << std::endl;
+    //std::cout << "diff " << s[0] - 0.52428 << std::endl;
+    auto diff = s[0] - 0.5242807065966566;
+    REQUIRE(std::abs(diff) < 1e-20);
 }
 
 TEST_CASE("sve.cpp", "[choose_accuracy]")

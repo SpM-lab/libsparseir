@@ -63,6 +63,7 @@ public:
 inline std::tuple<double, std::string, std::string>
 choose_accuracy(double epsilon, const std::string &Twork)
 {
+    std::cout << "Twork: " << Twork << std::endl;
     if (Twork != "Float64" && Twork != "Float64x2") {
         throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
     }
@@ -205,7 +206,7 @@ public:
 template <typename K, typename T>
 class SamplingSVE : public AbstractSVE<T> {
 public:
-    const K &kernel;
+    K kernel;
     double epsilon;
     int n_gauss;
     int nsvals_hint;
@@ -220,14 +221,14 @@ public:
     SamplingSVE(const K &kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_), epsilon(epsilon_)
     {
-        auto hints = sve_hints<T>(kernel, epsilon);
+        auto hints = kernel.template sve_hints<T>(epsilon);
         n_gauss =
-            (n_gauss_ > 0) ? n_gauss_ : hints.ngauss();
+            (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
         // TODO: Implement Rule<T>(n_gauss)
         rule = legendre<T>(n_gauss);
-        nsvals_hint = hints.nsvals();
-        segs_x = hints.segments_x();
-        segs_y = hints.segments_y();
+        nsvals_hint = hints->nsvals();
+        segs_x = hints->segments_x();
+        segs_y = hints->segments_y();
         gauss_x = rule.piecewise(segs_x);
         gauss_y = rule.piecewise(segs_y);
     }
@@ -393,7 +394,7 @@ public:
 template <typename K, typename T>
 class CentrosymmSVE : public AbstractSVE<T> {
 public:
-    const K &kernel;
+    K kernel;
     double epsilon;
     SamplingSVE<typename SymmKernelTraits<K, std::integral_constant<int, +1>>::type, T> even;
     SamplingSVE<typename SymmKernelTraits<K, std::integral_constant<int, -1>>::type, T> odd;
@@ -496,9 +497,9 @@ public:
 
 template <typename K, typename T>
 std::shared_ptr<AbstractSVE<T>>
-determine_sve(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss)
+determine_sve(const K &kernel, double safe_epsilon, int n_gauss)
 {
-    if (kernel->is_centrosymmetric()) {
+    if (kernel.is_centrosymmetric()) {
         return std::make_shared<CentrosymmSVE<K, T>>(kernel, safe_epsilon,
                                                      n_gauss);
     } else {
@@ -558,7 +559,7 @@ truncate(std::vector<Eigen::MatrixX<T>> &u_list,
 }
 
 template <typename K, typename T>
-auto pre_postprocess(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss,
+auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                      double cutoff = std::numeric_limits<double>::quiet_NaN(),
                      int lmax = -1)
 {
@@ -603,13 +604,13 @@ auto pre_postprocess(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss
 
 
 // Function to compute SVE result
-template <typename T>
-SVEResult compute_sve(const AbstractKernel &kernel, double epsilon,
+template <typename K, typename T>
+SVEResult compute_sve(const K &kernel, double epsilon,
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
             int lmax = std::numeric_limits<int>::max(),
             int n_gauss = -1)
 {
-    return pre_postprocess<AbstractKernel, T>(kernel, epsilon, n_gauss, cutoff, lmax);
+    return pre_postprocess<K, T>(kernel, epsilon, n_gauss, cutoff, lmax);
 }
 
 

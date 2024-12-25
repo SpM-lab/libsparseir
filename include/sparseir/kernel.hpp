@@ -11,15 +11,12 @@
 #include <type_traits>
 
 namespace sparseir {
-// Forward declaration of ReducedKernel
-template <typename K>
-class ReducedKernel;
 
-template<typename T>
-class SVEHintsLogistic;
-
-template<typename T>
-class SVEHintsRegularizedBose;
+// Forward declaration
+template <typename K> class ReducedKernel;
+template<typename T> class SVEHintsLogistic;
+template<typename T> class SVEHintsRegularizedBose;
+template<typename T> class SVEHintsReduced;
 
 /**
  * @brief Abstract base class for an integral kernel K(x, y).
@@ -159,13 +156,14 @@ public:
 };
 
 
+template<typename InnerKernel>
 class AbstractReducedKernel : public AbstractKernel {
 public:
     int sign;
-    const AbstractKernel &inner;
+    const InnerKernel inner;
 
     // Constructor
-    AbstractReducedKernel(const AbstractKernel &inner_kernel, int sign)
+    AbstractReducedKernel(const InnerKernel &inner_kernel, int sign)
         : AbstractKernel(inner_kernel.lambda_),
           inner(inner_kernel),
           sign(sign)
@@ -180,7 +178,7 @@ public:
     }
 
     template<typename T>
-    T operator()(T x, T y, T x_plus = std::numeric_limits<double>::quiet_NaN(), T x_minus = std::numeric_limits<double>::quiet_NaN()) const
+    T compute(T x, T y, T x_plus = std::numeric_limits<double>::quiet_NaN(), T x_minus = std::numeric_limits<double>::quiet_NaN()) const
     {
         return callreduced(*this, x, y, x_plus, x_minus);
     }
@@ -190,8 +188,8 @@ template<typename T, typename K>
 T callreduced(const K &kernel, T x, T y, T x_plus, T x_minus)
 {
     x_plus += 1;
-    auto K_plus = (kernel.inner.template operator<T>())(x, +y, x_plus, x_minus);
-    auto K_minus = (kernel.inner.template operator<T>())(x, -y, x_plus, x_minus);
+    auto K_plus = kernel.inner.template compute<T>(x, +y, x_plus, x_minus);
+    auto K_minus = kernel.inner.template compute<T>(x, -y, x_plus, x_minus);
     return K_plus + kernel.sign * K_minus;
 }
 
@@ -240,7 +238,7 @@ public:
      * @return The value of K(x, y).
      */
     template<typename T>
-    T operator()(T x, T y,
+    T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const 
@@ -265,16 +263,16 @@ public:
         T u_minus = std::get<1>(uv_values);
         T v = std::get<2>(uv_values);
 
-        return compute(u_plus, u_minus, v);
+        return compute_from_uv(u_plus, u_minus, v);
     }
 
     // Inside class LogisticKernel definition
-    /*
-    std::shared_ptr<SVEHintsLogistic> sve_hints(double epsilon) const
+    template<typename T>
+    std::shared_ptr<SVEHintsLogistic<T>> sve_hints(double epsilon) const
     {
-        return std::make_shared<SVEHintsLogistic>(*this, epsilon);
+        return std::make_shared<SVEHintsLogistic<T>>(*this, epsilon);
     }
-    */
+
 
     /**
      * @brief Check if the kernel is centrosymmetric.
@@ -354,7 +352,7 @@ private:
      * @return The value of K(x, y).
      */
     template<typename T>
-    T compute(T u_plus, T u_minus, T v) const
+    T compute_from_uv(T u_plus, T u_minus, T v) const
     {
         using std::abs;
 
@@ -409,7 +407,7 @@ public:
      * @return The value of K(x, y).
      */
     template<typename T>
-    T operator()(T x, T y,
+    T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const 
@@ -434,7 +432,7 @@ public:
         T u_minus = std::get<1>(uv_values);
         T v = std::get<2>(uv_values);
 
-        return compute(u_plus, u_minus, v);
+        return compute_from_uv(u_plus, u_minus, v);
     }
 
     /**
@@ -483,6 +481,13 @@ public:
         }
     }
 
+    template<typename T>
+    std::shared_ptr<SVEHintsRegularizedBose<T>> sve_hints(double epsilon) const
+    {
+        return std::make_shared<SVEHintsRegularizedBose<T>>(*this, epsilon);
+    }
+
+
 private:
     /**
      * @brief Compute the variables u_plus, u_minus, v.
@@ -505,7 +510,6 @@ private:
         if (isnan(x_minus)) {
             x_minus = 1.0 - x;
         }
-        //std::cout << "x_plus " << x_plus << std::endl;
         T u_plus = 0.5 * x_plus;
         T u_minus = 0.5 * x_minus;
         T v = this->lambda_ * y;
@@ -523,7 +527,7 @@ private:
     
     template<typename T>
     T
-    compute(T u_plus, T u_minus, T v) const
+    compute_from_uv(T u_plus, T u_minus, T v) const
     {
         using std::abs;
         using std::exp;
@@ -560,9 +564,9 @@ private:
  * reconstructed by (anti-)symmetrically continuing them to the negative axis.
  */
 template <typename K>
-class ReducedKernel : public AbstractReducedKernel {
+class ReducedKernel : public AbstractReducedKernel<K> {
 public:
-    const K& inner_kernel_; ///< The inner kernel K.
+    K inner_kernel_; ///< The inner kernel K.
     int sign_;         ///< The sign (+1 or -1).
 
     /**
@@ -572,7 +576,7 @@ public:
      * @param sign The sign (+1 or -1). Must satisfy abs(sign) == 1.
      */
     ReducedKernel(const K& inner_kernel, int sign)
-        : AbstractReducedKernel(inner_kernel, sign), // Initialize base class
+        : AbstractReducedKernel<K>(inner_kernel, sign), // Initialize base class
           inner_kernel_(inner_kernel),
           sign_(sign)
     {
@@ -594,7 +598,7 @@ public:
      * @return The value of K_red(x, y).
      */
     template<typename T>
-    T operator()(T x, T y,
+    T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const
@@ -651,6 +655,11 @@ public:
      */
     double conv_radius() const override { return inner_kernel_.conv_radius(); }
 
+    template<typename T>
+    std::shared_ptr<SVEHintsReduced<T>> sve_hints(double epsilon) const
+    {
+        return std::make_shared<SVEHintsReduced<T>>(inner_kernel_.template sve_hints<T>(epsilon));
+    }
 private:
     /**
      * @brief Evaluate the reduced kernel.
@@ -806,7 +815,7 @@ public:
     };
 
 private:
-    const LogisticKernel &kernel_;
+    LogisticKernel kernel_;
     double epsilon_;
 };
 
@@ -905,14 +914,16 @@ public:
     };
 
 private:
-    const RegularizedBoseKernel &kernel_;
+    RegularizedBoseKernel kernel_;
     double epsilon_;
 };
 
-class RegularizedBoseKernelOdd : public AbstractReducedKernel {
+class RegularizedBoseKernelOdd : public AbstractReducedKernel<RegularizedBoseKernel> {
 public:
+    RegularizedBoseKernel inner_kernel_;
+
     RegularizedBoseKernelOdd(const RegularizedBoseKernel& inner, int sign)
-        : AbstractReducedKernel(inner, sign)
+        : AbstractReducedKernel<RegularizedBoseKernel>(inner, sign), inner_kernel_(inner)
     {
         using std::abs;
         if (!this->is_centrosymmetric()) {
@@ -925,7 +936,7 @@ public:
 
     // Implement the pure virtual function from the parent class
     template<typename T>
-    T operator()(T x, T y,
+    T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const
@@ -948,12 +959,20 @@ public:
         // Implement this function
         return true;
     }
+
+    template<typename T>
+    std::shared_ptr<SVEHintsReduced<T>> sve_hints(double epsilon) const
+    {
+        return std::make_shared<SVEHintsReduced<T>>(inner_kernel_.sve_hints<T>(epsilon));
+    }
 };
 
-class LogisticKernelOdd : public AbstractReducedKernel {
+class LogisticKernelOdd : public AbstractReducedKernel<LogisticKernel> {
 public:
+    LogisticKernel inner_kernel_;
+
     LogisticKernelOdd(const LogisticKernel& inner, int sign)
-        : AbstractReducedKernel(inner, sign)
+        : AbstractReducedKernel<LogisticKernel>(inner, sign), inner_kernel_(inner)
     {
         if (sign != -1) {
             throw std::invalid_argument("sign must be -1");
@@ -961,7 +980,7 @@ public:
     }
     // Implement the pure virtual function from the parent class
     template<typename T>
-    T operator()(T x, T y,
+    T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const 
@@ -976,6 +995,12 @@ public:
         } else {
             return callreduced(*this, x, y, x_plus, x_minus);
         }
+    }
+
+    template<typename T>
+    std::shared_ptr<SVEHintsReduced<T>> sve_hints(double epsilon) const
+    {
+        return std::make_shared<SVEHintsReduced<T>>(inner_kernel_.sve_hints<T>(epsilon));
     }
 };
 
@@ -998,6 +1023,7 @@ typename SymmKernelTraits<K, Sign>::type
 get_symmetrized(const K &kernel, Sign);
 
 template<>
+inline
 ReducedKernel<LogisticKernel>
 get_symmetrized(const LogisticKernel &kernel, std::integral_constant<int, +1>)
 {
@@ -1005,6 +1031,7 @@ get_symmetrized(const LogisticKernel &kernel, std::integral_constant<int, +1>)
 }
 
 template<>
+inline
 LogisticKernelOdd
 get_symmetrized(const LogisticKernel &kernel, std::integral_constant<int, -1>)
 {
@@ -1060,13 +1087,11 @@ Eigen::MatrixX<T> matrix_from_gauss(const K &kernel,
     for (size_t i = 0; i < n; ++i) {
         threads.emplace_back([&, i]() {
             for (size_t j = 0; j < m; ++j) {
-                res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
-                //res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j]);
+                res(i, j) = kernel.compute(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
             }
         });
     }
 
-    // Join threads
     for (auto &thread : threads) {
         thread.join();
     }
@@ -1149,6 +1174,7 @@ SVEHintsRegularizedBose<T> sve_hints(const RegularizedBoseKernel &kernel,
     return SVEHintsRegularizedBose<T>(kernel, epsilon);
 }
 
+/*
 template<typename T>
 std::shared_ptr<AbstractSVEHints<T>>
 sve_hints(std::shared_ptr<const AbstractKernel> kernel, double epsilon)
@@ -1168,9 +1194,10 @@ sve_hints(std::shared_ptr<const AbstractKernel> kernel, double epsilon)
         throw std::invalid_argument("Unsupported kernel type for SVE hints");
     }
 }
+*/
 
-template<typename T>
-SVEHintsReduced<T> sve_hints(const AbstractReducedKernel &kernel,
+template<typename T, typename K>
+SVEHintsReduced<T> sve_hints(const AbstractReducedKernel<K> &kernel,
                                  double epsilon)
 {
     return SVEHintsReduced<T>(sve_hints<T>(kernel.inner, epsilon));
