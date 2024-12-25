@@ -205,7 +205,7 @@ public:
 template <typename K, typename T>
 class SamplingSVE : public AbstractSVE<T> {
 public:
-    std::shared_ptr<K> kernel;
+    const K &kernel;
     double epsilon;
     int n_gauss;
     int nsvals_hint;
@@ -217,17 +217,17 @@ public:
     Rule<T> gauss_y;
 
     // Constructor
-    SamplingSVE(std::shared_ptr<K> kernel_, double epsilon_, int n_gauss_ = -1)
+    SamplingSVE(const K &kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_), epsilon(epsilon_)
     {
         auto hints = sve_hints<T>(kernel, epsilon);
         n_gauss =
-            (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
+            (n_gauss_ > 0) ? n_gauss_ : hints.ngauss();
         // TODO: Implement Rule<T>(n_gauss)
         rule = legendre<T>(n_gauss);
-        nsvals_hint = hints->nsvals();
-        segs_x = hints->segments_x();
-        segs_y = hints->segments_y();
+        nsvals_hint = hints.nsvals();
+        segs_x = hints.segments_x();
+        segs_y = hints.segments_y();
         gauss_x = rule.piecewise(segs_x);
         gauss_y = rule.piecewise(segs_y);
     }
@@ -236,7 +236,7 @@ public:
     std::vector<Eigen::MatrixX<T>> matrices() const override
     {
         std::vector<Eigen::MatrixX<T>> mats;
-        Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
+        Eigen::MatrixX<T> A = matrix_from_gauss(kernel, gauss_x, gauss_y);
         for (int i = 0; i < gauss_x.w.size(); ++i) {
             A.row(i) *= sqrt_impl(gauss_x.w[i]);
         }
@@ -393,19 +393,17 @@ public:
 template <typename K, typename T>
 class CentrosymmSVE : public AbstractSVE<T> {
 public:
-    std::shared_ptr<K> kernel;
+    const K &kernel;
     double epsilon;
-    SamplingSVE<typename EvenKernelType<K,T>::type, T> even;
-    SamplingSVE<typename OddKernelType<K,T>::type, T> odd;
+    SamplingSVE<typename SymmKernelTraits<K, std::integral_constant<int, +1>>::type, T> even;
+    SamplingSVE<typename SymmKernelTraits<K, std::integral_constant<int, -1>>::type, T> odd;
     int nsvals_hint;
 
-    CentrosymmSVE(std::shared_ptr<K> kernel_, double epsilon_, int n_gauss_ = -1)
+    CentrosymmSVE(const K &kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_),
           epsilon(epsilon_),
-          even(std::static_pointer_cast<typename EvenKernelType<K,T>::type>(get_symmetrized<T>(kernel_, +1)), epsilon_,
-               n_gauss_),
-          odd(std::static_pointer_cast<typename OddKernelType<K,T>::type>(get_symmetrized<T>(kernel_, -1)), epsilon_,
-              n_gauss_)
+          even(get_symmetrized(kernel_, std::integral_constant<int, +1>{}), epsilon_, n_gauss_),
+          odd(get_symmetrized(kernel_, std::integral_constant<int, -1>{}), epsilon_, n_gauss_)
     {
         /*
         auto evenk_ = get_symmetrized(kernel_, +1);
@@ -484,8 +482,8 @@ public:
 
         // For segments, use the hints from the kernel class
         auto hints = sve_hints<T>(kernel, epsilon);
-        auto segs_x_full = hints->segments_x();
-        auto segs_y_full = hints->segments_y();
+        auto segs_x_full = hints.segments_x();
+        auto segs_y_full = hints.segments_y();
 
         // Rest of the implementation...
         // Create PiecewiseLegendrePolyVector from merged vectors
@@ -606,48 +604,13 @@ auto pre_postprocess(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss
 
 // Function to compute SVE result
 template <typename T>
-SVEResult compute_sve(std::shared_ptr<AbstractKernel<T>> kernel, double epsilon,
+SVEResult compute_sve(const AbstractKernel &kernel, double epsilon,
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
             int lmax = std::numeric_limits<int>::max(),
             int n_gauss = -1)
 {
-    return pre_postprocess<AbstractKernel<T>, T>(kernel, epsilon, n_gauss, cutoff, lmax);
+    return pre_postprocess<AbstractKernel, T>(kernel, epsilon, n_gauss, cutoff, lmax);
 }
 
-
-/*
-// Function to compute SVE result
-template <typename K>
-SVEResult compute_sve(std::shared_ptr<K> kernel, double epsilon = std::numeric_limits<double>::quiet_NaN(),
-            double cutoff = std::numeric_limits<double>::quiet_NaN(),
-            std::string Twork = "Float64x2",
-            int lmax = std::numeric_limits<int>::max(), int n_gauss = -1,
-            const std::string &svd_strat = "auto")
-{
-    // Choose accuracy parameters
-    double safe_epsilon;
-    std::string Twork_actual;
-    std::string svd_strategy_actual;
-    if (Twork != "Float64" && Twork != "Float64x2") {
-        throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
-    }
-    std::cout << "Twork: " << Twork << std::endl;
-    std::cout << "svd_strat: " << svd_strat << std::endl;
-    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
-        choose_accuracy(epsilon, Twork, svd_strat);
-    //std::cout << "Twork_actual: " << Twork_actual << std::endl;
-    //std::cout << "svd_strategy_actual: " << svd_strategy_actual << std::endl;
-    std::cout << "safe_epsilon: " << safe_epsilon << std::endl;
-
-    if (Twork_actual == "Float64") {
-        return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff,
-                                          lmax);
-    } else {
-        // xprec::DDouble
-        return pre_postprocess<K, xprec::DDouble>(kernel, safe_epsilon, n_gauss,
-                                                  cutoff, lmax);
-    }
-}
-*/
 
 } // namespace sparseir

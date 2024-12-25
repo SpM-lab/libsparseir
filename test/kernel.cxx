@@ -168,11 +168,11 @@ TEST_CASE("Kernel Singularity Test")
             x = dist(rng);
         }
 
-        auto K = std::make_shared<sparseir::RegularizedBoseKernel<T>>(lambda);
+        auto K = sparseir::RegularizedBoseKernel(lambda);
 
         for (double x : x_values) {
             T expected = 1.0 / static_cast<T>(lambda);
-            T computed = K->operator()(x, 0.0);
+            T computed = K(static_cast<T>(x), static_cast<T>(0.0));
             REQUIRE(Eigen::internal::isApprox(computed, expected));
         }
     }
