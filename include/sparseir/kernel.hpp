@@ -11,10 +11,14 @@
 
 namespace sparseir {
 // Forward declaration of ReducedKernel
-template <typename K>
+template <typename K, typename T>
 class ReducedKernel;
 // template<typename T> class AbstractSVEHints<T>;
+
+template<typename T>
 class SVEHintsLogistic;
+
+template<typename T>
 class SVEHintsRegularizedBose;
 
 /**
@@ -33,6 +37,7 @@ class SVEHintsRegularizedBose;
  *
  * where ρ'(y) = w(y) ρ(y).
  */
+template<typename T>
 class AbstractKernel
 {
 public:
@@ -55,10 +60,10 @@ public:
      * @param x_minus Optional. xmax - x.
      * @return The value of K(x, y).
      */
-    virtual double operator()(
-        double x, double y,
-        double x_plus = std::numeric_limits<double>::quiet_NaN(),
-        double x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
+    virtual T operator()(
+        T x, T y,
+        T x_plus = std::numeric_limits<double>::quiet_NaN(),
+        T x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
 
     /*
     sve_hints(double epsilon) const
@@ -142,28 +147,29 @@ public:
      * @param statistics 'F' for fermions or 'B' for bosons.
      * @return A function representing the weight function w(y).
      */
-    virtual std::function<double(double)> weight_func(char statistics) const
+    virtual std::function<T(T)> weight_func(char statistics) const
     {
         if (statistics != 'F' && statistics != 'B') {
             throw std::invalid_argument(
                 "statistics must be 'F' for fermions or 'B' for bosons");
         }
-        return [](double /*x*/) { return 1.0; };
+        return [](T /*x*/) { return T(1); };
     }
 
     virtual ~AbstractKernel() = default;
 };
 
-class AbstractReducedKernel : public AbstractKernel {
+template<typename T>
+class AbstractReducedKernel : public AbstractKernel<T> {
 public:
     int sign;
-    std::shared_ptr<const AbstractKernel> inner;
+    std::shared_ptr<const AbstractKernel<T>> inner;
 
     // Constructor
-    AbstractReducedKernel(std::shared_ptr<const AbstractKernel> inner_kernel,
+    AbstractReducedKernel(std::shared_ptr<const AbstractKernel<T>> inner_kernel,
                           int sign)
-        : AbstractKernel(inner_kernel->lambda_),
-          inner(std::move(inner_kernel)),
+        : AbstractKernel<T>(inner_kernel->lambda_),
+          inner(std::move(inner_kernel)), // Do we need to move this?
           sign(sign)
     {
         // Validate inputs
@@ -176,14 +182,16 @@ public:
     }
 };
 
-inline double callreduced(const AbstractReducedKernel &kernel, double x,
-                          double y, double x_plus, double x_minus)
+template<typename T>
+T callreduced(const AbstractReducedKernel<T> &kernel, T x,
+                          T y, T x_plus, T x_minus)
 {
     x_plus += 1;
     auto K_plus = (*kernel.inner)(x, +y, x_plus, x_minus);
     auto K_minus = (*kernel.inner)(x, -y, x_minus, x_plus);
     return K_plus + kernel.sign * K_minus;
 }
+
 
 /**
  * @brief Fermionic/bosonic analytical continuation kernel.
@@ -202,17 +210,18 @@ inline double callreduced(const AbstractReducedKernel &kernel, double x,
  * with ρ'(y) = w(y) ρ(y), where the weight function is given by w(y) = 1 /
  * tanh(Λ y / 2).
  */
-class LogisticKernel : public AbstractKernel {
+template<typename T>
+class LogisticKernel : public AbstractKernel<T> {
 public:
     // Default constructor
-    LogisticKernel() : AbstractKernel() { }
+    LogisticKernel() : AbstractKernel<T>() { }
 
     /**
      * @brief Constructor for LogisticKernel.
      *
      * @param lambda The kernel cutoff Λ.
      */
-    LogisticKernel(double lambda) : AbstractKernel(lambda)
+    LogisticKernel(double lambda) : AbstractKernel<T>(lambda)
     {
         if (lambda < 0) {
             throw std::domain_error("Kernel cutoff Λ must be non-negative");
@@ -228,30 +237,30 @@ public:
      * @param x_minus Optional. xmax - x.
      * @return The value of K(x, y).
      */
-    double operator()(double x, double y,
-                      double x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      double x_minus = std::numeric_limits<double>::quiet_NaN())
+    T operator()(T x, T y,
+                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
+                      T x_minus = std::numeric_limits<double>::quiet_NaN())
         const override
     {
         // Check that x and y are within the valid ranges
-        std::pair<double, double> x_range = xrange();
+        std::pair<double, double> x_range = this->xrange();
         double xmin = x_range.first;
         double xmax = x_range.second;
         if (x < xmin || x > xmax) {
             throw std::out_of_range("x value not in range [-1, 1]");
         }
-        std::pair<double, double> y_range = yrange();
+        std::pair<double, double> y_range = this->yrange();
         double ymin = y_range.first;
         double ymax = y_range.second;
         if (y < ymin || y > ymax) {
             throw std::out_of_range("y value not in range [-1, 1]");
         }
 
-        std::tuple<double, double, double> uv_values =
+        std::tuple<T, T, T> uv_values =
             compute_uv(x, y, x_plus, x_minus);
-        double u_plus = std::get<0>(uv_values);
-        double u_minus = std::get<1>(uv_values);
-        double v = std::get<2>(uv_values);
+        T u_plus = std::get<0>(uv_values);
+        T u_minus = std::get<1>(uv_values);
+        T v = std::get<2>(uv_values);
 
         return compute(u_plus, u_minus, v);
     }
@@ -278,7 +287,7 @@ public:
      *
      * @return The convergence radius.
      */
-    double conv_radius() const override { return 40.0 * lambda_; }
+    double conv_radius() const override { return 40.0 * this->lambda_; }
 
     /**
      * @brief Return the weight function for given statistics.
@@ -286,16 +295,17 @@ public:
      * @param statistics 'F' for fermions or 'B' for bosons.
      * @return A function representing the weight function w(y).
      */
-    std::function<double(double)> weight_func(char statistics) const override
+    std::function<T(T)> weight_func(char statistics) const override
     {
+        using std::tanh;
         if (statistics == 'F') {
             // Fermionic weight function: w(y) == 1
-            return [](double /*y*/) { return 1.0; };
+            return [](T /*y*/) { return 1.0; };
         } else if (statistics == 'B') {
             // Bosonic weight function: w(y) == 1 / tanh(Λ*y/2)
-            double lambda = lambda_;
-            return [lambda](double y) {
-                return 1.0 / std::tanh(0.5 * lambda * y);
+            double lambda = this->lambda_;
+            return [lambda](T y) {
+                return 1.0 / tanh(0.5 * lambda * y);
             };
         } else {
             throw std::invalid_argument(
@@ -313,19 +323,20 @@ private:
      * @param x_minus xmax - x.
      * @return A tuple containing u_plus, u_minus, and v.
      */
-    std::tuple<double, double, double>
-    compute_uv(double x, double y, double x_plus, double x_minus) const
+    std::tuple<T, T, T>
+    compute_uv(T x, T y, T x_plus, T x_minus) const
     {
+        using std::isnan;
         // Compute u_plus, u_minus, v
-        if (std::isnan(x_plus)) {
+        if (isnan(x_plus)) {
             x_plus = 1.0 + x;
         }
-        if (std::isnan(x_minus)) {
+        if (isnan(x_minus)) {
             x_minus = 1.0 - x;
         }
-        double u_plus = 0.5 * x_plus;
-        double u_minus = 0.5 * x_minus;
-        double v = lambda_ * y;
+        T u_plus = 0.5 * x_plus;
+        T u_minus = 0.5 * x_minus;
+        T v = this->lambda_ * y;
         return std::make_tuple(u_plus, u_minus, v);
     }
 
@@ -337,12 +348,14 @@ private:
      * @param v Computed v.
      * @return The value of K(x, y).
      */
-    double compute(double u_plus, double u_minus, double v) const
+    T compute(T u_plus, T u_minus, T v) const
     {
-        double abs_v = std::abs(v);
+        using std::abs;
 
-        double numerator;
-        double denominator;
+        T abs_v = abs(v);
+
+        T numerator;
+        T denominator;
 
         if (v >= 0) {
             numerator = exp_impl(-u_plus * abs_v);
@@ -366,14 +379,15 @@ private:
  *
  * Care has to be taken in evaluating this expression around y = 0.
  */
-class RegularizedBoseKernel : public AbstractKernel {
+template<typename T>
+class RegularizedBoseKernel : public AbstractKernel<T> {
 public:
     /**
      * @brief Constructor for RegularizedBoseKernel.
      *
      * @param lambda The kernel cutoff Λ.
      */
-    explicit RegularizedBoseKernel(double lambda) : AbstractKernel(lambda)
+    explicit RegularizedBoseKernel(double lambda) : AbstractKernel<T>(lambda)
     {
         if (lambda < 0) {
             throw std::domain_error("Kernel cutoff Λ must be non-negative");
@@ -389,30 +403,30 @@ public:
      * @param x_minus Optional. xmax - x.
      * @return The value of K(x, y).
      */
-    double operator()(double x, double y,
-                      double x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      double x_minus = std::numeric_limits<double>::quiet_NaN())
+    T operator()(T x, T y,
+                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
+                      T x_minus = std::numeric_limits<double>::quiet_NaN())
         const override
     {
         // Check that x and y are within the valid ranges
-        std::pair<double, double> xrange_values = xrange();
+        std::pair<double, double> xrange_values = this->xrange();
         double xmin = xrange_values.first;
         double xmax = xrange_values.second;
         if (x < xmin || x > xmax) {
             throw std::out_of_range("x value not in range [-1, 1]");
         }
-        std::pair<double, double> yrange_values = yrange();
+        std::pair<double, double> yrange_values = this->yrange();
         double ymin = yrange_values.first;
         double ymax = yrange_values.second;
         if (y < ymin || y > ymax) {
             throw std::out_of_range("y value not in range [-1, 1]");
         }
 
-        std::tuple<double, double, double> uv_values =
+        std::tuple<T, T, T> uv_values =
             compute_uv(x, y, x_plus, x_minus);
-        double u_plus = std::get<0>(uv_values);
-        double u_minus = std::get<1>(uv_values);
-        double v = std::get<2>(uv_values);
+        T u_plus = std::get<0>(uv_values);
+        T u_minus = std::get<1>(uv_values);
+        T v = std::get<2>(uv_values);
 
         return compute(u_plus, u_minus, v);
     }
@@ -440,7 +454,7 @@ public:
      *
      * @return The convergence radius.
      */
-    double conv_radius() const override { return 40.0 * lambda_; }
+    double conv_radius() const override { return 40.0 * this->lambda_; }
 
     /**
      * @brief Return the weight function for given statistics.
@@ -448,14 +462,14 @@ public:
      * @param statistics 'F' for fermions or 'B' for bosons.
      * @return A function representing the weight function w(y).
      */
-    std::function<double(double)> weight_func(char statistics) const override
+    std::function<T(T)> weight_func(char statistics) const override
     {
         if (statistics == 'F') {
             throw std::runtime_error(
                 "Kernel is designed for bosonic functions");
         } else if (statistics == 'B') {
             // Bosonic weight function: w(y) == 1 / y
-            return [](double y) { return 1.0 / y; };
+            return [](T y) { return 1.0 / y; };
         } else {
             throw std::invalid_argument(
                 "statistics must be 'F' for fermions or 'B' for bosons");
@@ -472,19 +486,20 @@ private:
      * @param x_minus xmax - x.
      * @return A tuple containing u_plus, u_minus, and v.
      */
-    std::tuple<double, double, double>
-    compute_uv(double x, double y, double x_plus, double x_minus) const
+    std::tuple<T, T, T>
+    compute_uv(T x, T y, T x_plus, T x_minus) const
     {
+        using std::isnan;
         // Compute u_plus, u_minus, v
-        if (std::isnan(x_plus)) {
+        if (isnan(x_plus)) {
             x_plus = 1.0 + x;
         }
-        if (std::isnan(x_minus)) {
+        if (isnan(x_minus)) {
             x_minus = 1.0 - x;
         }
-        double u_plus = 0.5 * x_plus;
-        double u_minus = 0.5 * x_minus;
-        double v = lambda_ * y;
+        T u_plus = 0.5 * x_plus;
+        T u_minus = 0.5 * x_minus;
+        T v = this->lambda_ * y;
         return std::make_tuple(u_plus, u_minus, v);
     }
 
@@ -496,20 +511,24 @@ private:
      * @param v Computed v.
      * @return The value of K(x, y).
      */
-    double compute(double u_plus, double u_minus, double v) const
+    T compute(T u_plus, T u_minus, T v) const
     {
-        double absv = std::abs(v);
-        double enum_val = std::exp(-absv * (v >= 0 ? u_plus : u_minus));
+        using std::abs;
+        using std::exp;
+        using std::expm1;
+
+        T absv = abs(v);
+        T enum_val = exp(-absv * (v >= 0 ? u_plus : u_minus));
 
         // Handle the tricky expression v / (exp(v) - 1)
-        double denom;
+        T denom;
         if (absv >= 1e-200) {
-            denom = absv / std::expm1(-absv);
+            denom = absv / expm1(-absv);
         } else {
             denom = -1; // Assuming T is a floating-point type
         }
 
-        return -1 / static_cast<double>(this->lambda_) * enum_val * denom;
+        return -1 / static_cast<T>(this->lambda_) * enum_val * denom;
     }
 };
 
@@ -528,10 +547,10 @@ private:
  * This kernel is what this class represents. The full singular functions can be
  * reconstructed by (anti-)symmetrically continuing them to the negative axis.
  */
-template <typename K>
-class ReducedKernel : public AbstractKernel {
+template <typename K, typename T>
+class ReducedKernel : public AbstractReducedKernel<T> {
 public:
-    std::shared_ptr<const AbstractKernel>
+    std::shared_ptr<const K>
         inner_kernel_; ///< The inner kernel K.
     int sign_;         ///< The sign (+1 or -1).
 
@@ -541,9 +560,9 @@ public:
      * @param inner_kernel The inner kernel K.
      * @param sign The sign (+1 or -1). Must satisfy abs(sign) == 1.
      */
-    ReducedKernel(std::shared_ptr<const AbstractKernel> inner_kernel, int sign)
-        : AbstractKernel(inner_kernel->lambda_), // Initialize base class
-          inner_kernel_(std::move(inner_kernel)),
+    ReducedKernel(std::shared_ptr<const K> inner_kernel, int sign)
+        : AbstractReducedKernel<T>(inner_kernel, sign), // Initialize base class
+          inner_kernel_(inner_kernel),
           sign_(sign)
     {
         if (!inner_kernel_->is_centrosymmetric()) {
@@ -564,9 +583,9 @@ public:
      * @param x_minus Optional. xmax - x.
      * @return The value of K_red(x, y).
      */
-    double operator()(double x, double y,
-                      double x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      double x_minus = std::numeric_limits<double>::quiet_NaN())
+    T operator()(T x, T y,
+                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
+                      T x_minus = std::numeric_limits<double>::quiet_NaN())
         const override
     {
         return call_reduced(x, y, x_plus, x_minus);
@@ -631,18 +650,19 @@ private:
      * @param x_minus xmax - x.
      * @return The value of K_red(x, y).
      */
-    double call_reduced(double x, double y, double x_plus, double x_minus) const
+    T call_reduced(T x, T y, T x_plus, T x_minus) const
     {
+        using std::isnan;
         // The reduced kernel is defined only over the interval [0, 1], which
         // means we must add one to get the x_plus for the inner kernels.
-        if (std::isnan(x_plus)) {
+        if (isnan(x_plus)) {
             x_plus = 1.0 + x;
         }
         // x_minus remains the same
 
         // Evaluate inner kernel at (x, y) and (x, -y)
-        double K_plus = inner_kernel_->operator()(x, y, x_plus, x_minus);
-        double K_minus = inner_kernel_->operator()(x, -y, x_plus, x_minus);
+        T K_plus = inner_kernel_->operator()(x, y, x_plus, x_minus);
+        T K_minus = inner_kernel_->operator()(x, -y, x_plus, x_minus);
 
         if (sign_ == 1) {
             return K_plus + K_minus;
@@ -651,6 +671,8 @@ private:
         }
     }
 };
+
+
 
 } // namespace sparseir
 
@@ -674,16 +696,16 @@ public:
     virtual int ngauss() const = 0;
 };
 
-class SVEHintsLogistic final : public AbstractSVEHints<double> {
+template <typename T>
+class SVEHintsLogistic final : public AbstractSVEHints<T> {
 public:
-    SVEHintsLogistic(const LogisticKernel &kernel, double epsilon)
+    SVEHintsLogistic(const LogisticKernel<T> &kernel, double epsilon)
         : kernel_(kernel), epsilon_(epsilon)
     {
     }
 
-    std::vector<double> segments_x() const override
+    std::vector<T> segments_x() const override
     {
-        using T = double;
         int nzeros = std::max(
             static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 1);
 
@@ -718,13 +740,12 @@ public:
             segments[i] = -zeros[nzeros - i - 1];
             segments[nzeros + i + 1] = zeros[i];
         }
+        std::cout << "logistic segments_x: " << segments.size() << std::endl;
         return segments;
     };
 
-    std::vector<double> segments_y() const override
+    std::vector<T> segments_y() const override
     {
-        using T = double;
-
         // Calculate the number of zeros
         int nzeros = std::max(
             static_cast<int>(std::round(20 * std::log10(kernel_.lambda_))), 2);
@@ -777,6 +798,7 @@ public:
         segments[0] = -T(1.0);
         segments[1 + nzeros] = T(0.0);
         segments[2 * nzeros + 2] = T(1.0);
+        std::cout << "logistic segments_y: " << segments.size() << std::endl;
         return segments;
     }
 
@@ -793,20 +815,20 @@ public:
     };
 
 private:
-    const LogisticKernel &kernel_;
+    const LogisticKernel<T> &kernel_;
     double epsilon_;
 };
 
-class SVEHintsRegularizedBose : public AbstractSVEHints<double> {
+template<typename T>
+class SVEHintsRegularizedBose : public AbstractSVEHints<T> {
 public:
-    SVEHintsRegularizedBose(const RegularizedBoseKernel &kernel, double epsilon)
+    SVEHintsRegularizedBose(const RegularizedBoseKernel<T> &kernel, double epsilon)
         : kernel_(kernel), epsilon_(epsilon)
     {
     }
 
-    std::vector<double> segments_x() const override
+    std::vector<T> segments_x() const override
     {
-        using T = double;
         int nzeros = std::max(
             static_cast<int>(std::round(15 * std::log10(kernel_.lambda_))), 15);
         std::vector<T> temp(nzeros);
@@ -833,10 +855,8 @@ public:
         return result;
     }
 
-    std::vector<double> segments_y() const override
+    std::vector<T> segments_y() const override
     {
-        using T = double;
-
         int nzeros = std::max(
             static_cast<int>(std::round(20 * std::log10(kernel_.lambda_))), 20);
         std::vector<T> diffs(nzeros);
@@ -892,17 +912,18 @@ public:
     };
 
 private:
-    const RegularizedBoseKernel &kernel_;
+    const RegularizedBoseKernel<T> &kernel_;
     double epsilon_;
 };
 
-class RegularizedBoseKernelOdd : public AbstractReducedKernel {
+template<typename T>
+class RegularizedBoseKernelOdd : public AbstractReducedKernel<T> {
 public:
-    RegularizedBoseKernelOdd(std::shared_ptr<RegularizedBoseKernel> inner,
+    RegularizedBoseKernelOdd(std::shared_ptr<RegularizedBoseKernel<T>> inner,
                              int sign)
-        : AbstractReducedKernel(inner, sign)
+        : AbstractReducedKernel<T>(inner, sign)
     {
-        if (!is_centrosymmetric()) {
+        if (!this->is_centrosymmetric()) {
             throw std::runtime_error("inner kernel must be centrosymmetric");
         }
         if (std::abs(sign) != 1) {
@@ -911,13 +932,13 @@ public:
     }
 
     // Implement the pure virtual function from the parent class
-    double operator()(double x, double y,
-                      double x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      double x_minus = std::numeric_limits<double>::quiet_NaN())
+    T operator()(T x, T y,
+                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
+                      T x_minus = std::numeric_limits<double>::quiet_NaN())
         const override
     {
-        double v_half = inner->lambda_ * 0.5 * y;
-        double xv_half = x * v_half;
+        T v_half = this->inner->lambda_ * 0.5 * y;
+        T xv_half = x * v_half;
         bool xy_small = xv_half < 1;
         bool sinh_range = 1e-200 < v_half && v_half < 85;
         if (xy_small && sinh_range) {
@@ -929,62 +950,65 @@ public:
 
     // You'll need to implement the isCentrosymmetric function
     // Here's a placeholder
-    bool isCentrosymmetric(RegularizedBoseKernel &kernel)
+    bool isCentrosymmetric(RegularizedBoseKernel<T> &kernel)
     {
         // Implement this function
         return true;
     }
 };
 
-class LogisticKernelOdd : public AbstractReducedKernel {
+template<typename T>
+class LogisticKernelOdd : public AbstractReducedKernel<T> {
 public:
-    LogisticKernelOdd(std::shared_ptr<const LogisticKernel> inner, int sign)
-        : AbstractReducedKernel(inner, sign)
+    LogisticKernelOdd(std::shared_ptr<const LogisticKernel<T>> inner, int sign)
+        : AbstractReducedKernel<T>(inner, sign)
     {
         std::cout << "LogisticKernelOdd" << sign << std::endl;
         std::cout << this->operator()(0.5, 0.5) << std::endl;
     }
     // Implement the pure virtual function from the parent class
-    double operator()(double x, double y,
-                      double x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      double x_minus = std::numeric_limits<double>::quiet_NaN())
+    T operator()(T x, T y,
+                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
+                      T x_minus = std::numeric_limits<double>::quiet_NaN())
         const override
     {
-        double v_half = inner->lambda_ * 0.5 * y;
+        using std::cosh, std::sinh;
+        T v_half = this->inner->lambda_ * 0.5 * y;
         bool xy_small = x * v_half < 1;
         bool cosh_finite = v_half < 85;
         if (xy_small && cosh_finite) {
-            return -std::sinh(v_half * x) / std::cosh(v_half);
+            return -sinh(v_half * x) / cosh(v_half);
         } else {
             return callreduced(*this, x, x, x_plus, x_minus);
         }
     }
 };
 
-inline std::shared_ptr<AbstractKernel>
-get_symmetrized(std::shared_ptr<AbstractKernel> kernel, int sign)
+template<typename T>
+std::shared_ptr<AbstractKernel<T>>
+get_symmetrized(std::shared_ptr<AbstractKernel<T>> kernel, int sign)
 {
     if (auto logisticKernel =
-            std::dynamic_pointer_cast<const LogisticKernel>(kernel)) {
+            std::dynamic_pointer_cast<const LogisticKernel<T>>(kernel)) {
         if (sign == -1) {
             std::cout << "LogisticKernelOdd" << std::endl;
-            return std::make_shared<LogisticKernelOdd>(logisticKernel, sign);
+            return std::make_shared<LogisticKernelOdd<T>>(logisticKernel, sign);
         } else {
             std::cout << "LogisticKernelEven" << std::endl;
-            return std::make_shared<ReducedKernel<LogisticKernel>>(
+            return std::make_shared<ReducedKernel<LogisticKernel<T>,T>>(
                 logisticKernel, sign);
         }
     }
     else if (auto regularizedbosonickernel =
-            std::dynamic_pointer_cast<RegularizedBoseKernel>(kernel)) {
+            std::dynamic_pointer_cast<RegularizedBoseKernel<T>>(kernel)) {
                     if (sign == -1) {
-        return std::make_shared<RegularizedBoseKernelOdd>(regularizedbosonickernel, sign);
+        return std::make_shared<RegularizedBoseKernelOdd<T>>(regularizedbosonickernel, sign);
     } else {
-        return std::make_shared<ReducedKernel<RegularizedBoseKernel>>(regularizedbosonickernel,
+        return std::make_shared<ReducedKernel<RegularizedBoseKernel<T>,T>>(regularizedbosonickernel,
                                                                       sign);
     }
         }
-    return std::make_shared<ReducedKernel<AbstractKernel>>(kernel, sign);
+    return std::make_shared<ReducedKernel<AbstractKernel<T>,T>>(kernel, sign);
 }
 
 //inline std::shared_ptr<AbstractKernel>
@@ -1022,7 +1046,7 @@ namespace sparseir {
 
 // Function to compute matrix from Gauss rules
 template <typename T>
-Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel,
+Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel<T> &kernel,
                                     const Rule<T> &gauss_x,
                                     const Rule<T> &gauss_y)
 {
@@ -1036,12 +1060,7 @@ Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel,
     for (size_t i = 0; i < n; ++i) {
         threads.emplace_back([&, i]() {
             for (size_t j = 0; j < m; ++j) {
-                // TODO: return type should be T
-                double ko = kernel(static_cast<double>(gauss_x.x[i]),
-                                   static_cast<double>(gauss_y.x[j]),
-                                   static_cast<double>(gauss_x.x_forward[i]),
-                                   static_cast<double>(gauss_x.x_backward[i]));
-                res(i, j) = T(ko);
+                res(i, j) = kernel(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
             }
         });
     }
@@ -1077,9 +1096,10 @@ std::vector<T> symm_segments(const std::vector<T> &x)
     return xpos;
 }
 
-class SVEHintsReduced : public AbstractSVEHints<double> {
+template<typename T>
+class SVEHintsReduced : public AbstractSVEHints<T> {
 public:
-    SVEHintsReduced(std::shared_ptr<AbstractSVEHints> inner_hints)
+    SVEHintsReduced(std::shared_ptr<AbstractSVEHints<T>> inner_hints)
         : inner(inner_hints)
     {
     }
@@ -1099,56 +1119,63 @@ public:
         return inner->ngauss();
     }
 
-    std::vector<double> segments_x() const override
+    std::vector<T> segments_x() const override
     {
         return symm_segments(inner->segments_x());
     }
 
-    std::vector<double> segments_y() const override
+    std::vector<T> segments_y() const override
     {
-        return symm_segments(inner->segments_x());
+        return symm_segments(inner->segments_y());
     }
 
 private:
-    std::shared_ptr<AbstractSVEHints> inner;
+    std::shared_ptr<AbstractSVEHints<T>> inner;
 };
 
 // Function to provide SVE hints
-inline SVEHintsLogistic sve_hints(const LogisticKernel &kernel, double epsilon)
+template<typename T>
+SVEHintsLogistic<T> sve_hints(const LogisticKernel<T> &kernel, double epsilon)
 {
-    return SVEHintsLogistic(kernel, epsilon);
+    return SVEHintsLogistic<T>(kernel, epsilon);
 }
 
-inline SVEHintsRegularizedBose sve_hints(const RegularizedBoseKernel &kernel,
+template<typename T>
+SVEHintsRegularizedBose<T> sve_hints(const RegularizedBoseKernel<T> &kernel,
                                          double epsilon)
 {
-    return SVEHintsRegularizedBose(kernel, epsilon);
+    return SVEHintsRegularizedBose<T>(kernel, epsilon);
 }
 
-inline std::shared_ptr<AbstractSVEHints<double>>
-sve_hints(std::shared_ptr<const AbstractKernel> kernel, double epsilon)
+template<typename T>
+std::shared_ptr<AbstractSVEHints<T>>
+sve_hints(std::shared_ptr<const AbstractKernel<T>> kernel, double epsilon)
 {
     if (auto logisticKernel =
-            std::dynamic_pointer_cast<const LogisticKernel>(kernel)) {
-        return std::make_shared<SVEHintsLogistic>(*logisticKernel, epsilon);
+            std::dynamic_pointer_cast<const LogisticKernel<T>>(kernel)) {
+        return std::make_shared<SVEHintsLogistic<T>>(*logisticKernel, epsilon);
     } else if (auto boseKernel =
-                   std::dynamic_pointer_cast<const RegularizedBoseKernel>(
+                   std::dynamic_pointer_cast<const RegularizedBoseKernel<T>>(
                        kernel)) {
-        return std::make_shared<SVEHintsRegularizedBose>(*boseKernel, epsilon);
+        return std::make_shared<SVEHintsRegularizedBose<T>>(*boseKernel, epsilon);
     } else if (auto reducedKernel =
-                   std::dynamic_pointer_cast<const AbstractReducedKernel>(
+                   std::dynamic_pointer_cast<const AbstractReducedKernel<T>>(
                        kernel)) {
-        return std::make_shared<SVEHintsReduced>(
+        return std::make_shared<SVEHintsReduced<T> >(
             sve_hints(reducedKernel->inner, epsilon));
     } else {
+        auto reducedKernel_ = std::dynamic_pointer_cast<const AbstractReducedKernel<T>>(kernel);
+        std::cout << reducedKernel_ << std::endl;
+        std::cout  << typeid(kernel).name() << std::endl;
         throw std::invalid_argument("Unsupported kernel type for SVE hints");
     }
 }
 
-inline SVEHintsReduced sve_hints(const AbstractReducedKernel &kernel,
+template<typename T>
+SVEHintsReduced<T> sve_hints(const AbstractReducedKernel<T> &kernel,
                                  double epsilon)
 {
-    return SVEHintsReduced(sve_hints(kernel.inner, epsilon));
+    return SVEHintsReduced<T>(sve_hints(kernel.inner, epsilon));
 }
 
 /*
@@ -1167,22 +1194,22 @@ double epsilon) {
 }
 */
 
-template <typename K>
+template <typename K, typename T>
 struct EvenKernelType
 {
-    using type = ReducedKernel<K>;
+    using type = ReducedKernel<K,T>;
 };
 
-template <typename K>
+template <typename K, typename T>
 struct OddKernelType
 {
     using type = K;
 };
 
-template <>
-struct OddKernelType<LogisticKernel>
+template <typename T>
+struct OddKernelType<LogisticKernel<T>, T>
 {
-    using type = LogisticKernelOdd;
+    using type = LogisticKernelOdd<T>;
 };
 
 } // namespace sparseir

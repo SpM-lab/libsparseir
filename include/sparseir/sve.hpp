@@ -63,6 +63,9 @@ public:
 inline std::tuple<double, std::string, std::string>
 choose_accuracy(double epsilon, std::string Twork)
 {
+    if (Twork != "Float64" && Twork != "Float64x2") {
+        throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
+    }
     if (Twork == "Float64") {
         if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
             return std::make_tuple(epsilon, Twork, "default");
@@ -156,6 +159,7 @@ inline std::tuple<double, std::string, std::string>
 choose_accuracy(double epsilon, std::string Twork, std::string svd_strat)
 {
     std::string auto_svd_strat;
+    std::cout << "isnan "<< std::isnan(epsilon) << std::endl;
     if (std::isnan(epsilon)) {
         std::tie(epsilon, Twork, auto_svd_strat) =
             choose_accuracy_epsilon_nan(Twork);
@@ -231,6 +235,14 @@ public:
                        [](double x) { return static_cast<T>(x); });
         std::transform(segs_y_.begin(), segs_y_.end(), segs_y.begin(),
                        [](double x) { return static_cast<T>(x); });
+        //std::cout << "segs_x: " << segs_x.size() << std::endl;
+        //std::cout << "segs_y: " << segs_y.size() << std::endl;
+        //for (const auto &x : segs_x_) {
+            //std::cout << x << " " << std::endl;
+        //}
+        //for (const auto &y : segs_y_) {
+            //std::cout << y << " " << std::endl;
+        //}
         //segs_y = hints->segments_y();
         //segs_x = hints->segments_x();
         //segs_y = hints->segments_y();
@@ -243,7 +255,15 @@ public:
     {
         std::vector<Eigen::MatrixX<T>> mats;
         Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
-        std::cout << "before scaling" << A(0, 0) << std::endl;
+        //for (int i = 0; i < gauss_x.w.size(); ++i) {
+            //std::cout << "gauss_x.w " << gauss_x.w[i] << std::endl;
+            //std::cout << "gauss_x.x " << gauss_x.x[i] << std::endl;
+        //}
+        //for (int j = 0; j < gauss_y.w.size(); ++j) {
+            //std::cout << "gauss_y.w " << gauss_y.w[j] << std::endl;
+            //std::cout << "gauss_y.x " << gauss_y.x[j] << std::endl;
+        //}
+        //std::cout << "matrix_from_gauss " << A(0, 0) << std::endl;
         // Element-wise multiplication with square roots of weights
         for (int i = 0; i < gauss_x.w.size(); ++i) {
             A.row(i) *= sqrt_impl(gauss_x.w[i]);
@@ -403,16 +423,16 @@ class CentrosymmSVE : public AbstractSVE<T> {
 public:
     std::shared_ptr<K> kernel;
     double epsilon;
-    SamplingSVE<typename EvenKernelType<K>::type, T> even;
-    SamplingSVE<typename OddKernelType<K>::type, T> odd;
+    SamplingSVE<typename EvenKernelType<K,T>::type, T> even;
+    SamplingSVE<typename OddKernelType<K,T>::type, T> odd;
     int nsvals_hint;
 
     CentrosymmSVE(std::shared_ptr<K> kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_),
           epsilon(epsilon_),
-          even(std::static_pointer_cast<typename EvenKernelType<K>::type>(get_symmetrized(kernel_, +1)), epsilon_,
+          even(std::static_pointer_cast<typename EvenKernelType<K,T>::type>(get_symmetrized<T>(kernel_, +1)), epsilon_,
                n_gauss_),
-          odd(std::static_pointer_cast<typename OddKernelType<K>::type>(get_symmetrized(kernel_, -1)), epsilon_,
+          odd(std::static_pointer_cast<typename OddKernelType<K,T>::type>(get_symmetrized<T>(kernel_, -1)), epsilon_,
               n_gauss_)
     {
         /*
@@ -438,8 +458,12 @@ public:
     {
         auto mats_even = even.matrices();
         auto mats_odd = odd.matrices();
-        std::cout << "matrices even: " << mats_even[0].sum() << std::endl;
-        std::cout << "matrices odd: " << mats_odd[0].sum() << std::endl;
+        std::cout << "even(0, 0)" << mats_even[0](0, 0) << std::endl;
+        std::cout << "sum matrices even: " << mats_even[0].sum() << std::endl;
+        std::cout << mats_even[0].rows() << std::endl;
+        std::cout << mats_even[0].cols() << std::endl;
+        std::cout << "odd(0, 0)" << mats_odd[0](0, 0) << std::endl;
+        std::cout << "sum matrices odd: " << mats_odd[0].sum() << std::endl;
         return {mats_even[0], mats_odd[0]};
     }
 
@@ -475,7 +499,7 @@ public:
                         result_odd.v.end());
 
         // For segments, use the hints from the kernel class
-        auto hints = sve_hints(kernel, epsilon);
+        auto hints = sve_hints<T>(kernel, epsilon);
         auto segs_x_full = hints->segments_x();
         auto segs_y_full = hints->segments_y();
 
@@ -565,8 +589,6 @@ auto pre_postprocess(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss
         std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>, Eigen::MatrixX<T>>>
         svds;
     for (const auto &mat : matrices) {
-        std::cout << mat(0, 0) << std::endl;
-        std::cout << mat(1, 0) << std::endl;
         auto svd = sparseir::compute_svd(mat);
         svds.push_back(svd);
     }
@@ -601,7 +623,7 @@ auto pre_postprocess(std::shared_ptr<K> kernel, double safe_epsilon, int n_gauss
 template <typename K>
 SVEResult compute_sve(std::shared_ptr<K> kernel, double epsilon = std::numeric_limits<double>::quiet_NaN(),
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
-            std::string Twork = "",
+            std::string Twork = "Float64x2",
             int lmax = std::numeric_limits<int>::max(), int n_gauss = -1,
             const std::string &svd_strat = "auto")
 {
@@ -609,12 +631,16 @@ SVEResult compute_sve(std::shared_ptr<K> kernel, double epsilon = std::numeric_l
     double safe_epsilon;
     std::string Twork_actual;
     std::string svd_strategy_actual;
+    if (Twork != "Float64" && Twork != "Float64x2") {
+        throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
+    }
     std::cout << "Twork: " << Twork << std::endl;
     std::cout << "svd_strat: " << svd_strat << std::endl;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
         choose_accuracy(epsilon, Twork, svd_strat);
     //std::cout << "Twork_actual: " << Twork_actual << std::endl;
     //std::cout << "svd_strategy_actual: " << svd_strategy_actual << std::endl;
+    std::cout << "safe_epsilon: " << safe_epsilon << std::endl;
 
     if (Twork_actual == "Float64") {
         return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff,
