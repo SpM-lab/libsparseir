@@ -254,7 +254,7 @@ public:
     double get_wmax() const { return kernel->lambda_ / beta; }
 
     // Getter for SVEResult
-    const SVEResult &getSVEResult() const { return sve_result; }
+    std::shared_ptr<SVEResult> &getSVEResult() const { return sve_result; }
 
     // Getter for kernel
     std::shared_ptr<K> &getKernel() const { return kernel; }
