@@ -60,29 +60,29 @@ void check_smooth(const std::function<double(double)> &u,
 template<typename T>
 void
 _test_sve() {
-    auto lk = std::make_shared<sparseir::LogisticKernel<T>>(10.0);
-    REQUIRE(lk->lambda_ == 10.0);
+    auto lk = sparseir::LogisticKernel(10.0);
+    REQUIRE(lk.lambda_ == 10.0);
     auto hints = sparseir::sve_hints<T>(lk, 1e-6);
-    int nsvals_hint = hints->nsvals();
-    int n_gauss = hints->ngauss();
-    std::vector<T> segs_x = hints->segments_x();
-    std::vector<T> segs_y = hints->segments_y();
+    int nsvals_hint = hints.nsvals();
+    int n_gauss = hints.ngauss();
+    std::vector<T> segs_x = hints.segments_x();
+    std::vector<T> segs_y = hints.segments_y();
 
     // Ensure `convert` is declared before this line
     sparseir::Rule<T> rule = sparseir::legendre<T>(n_gauss);
 
     sparseir::Rule<T> gauss_x = rule.piecewise(segs_x);
     sparseir::Rule<T> gauss_y = rule.piecewise(segs_y);
-    auto ssve1 = sparseir::SamplingSVE<sparseir::LogisticKernel<T>,T>(lk, 1e-6);
+    auto ssve1 = sparseir::SamplingSVE<sparseir::LogisticKernel,T>(lk, 1e-6);
     REQUIRE(ssve1.n_gauss == n_gauss);
-    auto ssve2 = sparseir::SamplingSVE<sparseir::LogisticKernel<T>,T>(lk, 1e-6, 12);
+    auto ssve2 = sparseir::SamplingSVE<sparseir::LogisticKernel,T>(lk, 1e-6, 12);
     REQUIRE(ssve2.n_gauss == 12);
 
     auto ssve1_double =
-        sparseir::SamplingSVE<sparseir::LogisticKernel<T>, T>(lk, 1e-6);
+        sparseir::SamplingSVE<sparseir::LogisticKernel, T>(lk, 1e-6);
     REQUIRE(ssve1_double.n_gauss == n_gauss);
     auto ssve2_double =
-        sparseir::SamplingSVE<sparseir::LogisticKernel<T>, T>(lk, 1e-6, 12);
+        sparseir::SamplingSVE<sparseir::LogisticKernel, T>(lk, 1e-6, 12);
     REQUIRE(ssve2_double.n_gauss == 12);
 }
 
@@ -96,16 +96,16 @@ TEST_CASE("sve.cpp", "[SamplingSVE]")
 template<typename T>
 void
 _test_centrosymmsve() {
-    auto lk = std::make_shared<sparseir::LogisticKernel<T>>(10.0);
+    auto lk = sparseir::LogisticKernel(10.0);
     auto hints = sparseir::sve_hints<T>(lk, 1e-6);
-    int nsvals_hint = hints->nsvals();
-    int n_gauss = hints->ngauss();
-    std::vector<T> segs_x = hints->segments_x();
-    std::vector<T> segs_y = hints->segments_y();
+    int nsvals_hint = hints.nsvals();
+    int n_gauss = hints.ngauss();
+    std::vector<T> segs_x = hints.segments_x();
+    std::vector<T> segs_y = hints.segments_y();
 
     sparseir::Rule<T> rule = sparseir::legendre<T>(n_gauss);
 
-    auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel<T>,T>(lk, 1e-6);
+    auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel,T>(lk, 1e-6);
     // any check?
 }
 
@@ -123,51 +123,18 @@ TEST_CASE("compute_sve", "[compute_sve]"){
     std::string svd_strategy_actual;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = sparseir::auto_choose_accuracy(epsilon, "Float64x2");
 
-    std::cout << Twork_actual << std::endl;
     REQUIRE(Twork_actual == "Float64x2");
 
     using T = xprec::DDouble;
-    auto lk = std::make_shared<sparseir::LogisticKernel<T>>(12.0);
+    auto lk = sparseir::LogisticKernel(12.0);
 
-    //auto x = xprec::DDouble(1e-2, 0.0);
-    //auto y = xprec::DDouble(1e-2, 0.0);
-    //std::cout << "logistic kernel " << (*lk)(x, y) << std::endl;
-    //std::cout << "logistic kernel " << (*lk)(x, y, x + 1.0, 1.0 - x) << std::endl;
-
-    //auto lkeven = sparseir::ReducedKernel<sparseir::LogisticKernel<T>, T>(lk, 1);
-    //auto lkodd = sparseir::LogisticKernelOdd<T>(lk, -1);
-
-    //auto x = xprec::DDouble(0.9998771972664386, 0.0);
-    //auto y = xprec::DDouble(0.9999115760739907, 0.0);
-
-    //auto x = xprec::DDouble(3.0215757428655904e-01,-1.2440040515081731e-18);
-    //auto y = xprec::DDouble(9.9953761071802327e-01,1.1162040525118495e-18);
-    //auto res_odd =(lkodd)(x, y);
-    //std::cout << "logistic kernel odd " << res_odd << std::endl;
-
-    ////auto x = xprec::DDouble(5.3168114454740182e-04,4.7935591542849864e-20);
-    //auto y = xprec::DDouble(7.5138745175870199e-05,4.4864960587403202e-21);
-    //auto x_forward = xprec::DDouble(5.3168114454740182e-04,4.7935591542850225e-20);
-    //auto x_backward = xprec::DDouble(9.9946831885545262e-01,-2.1731979041252942e-17);
-
-    //std::cout << x + 1 << std::endl;
-    //std::cout << 1 - x << std::endl;
-    //x_forward = x + 1;
-    //auto res = (lkeven)(x, y);
-    //std::cout << "logistic kernel " << res << std::endl;
-
-    //std::cout << std::endl;
-    //auto res2 =(lkeven)(x, y, x_forward - 1, x_backward);
-    //std::cout << "logistic kernel " << res2 << std::endl;
-
-    auto sve = sparseir::compute_sve<T>(lk, safe_epsilon);
-    //using T = xprec::DDouble;
-    //auto lk = std::make_shared<sparseir::LogisticKernel<T>>(12.0);
-    //std::cout << "logistic kernel " << (*lk)(0.0, 0.0) << std::endl;
-    //std::cout << "logistic kernel " << (*lk)(0.1, 0.1) << std::endl;
-    //auto sve = sparseir::compute_sve<sparseir::LogisticKernel<T>>(lk);
+    //auto sve = sparseir::compute_sve<sparseir::LogisticKernel, T>(lk, safe_epsilon);
+    auto sve = sparseir::compute_sve<sparseir::LogisticKernel>(lk, safe_epsilon);
     auto s = sve.s;
-    std::cout << "S values: \n" << s << std::endl;
+    //std::cout << "S values: \n" << s << std::endl;
+    //std::cout << "diff " << s[0] - 0.52428 << std::endl;
+    auto diff = s[0] - 0.5242807065966566;
+    REQUIRE(std::abs(diff) < 1e-20);
 }
 
 TEST_CASE("sve.cpp", "[choose_accuracy]")
@@ -204,8 +171,7 @@ TEST_CASE("sve.cpp", "[choose_accuracy]")
 TEST_CASE("sve.cpp", "[truncate]")
 {
     using T = double;
-    sparseir::CentrosymmSVE<sparseir::LogisticKernel<T>, T> sve(
-    std::make_shared<sparseir::LogisticKernel<T>>(5), 1e-6);
+    sparseir::CentrosymmSVE<sparseir::LogisticKernel, T> sve(sparseir::LogisticKernel(5.), 1e-6);
     std::vector<Eigen::MatrixX<T>> matrices = sve.matrices();
     REQUIRE(matrices.size() == 2);
     std::vector<std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>,
