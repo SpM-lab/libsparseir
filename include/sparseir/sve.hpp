@@ -428,24 +428,7 @@ public:
     std::vector<Eigen::MatrixX<T>> matrices() const override
     {
         auto mats_even = even.matrices();
-        //std::cout << std::endl;
         auto mats_odd = odd.matrices();
-        //std::cout << std::endl;
-        //std::cout << "even(0, 0)" << mats_even[0](0, 0) << std::endl;
-        //std::cout << "sum matrices even: " << mats_even[0].sum() << std::endl;
-        //std::cout << mats_even[0].rows() << std::endl;
-        //std::cout << mats_even[0].cols() << std::endl;
-        //std::cout << "odd(0, 0)" << mats_odd[0](0, 0) << std::endl;
-        //std::cout << "odd(end, end)" << mats_odd[0](mats_odd[0].rows() - 1, mats_odd[0].cols() - 1) << std::endl;
-        //std::cout << "odd(50, 350)" << mats_odd[0](50, 350) << std::endl;
-        //std::cout << "sum matrices odd: " << mats_odd[0].sum() << std::endl;
-        //std::cout << "size matrices odd: " << mats_odd[0].rows() << std::endl;
-        //std::cout << "size matrices odd: " << mats_odd[0].cols() << std::endl;
-        //for (int i = 0; i < mats_odd[0].rows(); i += 50) {
-            //for (int j = 0; j < mats_odd[0].cols(); j += 50) {
-                //std::cout << " i " << i << " j " << j << " " << double(mats_odd[0](i, j)) << std::endl;
-            //}
-        //}
         return {mats_even[0], mats_odd[0]};
     }
 
@@ -604,13 +587,27 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
 
 
 // Function to compute SVE result
-template <typename K, typename T>
+template <typename K >
 SVEResult compute_sve(const K &kernel, double epsilon,
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
             int lmax = std::numeric_limits<int>::max(),
-            int n_gauss = -1)
+            int n_gauss = -1,
+            std::string Twork = "Float64x2"
+            )
 {
-    return pre_postprocess<K, T>(kernel, epsilon, n_gauss, cutoff, lmax);
+    // TODO: Sort out the logic
+    double safe_epsilon;
+    std::string Twork_actual;
+    std::string svd_strategy_actual;
+    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = sparseir::auto_choose_accuracy(epsilon, Twork);
+
+    if (Twork == "Float64") {
+        return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff, lmax);
+    } else if (Twork == "Float64x2") {
+        return pre_postprocess<K, xprec::DDouble>(kernel, safe_epsilon, n_gauss, cutoff, lmax);
+    } else {
+        throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
+    }
 }
 
 

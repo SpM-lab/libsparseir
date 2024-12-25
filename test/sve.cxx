@@ -128,7 +128,8 @@ TEST_CASE("compute_sve", "[compute_sve]"){
     using T = xprec::DDouble;
     auto lk = sparseir::LogisticKernel(12.0);
 
-    auto sve = sparseir::compute_sve<sparseir::LogisticKernel, T>(lk, safe_epsilon);
+    //auto sve = sparseir::compute_sve<sparseir::LogisticKernel, T>(lk, safe_epsilon);
+    auto sve = sparseir::compute_sve<sparseir::LogisticKernel>(lk, safe_epsilon);
     auto s = sve.s;
     //std::cout << "S values: \n" << s << std::endl;
     //std::cout << "diff " << s[0] - 0.52428 << std::endl;
