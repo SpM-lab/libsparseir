@@ -14,15 +14,16 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double beta = 2.0;
         double omega_max = 5.0;
         double epsilon = 1e-5;
+        using T = double;
 
         // Define the kernel
-        sparseir::LogisticKernel kernel(beta * omega_max);
+        sparseir::LogisticKernel<T> kernel(beta * omega_max);
 
         // Specify both template parameters: S and K
-        using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>;
-        using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic, sparseir::LogisticKernel>;
+        using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel<T>>;
+        using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic, sparseir::LogisticKernel<T>>;
 
-        std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon);
+        std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases<T>(beta, omega_max, epsilon);
 
         // Ensure FiniteTempBasisSet is properly instantiated with the kernel type
         /*
@@ -41,15 +42,16 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double beta = 2.0;
         double omega_max = 5.0;
         double epsilon = 1e-5;
+        using T = double;
 
-        sparseir::LogisticKernel kernel(beta * omega_max);
+        auto kernel = std::make_shared<sparseir::LogisticKernel<T>>(beta * omega_max);
         // Specify the template argument for SVEResult
-        sparseir::SVEResult<sparseir::LogisticKernel> sve_result = sparseir::compute_sve(kernel);
+        sparseir::SVEResult sve_result = sparseir::compute_sve<T>(kernel, epsilon);
 
-        using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>;
-        using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic, sparseir::LogisticKernel>;
+        using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel<T>>;
+        using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic, sparseir::LogisticKernel<T>>;
 
-        std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon, sve_result);
+        std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases<T>(beta, omega_max, epsilon, sve_result);
         /*
         sparseir::FiniteTempBasisSet<sparseir::LogisticKernel> bs(beta, omega_max, epsilon, sve_result);
 
@@ -72,11 +74,11 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double beta = 1e-3;
         double omega_max = 1e-3;
         double epsilon = 1e-100;
-        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>
-            basis(beta, omega_max, epsilon,
-                  sparseir::LogisticKernel(beta * omega_max));
-        sparseir::SVEResult<sparseir::LogisticKernel> sve =
-            sparseir::compute_sve(sparseir::LogisticKernel(beta * omega_max));
+        using T = xprec::DDouble;
+        auto kernel = std::make_shared<sparseir::LogisticKernel<T>>(beta * omega_max);
+        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel<T>>
+            basis(beta, omega_max, epsilon, kernel);
+        sparseir::SVEResult sve = sparseir::compute_sve<T>(kernel, epsilon);
         REQUIRE(sve.s.size() > 0);
         REQUIRE(basis.s.size() > 0);
         double scale = std::sqrt(beta / 2.0 * omega_max);
@@ -92,16 +94,23 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double beta = 3.0;
         double omega_max = 4.0;
         double epsilon = 1e-6;
+        using T = double;
 
         // Specify both template parameters
-        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> basis(beta, omega_max, epsilon, sparseir::LogisticKernel(beta * omega_max));
-        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel> rescaled_basis = basis.rescale(2.0);
+        auto kernel = std::make_shared<sparseir::LogisticKernel<T>>(beta * omega_max);
+        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel<T>> basis(beta, omega_max, epsilon, kernel);
+        sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel<T>> rescaled_basis = basis.rescale(2.0);
         REQUIRE(rescaled_basis.sve_result->s.size() == basis.sve_result->s.size());
         REQUIRE(rescaled_basis.get_wmax() == 6.0);
     }
 
     SECTION("default_sampling_points") {
-        auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>(3., 4., 1e-6);
+        using T = double;
+        auto beta = 3.0;
+        auto omega_max = 4.0;
+        auto epsilon = 1e-6;
+        auto kernel = std::make_shared<sparseir::LogisticKernel<T>>(beta * omega_max);
+        auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel<T>>(beta, omega_max, epsilon, kernel);
         auto sve = basis.sve_result;
         auto s = sve->s;
         //std::cout << "Singular values: " << s.transpose() << std::endl;

@@ -41,6 +41,7 @@ template<typename T>
 class AbstractKernel
 {
 public:
+    using ScalarT = T;
     double lambda_;
     // Constructor
     AbstractKernel() { }
@@ -162,6 +163,7 @@ public:
 template<typename T>
 class AbstractReducedKernel : public AbstractKernel<T> {
 public:
+    using ScalarT = T;
     int sign;
     std::shared_ptr<const AbstractKernel<T>> inner;
 
@@ -221,6 +223,7 @@ T callreduced(const AbstractReducedKernel<T> &kernel, T x,
 template<typename T>
 class LogisticKernel : public AbstractKernel<T> {
 public:
+    using ScalarT = T;
     // Default constructor
     LogisticKernel() : AbstractKernel<T>() { }
 
@@ -394,6 +397,7 @@ private:
 template<typename T>
 class RegularizedBoseKernel : public AbstractKernel<T> {
 public:
+    using ScalarT = T;
     /**
      * @brief Constructor for RegularizedBoseKernel.
      *
@@ -563,6 +567,7 @@ private:
 template <typename K, typename T>
 class ReducedKernel : public AbstractReducedKernel<T> {
 public:
+    using ScalarT = T;
     std::shared_ptr<const K>
         inner_kernel_; ///< The inner kernel K.
     int sign_;         ///< The sign (+1 or -1).
@@ -1006,7 +1011,7 @@ std::shared_ptr<AbstractKernel<T>>
 get_symmetrized(std::shared_ptr<AbstractKernel<T>> kernel, int sign)
 {
     if (auto logisticKernel =
-            std::dynamic_pointer_cast<const LogisticKernel<T>>(kernel)) {
+            std::dynamic_pointer_cast<LogisticKernel<T>>(kernel)) {
         if (sign == -1) {
             return std::make_shared<LogisticKernelOdd<T>>(logisticKernel, sign);
         } else {
