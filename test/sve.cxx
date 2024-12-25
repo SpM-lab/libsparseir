@@ -57,46 +57,63 @@ void check_smooth(const std::function<double(double)> &u,
     */
 }
 
-/*
-TEST_CASE("sve.cpp", "[SamplingSVE]")
-{
-    //sparseir::LogisticKernel lk(10.0);
-    auto lk = std::make_shared<sparseir::LogisticKernel>(10.0);
+template<typename T>
+void
+_test_sve() {
+    auto lk = std::make_shared<sparseir::LogisticKernel<T>>(10.0);
     REQUIRE(lk->lambda_ == 10.0);
-    auto hints = sparseir::sve_hints(lk, 1e-6);
+    auto hints = sparseir::sve_hints<T>(lk, 1e-6);
     int nsvals_hint = hints->nsvals();
     int n_gauss = hints->ngauss();
-    std::vector<double> segs_x = hints->segments_x();
-    std::vector<double> segs_y = hints->segments_y();
+    std::vector<T> segs_x = hints->segments_x();
+    std::vector<T> segs_y = hints->segments_y();
 
     // Ensure `convert` is declared before this line
-    sparseir::Rule<double> rule = sparseir::legendre<double>(n_gauss);
+    sparseir::Rule<T> rule = sparseir::legendre<T>(n_gauss);
 
-    sparseir::Rule<double> gauss_x = rule.piecewise(segs_x);
-    sparseir::Rule<double> gauss_y = rule.piecewise(segs_y);
-    auto ssve1 = sparseir::SamplingSVE<sparseir::LogisticKernel>(lk, 1e-6);
+    sparseir::Rule<T> gauss_x = rule.piecewise(segs_x);
+    sparseir::Rule<T> gauss_y = rule.piecewise(segs_y);
+    auto ssve1 = sparseir::SamplingSVE<sparseir::LogisticKernel<T>,T>(lk, 1e-6);
     REQUIRE(ssve1.n_gauss == n_gauss);
-    auto ssve2 = sparseir::SamplingSVE<sparseir::LogisticKernel>(lk, 1e-6, 12);
+    auto ssve2 = sparseir::SamplingSVE<sparseir::LogisticKernel<T>,T>(lk, 1e-6, 12);
     REQUIRE(ssve2.n_gauss == 12);
 
     auto ssve1_double =
-        sparseir::SamplingSVE<sparseir::LogisticKernel, double>(lk, 1e-6);
+        sparseir::SamplingSVE<sparseir::LogisticKernel<T>, T>(lk, 1e-6);
     REQUIRE(ssve1_double.n_gauss == n_gauss);
     auto ssve2_double =
-        sparseir::SamplingSVE<sparseir::LogisticKernel, double>(lk, 1e-6, 12);
+        sparseir::SamplingSVE<sparseir::LogisticKernel<T>, T>(lk, 1e-6, 12);
     REQUIRE(ssve2_double.n_gauss == 12);
-
-    auto ssve1_ddouble =
-        sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(lk,
-                                                                        1e-6);
-    REQUIRE(ssve1_ddouble.n_gauss == n_gauss);
-    auto ssve2_ddouble =
-        sparseir::SamplingSVE<sparseir::LogisticKernel, xprec::DDouble>(
-            lk, 1e-6, 12);
-    REQUIRE(ssve2_ddouble.n_gauss == 12);
 }
-*/
 
+TEST_CASE("sve.cpp", "[SamplingSVE]")
+{
+    _test_sve<double>();
+    _test_sve<xprec::DDouble>();
+}
+
+
+template<typename T>
+void
+_test_centrosymmsve() {
+    auto lk = std::make_shared<sparseir::LogisticKernel<T>>(10.0);
+    auto hints = sparseir::sve_hints<T>(lk, 1e-6);
+    int nsvals_hint = hints->nsvals();
+    int n_gauss = hints->ngauss();
+    std::vector<T> segs_x = hints->segments_x();
+    std::vector<T> segs_y = hints->segments_y();
+
+    sparseir::Rule<T> rule = sparseir::legendre<T>(n_gauss);
+
+    auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel<T>,T>(lk, 1e-6);
+    // any check?
+}
+
+TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]")
+{
+    _test_centrosymmsve<double>();
+    _test_centrosymmsve<xprec::DDouble>();
+}
 
 TEST_CASE("compute_sve", "[compute_sve]"){
     auto epsilon = std::numeric_limits<double>::quiet_NaN();
@@ -151,4 +168,76 @@ TEST_CASE("compute_sve", "[compute_sve]"){
     //auto sve = sparseir::compute_sve<sparseir::LogisticKernel<T>>(lk);
     auto s = sve.s;
     std::cout << "S values: \n" << s << std::endl;
+}
+
+TEST_CASE("sve.cpp", "[choose_accuracy]")
+{
+    REQUIRE(sparseir::choose_accuracy(nullptr, nullptr) ==
+            std::make_tuple(2.2204460492503131e-16, "Float64x2", "default"));
+    REQUIRE(sparseir::choose_accuracy(nullptr, "Float64") ==
+            std::make_tuple(1.4901161193847656e-8, "Float64", "default"));
+    REQUIRE(sparseir::choose_accuracy(nullptr, "Float64x2") ==
+            std::make_tuple(2.2204460492503131e-16, "Float64x2", "default"));
+
+    REQUIRE(sparseir::choose_accuracy(1e-6, nullptr) ==
+            std::make_tuple(1.0e-6, "Float64", "default"));
+    // Note: Catch2 doesn't have a built-in way to capture logs.
+    // You might need to implement a custom logger or use a library that
+    // supports log capturing. Add debug output to see the actual return value
+    REQUIRE(sparseir::choose_accuracy(1e-8, nullptr) ==
+            std::make_tuple(1.0e-8, "Float64x2", "default"));
+    REQUIRE(sparseir::choose_accuracy(1e-20, nullptr) ==
+            std::make_tuple(1.0e-20, "Float64x2", "default"));
+
+    REQUIRE(sparseir::choose_accuracy(1e-10, "Float64") ==
+            std::make_tuple(1.0e-10, "Float64", "accurate"));
+
+    REQUIRE(sparseir::choose_accuracy(1e-6, "Float64") ==
+            std::make_tuple(1.0e-6, "Float64", "default"));
+    REQUIRE(sparseir::auto_choose_accuracy(1e-6, "Float64", "auto") ==
+            std::make_tuple(1.0e-6, "Float64", "default"));
+    REQUIRE(sparseir::auto_choose_accuracy(1e-6, "Float64", "accurate") ==
+            std::make_tuple(1.0e-6, "Float64", "accurate"));
+
+}
+
+TEST_CASE("sve.cpp", "[truncate]")
+{
+    using T = double;
+    sparseir::CentrosymmSVE<sparseir::LogisticKernel<T>, T> sve(
+    std::make_shared<sparseir::LogisticKernel<T>>(5), 1e-6);
+    std::vector<Eigen::MatrixX<T>> matrices = sve.matrices();
+    REQUIRE(matrices.size() == 2);
+    std::vector<std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>,
+                            Eigen::MatrixX<T>>>
+        svds;
+    for (const auto &mat : matrices) {
+        auto svd = sparseir::compute_svd(mat);
+        svds.push_back(svd);
+    }
+
+
+    // Extract singular values and vectors
+    std::vector<Eigen::MatrixX<T>> u_list, v_list;
+    std::vector<Eigen::VectorX<T>> s_list;
+    for (const auto &svd : svds) {
+        auto u = std::get<0>(svd);
+        auto s = std::get<1>(svd);
+        auto v = std::get<2>(svd);
+        u_list.push_back(u);
+        s_list.push_back(s);
+        v_list.push_back(v);
+    }
+    for (int lmax = 3; lmax <= 20; ++lmax) {
+        auto truncated =
+            sparseir::truncate(u_list, s_list, v_list, 1e-8, lmax);
+        auto u = std::get<0>(truncated);
+        auto s = std::get<1>(truncated);
+        auto v = std::get<2>(truncated);
+
+        auto sveresult = sve.postprocess(u, s, v);
+        REQUIRE(sveresult.u.size() == sveresult.s.size());
+        REQUIRE(sveresult.s.size() == sveresult.v.size());
+        REQUIRE(sveresult.s.size() <= static_cast<size_t>(lmax - 1));
+    }
 }

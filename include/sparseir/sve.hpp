@@ -409,7 +409,7 @@ public:
 };
 
 // CentrosymmSVE class
-template <typename K, typename T = double>
+template <typename K, typename T>
 class CentrosymmSVE : public AbstractSVE<T> {
 public:
     std::shared_ptr<K> kernel;
