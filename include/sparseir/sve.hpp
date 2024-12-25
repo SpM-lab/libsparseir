@@ -237,6 +237,13 @@ public:
     {
         std::vector<Eigen::MatrixX<T>> mats;
         Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
+        std::cout << "matrix_from_gauss " << A(0, 0) << std::endl;
+        std::cout << "x[0]" << gauss_x.x[0] << std::endl;
+        std::cout << "y[0]" << gauss_y.x[0] << std::endl;
+        std::cout << "debug" << gauss_x.x_forward[0] << " " << gauss_x.x_backward[0] << std::endl;
+        std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0]) << std::endl;
+        std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0], gauss_x.x_forward[0], gauss_y.x_backward[0]) << std::endl;
+        std::cout << kernel->operator()(gauss_x.x[0], gauss_y.x[0], gauss_x.x_forward[0], gauss_y.x_forward[0]) << std::endl;
         //for (int i = 0; i < gauss_x.w.size(); ++i) {
             //std::cout << "gauss_x.w " << gauss_x.w[i] << std::endl;
             //std::cout << "gauss_x.x " << gauss_x.x[i] << std::endl;

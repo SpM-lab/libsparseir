@@ -77,22 +77,29 @@ public:
          T b = 1)
         : x(x), w(w), a(a), b(b)
     {
-        this->x_forward = x_forward.size() == 0
-                              ? Eigen::VectorX<T>::Zero(x.size())
-                              : x_forward;
-        this->x_backward = x_backward.size() == 0
-                               ? Eigen::VectorX<T>::Zero(x.size())
-                               : x_backward;
-        if (x_forward.size() == 0) {
-            std::transform(x.data(), x.data() + x.size(),
-                           this->x_forward.data(),
-                           [a](T xi) { return xi - a; });
-        }
-        if (x_backward.size() == 0) {
-            std::transform(x.data(), x.data() + x.size(),
-                           this->x_backward.data(),
-                           [b](T xi) { return b - xi; });
-        }
+        //this->x_forward = x_forward.size() == 0
+                              //? Eigen::VectorX<T>::Zero(x.size())
+                              //: x_forward;
+        //this->x_backward = x_backward.size() == 0
+                               //? Eigen::VectorX<T>::Zero(x.size())
+                               //: x_backward;
+        this->x_forward = Eigen::VectorX<T>::Zero(x.size());
+        this->x_backward = Eigen::VectorX<T>::Zero(x.size());
+        std::transform(this->x.data(), this->x.data() + this->x.size(),
+                       this->x_forward.data(), [a](T xi) { return xi - a; });
+        std::transform(this->x.data(), this->x.data() + this->x.size(),
+                       this->x_backward.data(), [b](T xi) { return b - xi; });
+//
+        //if (x_forward.size() == 0) {
+            //std::transform(x.data(), x.data() + x.size(),
+                           //this->x_forward.data(),
+                           //[a](T xi) { return xi - a; });
+        //}
+        //if (x_backward.size() == 0) {
+            //std::transform(x.data(), x.data() + x.size(),
+                           //this->x_backward.data(),
+                           //[b](T xi) { return b - xi; });
+        //}
     }
 
     template <typename U>
@@ -144,7 +151,8 @@ public:
         }
         std::vector<Rule<T>> rules;
         for (size_t i = 0; i < edges.size() - 1; ++i) {
-            rules.push_back(reseat(T(edges[i]), T(edges[i + 1])));
+            auto rule_ = reseat(T(edges[i]), T(edges[i + 1]));
+            rules.push_back(rule_);
         }
         return join(rules);
     }
@@ -166,6 +174,7 @@ public:
         T prev_b = a;
         Eigen::VectorX<T> x, w, x_forward, x_backward;
 
+        int counter = 0;
         for (const auto &curr : gauss_list) {
             if (curr.a != prev_b) {
                 throw std::invalid_argument("Gauss rules must be ascending");
@@ -191,6 +200,7 @@ public:
             w.tail(curr.w.size()) = curr.w;
             x_forward.tail(curr_x_forward.size()) = curr_x_forward;
             x_backward.tail(curr_x_backward.size()) = curr_x_backward;
+            counter ++;
         }
 
         return Rule<T>(x, w, x_forward, x_backward, a, b);

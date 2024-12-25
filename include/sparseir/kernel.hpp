@@ -180,6 +180,11 @@ public:
             throw std::invalid_argument("sign must be -1 or 1");
         }
     }
+
+    T operator()(T x, T y, T x_plus = std::numeric_limits<double>::quiet_NaN(), T x_minus = std::numeric_limits<double>::quiet_NaN()) const override
+    {
+        return callreduced(*this, x, y, x_plus, x_minus);
+    }
 };
 
 template<typename T>
@@ -188,7 +193,9 @@ T callreduced(const AbstractReducedKernel<T> &kernel, T x,
 {
     x_plus += 1;
     auto K_plus = (*kernel.inner)(x, +y, x_plus, x_minus);
-    auto K_minus = (*kernel.inner)(x, -y, x_minus, x_plus);
+    auto K_minus = (*kernel.inner)(x, -y, x_plus, x_minus);
+    //////std::cout << "K_plus " << K_plus << std::endl;
+    //std::cout << "K_minus " << K_minus << std::endl;
     return K_plus + kernel.sign * K_minus;
 }
 
@@ -262,6 +269,9 @@ public:
         T u_minus = std::get<1>(uv_values);
         T v = std::get<2>(uv_values);
 
+        //std::cout << "u_plus " << u_plus << std::endl;
+        //std::cout << "u_minus " << u_minus << std::endl;
+        //std::cout << "v " << v << std::endl;
         return compute(u_plus, u_minus, v);
     }
 
@@ -334,6 +344,7 @@ private:
         if (isnan(x_minus)) {
             x_minus = 1.0 - x;
         }
+        //std::cout << "x_plus " << x_plus << std::endl;
         T u_plus = 0.5 * x_plus;
         T u_minus = 0.5 * x_minus;
         T v = this->lambda_ * y;
@@ -352,18 +363,18 @@ private:
     {
         using std::abs;
 
-        T abs_v = abs(v);
+        T mabs_v = -abs(v);
 
         T numerator;
         T denominator;
 
         if (v >= 0) {
-            numerator = exp_impl(-u_plus * abs_v);
+            numerator = exp_impl(u_plus * mabs_v);
         } else {
-            numerator = exp_impl(-u_minus * abs_v);
+            numerator = exp_impl(u_minus * mabs_v);
         }
 
-        denominator = 1.0 + exp_impl(-abs_v);
+        denominator = 1.0 + exp_impl(mabs_v);
 
         return numerator / denominator;
     }
@@ -497,6 +508,7 @@ private:
         if (isnan(x_minus)) {
             x_minus = 1.0 - x;
         }
+        //std::cout << "x_plus " << x_plus << std::endl;
         T u_plus = 0.5 * x_plus;
         T u_minus = 0.5 * x_minus;
         T v = this->lambda_ * y;
@@ -568,7 +580,6 @@ public:
         if (!inner_kernel_->is_centrosymmetric()) {
             throw std::invalid_argument("Inner kernel must be centrosymmetric");
         }
-        std::cout << "sign: " << sign << std::endl;
         if (sign != 1 && sign != -1) {
             throw std::invalid_argument("sign must be -1 or 1");
         }
@@ -588,7 +599,7 @@ public:
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const override
     {
-        return call_reduced(x, y, x_plus, x_minus);
+        return callreduced(*this, x, y, x_plus, x_minus);
     }
 
     /**
@@ -650,6 +661,7 @@ private:
      * @param x_minus xmax - x.
      * @return The value of K_red(x, y).
      */
+    /*
     T call_reduced(T x, T y, T x_plus, T x_minus) const
     {
         using std::isnan;
@@ -670,6 +682,7 @@ private:
             return K_plus - K_minus;
         }
     }
+    */
 };
 
 
@@ -740,7 +753,6 @@ public:
             segments[i] = -zeros[nzeros - i - 1];
             segments[nzeros + i + 1] = zeros[i];
         }
-        std::cout << "logistic segments_x: " << segments.size() << std::endl;
         return segments;
     };
 
@@ -798,7 +810,6 @@ public:
         segments[0] = -T(1.0);
         segments[1 + nzeros] = T(0.0);
         segments[2 * nzeros + 2] = T(1.0);
-        std::cout << "logistic segments_y: " << segments.size() << std::endl;
         return segments;
     }
 
@@ -966,8 +977,6 @@ public:
     LogisticKernelOdd(std::shared_ptr<const LogisticKernel<T>> inner, int sign)
         : AbstractReducedKernel<T>(inner, sign)
     {
-        std::cout << "LogisticKernelOdd" << sign << std::endl;
-        std::cout << this->operator()(0.5, 0.5) << std::endl;
     }
     // Implement the pure virtual function from the parent class
     T operator()(T x, T y,
@@ -995,10 +1004,8 @@ get_symmetrized(std::shared_ptr<AbstractKernel<T>> kernel, int sign)
     if (auto logisticKernel =
             std::dynamic_pointer_cast<const LogisticKernel<T>>(kernel)) {
         if (sign == -1) {
-            std::cout << "LogisticKernelOdd" << std::endl;
             return std::make_shared<LogisticKernelOdd<T>>(logisticKernel, sign);
         } else {
-            std::cout << "LogisticKernelEven" << std::endl;
             return std::make_shared<ReducedKernel<LogisticKernel<T>,T>>(
                 logisticKernel, sign);
         }
@@ -1170,8 +1177,6 @@ sve_hints(std::shared_ptr<const AbstractKernel<T>> kernel, double epsilon)
             sve_hints(reducedKernel->inner, epsilon));
     } else {
         auto reducedKernel_ = std::dynamic_pointer_cast<const AbstractReducedKernel<T>>(kernel);
-        std::cout << reducedKernel_ << std::endl;
-        std::cout  << typeid(kernel).name() << std::endl;
         throw std::invalid_argument("Unsupported kernel type for SVE hints");
     }
 }
