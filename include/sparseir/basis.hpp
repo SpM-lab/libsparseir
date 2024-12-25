@@ -11,6 +11,8 @@
 
 namespace sparseir {
 
+Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector &u, int L);
+
 // Abstract class with S = Fermionic or Bosonic
 template <typename S>
 class AbstractBasis {
