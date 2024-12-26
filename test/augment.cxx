@@ -139,9 +139,9 @@ TEST_CASE("Augmented bosonic basis") {
     T pole = 1.0;
     T c = 1e-2;
 
-    /*
     // Create tau sampling points
-    auto tau_sampling = make_tau_sampling(basis_aug);
+    auto tau_sampling = TauSampling(basis_aug);
+    /*
     auto tau = tau_sampling.tau;
     Eigen::VectorX<T> gtau(tau.size());
     for (size_t i = 0; i < tau.size(); ++i) {
