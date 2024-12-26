@@ -85,6 +85,10 @@ public:
         return sampling_points_;
     }
 
+    const Eigen::VectorXd& tau() const {
+        return sampling_points_;
+    }
+
     const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& matrix() const override {
         return matrix_;
     }

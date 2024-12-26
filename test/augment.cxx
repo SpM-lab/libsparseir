@@ -141,8 +141,8 @@ TEST_CASE("Augmented bosonic basis") {
 
     // Create tau sampling points
     auto tau_sampling = TauSampling(basis_aug);
-    /*
     auto tau = tau_sampling.tau;
+    REQUIRE().size() == basis_aug.size());
     Eigen::VectorX<T> gtau(tau.size());
     for (size_t i = 0; i < tau.size(); ++i) {
         gtau(i) = c - exp(-tau(i) * pole) / (1 - exp(-beta * pole));
@@ -165,7 +165,6 @@ TEST_CASE("Augmented bosonic basis") {
     Eigen::VectorX<T> gtau_reconst = tau_matrix * gl_fit;
 
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
-    */
 }
 
 
