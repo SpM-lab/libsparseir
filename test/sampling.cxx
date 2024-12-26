@@ -39,7 +39,7 @@ TEST_CASE("sampling", "[Sampling]") {
         Eigen::MatrixXd reconstructed_A = svd.matrixU() * svd.singularValues().asDiagonal() * svd.matrixV().transpose();
 
         // Fails
-        //REQUIRE((A - reconstructed_A).norm() <= 1e-15 * norm_A);
+        REQUIRE((A - reconstructed_A).norm() <= 1e-15 * norm_A);
 
         // Test multiplication with vector x
         Eigen::VectorXd x = Eigen::VectorXd::NullaryExpr(A.cols(), [&](auto) { return dist(rng); });
