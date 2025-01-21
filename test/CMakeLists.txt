@@ -24,7 +24,7 @@ add_executable(libsparseirtests
     kernel.cxx
     svd.cxx
     sve.cxx
-    #basis.cxx
+    basis.cxx
     #augment.cxx
     #sampling.cxx
     #basis_set.cxx
