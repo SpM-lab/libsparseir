@@ -61,7 +61,15 @@ template<typename T>
 void
 _test_sve() {
     auto lk = sparseir::LogisticKernel(10.0);
+    REQUIRE(lk.is_centrosymmetric());
     REQUIRE(lk.lambda_ == 10.0);
+
+    // Float64(sqrt(eps(SparseIR.Float64x2)))
+    // sve_hints for small epsilon = 2.220446049250313e-16
+    auto hints_small = sparseir::sve_hints<T>(lk, 2.220446049250313e-16);
+    REQUIRE(hints_small.ngauss() == 16);
+
+    // sve_hints for epsilon = 1e-6
     auto hints = sparseir::sve_hints<T>(lk, 1e-6);
     int nsvals_hint = hints.nsvals();
     int n_gauss = hints.ngauss();
@@ -74,7 +82,12 @@ _test_sve() {
     sparseir::Rule<T> gauss_x = rule.piecewise(segs_x);
     sparseir::Rule<T> gauss_y = rule.piecewise(segs_y);
     auto ssve1 = sparseir::SamplingSVE<sparseir::LogisticKernel,T>(lk, 1e-6);
+    REQUIRE(n_gauss == 10);
     REQUIRE(ssve1.n_gauss == n_gauss);
+
+
+
+
     auto ssve2 = sparseir::SamplingSVE<sparseir::LogisticKernel,T>(lk, 1e-6, 12);
     REQUIRE(ssve2.n_gauss == 12);
 
