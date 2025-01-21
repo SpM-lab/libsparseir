@@ -85,9 +85,6 @@ _test_sve() {
     REQUIRE(n_gauss == 10);
     REQUIRE(ssve1.n_gauss == n_gauss);
 
-
-
-
     auto ssve2 = sparseir::SamplingSVE<sparseir::LogisticKernel,T>(lk, 1e-6, 12);
     REQUIRE(ssve2.n_gauss == 12);
 
@@ -126,6 +123,41 @@ TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]")
 {
     _test_centrosymmsve<double>();
     _test_centrosymmsve<xprec::DDouble>();
+}
+
+TEST_CASE("sve.cpp", "[nsvals]")
+{
+    // Lambda = 1.0
+    {
+        double lambda = 1.0;
+        auto lk = sparseir::LogisticKernel(lambda);
+        // Float64(sqrt(eps(SparseIR.Float64x2)))
+        // sve_hints for small epsilon = 2.220446049250313e-16
+        auto epsilon = 2.220446049250313e-16;
+        auto hints = sparseir::sve_hints<double>(lk, epsilon);
+        REQUIRE(hints.nsvals() == 26);
+
+        sparseir::ReducedKernel<sparseir::LogisticKernel> reduced_kernel =
+            sparseir::get_symmetrized(lk, std::integral_constant<int, +1>{});
+        auto hints_reduced = reduced_kernel.sve_hints<double>(epsilon);
+        REQUIRE(hints_reduced->nsvals() == (26 +1) / 2);
+    }
+
+    // Lambda = 1000.0
+    {
+        double lambda = 1000.0;
+        auto lk = sparseir::LogisticKernel(lambda);
+        // Float64(sqrt(eps(SparseIR.Float64x2)))
+        // sve_hints for small epsilon = 2.220446049250313e-16
+        auto epsilon = 2.220446049250313e-16;
+        auto hints = sparseir::sve_hints<double>(lk, epsilon);
+        REQUIRE(hints.nsvals() == (25 + 3) * 3); // 84
+
+        sparseir::ReducedKernel<sparseir::LogisticKernel> reduced_kernel =
+            sparseir::get_symmetrized(lk, std::integral_constant<int, +1>{});
+        auto hints_reduced = reduced_kernel.sve_hints<double>(epsilon);
+        REQUIRE(hints_reduced->nsvals() == (84 + 1) / 2);
+    }
 }
 
 TEST_CASE("compute_sve", "[compute_sve]"){
