@@ -1136,7 +1136,7 @@ public:
     {
         // Implement this function
         // For example, you can delegate the call to the inner object
-        return inner->nsvals();
+        return (inner->nsvals() + 1) / 2;
     }
 
     int ngauss() const override
