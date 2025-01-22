@@ -63,6 +63,13 @@ std::tuple<bool, bool> kernel_accuracy_test(Kernel &K)
     return std::make_tuple(b1, b2);
 }
 
+TEST_CASE("LogisticKernel", "[Kernel]")
+{
+    auto kernel = sparseir::LogisticKernel(40000.0);
+    auto reduced_kernel = sparseir::get_symmetrized(kernel, std::integral_constant<int, +1>{});
+    REQUIRE(true);
+}
+
 //TEST_CASE("Kernel Accuracy Test")
 //{
     //using T = double;
@@ -153,6 +160,29 @@ std::tuple<bool, bool> kernel_accuracy_test(Kernel &K)
     }
     */
 //}
+
+TEST_CASE("kernel.cpp", "[get_symmetrized]")
+{
+    SECTION("even")
+    {
+        double epsilon = 2.220446049250313e-16;
+        auto kernel = sparseir::LogisticKernel(5.0);
+        auto reduced_kernel = sparseir::get_symmetrized(
+            kernel, std::integral_constant<int, +1>{});
+        REQUIRE(reduced_kernel.inner.lambda_ == kernel.lambda_);
+        REQUIRE(reduced_kernel.sign == +1);
+    }
+
+    SECTION("odd")
+    {
+        double epsilon = 2.220446049250313e-16;
+        auto kernel = sparseir::LogisticKernel(5.0);
+        auto reduced_kernel = sparseir::get_symmetrized(
+            kernel, std::integral_constant<int, -1>{});
+        REQUIRE(reduced_kernel.inner.lambda_ == kernel.lambda_);
+        REQUIRE(reduced_kernel.sign == -1);
+    }
+}
 
 TEST_CASE("Kernel Singularity Test")
 {
