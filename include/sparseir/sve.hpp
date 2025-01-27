@@ -30,7 +30,7 @@ public:
     SVEResult() {}
     // Constructor
     SVEResult(const PiecewiseLegendrePolyVector &u_, const Eigen::VectorXd &s_,
-              const PiecewiseLegendrePolyVector &v_, 
+              const PiecewiseLegendrePolyVector &v_,
               double epsilon_)
         : u(u_), s(s_), v(v_), epsilon(epsilon_)
     {
@@ -471,10 +471,72 @@ public:
 
         // Rest of the implementation...
         // Create PiecewiseLegendrePolyVector from merged vectors
-        PiecewiseLegendrePolyVector u_complete(u_merged);
-        PiecewiseLegendrePolyVector v_complete(v_merged);
+        PiecewiseLegendrePolyVector _u_complete(u_merged);
+        PiecewiseLegendrePolyVector _v_complete(v_merged);
 
-        return SVEResult(u_complete, s_merged, v_complete, epsilon);
+        // julia> signs = [fill(1, length(s_even)); fill(-1, length(s_odd))]
+        Eigen::VectorXi sign_even = Eigen::VectorXi::Ones(result_even.s.size());
+        Eigen::VectorXi sign_odd = -Eigen::VectorXi::Ones(result_odd.s.size());
+        Eigen::VectorXi signs = Eigen::VectorXi::Zero(s_merged.size());
+        signs << sign_even, sign_odd;
+
+        /*
+            Sort: now for totally positive kernels like defined in this
+            module, this strictly speaking is not necessary as we know that the
+            even/odd functions intersperse.
+        */
+        // julia> sort = sortperm(s; rev=true)
+        // Get the sorted permutation indices
+        std::vector<size_t> sorted_indices = sortperm_rev(s_merged);
+
+        // Apply the sorted permutation to u_complete, v_complete, signs, and s_merged
+        std::vector<PiecewiseLegendrePoly> u_sorted(sorted_indices.size());
+        std::vector<PiecewiseLegendrePoly> v_sorted(sorted_indices.size());
+        Eigen::VectorX<T> signs_sorted(sorted_indices.size());
+        Eigen::VectorXd s_sorted(sorted_indices.size());
+
+        for (size_t i = 0; i < sorted_indices.size(); ++i) {
+            u_sorted[i] = u_merged[sorted_indices[i]];
+            v_sorted[i] = v_merged[sorted_indices[i]];
+            s_sorted[i] = s_merged[sorted_indices[i]];
+            signs_sorted[i] = signs[sorted_indices[i]];
+        }
+
+        std::vector<PiecewiseLegendrePoly> u_complete_vec;
+        std::vector<PiecewiseLegendrePoly> v_complete_vec;
+
+        for (size_t i = 0; i < u_sorted.size(); ++i) {
+            // Convert the data to double precision
+            Eigen::MatrixXd u_data = u_sorted[i].data.template cast<double>();
+            Eigen::MatrixXd v_data = v_sorted[i].data.template cast<double>();
+
+            // Create vectors for segments
+            std::vector<double> segs_x_double;
+            segs_x_double.reserve(segs_x_full.size());
+            for (const auto& x : segs_x_full) {
+                segs_x_double.push_back(static_cast<double>(x));
+            }
+
+            std::vector<double> segs_y_double;
+            segs_y_double.reserve(segs_y_full.size());
+            for (const auto& y : segs_y_full) {
+                segs_y_double.push_back(static_cast<double>(y));
+            }
+
+            // Create Eigen vectors from the segment vectors
+            Eigen::Map<Eigen::VectorXd> segs_x_eigen(segs_x_double.data(), segs_x_double.size());
+            Eigen::Map<Eigen::VectorXd> segs_y_eigen(segs_y_double.data(), segs_y_double.size());
+
+            // Create and store the polynomials
+            u_complete_vec.push_back(PiecewiseLegendrePoly(u_data, segs_x_eigen, i, segs_x_eigen, signs[i]));
+            v_complete_vec.push_back(PiecewiseLegendrePoly(v_data, segs_y_eigen, i, segs_y_eigen, signs[i]));
+        }
+
+        // Create the final vectors
+        PiecewiseLegendrePolyVector u_complete(u_complete_vec);
+        PiecewiseLegendrePolyVector v_complete(v_complete_vec);
+
+        return SVEResult(u_complete, s_sorted, v_complete, epsilon);
     }
 };
 
