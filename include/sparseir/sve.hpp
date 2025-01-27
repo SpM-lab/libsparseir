@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
+#include <cassert>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -489,6 +490,8 @@ public:
         // Get the sorted permutation indices
         std::vector<size_t> sorted_indices = sortperm_rev(s_merged);
 
+        assert(sorted_indices.size() == s_merged.size());
+
         // Apply the sorted permutation to u_complete, v_complete, signs, and s_merged
         std::vector<PiecewiseLegendrePoly> u_sorted(sorted_indices.size());
         std::vector<PiecewiseLegendrePoly> v_sorted(sorted_indices.size());
@@ -507,21 +510,9 @@ public:
 
         for (size_t i = 0; i < u_sorted.size(); ++i) {
             // Convert the data to double precision
-            Eigen::MatrixXd u_data = u_sorted[i].data.template cast<double>();
-            Eigen::MatrixXd v_data = v_sorted[i].data.template cast<double>();
+            Eigen::MatrixXd u_pos_data = u_sorted[i].data.template cast<double>() / std::sqrt(2);
+            Eigen::MatrixXd v_pos_data = v_sorted[i].data.template cast<double>() / std::sqrt(2);
 
-            // Create vectors for segments
-            std::vector<double> segs_x_double;
-            segs_x_double.reserve(segs_x_full.size());
-            for (const auto& x : segs_x_full) {
-                segs_x_double.push_back(static_cast<double>(x));
-            }
-
-            std::vector<double> segs_y_double;
-            segs_y_double.reserve(segs_y_full.size());
-            for (const auto& y : segs_y_full) {
-                segs_y_double.push_back(static_cast<double>(y));
-            }
 
             // Create Eigen vectors from the segment vectors
             Eigen::Map<Eigen::VectorXd> segs_x_eigen(segs_x_double.data(), segs_x_double.size());
