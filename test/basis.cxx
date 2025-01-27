@@ -11,8 +11,8 @@
 
 TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
     SECTION("Basic consistency") {
-        double beta = 2.0;
-        double omega_max = 5.0;
+        double beta = 1.0;
+        double omega_max = 1.0;
         double epsilon = 1e-5;
         using T = double;
 
@@ -23,8 +23,8 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic>;
         using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic>;
 
-        /*
         std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon);
+        /*
 
         // Ensure FiniteTempBasisSet is properly instantiated with the kernel type
         sparseir::FiniteTempBasisSet<sparseir::LogisticKernel> bs(beta, omega_max, epsilon, kernel);
