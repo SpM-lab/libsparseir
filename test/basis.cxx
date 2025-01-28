@@ -75,10 +75,8 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         double omega_max = 1e-3;
         double epsilon = 1e-100;
         using T = xprec::DDouble;
-        /*
-        auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
-        sparseir::FiniteTempBasis<sparseir::Fermionic>
-            basis(beta, omega_max, epsilon, kernel);
+        auto kernel = sparseir::LogisticKernel(beta * omega_max);
+        sparseir::FiniteTempBasis<sparseir::Fermionic> basis(beta, omega_max, epsilon, kernel);
         sparseir::SVEResult sve = sparseir::compute_sve(kernel, epsilon);
         REQUIRE(sve.s.size() > 0);
         REQUIRE(basis.s.size() > 0);
@@ -89,7 +87,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         REQUIRE(basis.s.isApprox(scaled_s_eigen));
         // Access accuracy as a member variable if it's not a function
         REQUIRE(std::abs(basis.accuracy - sve.s(sve.s.size() - 1) / sve.s(0)) < 1e-10);
-        */
     }
 
     SECTION("Rescaling test") {
@@ -116,11 +113,13 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         auto sve = basis.sve_result;
         auto s = sve->s;
         //std::cout << "Singular values: " << s.transpose() << std::endl;
-        //int L = 10;
-        //Eigen::VectorXd pts_L = default_sampling_points(sve->u, L);
-        //REQUIRE(pts_L.size() == L);
-        //Eigen::VectorXd pts_100 = default_sampling_points(sve->u, 100);
-        //REQUIRE(pts_100.size() == 24);
+        /*
+        int L = 10;
+        Eigen::VectorXd pts_L = default_sampling_points(sve->u, L);
+        REQUIRE(pts_L.size() == L);
+        Eigen::VectorXd pts_100 = default_sampling_points(sve->u, 100);
+        REQUIRE(pts_100.size() == 24);
+        */
     }
 
 }
