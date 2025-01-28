@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <cmath>
+#include <cassert>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -30,7 +31,7 @@ public:
     SVEResult() {}
     // Constructor
     SVEResult(const PiecewiseLegendrePolyVector &u_, const Eigen::VectorXd &s_,
-              const PiecewiseLegendrePolyVector &v_, 
+              const PiecewiseLegendrePolyVector &v_,
               double epsilon_)
         : u(u_), s(s_), v(v_), epsilon(epsilon_)
     {
@@ -471,10 +472,101 @@ public:
 
         // Rest of the implementation...
         // Create PiecewiseLegendrePolyVector from merged vectors
-        PiecewiseLegendrePolyVector u_complete(u_merged);
-        PiecewiseLegendrePolyVector v_complete(v_merged);
+        PiecewiseLegendrePolyVector _u_complete(u_merged);
+        PiecewiseLegendrePolyVector _v_complete(v_merged);
 
-        return SVEResult(u_complete, s_merged, v_complete, epsilon);
+        // julia> signs = [fill(1, length(s_even)); fill(-1, length(s_odd))]
+        Eigen::VectorXi sign_even = Eigen::VectorXi::Ones(result_even.s.size());
+        Eigen::VectorXi sign_odd = -Eigen::VectorXi::Ones(result_odd.s.size());
+        Eigen::VectorXi signs = Eigen::VectorXi::Zero(s_merged.size());
+        signs << sign_even, sign_odd;
+
+        /*
+            Sort: now for totally positive kernels like defined in this
+            module, this strictly speaking is not necessary as we know that the
+            even/odd functions intersperse.
+        */
+        // julia> sort = sortperm(s; rev=true)
+        // Get the sorted permutation indices
+        std::vector<size_t> sorted_indices = sortperm_rev(s_merged);
+
+        assert(sorted_indices.size() == s_merged.size());
+
+        // Apply the sorted permutation to u_complete, v_complete, signs, and s_merged
+        std::vector<PiecewiseLegendrePoly> u_sorted(sorted_indices.size());
+        std::vector<PiecewiseLegendrePoly> v_sorted(sorted_indices.size());
+        Eigen::VectorX<T> signs_sorted(sorted_indices.size());
+        Eigen::VectorXd s_sorted(sorted_indices.size());
+
+        for (size_t i = 0; i < sorted_indices.size(); ++i) {
+            u_sorted[i] = u_merged[sorted_indices[i]];
+            v_sorted[i] = v_merged[sorted_indices[i]];
+            s_sorted[i] = s_merged[sorted_indices[i]];
+            signs_sorted[i] = signs[sorted_indices[i]];
+        }
+
+        auto full_hints = sve_hints<T>(kernel, epsilon);
+        auto segs_x_vec = full_hints.segments_x();
+        auto segs_y_vec = full_hints.segments_y();
+
+        std::vector<double> segs_x_double(segs_x_vec.size());
+        std::vector<double> segs_y_double(segs_y_vec.size());
+
+        // Convert xprec::DDouble to double
+        for (size_t i = 0; i < segs_x_vec.size(); ++i) {
+            segs_x_double[i] = static_cast<double>(segs_x_vec[i]);
+        }
+        for (size_t i = 0; i < segs_y_vec.size(); ++i) {
+            segs_y_double[i] = static_cast<double>(segs_y_vec[i]);
+        }
+        // Use the double vectors instead
+        Eigen::VectorXd segs_x = Eigen::Map<Eigen::VectorXd>(
+            segs_x_double.data(), segs_x_double.size());
+        Eigen::VectorXd segs_y = Eigen::Map<Eigen::VectorXd>(
+            segs_y_double.data(), segs_y_double.size());
+
+        std::vector<PiecewiseLegendrePoly> u_complete_vec;
+        std::vector<PiecewiseLegendrePoly> v_complete_vec;
+
+        Eigen::VectorXd poly_flip_x(u_sorted[0].data.rows());
+        for (int i = 0; i < u_sorted[0].data.rows(); ++i) {
+            poly_flip_x(i) = (i % 2 == 0) ? 1.0 : -1.0;
+        }
+
+        for (size_t i = 0; i < u_sorted.size(); ++i) {
+            // Convert the data to double precision
+            Eigen::MatrixXd u_pos_data = u_sorted[i].data.template cast<double>() / std::sqrt(2);
+            Eigen::MatrixXd v_pos_data = v_sorted[i].data.template cast<double>() / std::sqrt(2);
+
+            Eigen::MatrixXd u_neg_data = u_pos_data.rowwise().reverse();
+            u_neg_data = u_neg_data.array().colwise() * (poly_flip_x * signs[i]).array();
+            Eigen::MatrixXd v_neg_data = v_pos_data.rowwise().reverse();
+            v_neg_data = v_neg_data.array().colwise() * (poly_flip_x * signs[i]).array();
+
+            /*
+            julia> u_data = hcat(u_neg_data, u_pos_data)
+            julia> v_data = hcat(v_neg_data, v_pos_data)
+            */
+            Eigen::MatrixXd u_data = Eigen::MatrixXd::Zero(u_pos_data.rows(), u_neg_data.cols() + u_pos_data.cols());
+            u_data.leftCols(u_neg_data.cols()) = u_neg_data;
+            u_data.rightCols(u_pos_data.cols()) = u_pos_data;
+            Eigen::MatrixXd v_data = Eigen::MatrixXd::Zero(v_pos_data.rows(), v_neg_data.cols() + v_pos_data.cols());
+            v_data.leftCols(v_neg_data.cols()) = v_neg_data;
+            v_data.rightCols(v_pos_data.cols()) = v_pos_data;
+
+            Eigen::VectorXd segs_x_diff = segs_x.tail(segs_x.size() - 1) - segs_x.head(segs_x.size() - 1);
+            Eigen::VectorXd segs_y_diff = segs_y.tail(segs_y.size() - 1) - segs_y.head(segs_y.size() - 1);
+
+            // Create and store the polynomials
+            u_complete_vec.push_back(PiecewiseLegendrePoly(u_data, segs_x, i, segs_x_diff, signs[i]));
+            v_complete_vec.push_back(PiecewiseLegendrePoly(v_data, segs_y, i, segs_y_diff, signs[i]));
+        }
+
+        // Create the final vectors
+        PiecewiseLegendrePolyVector u_complete(u_complete_vec);
+        PiecewiseLegendrePolyVector v_complete(v_complete_vec);
+
+        return SVEResult(u_complete, s_sorted, v_complete, epsilon);
     }
 };
 

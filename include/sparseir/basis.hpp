@@ -208,6 +208,10 @@ public:
             this->accuracy = sve_result.s(s_.size() - 1) / sve_result_s0;
         }
 
+        auto uk = u_.polyvec[0].knots;
+        std::cout << "uk.size(): " << uk.size() << std::endl;
+        std::cout << "uk: \n" << uk << std::endl;
+
         this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel.ypower()))) * s_;
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
@@ -419,12 +423,12 @@ inline std::pair<FiniteTempBasis<Fermionic>,
         double epsilon = std::numeric_limits<double>::quiet_NaN()
     )
 {
-    auto kernel = std::make_shared<LogisticKernel>(beta * omega_max);
-    SVEResult sve_result = compute_sve(*kernel, epsilon);
+    auto kernel = LogisticKernel(beta * omega_max);
+    SVEResult sve_result = compute_sve(kernel, epsilon);
     auto basis_f = FiniteTempBasis<Fermionic>(
-        beta, omega_max, epsilon, *kernel, sve_result);
+        beta, omega_max, epsilon, kernel, sve_result);
     auto basis_b = FiniteTempBasis<Bosonic>(
-        beta, omega_max, epsilon, *kernel, sve_result);
+        beta, omega_max, epsilon, kernel, sve_result);
     return std::make_pair(basis_f, basis_b);
 }
 } // namespace sparseir

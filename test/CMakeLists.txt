@@ -14,6 +14,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(libsparseirtests
+    utils.cxx
     example.cxx
     _linalg.cxx
     _specfuncs.cxx
