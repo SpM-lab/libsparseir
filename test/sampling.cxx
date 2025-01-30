@@ -21,17 +21,25 @@ TEST_CASE("Sampling Tests") {
             auto sve_result = compute_sve(kernel, 1e-15);
             auto basis = make_shared<FiniteTempBasis<Bosonic>>(
                 beta, Lambda, 1e-15, kernel, sve_result);
+
+            REQUIRE(basis->size() > 0);  // Check basis size
+
             auto tau_sampling = make_shared<TauSampling<Bosonic>>(basis);
-            /*
-            // Generate random coefficients
+
+            // Check sampling points
+            REQUIRE(tau_sampling->sampling_points().size() > 0);
+
+            // Generate random coefficients of correct size
             Eigen::VectorXd rhol = Eigen::VectorXd::Random(basis->size());
-            Eigen::VectorXd gl = basis->s.array() * (-rhol.array());
-            Eigen::VectorXd gl = basis->s.array() * (-rhol.array());
+            REQUIRE(rhol.size() == basis->size());
+
             // Test evaluate and fit
-            Eigen::VectorXd gtau = tau_sampling->evaluate(gl);
-            Eigen::VectorXd gl_from_tau = tau_sampling->fit(gtau);
-            REQUIRE(gl.isApprox(gl_from_tau, 1e-10));
-            */
+            Eigen::VectorXd gtau = tau_sampling->evaluate(rhol);
+            REQUIRE(gtau.size() == tau_sampling->sampling_points().size());
+
+            Eigen::VectorXd rhol_recovered = tau_sampling->fit(gtau);
+            REQUIRE(rhol_recovered.size() == rhol.size());
+            REQUIRE(rhol.isApprox(rhol_recovered, 1e-10));
         }
     }
 }

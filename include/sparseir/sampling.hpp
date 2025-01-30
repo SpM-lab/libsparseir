@@ -43,24 +43,77 @@ class TauSampling : public AbstractSampling<S> {
 public:
     TauSampling(
         const std::shared_ptr<FiniteTempBasis<S>>& basis) : basis_(basis) {
+        // Get default sampling points from basis
         sampling_points_ = basis_->default_tau_sampling_points();
-        matrix_ = eval_matrix(this, basis_, sampling_points_);
-        matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
-    }
 
-    Eigen::VectorXd fit(
-        const Eigen::VectorXd& ax,
-        const Eigen::VectorXd* points = nullptr) const override {
-        return matrix_svd_.solve(ax);
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points generated");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(this, basis_, sampling_points_);
+
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis_->size()) {
+            throw std::runtime_error(
+                "Matrix dimensions mismatch: got " +
+                std::to_string(matrix_.rows()) + "x" +
+                std::to_string(matrix_.cols()) +
+                ", expected " + std::to_string(sampling_points_.size()) +
+                "x" + std::to_string(basis_->size()));
+        }
+
+        // Initialize SVD
+        matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
+            matrix_,
+            Eigen::ComputeFullU | Eigen::ComputeFullV
+        );
     }
 
     Eigen::VectorXd evaluate(
         const Eigen::VectorXd& al,
         const Eigen::VectorXd* points = nullptr) const override {
         if (points) {
-            return eval_matrix(this, basis_, *points) * al;
+            auto eval_mat = eval_matrix(this, basis_, *points);
+            if (eval_mat.cols() != al.size()) {
+                throw std::runtime_error(
+                    "Input vector size mismatch: got " +
+                    std::to_string(al.size()) +
+                    ", expected " + std::to_string(eval_mat.cols()));
+            }
+            return eval_mat * al;
+        }
+
+        if (matrix_.cols() != al.size()) {
+            throw std::runtime_error(
+                "Input vector size mismatch: got " +
+                std::to_string(al.size()) +
+                ", expected " + std::to_string(matrix_.cols()));
         }
         return matrix_ * al;
+    }
+
+    Eigen::VectorXd fit(
+        const Eigen::VectorXd& ax,
+        const Eigen::VectorXd* points = nullptr) const override {
+        if (points) {
+            auto eval_mat = eval_matrix(this, basis_, *points);
+            Eigen::JacobiSVD<Eigen::MatrixXd> local_svd(
+                eval_mat,
+                Eigen::ComputeFullU | Eigen::ComputeFullV
+            );
+            return local_svd.solve(ax);
+        }
+
+        if (ax.size() != matrix_.rows()) {
+            throw std::runtime_error(
+                "Input vector size mismatch: got " +
+                std::to_string(ax.size()) +
+                ", expected " + std::to_string(matrix_.rows()));
+        }
+        return matrix_svd_.solve(ax);
     }
 
     const Eigen::VectorXd& sampling_points() const override {
