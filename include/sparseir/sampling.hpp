@@ -25,6 +25,7 @@ public:
 
     // Get the sampling points
     virtual const Eigen::VectorXd& sampling_points() const = 0;
+    virtual double workarrlength(Eigen::MatrixXd al) const = 0;
 };
 // Helper function declarations
 // Forward declarations
@@ -131,6 +132,10 @@ public:
 
     const Eigen::VectorXd& tau() const {
         return sampling_points_;
+    }
+
+    double workarrlength(Eigen::MatrixXd al) const override {
+        return matrix_svd_.singularValues().size() * (al.size() / matrix_.cols());
     }
 
 private:
