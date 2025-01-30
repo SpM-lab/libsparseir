@@ -18,73 +18,9 @@ template <typename S>
 class AbstractBasis {
 public:
     virtual ~AbstractBasis() { }
-
-    /**
-     * @brief Basis functions on the imaginary time axis.
-     *
-     * Set of IR basis functions on the imaginary time (tau) axis, where tau
-     * is a real number between zero and beta. To get the l-th basis function
-     * at imaginary time tau, use:
-     *
-     *     T ul_tau = u(l, tau);
-     *
-     * @param l Index of the basis function.
-     * @param tau Imaginary time variable.
-     * @return Value of the l-th basis function at time tau.
-     */
-    // virtual S u(int l, double tau) const = 0;
-
-    /**
-     * @brief Basis functions on the reduced Matsubara frequency axis.
-     *
-     * Set of IR basis functions on the reduced Matsubara frequency (wn) axis,
-     * where wn is an integer. These are related to u by the Fourier transform:
-     *
-     *     uhat(n) = ∫₀^β dτ exp(iπnτ/β) * u(τ)
-     *
-     * To get the l-th basis function at some reduced frequency wn, use:
-     *
-     *     T uhat_l_n = uhat(l, wn);
-     *
-     * @param l Index of the basis function.
-     * @param wn Reduced Matsubara frequency (integer multiplier).
-     * @return Value of the l-th basis function at frequency wn.
-     */
-    // virtual S uhat(int l, int wn) const = 0;
-
-    /**
-     * @brief Quantum statistic ("F" for fermionic, "B" for bosonic).
-     *
-     * @return Character representing the quantum statistics.
-     */
-    // virtual S statistics() const = 0;
-
-    /**
-     * @brief Access basis functions/singular values for given index/indices.
-     *
-     * This can be used to truncate the basis to the n most significant
-     * singular values: `basis[0, n]`.
-     *
-     * @param index Index or range of indices.
-     * @return Pointer to the truncated basis (implementation-defined).
-     */
-    // virtual AbstractBasis<S> *operator[](int index) const = 0;
-
-    /**
-     * @brief Shape of the basis function set.
-     *
-     * @return Pair representing the shape (rows, columns).
-     */
-    // virtual std::pair<int, int> shape() const = 0;
-
-    /**
-     * @brief Number of basis functions / singular values.
-     *
-     * @return Size of the basis function set.
-     */
-    // virtual int size() const = 0;
-
-    /**
+    double beta;
+    double get_beta() const { return beta; }
+    /*
      * @brief Significances of the basis functions.
      *
      * Vector of significance values, one for each basis function. Each value
@@ -103,59 +39,9 @@ public:
      *
      * @return Accuracy value.
      */
-    virtual double accuracy() const
-    {
-        const Eigen::VectorXd sig = significance();
-        return sig.size() > 0 ? sig(sig.size() - 1) : static_cast<double>(0);
-    }
-
-    /**
-     * @brief Basis cutoff parameter, Λ == β * wmax, or NaN if not present.
-     *
-     * @return Cutoff parameter Λ.
-     */
-    // virtual double lambda() const = 0;
-
-    /**
-     * @brief Inverse temperature.
-     *
-     * @return Value of β.
-     */
-    // virtual double beta() const = 0;
-
-    /**
-     * @brief Real frequency cutoff or NaN if not present.
-     *
-     * @return Maximum real frequency wmax.
-     */
-    // virtual double wmax() const = 0;
-
-    /**
-     * @brief Default sampling points on the imaginary time axis.
-     *
-     * @param npoints Minimum number of sampling points to return.
-     * @return Vector of sampling points on the τ-axis.
-     */
-    // virtual Eigen::VectorXd
-    // default_tau_sampling_points(int npoints = 0) const = 0;
-
-    /**
-     * @brief Default sampling points on the imaginary frequency axis.
-     *
-     * @param npoints Minimum number of sampling points to return.
-     * @param positive_only If true, only return non-negative frequencies.
-     * @return Vector of sampling points on the Matsubara axis.
-     */
-    // virtual Eigen::VectorXd
-    // default_matsubara_sampling_points(int npoints = 0,
-    //                                   bool positive_only = false) const = 0;
-
-    /**
-     * @brief Returns true if the sampling is expected to be well-conditioned.
-     *
-     * @return True if well-conditioned.
-     */
-    // virtual bool is_well_conditioned() const { return true; }
+    virtual double get_accuracy() const = 0;
+    virtual double get_wmax() const = 0;
+    virtual size_t size() const = 0;
 };
 
 } // namespace sparseir
@@ -165,11 +51,10 @@ namespace sparseir {
 template <typename S>
 class FiniteTempBasis : public AbstractBasis<S> {
 public:
-    // K kernel;
     double lambda;
     std::shared_ptr<SVEResult> sve_result;
     double accuracy;
-    double beta;
+    //double beta;
     PiecewiseLegendrePolyVector u;
     PiecewiseLegendrePolyVector v;
     Eigen::VectorXd s;
@@ -250,7 +135,7 @@ public:
     FiniteTempBasis<S> operator[](const std::pair<int, int> &range) const
     {
         int new_size = range.second - range.first + 1;
-        return FiniteTempBasis<S>(statistics(), beta, get_wmax(), 0.0,
+        return FiniteTempBasis<S>(statistics(), this->get_beta(), get_wmax(), 0.0,
                                      new_size, lambda, sve_result);
     }
 
@@ -258,11 +143,11 @@ public:
     const Eigen::VectorXd significance() const override { return s / s[0]; }
 
     // Getter for accuracy
-    double get_accuracy() const { return accuracy; }
+    double get_accuracy() const override { return accuracy; }
 
     // Getter for ωmax
-    double get_wmax() const { return lambda / beta; }
-
+    double get_wmax() const override { return lambda / this->get_beta(); }
+    size_t size() const override { return s.size(); }
     // Getter for SVEResult
     std::shared_ptr<const SVEResult> getSVEResult() const { return sve_result; }
 
@@ -277,7 +162,7 @@ public:
     {
         Eigen::VectorXd x =
             default_sampling_points(sve_result->u, static_cast<int>(s.size()));
-        return (beta / 2.0) * (x.array() + 1.0);
+        return (this->get_beta() / 2.0) * (x.array() + 1.0);
     }
 
     // Default Matsubara sampling points
@@ -293,7 +178,7 @@ public:
     {
         Eigen::VectorXd y =
             default_sampling_points(sve_result->v, static_cast<int>(s.size()));
-        return get_wmax() * y.array();
+        return this->get_wmax() * y.array();
     }
 
     // Rescale function

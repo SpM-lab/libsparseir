@@ -17,6 +17,8 @@ public:
     virtual std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const = 0;
     virtual std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const = 0;
     virtual std::function<double(double)> deriv(int order = 1) const = 0;
+    virtual std::shared_ptr<AbstractAugmentation> create(
+        const std::shared_ptr<AbstractBasis<Bosonic>>& basis) const = 0;
     virtual ~AbstractAugmentation() = default;
 };
 
@@ -30,6 +32,9 @@ public:
             throw std::domain_error("Temperature must be positive.");
         }
     }
+
+    TauConst(const AbstractBasis<Bosonic>& basis) : TauConst(basis.beta) {}
+
 
     double operator()(double tau) const override {
         if (tau < 0 || tau > beta) {
@@ -53,6 +58,11 @@ public:
         }
         return [](double) { return 0.0; };
     }
+
+    std::shared_ptr<AbstractAugmentation> create(
+        const std::shared_ptr<AbstractBasis<Bosonic>>& basis) const override {
+        return std::make_shared<TauConst>(basis->beta);
+    }
 };
 
 // TauLinear Class
@@ -66,6 +76,11 @@ public:
             throw std::domain_error("Temperature must be positive.");
         }
     }
+
+    TauLinear(const AbstractBasis<Bosonic>& basis) : TauLinear(basis.beta) {}
+
+    TauLinear(const std::shared_ptr<AbstractBasis<Bosonic>>& basis)
+        : TauLinear(basis->beta) {}
 
     double operator()(double tau) const override {
         if (tau < 0 || tau > beta) {
@@ -94,6 +109,11 @@ public:
         }
         return [](double) { return 0.0; };
     }
+
+    std::shared_ptr<AbstractAugmentation> create(
+        const std::shared_ptr<AbstractBasis<Bosonic>>& basis) const override {
+        return std::make_shared<TauLinear>(basis->beta);
+    }
 };
 
 // MatsubaraConst Class
@@ -106,6 +126,9 @@ public:
             throw std::domain_error("Temperature must be positive.");
         }
     }
+
+    MatsubaraConst(const AbstractBasis<Bosonic>& basis) : MatsubaraConst(basis.beta) {}
+
 
     double operator()(double tau) const override {
         if (tau < 0 || tau > beta) {
@@ -124,6 +147,11 @@ public:
 
     std::function<double(double)> deriv(int order = 1) const override {
         return [this](double tau) { return (*this)(tau); };
+    }
+
+    std::shared_ptr<AbstractAugmentation> create(
+        const std::shared_ptr<AbstractBasis<Bosonic>>& basis) const override {
+        return std::make_shared<MatsubaraConst>(basis->beta);
     }
 };
 
@@ -174,65 +202,114 @@ public:
     }
 };
 
-// AugmentedBasis
-template <typename S, typename B, typename F, typename FHAT>
-class AugmentedBasis : public AbstractBasis<S> {
-public:
-    std::shared_ptr<FiniteTempBasis<B>> basis;
-    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
-    F u;
-    FHAT uhat;
+// Add before AugmentedBasis class definition
 
-    AugmentedBasis(std::shared_ptr<FiniteTempBasis<B>> basis,
-                   std::vector<std::shared_ptr<AbstractAugmentation>> augmentations,
-                   F u, FHAT uhat)
-        : basis(basis), augmentations(augmentations), u(u), uhat(uhat) {}
+class AugmentedTauFunction {
+public:
+    const PiecewiseLegendrePolyVector& basis_func;
+    const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations;
+
+    AugmentedTauFunction(const PiecewiseLegendrePolyVector& basis_func,
+                        const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
+        : basis_func(basis_func)
+        , augmentations(augmentations) {}
+
+    Eigen::VectorXd operator()(double tau) const {
+        Eigen::VectorXd result = basis_func(tau);
+        for (const auto& aug : augmentations) {
+            result.conservativeResize(result.size() + 1);
+            result(result.size() - 1) = (*aug)(tau);
+        }
+        return result;
+    }
 
     size_t size() const {
-        return nAug() + basis->s.size();
-    }
-
-    size_t nAug() const {
-        return augmentations.size();
-    }
-
-    double accuracy() const override {
-        // TODO: Implement accuracy calculation
-        return 0;
-        //return basis->accuracy();
-    }
-
-    double omegaMax() const {
-        return basis->omegaMax();
-    }
-
-    const Eigen::VectorXd significance() const override{
-        // TODO: Implement significance calculation
-        return Eigen::VectorXd::Zero(10);
-    };
-
-    static std::shared_ptr<AugmentedBasis> create(std::shared_ptr<B> basis,
-                                                  std::vector<std::shared_ptr<AbstractAugmentation>> augs) {
-        auto u = createAugmentedTauFunction(basis->u, augs);
-        auto uhat = createAugmentedMatsubaraFunction(basis->uhat, augs);
-        return std::make_shared<AugmentedBasis>(basis, augs, u, uhat);
-    }
-
-private:
-    static F createAugmentedTauFunction(const F &basisFunc, const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations) {
-        // Placeholder for actual implementation
-        return basisFunc;
-    }
-
-    static FHAT createAugmentedMatsubaraFunction(const FHAT &basisFunc, const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations) {
-        // Placeholder for actual implementation
-        return basisFunc;
+        return augmentations.size() + basis_func.size();
     }
 };
 
+class AugmentedMatsubaraFunction {
+public:
+    template<typename S>
+    using MatsubaraVec = PiecewiseLegendreFTVector<S>;
 
-template <typename S, typename B, typename F, typename FHAT>
-inline Eigen::VectorXd default_tau_sampling_points(AugmentedBasis<S, B, F, FHAT> basis){
+    const MatsubaraVec<Bosonic>& basis_func;
+    const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations;
+
+    AugmentedMatsubaraFunction(const MatsubaraVec<Bosonic>& basis_func,
+                              const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
+        : basis_func(basis_func)
+        , augmentations(augmentations) {}
+
+    template<typename S>
+    std::complex<double> operator()(MatsubaraFreq<S> n) const {
+        std::complex<double> result = basis_func(n);
+        for (const auto& aug : augmentations) {
+            result += (*aug)(n);
+        }
+        return result;
+    }
+
+    size_t size() const {
+        return augmentations.size() + basis_func.size();
+    }
+};
+
+// AugmentedBasis
+template <typename S>
+class AugmentedBasis : public AbstractBasis<S> {
+private:
+    std::shared_ptr<FiniteTempBasis<S>> basis_;
+    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations_;
+    std::unique_ptr<AugmentedTauFunction> u_;
+    std::unique_ptr<AugmentedMatsubaraFunction> uhat_;
+
+public:
+    AugmentedBasis(std::shared_ptr<FiniteTempBasis<S>> basis,
+                  const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
+        : basis_(basis)
+        , augmentations_(augmentations)
+        , u_(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
+        , uhat_(std::make_unique<AugmentedMatsubaraFunction>(basis->uhat, augmentations)) {}
+
+    // Prevent copying, allow moving
+    AugmentedBasis(const AugmentedBasis&) = delete;
+    AugmentedBasis& operator=(const AugmentedBasis&) = delete;
+    AugmentedBasis(AugmentedBasis&&) = default;
+    AugmentedBasis& operator=(AugmentedBasis&&) = default;
+
+    // Implement pure virtual functions
+    size_t size() const override {
+        return augmentations_.size() + basis_->size();
+    }
+
+    double get_accuracy() const override {
+        return basis_->get_accuracy();
+    }
+
+    double get_wmax() const override {
+        return basis_->get_wmax();
+    }
+
+    const Eigen::VectorXd significance() const override {
+        return basis_->significance();
+    }
+
+    // Accessors
+    const AugmentedTauFunction& u() const { return *u_; }
+    const AugmentedMatsubaraFunction& uhat() const { return *uhat_; }
+    size_t nAug() const { return augmentations_.size(); }
+
+    // Factory method
+    static std::shared_ptr<AugmentedBasis<S>> create(
+        std::shared_ptr<FiniteTempBasis<S>> basis,
+        const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations) {
+        return std::make_shared<AugmentedBasis<S>>(basis, augmentations);
+    }
+};
+
+template <typename S>
+inline Eigen::VectorXd default_tau_sampling_points(AugmentedBasis<S> basis){
     int sz = basis.basis.sve_result.s.size() + basis.augmentations.size();
     auto x = default_samplint_points(basis.basis.sve_result.u, sz);
     return (basis.beta / 2.0) * (x.array() + 1.0);
