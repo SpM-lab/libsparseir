@@ -65,18 +65,6 @@ public:
         return matrix_ * al;
     }
 
-    /*
-    Eigen::Matrix<double, Eigen::Dynamic, 1> fit(
-        const Eigen::Matrix<double, Eigen::Dynamic, 1>& ax,
-        const Eigen::VectorXd* points = nullptr) const override {
-        if (points) {
-            auto sampling = for_sampling_points(*points);
-            return sampling->solve(ax);
-        }
-        return solve(ax);
-    }
-    */
-
     double cond() const override {
         return cond_;
     }
@@ -151,25 +139,11 @@ public:
         construct_matrix();
     }
 
-    /*
-    Eigen::Matrix<std::complex<T>, Eigen::Dynamic, 1> evaluate(
-        const Eigen::Matrix<T, Eigen::Dynamic, 1>& al,
-        const Eigen::VectorXi* points = nullptr) const override {
-        if (points) {
-            // TODO: Implement for_sampling_points
-            auto sampling = for_sampling_points(*points);
-            return sampling->matrix() * al;
-        }
-        return matrix_ * al;
-    }
-    */
-
-
     double cond() const override {
         return cond_;
     }
 
-    const Eigen::VectorXi& sampling_points() const override {
+    const Eigen::VectorXd& sampling_points() const override {
         return sampling_points_;
     }
 
@@ -177,7 +151,7 @@ public:
         return matrix_;
     }
 
-    const std::shared_ptr<AbstractBasis<T>>& basis() const override {
+    const std::shared_ptr<AbstractBasis<T>>& basis() const {
         return basis_;
     }
 
@@ -207,7 +181,7 @@ private:
 
     std::shared_ptr<AbstractBasis<T>> basis_;
     bool positive_only_;
-    Eigen::VectorXi sampling_points_;
+    Eigen::VectorXd sampling_points_;
     Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic> matrix_;
     mutable Eigen::ColPivHouseholderQR<Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic>> solver_;
     double cond_;

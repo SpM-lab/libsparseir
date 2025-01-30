@@ -27,7 +27,7 @@ add_executable(libsparseirtests
     sve.cxx
     basis.cxx
     augment.cxx
-    #sampling.cxx
+    sampling.cxx
     #basis_set.cxx
 )
 
