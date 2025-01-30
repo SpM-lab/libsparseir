@@ -300,6 +300,12 @@ public:
     const AugmentedMatsubaraFunction<S>& uhat() const { return *uhat_; }
     size_t nAug() const { return augmentations_.size(); }
 
+    const Eigen::VectorXd default_tau_sampling_points() const override {
+        int sz = this->basis_->sve_result->s.size() + this->augmentations_.size();
+        auto x = default_sampling_points(this->basis_->sve_result->u, sz);
+        return (this->basis_->get_beta() / 2.0) * (x.array() + 1.0);
+    }
+
     // Factory method
     static std::shared_ptr<AugmentedBasis<S>> create(
         std::shared_ptr<FiniteTempBasis<S>> basis,
@@ -307,12 +313,5 @@ public:
         return std::make_shared<AugmentedBasis<S>>(basis, augmentations);
     }
 };
-
-template <typename S>
-inline Eigen::VectorXd default_tau_sampling_points(AugmentedBasis<S> basis){
-    int sz = basis.basis.sve_result.s.size() + basis.augmentations.size();
-    auto x = default_samplint_points(basis.basis.sve_result.u, sz);
-    return (basis.beta / 2.0) * (x.array() + 1.0);
-}
 
 } // namespace sparseir

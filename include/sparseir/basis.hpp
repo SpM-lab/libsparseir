@@ -42,6 +42,8 @@ public:
     virtual double get_accuracy() const = 0;
     virtual double get_wmax() const = 0;
     virtual size_t size() const = 0;
+    virtual const Eigen::VectorXd default_tau_sampling_points() const = 0;
+
 };
 
 } // namespace sparseir
@@ -157,14 +159,6 @@ public:
     // Getter for Λ
     //double Lambda() const { return lambda; }
 
-    // Default τ sampling points
-    Eigen::VectorXd defaultTauSamplingPoints() const
-    {
-        Eigen::VectorXd x =
-            default_sampling_points(sve_result->u, static_cast<int>(s.size()));
-        return (this->get_beta() / 2.0) * (x.array() + 1.0);
-    }
-
     // Default Matsubara sampling points
     Eigen::VectorXd
     defaultMatsubaraSamplingPoints(bool positive_only = false) const
@@ -188,6 +182,12 @@ public:
         return FiniteTempBasis<S>(
             new_beta, new_omega_max, std::numeric_limits<double>::quiet_NaN(),
             lambda, *sve_result, static_cast<int>(s.size()));
+    }
+
+    const Eigen::VectorXd default_tau_sampling_points() const override {
+        int sz = this->sve_result->s.size();
+        auto x = default_sampling_points(this->sve_result->u, sz);
+        return (this->beta / 2.0) * (x.array() + 1.0);
     }
 
 private:
@@ -249,40 +249,33 @@ private:
 
     // Default sampling points function
 inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector &u, int L) {
-        if (u.xmin() != -1.0 || u.xmax() != 1.0)
-            throw std::runtime_error("Expecting unscaled functions here.");
+    if (u.xmin() != -1.0 || u.xmax() != 1.0)
+        throw std::runtime_error("Expecting unscaled functions here.");
 
-        if (L < u.size()) {
-            // TODO: Resolve this errors.
-            return u.polyvec[L].roots();
-        } else {
-            // Approximate roots by extrema
-            // TODO: resolve this error
-            PiecewiseLegendrePoly poly = u.polyvec.back();
-            Eigen::VectorXd maxima = poly.deriv().roots();
+    if (L < u.size()) {
+        // TODO: Resolve this errors.
+        return u.polyvec[L].roots();
+    } else {
+        // Approximate roots by extrema
+        // TODO: resolve this error
+        PiecewiseLegendrePoly poly = u.polyvec.back();
+        Eigen::VectorXd maxima = poly.deriv().roots();
 
-            double left = (maxima[0] + poly.xmin) / 2.0;
-            double right = (maxima[maxima.size() - 1] + poly.xmax) / 2.0;
+        double left = (maxima[0] + poly.xmin) / 2.0;
+        double right = (maxima[maxima.size() - 1] + poly.xmax) / 2.0;
 
-            Eigen::VectorXd x0(maxima.size() + 2);
-            x0[0] = left;
-            x0.tail(maxima.size()) = maxima;
-            x0[x0.size() - 1] = right;
+        Eigen::VectorXd x0(maxima.size() + 2);
+        x0[0] = left;
+        x0.segment(1, maxima.size()) = maxima;
+        x0[x0.size() - 1] = right;
 
-            if (x0.size() != L) {
-                std::cerr << "Warning: Expected " << L
-                          << " sampling points, got " << x0.size() << ".\n";
-            }
-
-            return x0;
+        if (x0.size() != L) {
+            std::cerr << "Warning: Expected " << L
+                        << " sampling points, got " << x0.size() << ".\n";
         }
-    }
 
-template <typename S>
-inline Eigen::VectorXd default_tau_sampling_points(std::shared_ptr<FiniteTempBasis<S>> basis){
-    int sz = basis.sve_result.s.size();
-    auto x = default_samplint_points(basis.sve_result.u, sz);
-    return (basis.beta / 2.0) * (x.array() + 1.0);
+        return x0;
+    }
 }
 
 inline std::pair<FiniteTempBasis<Fermionic>,
@@ -316,4 +309,5 @@ inline std::pair<FiniteTempBasis<Fermionic>,
         beta, omega_max, epsilon, kernel, sve_result);
     return std::make_pair(basis_f, basis_b);
 }
+
 } // namespace sparseir
