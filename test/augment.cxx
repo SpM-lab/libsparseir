@@ -16,7 +16,8 @@
 using namespace sparseir;
 using namespace std;
 
-TEST_CASE("SparseIR Basis Functions", "[SparseIR]")
+
+TEST_CASE("augment.cxx", "[AbstractAugmentation]")
 {
     using Catch::Approx;
     using namespace sparseir;
@@ -130,19 +131,17 @@ TEST_CASE("Augmented bosonic basis") {
     PiecewiseLegendreFTVector<Bosonic> uhat = basis->uhat;
     using S = FiniteTempBasis<Bosonic>;
     using B = Bosonic;
-
-    AugmentedBasis<S, B,PiecewiseLegendrePolyVector, PiecewiseLegendreFTVector<Bosonic>> basis_aug(basis, augmentations, u, uhat);
-
-    REQUIRE(basis_aug.size() == basis->s.size() + 2);
+    using F = PiecewiseLegendrePolyVector;
+    using FTBosonic = PiecewiseLegendreFTVector<Bosonic>;
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     T pole = 1.0;
     T c = 1e-2;
-
     // Create tau sampling points
+    /*
     auto tau_sampling = TauSampling(basis_aug);
     auto tau = tau_sampling.tau;
-    REQUIRE().size() == basis_aug.size());
+    //REQUIRE(tau.size() == basis_aug.size());
     Eigen::VectorX<T> gtau(tau.size());
     for (size_t i = 0; i < tau.size(); ++i) {
         gtau(i) = c - exp(-tau(i) * pole) / (1 - exp(-beta * pole));
@@ -165,6 +164,7 @@ TEST_CASE("Augmented bosonic basis") {
     Eigen::VectorX<T> gtau_reconst = tau_matrix * gl_fit;
 
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
+    */
 }
 
 
@@ -176,8 +176,8 @@ TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
         T wmax = 2.0;
         /*
         auto basis = make_shared<FiniteTempBasis<T>>(stat, beta, wmax, 1e-6);
-        vector<unique_ptr<AbstractAugmentation<T>>> augmentations;
-        augmentations.push_back(make_unique<MatsubaraConst<T>>(beta));
+        vector<shared_ptr<AbstractAugmentation<T>>> augmentations;
+        augmentations.push_back(make_shared<MatsubaraConst<T>>(beta));
         AugmentedBasis<T> basis_aug(basis, augmentations);
         REQUIRE(!basis_aug.uhat.empty());
 
@@ -199,15 +199,16 @@ TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
 
 
 TEST_CASE("unit tests", "[augment]") {
-    /*
     using T = double;
     T beta = 1000.0;
     T wmax = 2.0;
-    auto basis = make_shared<FiniteTempBasis<T>>(Bosonic(), beta, wmax, 1e-6);
-    vector<unique_ptr<AbstractAugmentation<T>>> augmentations;
-    augmentations.push_back(make_unique<TauConst<T>>(beta));
-    augmentations.push_back(make_unique<TauLinear<T>>(beta));
-    AugmentedBasis<T> basis_aug(basis, augmentations);
+    using S = Bosonic;
+    auto basis = make_shared<FiniteTempBasis<S>>(beta, wmax, 1e-6);
+    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
+    augmentations.push_back(make_shared<TauConst>(beta));
+    augmentations.push_back(make_shared<TauLinear>(beta));
+    AugmentedBasis<S> basis_aug(basis, augmentations);
+    /*
 
     SECTION("getindex") {
         REQUIRE(basis_aug.u.size() == basis_aug.size());

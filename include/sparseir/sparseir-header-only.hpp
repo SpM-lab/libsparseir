@@ -12,6 +12,6 @@
 #include "./kernel.hpp"
 #include "./sve.hpp"
 #include "./basis.hpp"
-//#include "./augment.hpp"
-//#include "./sampling.hpp"
+#include "./augment.hpp"
+#include "./sampling.hpp"
 //#include "./basis_set.hpp"
