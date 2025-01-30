@@ -169,11 +169,15 @@ TEST_CASE("Augmented bosonic basis") {
 
 
 TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
+    // Fix: Use proper template parameters for Statistics
+    std::vector<std::shared_ptr<Statistics>> stats = {
+        std::make_shared<Fermionic>(),
+        std::make_shared<Bosonic>()
+    };
 
-     for (const shared_ptr<Statistics>& stat : {static_pointer_cast<Statistics>(make_shared<Fermionic>()), static_pointer_cast<Statistics>(make_shared<Bosonic>())}) {
-        using T = double;
-        T beta = 1000.0;
-        T wmax = 2.0;
+    for (const auto& stat : stats) {
+        double beta = 1000.0;
+        double wmax = 2.0;
         /*
         auto basis = make_shared<FiniteTempBasis<T>>(stat, beta, wmax, 1e-6);
         vector<shared_ptr<AbstractAugmentation<T>>> augmentations;

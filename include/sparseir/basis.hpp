@@ -98,7 +98,39 @@ public:
         auto uk = u_.polyvec[0].knots;
         std::cout << "uk.size(): " << uk.size() << std::endl;
         std::cout << "uk: \n" << uk << std::endl;
+        /*
+        Port the following Julia code to C++:
+            # The polynomials are scaled to the new variables by transforming
+    the # knots according to: tau = β/2 * (x + 1), w = ωmax * y. Scaling # the
+    data is not necessary as the normalization is inferred. ωmax = Λ(kernel) / β
+    u_knots = (β / 2) .* (knots(u_) .+ 1)
+    v_knots = ωmax .* knots(v_)
+    u = PiecewiseLegendrePolyVector(u_, u_knots; Δx=(β / 2) .* Δx(u_),
+    symm=symm(u_)) v = PiecewiseLegendrePolyVector(v_, v_knots; Δx=ωmax .*
+    Δx(v_), symm=symm(v_))
+    */
 
+        Eigen::VectorXd u_knots = (beta / 2) * (uk.array() + 1);
+        Eigen::VectorXd v_knots = wmax * uk;
+
+        Eigen::VectorXd deltax4u = (beta / 2) * u_.polyvec[0].get_delta_x();
+        Eigen::VectorXd deltax4v = wmax * v_.polyvec[0].get_delta_x();
+        std::vector<int> u_symm_vec;
+        for (int i = 0; i < u_.size(); ++i) {
+            u_symm_vec.push_back(u_.polyvec[i].get_symm());
+        }
+        std::vector<int> v_symm_vec;
+        for (int i = 0; i < v_.size(); ++i) {
+            v_symm_vec.push_back(v_.polyvec[i].get_symm());
+        }
+
+        Eigen::VectorXi u_symm = Eigen::Map<Eigen::VectorXi>(u_symm_vec.data(), u_symm_vec.size());
+        Eigen::VectorXi v_symm = Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
+
+        PiecewiseLegendrePolyVector u_new = PiecewiseLegendrePolyVector(u_, u_knots, deltax4u, u_symm);
+        PiecewiseLegendrePolyVector v_new = PiecewiseLegendrePolyVector(v_, v_knots, deltax4v, v_symm);
+        this->u = u_new;
+        this->v = v_new;
         this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel.ypower()))) * s_;
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
@@ -187,6 +219,7 @@ public:
     const Eigen::VectorXd default_tau_sampling_points() const override {
         int sz = this->sve_result->s.size();
         auto x = default_sampling_points(this->sve_result->u, sz);
+        std::cout << "x=" << x << std::endl;
         return (this->beta / 2.0) * (x.array() + 1.0);
     }
 

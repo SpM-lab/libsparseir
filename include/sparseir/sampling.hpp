@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <Eigen/SVD>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -13,72 +14,115 @@ public:
     virtual ~AbstractSampling() = default;
 
     // Evaluate the basis coefficients at sampling points
-    virtual Eigen::Matrix<double, Eigen::Dynamic, 1> evaluate(
-        const Eigen::Matrix<double, Eigen::Dynamic, 1>& al,
+    virtual Eigen::VectorXd evaluate(
+        const Eigen::VectorXd& al,
         const Eigen::VectorXd* points = nullptr) const = 0;
 
     // Fit values at sampling points to basis coefficients
-    virtual Eigen::Matrix<double, Eigen::Dynamic, 1> fit(
-        const Eigen::Matrix<double, Eigen::Dynamic, 1>& ax,
+    virtual Eigen::VectorXd fit(
+        const Eigen::VectorXd& ax,
         const Eigen::VectorXd* points = nullptr) const = 0;
-
-    // Condition number of the transformation matrix
-    virtual double cond() const = 0;
 
     // Get the sampling points
     virtual const Eigen::VectorXd& sampling_points() const = 0;
-
-    // Get the transformation matrix
-    virtual const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& matrix() const = 0;
-
-    // Get the associated basis
-    //virtual const std::shared_ptr<AbstractBasis<S>>& basis() const = 0;
-
-protected:
-    // Create a new sampling object for different sampling points
-    virtual std::shared_ptr<AbstractSampling> for_sampling_points(
-        const Eigen::VectorXd& x) const = 0;
 };
+// Helper function declarations
+// Forward declarations
+template <typename S>
+class TauSampling;
+
+template <typename S>
+inline Eigen::MatrixXd eval_matrix(const TauSampling<S>* tau_sampling,
+                           const std::shared_ptr<FiniteTempBasis<S>>& basis,
+                           const Eigen::VectorXd& x){
+    // Initialize matrix with correct dimensions
+    Eigen::MatrixXd matrix(x.size(), basis->size());
+
+    // Evaluate basis functions at sampling points
+    auto u_eval = basis->u(x);
+    std::cout << "u_eval = " << u_eval << std::endl;
+    // Transpose and scale by singular values
+    matrix = u_eval.transpose();
+
+    return matrix;
+}
 
 template <typename S>
 class TauSampling : public AbstractSampling<S> {
 public:
     TauSampling(
-        const std::shared_ptr<AbstractBasis<S>>& basis,
-        const Eigen::VectorXd* sampling_points = nullptr)
-        : basis_(basis) {
-        if (sampling_points) {
-            sampling_points_ = *sampling_points;
-        } else {
-            sampling_points_ = default_tau_sampling_points(basis_);
+        const std::shared_ptr<FiniteTempBasis<S>>& basis) : basis_(basis) {
+        // Get default sampling points from basis
+        sampling_points_ = basis_->default_tau_sampling_points();
+
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points generated");
         }
-        construct_matrix();
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(this, basis_, sampling_points_);
+        std::cout << "matrix_ = " << matrix_ << std::endl;
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis_->size()) {
+            throw std::runtime_error(
+                "Matrix dimensions mismatch: got " +
+                std::to_string(matrix_.rows()) + "x" +
+                std::to_string(matrix_.cols()) +
+                ", expected " + std::to_string(sampling_points_.size()) +
+                "x" + std::to_string(basis_->size()));
+        }
+
+        // Initialize SVD
+        matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
+            matrix_,
+            Eigen::ComputeFullU | Eigen::ComputeFullV
+        );
     }
 
-    Eigen::Matrix<double, Eigen::Dynamic, 1> evaluate(
-        const Eigen::Matrix<double, Eigen::Dynamic, 1>& al,
+    Eigen::VectorXd evaluate(
+        const Eigen::VectorXd& al,
         const Eigen::VectorXd* points = nullptr) const override {
         if (points) {
-            auto sampling = for_sampling_points(*points);
-            return sampling->matrix() * al;
+            auto eval_mat = eval_matrix(this, basis_, *points);
+            if (eval_mat.cols() != al.size()) {
+                throw std::runtime_error(
+                    "Input vector size mismatch: got " +
+                    std::to_string(al.size()) +
+                    ", expected " + std::to_string(eval_mat.cols()));
+            }
+            return eval_mat * al;
+        }
+
+        if (matrix_.cols() != al.size()) {
+            throw std::runtime_error(
+                "Input vector size mismatch: got " +
+                std::to_string(al.size()) +
+                ", expected " + std::to_string(matrix_.cols()));
         }
         return matrix_ * al;
     }
 
-    /*
-    Eigen::Matrix<double, Eigen::Dynamic, 1> fit(
-        const Eigen::Matrix<double, Eigen::Dynamic, 1>& ax,
+    Eigen::VectorXd fit(
+        const Eigen::VectorXd& ax,
         const Eigen::VectorXd* points = nullptr) const override {
         if (points) {
-            auto sampling = for_sampling_points(*points);
-            return sampling->solve(ax);
+            auto eval_mat = eval_matrix(this, basis_, *points);
+            Eigen::JacobiSVD<Eigen::MatrixXd> local_svd(
+                eval_mat,
+                Eigen::ComputeFullU | Eigen::ComputeFullV
+            );
+            return local_svd.solve(ax);
         }
-        return solve(ax);
-    }
-    */
 
-    double cond() const override {
-        return cond_;
+        if (ax.size() != matrix_.rows()) {
+            throw std::runtime_error(
+                "Input vector size mismatch: got " +
+                std::to_string(ax.size()) +
+                ", expected " + std::to_string(matrix_.rows()));
+        }
+        return matrix_svd_.solve(ax);
     }
 
     const Eigen::VectorXd& sampling_points() const override {
@@ -89,128 +133,12 @@ public:
         return sampling_points_;
     }
 
-    const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& matrix() const override {
-        return matrix_;
-    }
-    /*
-    const std::shared_ptr<AbstractBasis<double>>& basis() const override {
-        return basis_;
-    }
-    */
-
-protected:
-    std::shared_ptr<AbstractSampling<S>> for_sampling_points(
-        const Eigen::VectorXd& x) const override {
-        return std::make_shared<TauSampling>(basis_, &x);
-    }
-
 private:
-    void construct_matrix() {
-        matrix_ = basis_->u(sampling_points_).transpose();
-        cond_ = compute_condition_number(matrix_);
-        solver_.compute(matrix_);
-        if (solver_.info() != Eigen::Success) {
-            throw std::runtime_error("Matrix decomposition failed.");
-        }
-    }
-
-    Eigen::Matrix<double, Eigen::Dynamic, 1> solve(
-        const Eigen::Matrix<double, Eigen::Dynamic, 1>& ax) const {
-        return solver_.solve(ax);
-    }
-
-    double compute_condition_number(
-        const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>& mat) const {
-        Eigen::JacobiSVD<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> svd(
-            mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        double cond = svd.singularValues()(0) /
-                      svd.singularValues()(svd.singularValues().size() - 1);
-        return cond;
-    }
-
-    std::shared_ptr<AbstractBasis<S>> basis_;
+    std::shared_ptr<FiniteTempBasis<S>> basis_;
     Eigen::VectorXd sampling_points_;
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_;
-    mutable Eigen::ColPivHouseholderQR<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> solver_;
-    double cond_;
+    Eigen::MatrixXd matrix_;
+    Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
 };
 
-template <typename T>
-class MatsubaraSampling : public AbstractSampling<std::complex<T>> {
-public:
-    MatsubaraSampling(
-        const std::shared_ptr<AbstractBasis<T>>& basis,
-        bool positive_only = false,
-        const Eigen::VectorXi* sampling_points = nullptr)
-        : basis_(basis), positive_only_(positive_only) {
-        if (sampling_points) {
-            sampling_points_ = *sampling_points;
-        } else {
-            sampling_points_ = basis_->default_matsubara_sampling_points(positive_only);
-        }
-        construct_matrix();
-    }
-
-    /*
-    Eigen::Matrix<std::complex<T>, Eigen::Dynamic, 1> evaluate(
-        const Eigen::Matrix<T, Eigen::Dynamic, 1>& al,
-        const Eigen::VectorXi* points = nullptr) const override {
-        if (points) {
-            // TODO: Implement for_sampling_points
-            auto sampling = for_sampling_points(*points);
-            return sampling->matrix() * al;
-        }
-        return matrix_ * al;
-    }
-    */
-
-
-    double cond() const override {
-        return cond_;
-    }
-
-    const Eigen::VectorXi& sampling_points() const override {
-        return sampling_points_;
-    }
-
-    const Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic>& matrix() const override {
-        return matrix_;
-    }
-
-    const std::shared_ptr<AbstractBasis<T>>& basis() const override {
-        return basis_;
-    }
-
-private:
-    void construct_matrix() {
-        matrix_ = basis_->uhat(sampling_points_);
-        cond_ = compute_condition_number(matrix_);
-        solver_.compute(matrix_);
-        if (solver_.info() != Eigen::Success) {
-            throw std::runtime_error("Matrix decomposition failed.");
-        }
-    }
-
-    Eigen::Matrix<T, Eigen::Dynamic, 1> solve(
-        const Eigen::Matrix<std::complex<T>, Eigen::Dynamic, 1>& ax) const {
-        return solver_.solve(ax.real());
-    }
-
-    double compute_condition_number(
-        const Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic>& mat) const {
-        Eigen::JacobiSVD<Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic>> svd(
-            mat, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        double cond = svd.singularValues()(0).real() /
-                      svd.singularValues()(svd.singularValues().size() - 1).real();
-        return cond;
-    }
-
-    std::shared_ptr<AbstractBasis<T>> basis_;
-    bool positive_only_;
-    Eigen::VectorXi sampling_points_;
-    Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic> matrix_;
-    mutable Eigen::ColPivHouseholderQR<Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic>> solver_;
-    double cond_;
-};
 
 } // namespace sparseir
