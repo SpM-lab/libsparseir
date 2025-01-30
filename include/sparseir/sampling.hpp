@@ -53,7 +53,7 @@ public:
 
         // Initialize evaluation matrix with correct dimensions
         matrix_ = eval_matrix(this, basis_, sampling_points_);
-
+        std::cout << "matrix_ = " << matrix_ << std::endl;
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
             matrix_.cols() != basis_->size()) {
