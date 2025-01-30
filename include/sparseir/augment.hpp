@@ -228,21 +228,21 @@ public:
     }
 };
 
+template <typename S>
 class AugmentedMatsubaraFunction {
 public:
-    template<typename S>
     using MatsubaraVec = PiecewiseLegendreFTVector<S>;
 
-    const MatsubaraVec<Bosonic>& basis_func;
+    const MatsubaraVec& basis_func;
     const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations;
 
-    AugmentedMatsubaraFunction(const MatsubaraVec<Bosonic>& basis_func,
+    AugmentedMatsubaraFunction(const MatsubaraVec& basis_func,
                               const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
         : basis_func(basis_func)
         , augmentations(augmentations) {}
 
-    template<typename S>
-    std::complex<double> operator()(MatsubaraFreq<S> n) const {
+    template<typename T>
+    std::complex<double> operator()(MatsubaraFreq<T> n) const {
         std::complex<double> result = basis_func(n);
         for (const auto& aug : augmentations) {
             result += (*aug)(n);
@@ -262,7 +262,7 @@ private:
     std::shared_ptr<FiniteTempBasis<S>> basis_;
     std::vector<std::shared_ptr<AbstractAugmentation>> augmentations_;
     std::unique_ptr<AugmentedTauFunction> u_;
-    std::unique_ptr<AugmentedMatsubaraFunction> uhat_;
+    std::unique_ptr<AugmentedMatsubaraFunction<S>> uhat_;
 
 public:
     AugmentedBasis(std::shared_ptr<FiniteTempBasis<S>> basis,
@@ -270,7 +270,7 @@ public:
         : basis_(basis)
         , augmentations_(augmentations)
         , u_(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
-        , uhat_(std::make_unique<AugmentedMatsubaraFunction>(basis->uhat, augmentations)) {}
+        , uhat_(std::make_unique<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
 
     // Prevent copying, allow moving
     AugmentedBasis(const AugmentedBasis&) = delete;
@@ -297,7 +297,7 @@ public:
 
     // Accessors
     const AugmentedTauFunction& u() const { return *u_; }
-    const AugmentedMatsubaraFunction& uhat() const { return *uhat_; }
+    const AugmentedMatsubaraFunction<S>& uhat() const { return *uhat_; }
     size_t nAug() const { return augmentations_.size(); }
 
     // Factory method
