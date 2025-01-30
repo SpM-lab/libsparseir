@@ -35,7 +35,16 @@ template <typename S>
 inline Eigen::MatrixXd eval_matrix(const TauSampling<S>* tau_sampling,
                            const std::shared_ptr<FiniteTempBasis<S>>& basis,
                            const Eigen::VectorXd& x){
-    return basis->u(x).transpose();
+    // Initialize matrix with correct dimensions
+    Eigen::MatrixXd matrix(x.size(), basis->size());
+
+    // Evaluate basis functions at sampling points
+    auto u_eval = basis->u(x);
+    std::cout << "u_eval = " << u_eval << std::endl;
+    // Transpose and scale by singular values
+    matrix = u_eval.transpose();
+
+    return matrix;
 }
 
 template <typename S>

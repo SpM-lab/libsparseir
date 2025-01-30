@@ -791,10 +791,13 @@ public:
     // Evaluate the vector of polynomials at multiple x
     Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const
     {
+        std::cout << "polyvec.size() = " << polyvec.size() << std::endl;
+        std::cout << "xs.size() = " << xs.size() << std::endl;
         Eigen::MatrixXd results(polyvec.size(), xs.size());
         for (size_t i = 0; i < polyvec.size(); ++i) {
             results.row(i) = polyvec[i](xs);
         }
+        std::cout << "results = " << results << std::endl;
         return results;
     }
     /*

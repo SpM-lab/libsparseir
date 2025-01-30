@@ -22,6 +22,7 @@ TEST_CASE("Sampling Tests") {
             auto basis = make_shared<FiniteTempBasis<Bosonic>>(
                 beta, Lambda, 1e-15, kernel, sve_result);
 
+            std::cout << "basis->u.polyvec.size() = " << basis->u.polyvec.size() << std::endl;
             REQUIRE(basis->size() > 0);  // Check basis size
 
             auto tau_sampling = make_shared<TauSampling<Bosonic>>(basis);

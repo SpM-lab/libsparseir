@@ -100,6 +100,8 @@ public:
         std::cout << "uk: \n" << uk << std::endl;
 
         this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel.ypower()))) * s_;
+        // TODO Define this -> u and this -> v
+
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
         PiecewiseLegendrePolyVector uhat_base_full =
