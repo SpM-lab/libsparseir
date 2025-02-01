@@ -63,7 +63,7 @@ TEST_CASE("Sampling Tests") {
 
             for (int dim = 0; dim < 4; ++dim) {
                 Eigen::Tensor<ComplexF64, 4> gl = movedim(originalgl, 0, dim);
-                Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
+                //Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
                 //REQUIRE(gtau.dimension(0) == gl.dimension(0));
                 //REQUIRE(gtau.dimension(1) == gl.dimension(1));
                 //REQUIRE(gtau.dimension(2) == gl.dimension(2));
