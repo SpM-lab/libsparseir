@@ -46,6 +46,32 @@ Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N>& arr, int src, int dst) {
     return arr.shuffle(perm);
 }
 
+// Helper function to calculate buffer size for tensors
+template<typename T, int N>
+std::vector<Eigen::Index> calculate_buffer_size(
+    const Eigen::Tensor<T, N>& al,
+    const Eigen::MatrixXd& matrix,
+    int dim)
+{
+    std::vector<Eigen::Index> buffer_size;
+    buffer_size.reserve(N);
+
+    // Add dimensions up to dim
+    for (int i = 0; i < dim; ++i) {
+        buffer_size.push_back(al.dimension(i));
+    }
+
+    // Add matrix dimension
+    buffer_size.push_back(matrix.rows());
+
+    // Add remaining dimensions
+    for (int i = dim + 1; i < N; ++i) {
+        buffer_size.push_back(al.dimension(i));
+    }
+
+    return buffer_size;
+}
+
 /*
   A possible C++11/Eigen port of the Julia code that applies a matrix operation
   along a chosen dimension of an N-dimensional array.
@@ -70,11 +96,6 @@ Eigen::Tensor<T, N>& matop(
     Eigen::Tensor<T, N>& buffer,
     const Eigen::MatrixXd& mat,
     const Eigen::Tensor<T, N>& arr,
-    const std::function<void(
-        Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& outMap,
-        const Eigen::MatrixXd& mat,
-        const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& inMap
-    )>& op,
     int dim)
 {
     if (dim != 0 && dim != N - 1) {
@@ -86,6 +107,10 @@ Eigen::Tensor<T, N>& matop(
 
         using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
+        if (mat.cols() != rowDim) {
+            throw std::runtime_error("Matrix columns do not match input dimension");
+        }
+
         Eigen::Map<const MatrixType> inMap(arr.data(), rowDim, colDim);
         Eigen::Map<MatrixType> outMap(buffer.data(), mat.rows(), colDim);
 
@@ -96,6 +121,11 @@ Eigen::Tensor<T, N>& matop(
     } else {
         Eigen::Index rowDim = arr.size() / arr.dimension(N - 1);
         Eigen::Index colDim = arr.dimension(N - 1);
+
+        if (mat.cols() != colDim) {
+            throw std::runtime_error("Matrix columns do not match input dimension");
+        }
+
         using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
         Eigen::Map<const MatrixType> inMap(arr.data(), rowDim, colDim);
@@ -115,30 +145,25 @@ Eigen::Tensor<T, N>& matop_along_dim(
     Eigen::Tensor<T, N>& buffer,
     const Eigen::MatrixXd& mat,
     const Eigen::Tensor<T, N>& arr,
-    int dim,
-    const std::function<void(
-        Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& out,
-        const Eigen::MatrixXd& mat,
-        const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& in
-    )>& op)
-{
+    int dim
+) {
     if (dim < 0 || dim >= N) {
         throw std::domain_error("Dimension must be in [0, N).");
     }
 
     if (dim == 0) {
-        return matop<T, N>(buffer, mat, arr, op, 0);
+        return matop<T, N>(buffer, mat, arr, 0);
     } else if (dim != N - 1) {
         auto perm = getperm<N>(dim, 0);
         Eigen::Tensor<T, N> arr_perm = arr.shuffle(perm).eval();
         Eigen::Tensor<T, N> buffer_perm = buffer.shuffle(perm).eval();
 
-        matop<T, N>(buffer_perm, mat, arr_perm, op, 0);
+        matop<T, N>(buffer_perm, mat, arr_perm, 0);
 
         auto inv_perm = getperm<N>(0, dim);
         buffer = buffer_perm.shuffle(inv_perm).eval();
     } else {
-        return matop<T, N>(buffer, mat, arr, op, N - 1);
+        return matop<T, N>(buffer, mat, arr, N - 1);
     }
 
     return buffer;
@@ -164,21 +189,17 @@ public:
                 + std::to_string(al.dimension(dim)));
         }
 
-        Eigen::Tensor<T, N> buffer(al.dimensions());
+        // Calculate buffer dimensions using the new tensor version
+        auto buffer_dims = calculate_buffer_size(al, get_matrix(), dim);
 
-        std::function<void(
-            Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&,
-            const Eigen::MatrixXd&,
-            const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&
-        )> op = [](
-            Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& out,
-            const Eigen::MatrixXd& mat,
-            const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& in
-        ) {
-            out.noalias() = mat * in;
-        };
+        // Convert vector to array for tensor construction
+        Eigen::array<Eigen::Index, N> dims;
+        std::copy(buffer_dims.begin(), buffer_dims.end(), dims.begin());
 
-        matop_along_dim<T, N>(buffer, get_matrix(), al, dim, op);
+        // Create buffer with calculated dimensions
+        Eigen::Tensor<T, N> buffer(dims);
+
+        matop_along_dim<T, N>(buffer, get_matrix(), al, dim);
         return buffer;
     }
 
