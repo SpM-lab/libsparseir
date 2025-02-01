@@ -260,10 +260,16 @@ public:
         const Eigen::MatrixX<T> &v = v_list[0];
 
         Eigen::VectorXd s = s_.template cast<double>();
+        std::cout << "s " << s.transpose() << std::endl;
         Eigen::VectorX<T> gauss_x_w =
             Eigen::VectorX<T>::Map(gauss_x.w.data(), gauss_x.w.size());
         Eigen::VectorX<T> gauss_y_w =
             Eigen::VectorX<T>::Map(gauss_y.w.data(), gauss_y.w.size());
+
+        //std::cout << "u(0, 0), u(0, 1) " << u(0, 0) << ", " << u(0, 1) << std::endl;
+        //std::cout << "u(1, 0), u(1, 1) " << u(1, 0) << ", " << u(1, 1) << std::endl;
+        //std::cout << "v(0, 0), v(0, 1) " << v(0, 0) << ", " << v(0, 1) << std::endl;
+        //std::cout << "v(1, 0), v(1, 1) " << v(1, 0) << ", " << v(1, 1) << std::endl;
 
         Eigen::MatrixX<T> u_x = u.array().colwise() / gauss_x_w.array().sqrt();
         Eigen::MatrixX<T> v_y = v.array().colwise() / gauss_y_w.array().sqrt();
@@ -442,9 +448,12 @@ public:
             even.postprocess({u_list[0]}, {s_list[0]}, {v_list[0]});
         SVEResult result_odd =
             odd.postprocess({u_list[1]}, {s_list[1]}, {v_list[1]});
-
-        std::cout << "result_even.u[0].data\n " <<  result_even.u[0].data << std::endl;
-        std::cout << "result_odd.u[0].data\n " << result_odd.u[0].data << std::endl;
+        // std::cout << "result_even.u[0].data.rows() " << result_even.u[0].data.rows() << std::endl;
+        // std::cout << "result_even.u[0].data.cols() " << result_even.u[0].data.cols() << std::endl;
+        // std::cout << "result_odd.u[0].data.rows() " << result_odd.u[0].data.rows() << std::endl;
+        // std::cout << "result_odd.u[0].data.cols() " << result_odd.u[0].data.cols() << std::endl;
+        // std::cout << "result_even.u[0].data.transpose()\n " <<  result_even.u[0].data.transpose() << std::endl;
+        // std::cout << "result_odd.u[0].data.transpose()\n " << result_odd.u[0].data.transpose() << std::endl;
 
         // Merge results using vectors instead of insert
         std::vector<PiecewiseLegendrePoly> u_merged;
@@ -592,7 +601,8 @@ inline std::tuple<std::vector<Eigen::MatrixX<T>>,
                   std::vector<Eigen::MatrixX<T>>>
 truncate(std::vector<Eigen::MatrixX<T>> &u_list,
          std::vector<Eigen::VectorX<T>> &s_list,
-         std::vector<Eigen::MatrixX<T>> &v_list, T rtol = 0.0,
+         std::vector<Eigen::MatrixX<T>> &v_list,
+         T rtol = 0.0,
          int lmax = std::numeric_limits<int>::max())
 {
     std::vector<Eigen::MatrixX<T>> u_list_truncated;
@@ -609,26 +619,23 @@ truncate(std::vector<Eigen::MatrixX<T>> &u_list,
               std::greater<T>());
 
     // Determine cutoff
-    T cutoff = rtol * all_singular_values.front();
+    T cutoff = rtol * all_singular_values[0];
     if (lmax < static_cast<int>(all_singular_values.size())) {
-        cutoff = std::max(cutoff, all_singular_values[lmax - 1]);
+        cutoff = std::max(cutoff, all_singular_values[lmax-1]);
     }
-
     // Truncate singular values and corresponding vectors
     for (size_t idx = 0; idx < s_list.size(); ++idx) {
         const auto &s = s_list[idx];
-        int scount = 0;
+        int scounti = 0;
         for (int i = 0; i < s.size(); ++i) {
             if (s(i) > cutoff) {
-                ++scount;
-            } else {
-                break;
+                ++scounti;
             }
         }
-        if (scount < s.size()) {
-            u_list_truncated.push_back(u_list[idx].leftCols(scount));
-            s_list_truncated.push_back(s_list[idx].head(scount));
-            v_list_truncated.push_back(v_list[idx].leftCols(scount));
+        if (scounti < s.size()) {
+            u_list_truncated.push_back(u_list[idx].leftCols(scounti));
+            s_list_truncated.push_back(s_list[idx].head(scounti));
+            v_list_truncated.push_back(v_list[idx].leftCols(scounti));
         }
     }
     return std::make_tuple(u_list_truncated, s_list_truncated,
@@ -638,7 +645,7 @@ truncate(std::vector<Eigen::MatrixX<T>> &u_list,
 template <typename K, typename T>
 auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                      double cutoff = std::numeric_limits<double>::quiet_NaN(),
-                     int lmax = -1)
+                     int lmax = std::numeric_limits<int>::max())
 {
     auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
     // Compute SVDs
@@ -665,6 +672,18 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
         v_list_.push_back(v);
     }
 
+    std::cout << "u_list_[0].rows(), u_list_[0].cols() " << u_list_[0].rows() << ", " << u_list_[0].cols() << std::endl;
+    std::cout << "s_list_[0].rows(), s_list_[0].cols() " << s_list_[0].rows() << ", " << s_list_[0].cols() << std::endl;
+    Eigen::MatrixXd u = u_list_[0].template cast<double>();
+    std::cout << "u " << u(0, 0) << ", " << u(0, 1) << ", " << u(0, 2) << "\n"
+                      << u(1, 0) << ", " << u(1, 1) << ", " << u(1, 2) << std::endl;
+    Eigen::VectorXd s = s_list_[0].template cast<double>();
+    std::cout << "s " << s.transpose() << std::endl;
+    Eigen::MatrixXd v = v_list_[0].template cast<double>();
+    std::cout << "v " << v(0, 0) << ", " << v(0, 1) << ", " << v(0, 2) << "\n"
+                      << v(1, 0) << ", " << v(1, 1) << ", " << v(1, 2) << std::endl;
+    std::cout << "v_list_[0].rows(), v_list_[0].cols() " << v_list_[0].rows() << ", " << v_list_[0].cols() << std::endl;
+
     // Apply cutoff and lmax
     T cutoff_actual = std::isnan(cutoff)
                           ? 2 * T(std::numeric_limits<double>::epsilon())
@@ -672,11 +691,27 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
     std::vector<Eigen::MatrixX<T>> u_list_truncated;
     std::vector<Eigen::VectorX<T>> s_list_truncated;
     std::vector<Eigen::MatrixX<T>> v_list_truncated;
+    // TODO: Check if this is correct
+    std::cout << "lmax " << lmax << std::endl;
+    std::cout << "cutoff_actual " << cutoff_actual << std::endl;
+    std::cout << "s_list_[0].size() " << s_list_[0].size() << std::endl;
+    std::cout << "s_list_[1].size() " << s_list_[1].size() << std::endl;
     std::tie(u_list_truncated, s_list_truncated, v_list_truncated) =
         truncate(u_list_, s_list_, v_list_, cutoff_actual, lmax);
     // Postprocess to get the SVEResult
-    return sve->postprocess(u_list_truncated, s_list_truncated,
-                            v_list_truncated);
+    Eigen::VectorXd s_truncated_even = s_list_truncated[0].template cast<double>();
+    std::cout << "s_truncated_even " << s_truncated_even.transpose() << std::endl;
+    std::cout << "s_truncated_even.size() " << s_truncated_even.size() << std::endl;
+    std::cout <<"u_list_truncated[0].rows(), u_list_truncated[0].cols() " << u_list_truncated[0].rows() << ", " << u_list_truncated[0].cols() << std::endl;
+    std::cout <<"u_list_truncated[1].rows(), u_list_truncated[1].cols() " << u_list_truncated[1].rows() << ", " << u_list_truncated[1].cols() << std::endl;
+
+    Eigen::VectorXd s_truncated_odd = s_list_truncated[1].template cast<double>();
+    std::cout << "s_truncated_odd " << s_truncated_odd.transpose() << std::endl;
+    std::cout << "s_truncated_odd.size() " << s_truncated_odd.size() << std::endl;
+    std::cout <<"v_list_truncated[0].rows(), v_list_truncated[0].cols() " << v_list_truncated[0].rows() << ", " << v_list_truncated[0].cols() << std::endl;
+    std::cout <<"v_list_truncated[1].rows(), v_list_truncated[1].cols() " << v_list_truncated[1].rows() << ", " << v_list_truncated[1].cols() << std::endl;
+
+    return sve->postprocess(u_list_truncated, s_list_truncated, v_list_truncated);
 }
 
 
