@@ -1,12 +1,130 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
+
 #include <Eigen/SVD>
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <functional>
 
 namespace sparseir {
+
+template <int N>
+Eigen::array<int, N> getperm(int src, int dst) {
+    Eigen::array<int, N> perm;
+    if (src == dst) {
+        for (int i = 0; i < N; ++i) {
+            perm[i] = i;
+        }
+        return perm;
+    }
+
+    int pos = 0;
+    for (int i = 0; i < N; ++i) {
+        if (i == dst) {
+            perm[i] = src;
+        } else {
+            // src の位置をスキップ
+            if (pos == src)
+                ++pos;
+            perm[i] = pos;
+            ++pos;
+        }
+    }
+    return perm;
+}
+
+// movedim: テンソル arr の次元 src を次元 dst に移動する（他の次元の順序はそのまま）
+template<typename T, int N>
+Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N>& arr, int src, int dst) {
+    if (src == dst) {
+        return arr;
+    }
+    auto perm = getperm<N>(src, dst);
+    return arr.shuffle(perm);
+}
+
+/*
+  A possible C++11/Eigen port of the Julia code that applies a matrix operation
+  along a chosen dimension of an N-dimensional array.
+
+  - matop_along_dim(buffer, mat, arr, dim, op) moves the requested dimension
+    to the first or last as needed, then calls matop.
+  - matop(buffer, mat, arr, op, dim) reshapes the tensor into a 2D view and
+    calls the operation function.
+
+  For simplicity, we assume:
+    1) T is either float/double or a complex type.
+    2) mat is an Eigen::MatrixXd (real) or possibly Eigen::MatrixXcd if needed.
+    3) The user-provided op has the signature:
+         void op(Eigen::Ref<Eigen::MatrixX<T>> out,
+                 const Eigen::Ref<const Eigen::MatrixXd>& mat,
+                 const Eigen::Ref<const Eigen::MatrixX<T>>& in);
+       …or a variant suitable to your problem.
+*/
+
+template <typename T, int N>
+Eigen::Tensor<T, N>& matop(
+    Eigen::Tensor<T, N>& buffer,
+    const Eigen::MatrixXd& mat,
+    const Eigen::Tensor<T, N>& arr,
+    const std::function<void(
+        Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& outMap,
+        const Eigen::MatrixXd& mat,
+        const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& inMap
+    )>& op,
+    int dim)
+{
+    if (dim != 1 && dim != N) {
+        throw std::domain_error("Dimension must be 1 or N for matop.");
+    }
+
+    Eigen::Index rowDim = (dim == 1) ? arr.dimension(0) : arr.size() / arr.dimension(N - 1);
+    Eigen::Index colDim = (dim == 1) ? arr.size() / rowDim : arr.dimension(N - 1);
+
+    using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+    Eigen::Map<const MatrixType> inMap(arr.data(), rowDim, colDim);
+    Eigen::Map<MatrixType> outMap(buffer.data(), rowDim, colDim);
+
+    op(outMap, mat, inMap);
+    return buffer;
+}
+
+template <typename T, int N>
+Eigen::Tensor<T, N>& matop_along_dim(
+    Eigen::Tensor<T, N>& buffer,
+    const Eigen::MatrixXd& mat,
+    const Eigen::Tensor<T, N>& arr,
+    int dim_in,
+    const std::function<void(
+        Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& out,
+        const Eigen::MatrixXd& mat,
+        const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& in
+    )>& op)
+{
+    if (dim_in < 0 || dim_in >= N) {
+        throw std::domain_error("Dimension must be in [0, N).");
+    }
+
+    if (dim_in == 0) {
+        return matop<T, N>(buffer, mat, arr, op, 1);
+    } else if (dim_in != N - 1) {
+        auto perm = getperm<N>(dim_in, 0);
+        Eigen::Tensor<T, N> arr_perm = arr.shuffle(perm).eval();
+        Eigen::Tensor<T, N> buffer_perm = buffer.shuffle(perm).eval();
+
+        matop<T, N>(buffer_perm, mat, arr_perm, op, 1);
+
+        auto inv_perm = getperm<N>(0, dim_in);
+        buffer = buffer_perm.shuffle(inv_perm).eval();
+    } else {
+        return matop<T, N>(buffer, mat, arr, op, N);
+    }
+
+    return buffer;
+}
 
 template <typename S>
 class AbstractSampling {
@@ -14,9 +132,37 @@ public:
     virtual ~AbstractSampling() = default;
 
     // Evaluate the basis coefficients at sampling points
-    virtual Eigen::VectorXd evaluate(
-        const Eigen::VectorXd& al,
-        const Eigen::VectorXd* points = nullptr) const = 0;
+    template<typename T, int N>
+    Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N>& al, int dim = 1) const {
+        if (dim < 0 || dim >= N) {
+            throw std::runtime_error(
+                "evaluate: dimension must be in [0..N). Got dim=" + std::to_string(dim));
+        }
+
+        if (get_matrix().cols() != al.dimension(dim)) {
+            throw std::runtime_error(
+                "Mismatch: matrix.cols()=" + std::to_string(get_matrix().cols())
+                + ", but al.dimension(" + std::to_string(dim) + ")="
+                + std::to_string(al.dimension(dim)));
+        }
+
+        Eigen::Tensor<T, N> buffer(al.dimensions());
+
+        std::function<void(
+            Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&,
+            const Eigen::MatrixXd&,
+            const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>&
+        )> op = [](
+            Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& out,
+            const Eigen::MatrixXd& mat,
+            const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& in
+        ) {
+            out.noalias() = mat * in;
+        };
+
+        matop_along_dim<T, N>(buffer, get_matrix(), al, dim, op);
+        return buffer;
+    }
 
     // Fit values at sampling points to basis coefficients
     virtual Eigen::VectorXd fit(
@@ -25,6 +171,7 @@ public:
 
     // Get the sampling points
     virtual const Eigen::VectorXd& sampling_points() const = 0;
+    virtual Eigen::MatrixXd get_matrix() const = 0;
 };
 // Helper function declarations
 // Forward declarations
@@ -40,7 +187,6 @@ inline Eigen::MatrixXd eval_matrix(const TauSampling<S>* tau_sampling,
 
     // Evaluate basis functions at sampling points
     auto u_eval = basis->u(x);
-    std::cout << "u_eval = " << u_eval << std::endl;
     // Transpose and scale by singular values
     matrix = u_eval.transpose();
 
@@ -63,7 +209,6 @@ public:
 
         // Initialize evaluation matrix with correct dimensions
         matrix_ = eval_matrix(this, basis_, sampling_points_);
-        std::cout << "matrix_ = " << matrix_ << std::endl;
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
             matrix_.cols() != basis_->size()) {
@@ -84,27 +229,9 @@ public:
         }
     }
 
-    Eigen::VectorXd evaluate(
-        const Eigen::VectorXd& al,
-        const Eigen::VectorXd* points = nullptr) const override {
-        if (points) {
-            auto eval_mat = eval_matrix(this, basis_, *points);
-            if (eval_mat.cols() != al.size()) {
-                throw std::runtime_error(
-                    "Input vector size mismatch: got " +
-                    std::to_string(al.size()) +
-                    ", expected " + std::to_string(eval_mat.cols()));
-            }
-            return eval_mat * al;
-        }
 
-        if (matrix_.cols() != al.size()) {
-            throw std::runtime_error(
-                "Input vector size mismatch: got " +
-                std::to_string(al.size()) +
-                ", expected " + std::to_string(matrix_.cols()));
-        }
-        return matrix_ * al;
+    Eigen::MatrixXd get_matrix() const override {
+        return matrix_;
     }
 
     Eigen::VectorXd fit(
@@ -117,13 +244,6 @@ public:
                 Eigen::ComputeFullU | Eigen::ComputeFullV
             );
             return local_svd.solve(ax);
-        }
-
-        if (ax.size() != matrix_.rows()) {
-            throw std::runtime_error(
-                "Input vector size mismatch: got " +
-                std::to_string(ax.size()) +
-                ", expected " + std::to_string(matrix_.rows()));
         }
         return matrix_svd_.solve(ax);
     }
