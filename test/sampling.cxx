@@ -60,14 +60,35 @@ TEST_CASE("Sampling Tests") {
             Eigen::array<Eigen::Index, 4> bcast = {1, d1, d2, d3};
             Eigen::Tensor<ComplexF64, 4> originalgl = (-s_reshaped.broadcast(bcast)) * rhol_tensor;
 
+            std::cout << "aaa" << std::endl;
+            Eigen::Tensor<ComplexF64, 4> gl1 = movedim(originalgl, 0, 0);
+            Eigen::Tensor<ComplexF64, 4> gtau1 = tau_sampling->evaluate(gl1, 0);
+
+            std::cout << "bbb" << std::endl;
+            Eigen::Tensor<ComplexF64, 4> gl2 = movedim(originalgl, 0, 1);
+            std::cout << "bbb1" << std::endl;
+            Eigen::Tensor<ComplexF64, 4> gtau2 = tau_sampling->evaluate(gl2, 1);
+
+            std::cout << "ccc" << std::endl;
+            Eigen::Tensor<ComplexF64, 4> gl3 = movedim(originalgl, 0, 2);
+            Eigen::Tensor<ComplexF64, 4> gtau3 = tau_sampling->evaluate(gl3, 2);
+
+            std::cout << "ddd" << std::endl;
+            Eigen::Tensor<ComplexF64, 4> gl4 = movedim(originalgl, 0, 3);
+            Eigen::Tensor<ComplexF64, 4> gtau4 = tau_sampling->evaluate(gl4, 3);
 
             for (int dim = 0; dim < 4; ++dim) {
                 Eigen::Tensor<ComplexF64, 4> gl = movedim(originalgl, 0, dim);
-                //Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
-                //REQUIRE(gtau.dimension(0) == gl.dimension(0));
-                //REQUIRE(gtau.dimension(1) == gl.dimension(1));
-                //REQUIRE(gtau.dimension(2) == gl.dimension(2));
-                //REQUIRE(gtau.dimension(3) == gl.dimension(3));
+                Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
+
+                std::cout << "dim: " << dim << std::endl;
+                std::cout << "gtau.dimensions(): " << gtau.dimensions() << std::endl;
+                std::cout << "gl.dimensions(): " << gl.dimensions() << std::endl;
+
+                REQUIRE(gtau.dimension(0) == gl.dimension(0));
+                REQUIRE(gtau.dimension(1) == gl.dimension(1));
+                REQUIRE(gtau.dimension(2) == gl.dimension(2));
+                REQUIRE(gtau.dimension(3) == gl.dimension(3));
                 //Eigen::VectorXd gl_from_tau = tau_sampling->fit(gtau, dim);
                 //REQUIRE(gl_from_tau.isApprox(originalgl, 1e-10));
             }
