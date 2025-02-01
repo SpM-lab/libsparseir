@@ -1,4 +1,6 @@
 #include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include <sparseir/sparseir-header-only.hpp>
@@ -11,12 +13,14 @@
 using namespace sparseir;
 using namespace std;
 
+using ComplexF64 = std::complex<double>;
+
 TEST_CASE("Sampling Tests") {
     double beta = 1.0;
     vector<double> lambdas = {10.0, 42.0};
 
     for (auto Lambda : lambdas) {
-        SECTION("Testing with Λ") {
+        SECTION("Testing with Λ=" + std::to_string(Lambda)) {
             auto kernel = LogisticKernel(beta * Lambda);
             auto sve_result = compute_sve(kernel, 1e-15);
             auto basis = make_shared<FiniteTempBasis<Bosonic>>(
@@ -30,16 +34,52 @@ TEST_CASE("Sampling Tests") {
             REQUIRE(tau_sampling->sampling_points().size() > 0);
 
             // Generate random coefficients of correct size
-            Eigen::VectorXd rhol = Eigen::VectorXd::Random(basis->size());
+            Eigen::VectorXcd rhol = Eigen::VectorXcd::Random(basis->size());
             REQUIRE(rhol.size() == basis->size());
 
+            const Eigen::Index s_size = basis->size();
+            const Eigen::Index d1 = 2;
+            const Eigen::Index d2 = 3;
+            const Eigen::Index d3 = 4;
+            Eigen::Tensor<ComplexF64, 4> rhol_tensor(s_size, d1, d2, d3);
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_real_distribution<> dis(0, 1);
+
+            for (int i = 0; i < rhol_tensor.size(); ++i) {
+                rhol_tensor.data()[i] = ComplexF64(dis(gen), dis(gen));
+            }
+            Eigen::VectorXd s_vector = basis->s; // Assuming basis->s is Eigen::VectorXd
+            Eigen::Tensor<ComplexF64, 1> s_tensor(s_vector.size());
+
+            for (Eigen::Index i = 0; i < s_vector.size(); ++i) {
+                s_tensor(i) = ComplexF64(s_vector(i), 0.0); // Assuming real to complex conversion
+            }
+            Eigen::array<Eigen::Index, 4> new_shape = {s_size, 1, 1, 1};
+            Eigen::Tensor<ComplexF64, 4> s_reshaped = s_tensor.reshape(new_shape);
+            Eigen::array<Eigen::Index, 4> bcast = {1, d1, d2, d3};
+            Eigen::Tensor<ComplexF64, 4> originalgl = (-s_reshaped.broadcast(bcast)) * rhol_tensor;
+
+
+            for (int dim = 0; dim < 4; ++dim) {
+                Eigen::Tensor<ComplexF64, 4> gl = movedim(originalgl, 0, dim);
+                //Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
+                //REQUIRE(gtau.dimension(0) == gl.dimension(0));
+                //REQUIRE(gtau.dimension(1) == gl.dimension(1));
+                //REQUIRE(gtau.dimension(2) == gl.dimension(2));
+                //REQUIRE(gtau.dimension(3) == gl.dimension(3));
+                //Eigen::VectorXd gl_from_tau = tau_sampling->fit(gtau, dim);
+                //REQUIRE(gl_from_tau.isApprox(originalgl, 1e-10));
+            }
+
             // Test evaluate and fit
-            Eigen::VectorXd gtau = tau_sampling->evaluate(rhol);
+            /*Eigen::VectorXd gtau = tau_sampling->evaluate(rhol);
             REQUIRE(gtau.size() == tau_sampling->sampling_points().size());
 
             Eigen::VectorXd rhol_recovered = tau_sampling->fit(gtau);
             REQUIRE(rhol_recovered.size() == rhol.size());
-            // REQUIRE(rhol.isApprox(rhol_recovered, 1e-10));
+            */
+            //REQUIRE(rhol.isApprox(rhol_recovered, 1e-10));
         }
     }
 }

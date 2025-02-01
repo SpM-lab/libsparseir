@@ -96,8 +96,6 @@ public:
         }
 
         auto uk = u_.polyvec[0].knots;
-        std::cout << "uk.size(): " << uk.size() << std::endl;
-        std::cout << "uk: \n" << uk << std::endl;
         /*
         Port the following Julia code to C++:
             # The polynomials are scaled to the new variables by transforming
@@ -219,7 +217,6 @@ public:
     const Eigen::VectorXd default_tau_sampling_points() const override {
         int sz = this->sve_result->s.size();
         auto x = default_sampling_points(this->sve_result->u, sz);
-        std::cout << "x=" << x << std::endl;
         return (this->beta / 2.0) * (x.array() + 1.0);
     }
 

@@ -64,7 +64,6 @@ public:
 inline std::tuple<double, std::string, std::string>
 choose_accuracy(double epsilon, const std::string &Twork)
 {
-    std::cout << "Twork: " << Twork << std::endl;
     if (Twork != "Float64" && Twork != "Float64x2") {
         throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
     }
