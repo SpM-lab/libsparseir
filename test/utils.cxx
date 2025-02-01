@@ -5,7 +5,7 @@
 
 using std::invalid_argument;
 
-TEST_CASE("utils", "sortperm_rev")
+TEST_CASE("sortperm_rev", "[utils]")
 {
     Eigen::VectorXd vec1(5);
     vec1 << 4, 3, 2, 1, 0;
@@ -27,4 +27,16 @@ TEST_CASE("utils", "sortperm_rev")
     REQUIRE(sorted_indices3.size() == vec3.size());
     std::vector<size_t> sorted_indices_expected3 = {4, 2, 0, 1, 3};
     REQUIRE(sorted_indices3 == sorted_indices_expected3);
+}
+
+TEST_CASE("issorted", "[utils]")
+{
+    std::vector<int> v1 = {1, 2, 3, 4, 5};
+    std::vector<int> v2 = {5, 4, 3, 2, 1};
+    Eigen::VectorXd ev1(3);
+    ev1 << 1.0, 2.0, 3.0;
+
+    REQUIRE(sparseir::issorted(v1) == true);
+    REQUIRE(sparseir::issorted(v2) == false);
+    REQUIRE(sparseir::issorted(ev1) == true);
 }
