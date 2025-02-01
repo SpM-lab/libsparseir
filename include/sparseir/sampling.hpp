@@ -77,18 +77,36 @@ Eigen::Tensor<T, N>& matop(
     )>& op,
     int dim)
 {
-    if (dim != 1 && dim != N) {
-        throw std::domain_error("Dimension must be 1 or N for matop.");
+    if (dim != 0 && dim != N - 1) {
+        throw std::domain_error("Dimension must be 0 or N-1 for matop.");
     }
+    if (dim == 0) {
+        Eigen::Index rowDim = arr.dimension(0);
+        Eigen::Index colDim = arr.size() / rowDim;
 
-    Eigen::Index rowDim = (dim == 1) ? arr.dimension(0) : arr.size() / arr.dimension(N - 1);
-    Eigen::Index colDim = (dim == 1) ? arr.size() / rowDim : arr.dimension(N - 1);
+        using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
 
-    using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
-    Eigen::Map<const MatrixType> inMap(arr.data(), rowDim, colDim);
-    Eigen::Map<MatrixType> outMap(buffer.data(), rowDim, colDim);
+        Eigen::Map<const MatrixType> inMap(arr.data(), rowDim, colDim);
+        Eigen::Map<MatrixType> outMap(buffer.data(), mat.rows(), colDim);
 
-    op(outMap, mat, inMap);
+        outMap = mat * inMap;
+        for (int i = 0; i < outMap.size(); ++i) {
+            buffer.data()[i] = outMap.data()[i];
+        }
+    } else {
+        Eigen::Index rowDim = arr.size() / arr.dimension(N - 1);
+        Eigen::Index colDim = arr.dimension(N - 1);
+        using MatrixType = Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>;
+
+        Eigen::Map<const MatrixType> inMap(arr.data(), rowDim, colDim);
+        Eigen::Map<MatrixType> outMap(buffer.data(), rowDim, mat.rows());
+
+        outMap = inMap * mat.transpose();
+
+        for (int i = 0; i < outMap.size(); ++i) {
+            buffer.data()[i] = outMap.data()[i];
+        }
+    }
     return buffer;
 }
 
@@ -97,30 +115,30 @@ Eigen::Tensor<T, N>& matop_along_dim(
     Eigen::Tensor<T, N>& buffer,
     const Eigen::MatrixXd& mat,
     const Eigen::Tensor<T, N>& arr,
-    int dim_in,
+    int dim,
     const std::function<void(
         Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& out,
         const Eigen::MatrixXd& mat,
         const Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>& in
     )>& op)
 {
-    if (dim_in < 0 || dim_in >= N) {
+    if (dim < 0 || dim >= N) {
         throw std::domain_error("Dimension must be in [0, N).");
     }
 
-    if (dim_in == 0) {
-        return matop<T, N>(buffer, mat, arr, op, 1);
-    } else if (dim_in != N - 1) {
-        auto perm = getperm<N>(dim_in, 0);
+    if (dim == 0) {
+        return matop<T, N>(buffer, mat, arr, op, 0);
+    } else if (dim != N - 1) {
+        auto perm = getperm<N>(dim, 0);
         Eigen::Tensor<T, N> arr_perm = arr.shuffle(perm).eval();
         Eigen::Tensor<T, N> buffer_perm = buffer.shuffle(perm).eval();
 
-        matop<T, N>(buffer_perm, mat, arr_perm, op, 1);
+        matop<T, N>(buffer_perm, mat, arr_perm, op, 0);
 
-        auto inv_perm = getperm<N>(0, dim_in);
+        auto inv_perm = getperm<N>(0, dim);
         buffer = buffer_perm.shuffle(inv_perm).eval();
     } else {
-        return matop<T, N>(buffer, mat, arr, op, N);
+        return matop<T, N>(buffer, mat, arr, op, N - 1);
     }
 
     return buffer;
