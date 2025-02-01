@@ -10,6 +10,24 @@
 #include <xprec/ddouble-header-only.hpp>
 
 TEST_CASE("default_sampling_points", "[basis]"){
+    /*
+    # In Julia
+    julia> using SparseIR, Test
+    julia> begin
+        basis = FiniteTempBasis{Fermionic}(3., 4., 1e-6)
+        sve = SparseIR.sve_result(basis)
+        @test length(sve.u) == 22
+        @test SparseIR.default_sampling_points(sve.u, 5) == [
+                -0.9295094290275152
+                -0.6046713653408808
+                -1.871256018508277e-14
+                0.6046713653408806
+                0.9295094290275152
+        ]
+
+        out = SparseIR.default_sampling_points(sve.u, 100);
+    end
+    */
     using T = double;
     double beta = 3.0;
     double omega_max = 4.0;
@@ -19,7 +37,7 @@ TEST_CASE("default_sampling_points", "[basis]"){
     auto pts_5 = sparseir::default_sampling_points(sve->u, 5);
 
     REQUIRE(sve->u.size() == 22);
-    REQUIRE(pts_5.size()==5);
+    REQUIRE(pts_5.size() == 5);
     REQUIRE(pts_5(0) == -0.9295094290275152);
     REQUIRE(pts_5(1) == -0.6046713653408808);
     REQUIRE(pts_5(2) == -1.871256018508277e-14);
