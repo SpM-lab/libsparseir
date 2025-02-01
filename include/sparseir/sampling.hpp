@@ -51,7 +51,8 @@ template <typename S>
 class TauSampling : public AbstractSampling<S> {
 public:
     TauSampling(
-        const std::shared_ptr<FiniteTempBasis<S>>& basis) : basis_(basis) {
+        const std::shared_ptr<FiniteTempBasis<S>>& basis,
+        bool factorize = true) : basis_(basis) {
         // Get default sampling points from basis
         sampling_points_ = basis_->default_tau_sampling_points();
 
@@ -75,10 +76,12 @@ public:
         }
 
         // Initialize SVD
-        matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
-            matrix_,
-            Eigen::ComputeFullU | Eigen::ComputeFullV
-        );
+        if (factorize) {
+            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
+                matrix_,
+                Eigen::ComputeFullU | Eigen::ComputeFullV
+            );
+        }
     }
 
     Eigen::VectorXd evaluate(
