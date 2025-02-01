@@ -9,6 +9,28 @@
 #include <sparseir/sparseir-header-only.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
+TEST_CASE("default_sampling_points", "[basis]"){
+    using T = double;
+    double beta = 3.0;
+    double omega_max = 4.0;
+    double epsilon = 1e-6;
+    auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic>(beta, omega_max, epsilon);
+    auto sve = basis.sve_result;
+    auto pts_5 = sparseir::default_sampling_points(sve->u, 5);
+
+    REQUIRE(sve->u.size() == 22);
+    REQUIRE(pts_5.size()==5);
+    REQUIRE(pts_5(0) == -0.9295094290275152);
+    REQUIRE(pts_5(1) == -0.6046713653408808);
+    REQUIRE(pts_5(2) == -1.871256018508277e-14);
+    REQUIRE(pts_5(3) == 0.6046713653408806);
+    REQUIRE(pts_5(4) == 0.9295094290275152);
+
+    int L = 100;
+    auto pts_L = sparseir::default_sampling_points(sve->u, L);
+    REQUIRE(pts_L.size()== 35);
+}
+
 TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
     SECTION("Basic consistency") {
         double beta = 1.0;
