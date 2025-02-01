@@ -443,6 +443,9 @@ public:
         SVEResult result_odd =
             odd.postprocess({u_list[1]}, {s_list[1]}, {v_list[1]});
 
+        std::cout << "result_even.u[0].data\n " <<  result_even.u[0].data << std::endl;
+        std::cout << "result_odd.u[0].data\n " << result_odd.u[0].data << std::endl;
+
         // Merge results using vectors instead of insert
         std::vector<PiecewiseLegendrePoly> u_merged;
         u_merged.reserve(result_even.u.size() + result_odd.u.size());
