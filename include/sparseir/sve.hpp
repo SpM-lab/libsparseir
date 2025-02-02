@@ -514,7 +514,7 @@ public:
         // Apply the sorted permutation to u_complete, v_complete, signs, and s_merged
         std::vector<PiecewiseLegendrePoly> u_sorted(sorted_indices.size());
         std::vector<PiecewiseLegendrePoly> v_sorted(sorted_indices.size());
-        Eigen::VectorX<T> signs_sorted(sorted_indices.size());
+        Eigen::VectorXi signs_sorted(sorted_indices.size());
         Eigen::VectorXd s_sorted(sorted_indices.size());
 
         for (size_t i = 0; i < sorted_indices.size(); ++i) {
@@ -523,6 +523,8 @@ public:
             s_sorted[i] = s_merged[sorted_indices[i]];
             signs_sorted[i] = signs[sorted_indices[i]];
         }
+        // Update signs to be the sorted signs
+        signs = signs_sorted;
 
         auto full_hints = sve_hints<T>(kernel, epsilon);
         auto segs_x_vec = full_hints.segments_x();
