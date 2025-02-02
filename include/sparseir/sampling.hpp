@@ -11,6 +11,13 @@
 
 namespace sparseir {
 
+// Forward declarations
+template <typename S>
+class FiniteTempBasis;
+
+template <typename S>
+class TauSampling;
+
 template <int N>
 Eigen::array<int, N> getperm(int src, int dst) {
     Eigen::array<int, N> perm;
@@ -90,7 +97,6 @@ std::vector<Eigen::Index> calculate_buffer_size(
                  const Eigen::Ref<const Eigen::MatrixX<T>>& in);
        …or a variant suitable to your problem.
 */
-
 template <typename T, int N>
 Eigen::Tensor<T, N>& matop(
     Eigen::Tensor<T, N>& buffer,
@@ -169,150 +175,175 @@ Eigen::Tensor<T, N>& matop_along_dim(
     return buffer;
 }
 
-template <typename S>
-class AbstractSampling {
-public:
-    virtual ~AbstractSampling() = default;
+// Define WorkSize struct
+struct WorkSize {
+    Eigen::Index rows;
+    Eigen::Index cols;
 
-    // Evaluate the basis coefficients at sampling points
-    template<typename T, int N>
-    Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N>& al, int dim = 1) const {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" + std::to_string(dim));
-        }
+    WorkSize(Eigen::Index r, Eigen::Index c) : rows(r), cols(c) {}
 
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" + std::to_string(get_matrix().cols())
-                + ", but al.dimension(" + std::to_string(dim) + ")="
-                + std::to_string(al.dimension(dim)));
-        }
+    Eigen::Index prod() const { return rows * cols; }
+    Eigen::Index size() const { return rows; }
+    Eigen::Index dimensions() const { return cols; }
+};
 
-        // Calculate buffer dimensions using the new tensor version
-        auto buffer_dims = calculate_buffer_size(al, get_matrix(), dim);
+// Forward declarations
+template<typename T, int N>
+void ldiv_noalloc_inplace(Eigen::VectorX<T>& flatbuffer,
+                         const Eigen::BDCSVD<Eigen::MatrixX<T>>& svd,
+                         const Eigen::VectorX<T>& flatarr,
+                         Eigen::VectorX<T>& workarr);
 
-        // Convert vector to array for tensor construction
-        Eigen::array<Eigen::Index, N> dims;
-        std::copy(buffer_dims.begin(), buffer_dims.end(), dims.begin());
+template<typename T, int N>
+void ldiv_noalloc(Eigen::VectorX<T>& buffer_perm,
+                  const Eigen::BDCSVD<Eigen::MatrixX<T>>& svd,
+                  const Eigen::VectorX<T>& arr_perm,
+                  Eigen::VectorX<T>& workarr,
+                  int offset);
 
-        // Create buffer with calculated dimensions
-        Eigen::Tensor<T, N> buffer(dims);
+template<typename T, int N>
+void rdiv_noalloc_inplace(Eigen::VectorX<T>& flatbuffer,
+                         const Eigen::VectorX<T>& flatarr,
+                         const Eigen::BDCSVD<Eigen::MatrixX<T>>& svd,
+                         Eigen::VectorX<T>& workarr);
 
-        matop_along_dim<T, N>(buffer, get_matrix(), al, dim);
-        return buffer;
-    }
-
-    // Fit values at sampling points to basis coefficients
-    // Evaluate the basis coefficients at sampling points
-    template <typename T, int N>
-    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &al,
-                                 int dim = 1) const
-    {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "fit: dimension must be in [0..N). Got dim=" + std::to_string(dim));
-        }
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" + std::to_string(get_matrix().cols())
-                + ", but al.dimension(" + std::to_string(dim) + ")="
-                + std::to_string(al.dimension(dim)));
-        }
-
-        // Calculate buffer dimensions using the new tensor version
-        auto buffer_dims = calculate_buffer_size(al, get_matrix(), dim);
-
-        // Convert vector to array for tensor construction
-        Eigen::array<Eigen::Index, N> dims;
-        std::copy(buffer_dims.begin(), buffer_dims.end(), dims.begin());
-
-        // Create buffer with calculated dimensions
-        Eigen::Tensor<T, N> buffer(dims);
-
-        // fit inplace
-        return buffer;
-    }
-
-    // Get the sampling points
-    virtual const Eigen::VectorXd& sampling_points() const = 0;
-    virtual Eigen::MatrixXd get_matrix() const = 0;
-    };
 // Helper function declarations
 // Forward declarations
 template <typename S>
 class TauSampling;
 
-template <typename S>
-inline Eigen::MatrixXd eval_matrix(const TauSampling<S>* tau_sampling,
-                           const std::shared_ptr<FiniteTempBasis<S>>& basis,
-                           const Eigen::VectorXd& x){
-    // Initialize matrix with correct dimensions
-    Eigen::MatrixXd matrix(x.size(), basis->size());
+template<typename S>
+Eigen::VectorXd default_tau_sampling_points(const FiniteTempBasis<S>& basis) {
+    double beta = basis.get_beta();
+    int n_tau = basis.size() * 2;
+    Eigen::VectorXd points(n_tau);
+    for (int i = 0; i < n_tau; ++i) {
+        points[i] = (i + 0.5) * beta / n_tau;
+    }
+    return points;
+}
 
-    // Evaluate basis functions at sampling points
-    auto u_eval = basis->u(x);
-    // Transpose and scale by singular values
-    matrix = u_eval.transpose();
-
+template<typename S>
+Eigen::MatrixXd eval_matrix(const FiniteTempBasis<S>& basis,
+                          const Eigen::VectorXd& x) {
+    Eigen::MatrixXd matrix(x.size(), basis.size());
+    for (int i = 0; i < x.size(); ++i) {
+        auto u_i = basis.u(x[i]);
+        for (int j = 0; j < basis.size(); ++j) {
+            matrix(i, j) = u_i[j];
+        }
+    }
     return matrix;
 }
 
-template <typename S>
-class TauSampling : public AbstractSampling<S> {
+// AbstractSampling クラスの定義
+template<typename S>
+class AbstractSampling {
 public:
-    TauSampling(
-        const std::shared_ptr<FiniteTempBasis<S>>& basis,
-        bool factorize = true) : basis_(basis) {
-        // Get default sampling points from basis
-        sampling_points_ = basis_->default_tau_sampling_points();
+    virtual ~AbstractSampling() = default;
+    virtual const Eigen::MatrixXd& matrix() const = 0;
+    virtual const Eigen::JacobiSVD<Eigen::MatrixXd>& matrix_svd() const = 0;
+    virtual const Eigen::VectorXd& sampling_points() const = 0;
+};
 
-        // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points generated");
-        }
-
-        // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis_, sampling_points_);
-        // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis_->size()) {
-            throw std::runtime_error(
-                "Matrix dimensions mismatch: got " +
-                std::to_string(matrix_.rows()) + "x" +
-                std::to_string(matrix_.cols()) +
-                ", expected " + std::to_string(sampling_points_.size()) +
-                "x" + std::to_string(basis_->size()));
-        }
-
-        // Initialize SVD
-        if (factorize) {
-            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
-                matrix_,
-                Eigen::ComputeFullU | Eigen::ComputeFullV
-            );
-        }
-    }
-
-
-    Eigen::MatrixXd get_matrix() const override {
-        return matrix_;
-    }
-
-    const Eigen::VectorXd& sampling_points() const override {
-        return sampling_points_;
-    }
-
-    const Eigen::VectorXd& tau() const {
-        return sampling_points_;
-    }
-
+template<typename S>
+class TauSampling : public AbstractSampling<S> {
 private:
     std::shared_ptr<FiniteTempBasis<S>> basis_;
     Eigen::VectorXd sampling_points_;
     Eigen::MatrixXd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
+
+public:
+    explicit TauSampling(std::shared_ptr<FiniteTempBasis<S>> basis, bool factorize = true)
+        : basis_(basis),
+          sampling_points_(default_tau_sampling_points(*basis)),
+          matrix_(eval_matrix(*basis, sampling_points_)) {
+        if (factorize) {
+            matrix_svd_.compute(matrix_);
+        }
+    }
+
+    const Eigen::MatrixXd& matrix() const override { return matrix_; }
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& matrix_svd() const override { return matrix_svd_; }
+    const Eigen::VectorXd& sampling_points() const override { return sampling_points_; }
+
+    template<typename T>
+    Eigen::Tensor<T, 4> evaluate(const Eigen::Tensor<T, 4>& gl, int dim) const {
+        auto dims = gl.dimensions();
+        Eigen::array<Eigen::Index, 4> new_dims;
+        for (int i = 0; i < 4; ++i) {
+            new_dims[i] = (i == dim) ? sampling_points_.size() : dims[i];
+        }
+
+        Eigen::Tensor<T, 4> result(new_dims);
+
+        // Reshape for matrix multiplication
+        Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>> gl_mat(
+            gl.data(), dims[dim], gl.size() / dims[dim]);
+
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> result_mat =
+            matrix_ * gl_mat;
+
+        std::copy(result_mat.data(),
+                 result_mat.data() + result_mat.size(),
+                 result.data());
+
+        return result;
+    }
 };
 
+template <typename T, int N>
+Eigen::MatrixX<T>& ldiv_alloc(
+    Eigen::MatrixX<T>& Y,
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& A,
+    const Eigen::MatrixX<T>& B,
+    Eigen::VectorX<T>& workarr
+) {
+    WorkSize worksize(A.matrixU().cols(), B.cols());
+    Eigen::Index worklength = worksize.prod();
+    if (workarr.size() < worklength) {
+        throw std::runtime_error("Work array is too small");
+    }
+    Eigen::Map<Eigen::MatrixX<T>> workarr_view(workarr.data(), worksize.rows, worksize.cols);
+    workarr_view = A.matrixU().transpose() * B;
+    workarr_view.array() /= A.singularValues().array();
+    Y = A.matrixV() * workarr_view;
+    return Y;
+}
+
+template <typename T, int N>
+Eigen::Tensor<T, N>& div_noalloc_inplace(
+    Eigen::Tensor<T, N>& buffer,
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& svd,
+    const Eigen::Tensor<T, N>& arr,
+    Eigen::VectorX<T>& workarr,
+    int dim) {
+    if (dim < 0 || dim >= N) {
+        throw std::domain_error("Dimension must be in [0, N).");
+    }
+    if (dim == 0) {
+        Eigen::Map<Eigen::MatrixX<T>> flatarr(arr.data(), arr.size(), 1);
+        Eigen::Map<Eigen::MatrixX<T>> flatbuffer(buffer.data(), buffer.size(), 1);
+        ldiv_noalloc_inplace<T, N>(flatbuffer, svd, flatarr, workarr);
+        buffer = flatbuffer.reshaped(buffer.dimensions());
+        return buffer;
+    } else if (dim != N - 1) {
+        auto perm = getperm<N>(dim, 0);
+        Eigen::Tensor<T, N> arr_perm = arr.shuffle(perm).eval();
+        Eigen::Tensor<T, N> buffer_perm = buffer.shuffle(perm).eval();
+        ldiv_noalloc<T, N>(buffer_perm, svd, arr_perm, workarr, 0);
+        auto inv_perm = getperm<N>(0, dim);
+        buffer = buffer_perm.shuffle(inv_perm).eval();
+        return buffer;
+    } else {
+        Eigen::Map<Eigen::MatrixX<T>> flatarr(arr.data(), arr.size(), 1);
+        Eigen::Map<Eigen::MatrixX<T>> flatbuffer(buffer.data(), buffer.size(), 1);
+        rdiv_noalloc_inplace<T, N>(flatbuffer, flatarr, svd, workarr);
+        buffer = flatbuffer.reshaped(buffer.dimensions());
+        return buffer;
+    }
+}
 
 } // namespace sparseir
+
