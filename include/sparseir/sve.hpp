@@ -635,7 +635,7 @@ truncate(std::vector<Eigen::MatrixX<T>> &u_list,
 template <typename K, typename T>
 auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                      double cutoff = std::numeric_limits<double>::quiet_NaN(),
-                     int lmax = -1)
+                     int lmax = std::numeric_limits<int>::max())
 {
     auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
     // Compute SVDs
