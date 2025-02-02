@@ -24,6 +24,28 @@ struct WorkSize
     Eigen::Index dimensions() const { return cols; }
 };
 
+// Forward declarations
+template <typename T, int N>
+Eigen::MatrixX<T>& ldiv_noalloc(
+    Eigen::MatrixX<T>& Y,
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& A,
+    const Eigen::MatrixX<T>& B,
+    Eigen::VectorX<T>& workarr);
+
+template <typename T, int N>
+Eigen::MatrixX<T>& ldiv_noalloc_inplace(
+    Eigen::MatrixX<T>& Y,
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& A,
+    const Eigen::MatrixX<T>& B,
+    Eigen::VectorX<T>& workarr);
+
+template <typename T, int N>
+Eigen::MatrixX<T>& rdiv_noalloc_inplace(
+    Eigen::MatrixX<T>& Y,
+    const Eigen::MatrixX<T>& A,
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& B,
+    Eigen::VectorX<T>& workarr);
+
 template <int N>
 Eigen::array<int, N> getperm(int src, int dst) {
     Eigen::array<int, N> perm;
@@ -272,13 +294,28 @@ public:
     }
 
     // Fit values at sampling points to basis coefficients
-    virtual Eigen::VectorXd
-    fit(const Eigen::VectorXd &ax,
-        const Eigen::VectorXd *points = nullptr) const = 0;
+    template <typename T, int N>
+    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &ax,
+                            int dim = 1) const
+    {
+        if (dim < 0 || dim >= N) {
+            throw std::runtime_error(
+                "fit: dimension must be in [0..N). Got dim=" +
+                std::to_string(dim));
+        }
+        auto buffer_dims = calculate_buffer_size(ax, get_matrix(), dim);
+        Eigen::array<Eigen::Index, N> dims;
+        std::copy(buffer_dims.begin(), buffer_dims.end(), dims.begin());
+        Eigen::Tensor<T, N> buffer(dims);
+        auto svd = get_matrix_svd();
+        div_noalloc_inplace<T, N>(buffer, svd, ax, workarr, dim);
+        return buffer;
+    }
 
     // Get the sampling points
     virtual const Eigen::VectorXd &sampling_points() const = 0;
     virtual Eigen::MatrixXd get_matrix() const = 0;
+    virtual Eigen::JacobiSVD<Eigen::MatrixXd> get_matrix_svd() const = 0;
 };
 // Helper function declarations
 // Forward declarations
@@ -339,24 +376,16 @@ public:
 
     Eigen::MatrixXd get_matrix() const override { return matrix_; }
 
-    Eigen::VectorXd fit(const Eigen::VectorXd &ax,
-                        const Eigen::VectorXd *points = nullptr) const override
-    {
-        if (points) {
-            auto eval_mat = eval_matrix(this, basis_, *points);
-            Eigen::JacobiSVD<Eigen::MatrixXd> local_svd(
-                eval_mat, Eigen::ComputeFullU | Eigen::ComputeFullV);
-            return local_svd.solve(ax);
-        }
-        return matrix_svd_.solve(ax);
-    }
-
     const Eigen::VectorXd &sampling_points() const override
     {
         return sampling_points_;
     }
 
     const Eigen::VectorXd &tau() const { return sampling_points_; }
+    Eigen::JacobiSVD<Eigen::MatrixXd> get_matrix_svd() const override
+    {
+        return matrix_svd_;
+    }
 
 private:
     std::shared_ptr<FiniteTempBasis<S>> basis_;
