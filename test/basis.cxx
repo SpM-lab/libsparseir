@@ -190,15 +190,15 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         REQUIRE(sve->v[1].l == 1);
         REQUIRE(sve->v[2].l == 2);
 
-        //REQUIRE(sve->u[1].symm == 1);
-        //REQUIRE(sve->u[2].symm == -1);
-        //REQUIRE(sve->u[3].symm == 1);
-        //REQUIRE(sve->u[4].symm == -1);
+        REQUIRE(sve->u[0].symm == 1);
+        REQUIRE(sve->u[1].symm == -1);
+        REQUIRE(sve->u[2].symm == 1);
+        REQUIRE(sve->u[3].symm == -1);
 
-        //REQUIRE(sve->v[1].symm == 1);
-        //REQUIRE(sve->v[2].symm == -1);
-        //REQUIRE(sve->v[3].symm == 1);
-        //REQUIRE(sve->v[4].symm == -1);
+        REQUIRE(sve->v[0].symm == 1);
+        REQUIRE(sve->v[1].symm == -1);
+        REQUIRE(sve->v[2].symm == 1);
+        REQUIRE(sve->v[3].symm == -1);
 
         //std::cout << "Singular values: " << s.transpose() << std::endl;
         /*
