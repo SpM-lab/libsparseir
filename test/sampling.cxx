@@ -72,7 +72,7 @@ TEST_CASE("Sampling Tests") {
                 REQUIRE(gtau.dimension(1) == gl.dimension(1));
                 REQUIRE(gtau.dimension(2) == gl.dimension(2));
                 REQUIRE(gtau.dimension(3) == gl.dimension(3));
-                //Eigen::VectorXd gl_from_tau = tau_sampling->fit(gtau, dim);
+                Eigen::Tensor<ComplexF64, 4> gl_from_tau = tau_sampling->fit(gtau, dim);
                 //REQUIRE(gl_from_tau.isApprox(originalgl, 1e-10));
             }
 
