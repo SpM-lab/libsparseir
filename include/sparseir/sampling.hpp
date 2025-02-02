@@ -204,14 +204,40 @@ public:
     }
 
     // Fit values at sampling points to basis coefficients
-    virtual Eigen::VectorXd fit(
-        const Eigen::VectorXd& ax,
-        const Eigen::VectorXd* points = nullptr) const = 0;
+    // Evaluate the basis coefficients at sampling points
+    template <typename T, int N>
+    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &al,
+                                 int dim = 1) const
+    {
+        if (dim < 0 || dim >= N) {
+            throw std::runtime_error(
+                "fit: dimension must be in [0..N). Got dim=" + std::to_string(dim));
+        }
+        if (get_matrix().cols() != al.dimension(dim)) {
+            throw std::runtime_error(
+                "Mismatch: matrix.cols()=" + std::to_string(get_matrix().cols())
+                + ", but al.dimension(" + std::to_string(dim) + ")="
+                + std::to_string(al.dimension(dim)));
+        }
+
+        // Calculate buffer dimensions using the new tensor version
+        auto buffer_dims = calculate_buffer_size(al, get_matrix(), dim);
+
+        // Convert vector to array for tensor construction
+        Eigen::array<Eigen::Index, N> dims;
+        std::copy(buffer_dims.begin(), buffer_dims.end(), dims.begin());
+
+        // Create buffer with calculated dimensions
+        Eigen::Tensor<T, N> buffer(dims);
+
+        // fit inplace
+        return buffer;
+    }
 
     // Get the sampling points
     virtual const Eigen::VectorXd& sampling_points() const = 0;
     virtual Eigen::MatrixXd get_matrix() const = 0;
-};
+    };
 // Helper function declarations
 // Forward declarations
 template <typename S>
@@ -271,20 +297,6 @@ public:
 
     Eigen::MatrixXd get_matrix() const override {
         return matrix_;
-    }
-
-    Eigen::VectorXd fit(
-        const Eigen::VectorXd& ax,
-        const Eigen::VectorXd* points = nullptr) const override {
-        if (points) {
-            auto eval_mat = eval_matrix(this, basis_, *points);
-            Eigen::JacobiSVD<Eigen::MatrixXd> local_svd(
-                eval_mat,
-                Eigen::ComputeFullU | Eigen::ComputeFullV
-            );
-            return local_svd.solve(ax);
-        }
-        return matrix_svd_.solve(ax);
     }
 
     const Eigen::VectorXd& sampling_points() const override {
