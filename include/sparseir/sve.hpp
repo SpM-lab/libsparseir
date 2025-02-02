@@ -265,25 +265,50 @@ public:
         Eigen::VectorX<T> gauss_y_w =
             Eigen::VectorX<T>::Map(gauss_y.w.data(), gauss_y.w.size());
 
-        Eigen::MatrixX<T> u_x = u.array().colwise() / gauss_x_w.array().sqrt();
-        Eigen::MatrixX<T> v_y = v.array().colwise() / gauss_y_w.array().sqrt();
 
-        std::vector<T> u_x_flatten(u_x.data(), u_x.data() + u_x.size());
-        std::vector<T> v_y_flatten(v_y.data(), v_y.data() + v_y.size());
+        Eigen::MatrixX<T> u_x_ = u;
+        for (int i = 0; i < u_x_.rows(); ++i) {
+            for (int j = 0; j < u_x_.cols(); ++j) {
+                u_x_(i, j) = u(i, j) / sqrt(gauss_x_w[i]);
+            }
+        }
 
-        Eigen::TensorMap<Eigen::Tensor<T, 3>> u_data(
-            u_x_flatten.data(), n_gauss, segs_x.size() - 1, s.size());
-        Eigen::TensorMap<Eigen::Tensor<T, 3>> v_data(
-            v_y_flatten.data(), n_gauss, segs_y.size() - 1, s.size());
+        Eigen::MatrixX<T> v_y_ = v;
+        for (int i = 0; i < v_y_.rows(); ++i) {
+            for (int j = 0; j < v_y_.cols(); ++j) {
+                v_y_(i, j) = v(i, j) / sqrt(gauss_y_w[i]);
+            }
+        }
+
+        Eigen::Tensor<T, 3> u_x(n_gauss, segs_x.size() - 1, s.size());
+        Eigen::Tensor<T, 3> v_y(n_gauss, segs_y.size() - 1, s.size());
+
+        for (int i = 0; i < u_x.dimension(0); ++i) {
+            for (int j = 0; j < u_x.dimension(1); ++j) {
+                for (int k = 0; k < u_x.dimension(2); ++k) {
+                    u_x(i, j, k) = u_x_(j * n_gauss + i, k);
+                }
+            }
+        }
+
+        for (int i = 0; i < v_y.dimension(0); ++i) {
+            for (int j = 0; j < v_y.dimension(1); ++j) {
+                for (int k = 0; k < v_y.dimension(2); ++k) {
+                    v_y(i, j, k) = v_y_(j * n_gauss + i, k);
+                }
+            }
+        }
 
         Eigen::MatrixX<T> cmat = legendre_collocation<T>(rule);
+        Eigen::Tensor<T, 3> u_data(cmat.rows(), segs_x.size() - 1, s.size());
+        Eigen::Tensor<T, 3> v_data(cmat.rows(), segs_y.size() - 1, s.size());
 
         for (int j = 0; j < u_data.dimension(1); ++j) {
             for (int k = 0; k < u_data.dimension(2); ++k) {
-                for (int i = 0; i < cmat.rows(); ++i) {
+                for (int i = 0; i < u_data.dimension(0); ++i) {
                     u_data(i, j, k) = T(0);
                     for (int l = 0; l < cmat.cols(); ++l) {
-                        u_data(i, j, k) += cmat(i, l) * u_data(l, j, k);
+                        u_data(i, j, k) += cmat(i, l) * u_x(l, j, k);
                     }
                 }
             }
@@ -291,14 +316,15 @@ public:
 
         for (int j = 0; j < v_data.dimension(1); ++j) {
             for (int k = 0; k < v_data.dimension(2); ++k) {
-                for (int i = 0; i < cmat.rows(); ++i) {
+                for (int i = 0; i < v_data.dimension(0); ++i) {
                     v_data(i, j, k) = T(0);
                     for (int l = 0; l < cmat.cols(); ++l) {
-                        v_data(i, j, k) += cmat(i, l) * v_data(l, j, k);
+                        v_data(i, j, k) += cmat(i, l) * v_y(l, j, k);
                     }
                 }
             }
         }
+
         // Manually compute differences for dsegs_x and dsegs_y
         Eigen::VectorX<T> dsegs_x(segs_x.size() - 1);
         for (int i = 0; i < segs_x.size() - 1; ++i) {
@@ -310,15 +336,10 @@ public:
             dsegs_y[i] = segs_y[i + 1] - segs_y[i];
         }
 
-        // u_data_3d = u_data_3d * (T(0.5) *
-        // dsegs_x).sqrt().transpose().matrix().asDiagonal(); v_data_3d =
-        // v_data_3d * (T(0.5) *
-        // dsegs_y).sqrt().transpose().matrix().asDiagonal();
-
         // Using nested for loops to multiply u_data
         for (int j = 0; j < u_data.dimension(1); ++j) {
-            for (int k = 0; k < u_data.dimension(2); ++k) {
-                for (int i = 0; i < u_data.dimension(0); ++i) {
+            for (int i = 0; i < u_data.dimension(0); ++i) {
+                for (int k = 0; k < u_data.dimension(2); ++k) {
                     u_data(i, j, k) *= sqrt_impl(T(0.5) * dsegs_x[j]);
                 }
             }
@@ -326,8 +347,8 @@ public:
 
         // Using nested for loops to multiply v_data
         for (int j = 0; j < v_data.dimension(1); ++j) {
-            for (int k = 0; k < v_data.dimension(2); ++k) {
-                for (int i = 0; i < v_data.dimension(0); ++i) {
+            for (int i = 0; i < v_data.dimension(0); ++i) {
+                for (int k = 0; k < v_data.dimension(2); ++k) {
                     v_data(i, j, k) *= sqrt_impl(T(0.5) * dsegs_y[j]);
                 }
             }
@@ -355,7 +376,6 @@ public:
                                      segs_x_double.size()),
                 i));
         }
-
 
         // Repeat similar changes for v_data
         for (int i = 0; i < v_data.dimension(2); ++i) {
