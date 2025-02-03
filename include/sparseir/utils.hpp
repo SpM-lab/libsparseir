@@ -43,4 +43,22 @@ bool issorted(const Eigen::MatrixBase<Derived>& vec) {
     return true;
 }
 
+template <typename T, int N>
+bool tensorIsApprox(const Eigen::Tensor<T, N> &a, const Eigen::Tensor<T, N> &b,
+                    double tol = 1e-12)
+{
+    // Ensure dimensions match (assuming dimensions() returns an
+    // Eigen::DSizes<>)
+    if (a.dimensions() != b.dimensions()) {
+        return false;
+    }
+    for (int i = 0; i < a.size(); ++i) {
+        // Compare the absolute difference of each complex number.
+        if (std::abs(a.data()[i] - b.data()[i]) > tol) {
+            return false;
+        }
+    }
+    return true;
+}
+
 }
