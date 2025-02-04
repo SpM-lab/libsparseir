@@ -45,22 +45,7 @@ TEST_CASE("issorted", "[utils]")
 
     using ComplexF64 = std::complex<double>;
 
-template<typename T, int N>
-bool tensorIsApprox(const Eigen::Tensor<T, N>& a,
-                    const Eigen::Tensor<T, N>& b,
-                    double tol = 1e-12) {
-    // Ensure dimensions match (assuming dimensions() returns an Eigen::DSizes<>)
-    if (a.dimensions() != b.dimensions()) {
-        return false;
-    }
-    for (int i = 0; i < a.size(); ++i) {
-        // Compare the absolute difference of each complex number.
-        if (std::abs(a.data()[i] - b.data()[i]) > tol) {
-            return false;
-        }
-    }
-    return true;
-}
+
 
 
 TEST_CASE("movedim", "[utils]"){
@@ -93,7 +78,7 @@ TEST_CASE("movedim", "[utils]"){
     REQUIRE(originalgl.dimension(3) == d3);
 
     Eigen::Tensor<ComplexF64, 4> moved_tensor1 = sparseir::movedim(originalgl, 0, 0);
-    REQUIRE(tensorIsApprox(moved_tensor1, originalgl));
+    REQUIRE(sparseir::tensorIsApprox(moved_tensor1, originalgl));
 
     REQUIRE(moved_tensor1.dimension(0) == s_size);
     REQUIRE(moved_tensor1.dimension(1) == d1);

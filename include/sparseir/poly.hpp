@@ -670,8 +670,8 @@ public:
         }
         for (size_t i = 0; i < polys.size(); ++i) {
             polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(),
-                                               polys[i].get_knots(),
-                                               polys[i].get_polyorder(),
+                                               knots,
+                                               polys[i].l,
                                                polys[i].get_delta_x(),
                                                symm(i));
         }
