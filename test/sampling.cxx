@@ -15,6 +15,53 @@ using namespace std;
 
 using ComplexF64 = std::complex<double>;
 
+TEST_CASE("TauSampling test", "[sampling]") {
+    double beta = 1.0;
+    double Lambda = 10.0;
+    auto kernel = LogisticKernel(beta * Lambda);
+    auto sve_result = compute_sve(kernel, 1e-15);
+    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
+                                                           kernel, sve_result);
+
+    TauSampling<Bosonic> tau_sampling(basis);
+
+    // Initialize x vector properly
+    Eigen::VectorXd x(1);
+    x(0) = 0.3;
+
+    // Pass pointer to tau_sampling
+    Eigen::MatrixXd mat = eval_matrix(&tau_sampling, basis, x);
+    std::cout << "mat: \n" << mat << std::endl;
+
+    std::vector<double> mat_ref = {
+    0.8209004724107448,
+    -0.449271448243545,
+    -0.8421791851408207,
+    1.0907208389572702,
+    -0.011760907495966977,
+    -1.088150369622618,
+    0.9158018684127142,
+    0.32302607984184495,
+    -1.181401559255913,
+    0.6561675000550108,
+    0.6371046638581639,
+    -1.1785150288689699,
+    0.32988851105229844,
+    0.9070585672694699,
+    -1.0690576391215845,
+    -0.03607541047225425,
+    1.0973174269744128,
+    -0.8540342088018821,
+    -0.4046629597879494,
+    };
+    Eigen::MatrixXd mat_ref_eigen = Eigen::Map<Eigen::MatrixXd>(mat_ref.data(), 1, 19);
+    REQUIRE(mat.isApprox(mat_ref_eigen, 1e-10));
+
+
+
+    // Rest of the test case...
+}
+
 TEST_CASE("complex_test") {
 	std::vector<double> realpart = {
 		0.3673381180364523,
