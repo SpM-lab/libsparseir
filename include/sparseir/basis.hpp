@@ -85,6 +85,7 @@ public:
 
         auto part_result = sve_result.part(epsilon, max_size);
         PiecewiseLegendrePolyVector u_ = std::get<0>(part_result);
+        std::cout << "u_[0].knots: " << u_[0].knots << std::endl;
         Eigen::VectorXd s_ = std::get<1>(part_result);
         PiecewiseLegendrePolyVector v_ = std::get<2>(part_result);
         double sve_result_s0 = sve_result.s(0);
@@ -95,31 +96,23 @@ public:
             this->accuracy = sve_result.s(s_.size() - 1) / sve_result_s0;
         }
 
-        auto uk = u_.polyvec[0].knots;
-        /*
-        Port the following Julia code to C++:
-            # The polynomials are scaled to the new variables by transforming
-    the # knots according to: tau = β/2 * (x + 1), w = ωmax * y. Scaling # the
-    data is not necessary as the normalization is inferred. ωmax = Λ(kernel) / β
-    u_knots = (β / 2) .* (knots(u_) .+ 1)
-    v_knots = ωmax .* knots(v_)
-    u = PiecewiseLegendrePolyVector(u_, u_knots; Δx=(β / 2) .* Δx(u_),
-    symm=symm(u_)) v = PiecewiseLegendrePolyVector(v_, v_knots; Δx=ωmax .*
-    Δx(v_), symm=symm(v_))
-    */
+        auto uk = u_[0].knots;
+        auto vk = v_[0].knots;
 
         Eigen::VectorXd u_knots = (beta / 2) * (uk.array() + 1);
-        Eigen::VectorXd v_knots = wmax * uk;
+        std::cout << "u_knots: " << u_knots << std::endl;
+        Eigen::VectorXd v_knots = wmax * vk;
 
-        Eigen::VectorXd deltax4u = (beta / 2) * u_.polyvec[0].get_delta_x();
-        Eigen::VectorXd deltax4v = wmax * v_.polyvec[0].get_delta_x();
+        Eigen::VectorXd deltax4u = (beta / 2) * u_[0].get_delta_x();
+        Eigen::VectorXd deltax4v = wmax * v_[0].get_delta_x();
+
         std::vector<int> u_symm_vec;
         for (int i = 0; i < u_.size(); ++i) {
-            u_symm_vec.push_back(u_.polyvec[i].get_symm());
+            u_symm_vec.push_back(u_[i].get_symm());
         }
         std::vector<int> v_symm_vec;
         for (int i = 0; i < v_.size(); ++i) {
-            v_symm_vec.push_back(v_.polyvec[i].get_symm());
+            v_symm_vec.push_back(v_[i].get_symm());
         }
 
         Eigen::VectorXi u_symm = Eigen::Map<Eigen::VectorXi>(u_symm_vec.data(), u_symm_vec.size());
@@ -284,7 +277,7 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
 
     if (L < u.size()) {
         // TODO: Resolve this errors.
-        return u.polyvec[L].roots();
+        return u[L].roots();
     } else {
         // Approximate roots by extrema
         // TODO: resolve this error
