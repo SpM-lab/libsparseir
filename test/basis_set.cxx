@@ -22,9 +22,9 @@ TEST_CASE("FiniteTempBasisSet consistency tests", "[basis_set]") {
         sparseir::LogisticKernel kernel;
 
         // Create shared_ptr instances of FiniteTempBasis
-        auto basis_f = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic, sparseir::LogisticKernel>>(
+        auto basis_f = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
             beta, omega_max, epsilon, kernel);
-        auto basis_b = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic, sparseir::LogisticKernel>>(
+        auto basis_b = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
             beta, omega_max, epsilon, kernel);
 
         // Create TauSampling instances

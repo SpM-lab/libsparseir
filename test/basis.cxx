@@ -31,18 +31,17 @@ TEST_CASE("basis.u(x)", "[basis]") {
         u0(x)
     end
     */
+
     double beta = 1.0;
     double Lambda = 10.0;
     auto kernel = LogisticKernel(beta * Lambda);
     auto sve_result = compute_sve(kernel, 1e-15);
+
     auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
                                                            kernel, sve_result);
     double x = 0.3;
     auto u0 = basis->u[0];
     auto u0x = u0(x);
-    std::cout << "u0x: " << u0x << std::endl;
-    std::cout << "u0.data: \n" << u0.data << std::endl;
-    std::cout << "u0.knots: \n" << u0.knots << std::endl;
 
     std::vector<double> u0_data_vec = {
         0.1306343289249387,
@@ -565,6 +564,14 @@ TEST_CASE("basis.u(x)", "[basis]") {
     Eigen::VectorXd u0_knots_vec_eigen = Eigen::Map<Eigen::VectorXd>(u0_knots_vec.data(), u0_knots_vec.size());
     REQUIRE(u0_knots_vec_eigen.size() == u0.knots.size());
     REQUIRE(u0_knots_vec_eigen.isApprox(u0.knots));
+    REQUIRE(u0.xmin == 0.0);
+    REQUIRE(u0.xmax == 1.0);
+    REQUIRE(u0.symm == 1);
+    REQUIRE(u0.polyorder == 16);
+    REQUIRE(u0.l == 0);
+    REQUIRE(u0.xm.size() == 30);
+    REQUIRE(u0.inv_xs.size() == 30);
+    REQUIRE(u0.norms.size() == 30);
 }
 
 TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {

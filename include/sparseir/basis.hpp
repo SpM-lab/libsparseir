@@ -85,7 +85,6 @@ public:
 
         auto part_result = sve_result.part(epsilon, max_size);
         PiecewiseLegendrePolyVector u_ = std::get<0>(part_result);
-        std::cout << "u_[0].knots: " << u_[0].knots << std::endl;
         Eigen::VectorXd s_ = std::get<1>(part_result);
         PiecewiseLegendrePolyVector v_ = std::get<2>(part_result);
         double sve_result_s0 = sve_result.s(0);
@@ -100,7 +99,6 @@ public:
         auto vk = v_[0].knots;
 
         Eigen::VectorXd u_knots = (beta / 2) * (uk.array() + 1);
-        std::cout << "u_knots: " << u_knots << std::endl;
         Eigen::VectorXd v_knots = wmax * vk;
 
         Eigen::VectorXd deltax4u = (beta / 2) * u_[0].get_delta_x();
