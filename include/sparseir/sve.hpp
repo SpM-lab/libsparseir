@@ -681,9 +681,7 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
     std::vector<
         std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>, Eigen::MatrixX<T>>>
         svds;
-    std::cout << "compute_svd" << std::endl;
     for (const auto &mat : matrices) {
-        std::cout << "mat.size(): " << mat.size() << std::endl;
         auto svd = sparseir::compute_svd(mat);
         svds.push_back(svd);
     }
@@ -694,7 +692,6 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
     for (const auto &svd : svds) {
         auto u = std::get<0>(svd);
         auto s = std::get<1>(svd);
-        std::cout << "s.size(): " << s.size() << std::endl;
         auto v = std::get<2>(svd);
         u_list_.push_back(u);
         s_list_.push_back(s);
@@ -709,18 +706,9 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
     std::vector<Eigen::VectorX<T>> s_list_truncated;
     std::vector<Eigen::MatrixX<T>> v_list_truncated;
 
-    std::cout << "truncate" << std::endl;
-    std::cout << "s_list_[0].size(): " << s_list_[0].size() << std::endl;
-    std::cout << "s_list_[1].size(): " << s_list_[1].size() << std::endl;
-
-    std::cout << "truncate" << std::endl;
     std::tie(u_list_truncated, s_list_truncated, v_list_truncated) =
         truncate(u_list_, s_list_, v_list_, cutoff_actual, lmax);
     // Postprocess to get the SVEResult
-    std::cout << "truncate done" << std::endl;
-    std::cout << "s_list_truncated[0].size(): " << s_list_truncated[0].size() << std::endl;
-    std::cout << "s_list_truncated[1].size(): " << s_list_truncated[1].size() << std::endl;
-    std::cout << "postprocess" << std::endl;
     return sve->postprocess(u_list_truncated, s_list_truncated,
                             v_list_truncated);
 }

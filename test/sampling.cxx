@@ -47,8 +47,30 @@ TEST_CASE("TauSampling test", "[sampling]") {
     REQUIRE(basis->u(x).transpose().isApprox(mat));
     REQUIRE(basis->u(x).transpose().isApprox(mat_ref));
 
+    std::vector<double> sampling_points_ref_vec = {
+        0.0036884193900212914,
+        0.019354981745749233,
+        0.04721451082761008,
+        0.08670296984028258,
+        0.13697417948305657,
+        0.19688831490761904,
+        0.2650041152730527,
+        0.3395880303712605,
+        0.4186486136790497,
+        0.4999999999999999,
+        0.5813513863209503,
+        0.6604119696287395,
+        0.7349958847269473,
+        0.803111685092381,
+        0.8630258205169434,
+        0.9132970301597174,
+        0.9527854891723898,
+        0.9806450182542508,
+        0.9963115806099787,
+    };
+    Eigen::VectorXd sampling_points_ref = Eigen::Map<Eigen::VectorXd>(sampling_points_ref_vec.data(), 19);
     Eigen::VectorXd sampling_points = tau_sampling.sampling_points();
-    std::cout << "sampling_points: \n" << sampling_points << std::endl;
+    REQUIRE(sampling_points.isApprox(sampling_points_ref));
 }
 
 TEST_CASE("complex_test") {
@@ -198,7 +220,6 @@ TEST_CASE("complex_test") {
 
     auto tau_sampling = TauSampling<Bosonic>(basis);
     Eigen::MatrixXd mat = tau_sampling.get_matrix();
-    std::cout << "mat: \n" << mat << std::endl;
 
     {
         int dim = 0;
@@ -230,18 +251,15 @@ TEST_CASE("complex_test") {
 
         REQUIRE(gtau.dimension(0) == 2);
         REQUIRE(gtau.dimension(1) == 19);
-        std::cout << "gtau(0, 0), gtau(0, 1): " << gtau(0, 0) << ", " << gtau(0, 1) << std::endl;
-        std::cout << "gtau(1, 0), gtau(1, 1): " << gtau(1, 0) << ", " << gtau(1, 1) << std::endl;
 
-        std::cout << "gtau: \n" << gtau << std::endl;
+        REQUIRE(gtau(0, 0).real() == Approx(-2.5051455282279633));
+        REQUIRE(gtau(1, 0).real() == Approx(1.4482376589195032));
+        REQUIRE(gtau(0, 1).real() == Approx(-2.383126252301789));
+        REQUIRE(gtau(1, 1).real() == Approx(1.2115069651613877));
 
         Eigen::Tensor<ComplexF64, 2> gl_from_tau = tau_sampling.fit(gtau, dim);
 
-        // std::cout << "gl_from_tau: \n" << gl_from_tau << std::endl;
-        // std::cout << "gl: \n" << gl << std::endl;
-
-        std::cout << "gl_from_tau(0, 0), gl(0, 0): " << gl_from_tau(0, 0) << ", " << gl(0, 0) << std::endl;
-        std::cout << "gl_from_tau(0, 1), gl(0, 1): " << gl_from_tau(0, 1) << ", " << gl(0, 1) << std::endl;
+        REQUIRE(sparseir::tensorIsApprox(gl_from_tau, gl, 1e-10));
     }
 }
 
