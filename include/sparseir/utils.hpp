@@ -61,4 +61,22 @@ bool tensorIsApprox(const Eigen::Tensor<T, N> &a, const Eigen::Tensor<T, N> &b,
     return true;
 }
 
+template <typename T>
+inline std::vector<T> diff(const std::vector<T> &xs) {
+    std::vector<T> diff(xs.size() - 1);
+    for (size_t i = 0; i < xs.size() - 1; ++i) {
+        diff[i] = xs[i+1] - xs[i];
+    }
+    return diff;
 }
+
+template <typename T>
+inline Eigen::VectorX<T> diff(const Eigen::VectorX<T> &xs) {
+    Eigen::VectorX<T> diff(xs.size() - 1);
+    for (Eigen::Index i = 0; i < xs.size() - 1; ++i) {
+        diff[i] = xs[i+1] - xs[i];
+    }
+    return diff;
+}
+
+} // namespace sparseir
