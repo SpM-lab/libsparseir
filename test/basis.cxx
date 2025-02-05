@@ -17,6 +17,109 @@ using namespace std;
 
 using ComplexF64 = std::complex<double>;
 
+TEST_CASE("basis.u[0] test", "[basis]")
+{
+    /*
+    using SparseIR
+    begin
+        β = 1.0
+        Λ = 10.
+        sve_result = SparseIR.SVEResult(LogisticKernel(Λ), ε=1e-15)
+        basis = FiniteTempBasis{Bosonic}(β, Λ; sve_result)
+        u = basis.u[begin]
+    end
+    */
+    double beta = 1.0;
+    double Lambda = 10.0;
+    auto kernel = LogisticKernel(beta * Lambda);
+    auto sve_result = compute_sve(kernel, 1e-15);
+    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
+                                                       kernel, sve_result);
+
+    std::vector<double> s_ref_vec = {
+        1.2621489299919293,     0.8363588547029699,     0.3462622585830318,
+        0.12082626967769121,    0.03387861935965415,    0.00796130085778543,
+        0.0015966925515801561,  0.00027823051505153205, 4.276437930624593e-5,
+        5.871774564004103e-6,   7.279433734090833e-7,   8.221881611234219e-8,
+        8.525219704563244e-9,   8.168448057712933e-10,  7.273189647675939e-11,
+        6.0477895415959716e-12, 4.716593209003674e-13,  3.4631886072022945e-14,
+        2.4022217530858486e-15,
+    };
+    Eigen::Map<Eigen::VectorXd> s(basis->s.data(), basis->s.size());
+    REQUIRE(s.size() == s_ref_vec.size());
+    Eigen::VectorXd s_ref =
+        Eigen::Map<Eigen::VectorXd>(s_ref_vec.data(), s_ref_vec.size());
+    REQUIRE(s.isApprox(s_ref));
+
+    auto u = basis->u[0];
+
+    REQUIRE(u.xmin == 0.0);
+    REQUIRE(u.xmax == 1.0);
+    REQUIRE(u.get_polyorder() == 16);
+    REQUIRE(u.l == 0);
+    REQUIRE(u.symm == 1);
+
+    std::vector<double> u_knot_ref_vec = {
+        0.0,
+        0.013623446212733203,
+        0.0292485379483044,
+        0.04713527623719438,
+        0.0675600047521634,
+        0.09080712995504114,
+        0.11715549463550101,
+        0.14685782470149988,
+        0.18011200903273533,
+        0.21702410043575965,
+        0.25756521020520734,
+        0.3015280008924536,
+        0.3484926000123403,
+        0.3978146340870691,
+        0.44864700611131486,
+        0.5,
+        0.5513529938886851,
+        0.6021853659129309,
+        0.6515073999876597,
+        0.6984719991075464,
+        0.7424347897947927,
+        0.7829758995642404,
+        0.8198879909672647,
+        0.8531421752985001,
+        0.882844505364499,
+        0.9091928700449589,
+        0.9324399952478366,
+        0.9528647237628056,
+        0.9707514620516956,
+        0.9863765537872669,
+        1.0,
+    };
+    Eigen::Map<Eigen::VectorXd> u_knots(u.knots.data(), u.knots.size());
+    REQUIRE(u_knots.isApprox(Eigen::Map<Eigen::VectorXd>(
+        u_knot_ref_vec.data(), u_knot_ref_vec.size())));
+
+    std::vector<double> u_delta_x_ref_vec = {
+        0.013623446212733203, 0.015625091735571195, 0.01788673828888998,
+        0.020424728514969015, 0.02324712520287775,  0.026348364680459868,
+        0.029702330065998872, 0.03325418433123545,  0.036912091403024316,
+        0.04054110976944769,  0.043962790687246206, 0.04696459911988671,
+        0.049322034074728835, 0.050832372024245794, 0.05135299388868512,
+        0.05135299388868512,  0.050832372024245794, 0.049322034074728835,
+        0.04696459911988671,  0.043962790687246206, 0.04054110976944769,
+        0.036912091403024316, 0.03325418433123545,  0.029702330065998872,
+        0.026348364680459868, 0.02324712520287775,  0.020424728514969015,
+        0.01788673828888998,  0.015625091735571195, 0.013623446212733203,
+    };
+    Eigen::Map<Eigen::VectorXd> u_delta_x(u.delta_x.data(), u.delta_x.size());
+    REQUIRE(u_delta_x.isApprox(Eigen::Map<Eigen::VectorXd>(
+        u_delta_x_ref_vec.data(), u_delta_x_ref_vec.size())));
+
+    REQUIRE(u(0.3) == Approx(0.8209004724107448));
+    int i;
+    double x_tilde;
+    std::tie(i, x_tilde) = u.split(0.3);
+    REQUIRE(i == 10);
+    REQUIRE(x_tilde == Approx(0.9304866288710429));
+}
+
 TEST_CASE("basis.u(x)", "[basis]") {
     /*
     # Julia implementation

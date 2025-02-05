@@ -3,6 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <catch2/catch_approx.hpp> // for Approx
 #include <sparseir/sparseir-header-only.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
@@ -12,6 +13,7 @@
 
 using namespace sparseir;
 using namespace std;
+using Catch::Approx;
 
 using ComplexF64 = std::complex<double>;
 
@@ -39,11 +41,11 @@ TEST_CASE("TauSampling test", "[sampling]") {
         };
     Eigen::MatrixXd mat_ref = Eigen::Map<Eigen::MatrixXd>(mat_ref_vec.data(), 1, 19);
     Eigen::MatrixXd mat = eval_matrix(&tau_sampling, basis, x);
-    std::cout << "mat: \n" << mat << std::endl;
-    std::cout << "mat_ref: \n" << mat_ref << std::endl;
+
+    REQUIRE(basis->u[0](0.3) == Approx(0.8209004724107448));
+
     REQUIRE(basis->u(x).transpose().isApprox(mat));
-    // REQUIRE(basis->u(x).transpose().isApprox(mat_ref));
-    // Rest of the test case...
+    REQUIRE(basis->u(x).transpose().isApprox(mat_ref));
 }
 
 TEST_CASE("complex_test") {
@@ -157,7 +159,7 @@ TEST_CASE("complex_test") {
     }
 
     auto tau_sampling = TauSampling<Bosonic>(basis);
-
+    /*
     {
         int dim = 0;
         Eigen::Tensor<ComplexF64, 2> gl = movedim(originalgl, 0, dim);
@@ -174,6 +176,7 @@ TEST_CASE("complex_test") {
         std::cout << "gl_from_tau(0, 0), gl(0, 0): " << gl_from_tau(0, 0) << ", " << gl(0, 0) << std::endl;
         std::cout << "gl_from_tau(0, 1), gl(0, 1): " << gl_from_tau(0, 1) << ", " << gl(0, 1) << std::endl;
     }
+    */
     /*
     {
         int dim = 1;
