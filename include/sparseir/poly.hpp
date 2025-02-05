@@ -120,6 +120,7 @@ public:
         if (knots.size() != nsegments + 1) {
             throw std::invalid_argument("Invalid knots array");
         }
+
         this->delta_x = delta_x_.size() > 0 ? delta_x_ : diff(knots);
         this->xm = Eigen::VectorXd::Zero(nsegments);
         for (int i = 0; i < nsegments; ++i) {
@@ -671,11 +672,8 @@ public:
                 "Sizes of polys and symm don't match " + std::to_string(polys.size()) + " " + std::to_string(symm.size()));
         }
         for (size_t i = 0; i < polys.size(); ++i) {
-            polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(),
-                                               knots,
-                                               polys[i].l,
-                                               polys[i].get_delta_x(),
-                                               symm(i));
+            polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(), knots,
+                                               polys[i].l, Δx, symm(i));
         }
     }
 
