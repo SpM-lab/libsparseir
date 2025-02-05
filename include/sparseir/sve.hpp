@@ -682,7 +682,7 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
 
     // Apply cutoff and lmax
     T cutoff_actual = std::isnan(cutoff)
-                          ? 2 * T(std::numeric_limits<double>::epsilon())
+                          ? 2 * std::numeric_limits<T>::epsilon()
                           : T(cutoff);
     std::vector<Eigen::MatrixX<T>> u_list_truncated;
     std::vector<Eigen::VectorX<T>> s_list_truncated;
