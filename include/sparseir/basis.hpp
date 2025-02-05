@@ -217,7 +217,7 @@ public:
     }
 
     const Eigen::VectorXd default_tau_sampling_points() const override {
-        int sz = this->sve_result->s.size();
+        int sz = size();
         auto x = default_sampling_points(this->sve_result->u, sz);
         std::cout << "this->sve_result->u.size(): " << this->sve_result->u.size() << std::endl;
         std::cout << "sz: " << sz << std::endl;
@@ -289,7 +289,7 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
         throw std::runtime_error("Expecting unscaled functions here.");
 
     if (L < u.size()) {
-        return u.polyvec[L+1].roots();
+        return u.polyvec[L].roots();
     } else {
         // Approximate roots by extrema
         PiecewiseLegendrePoly poly = u.polyvec.back();
