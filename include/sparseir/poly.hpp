@@ -114,15 +114,18 @@ public:
           knots(knots),
           l(l),
           symm(symm) {
-        polyorder = data.rows();
+        this->polyorder = data.rows();
         int nsegments = data.cols();
 
         if (knots.size() != nsegments + 1) {
             throw std::invalid_argument("Invalid knots array");
         }
 
-        this->delta_x = delta_x_.size() > 0 ? delta_x_ : knots.tail(knots.size() - 1) - knots.head(knots.size() - 1);
-        this->xm = 0.5 * (knots.head(knots.size() - 1) + knots.tail(knots.size() - 1));
+        this->delta_x = delta_x_.size() > 0 ? delta_x_ : diff(knots);
+        this->xm = Eigen::VectorXd::Zero(nsegments);
+        for (int i = 0; i < nsegments; ++i) {
+            this->xm[i] = 0.5 * (knots[i] + knots[i + 1]);
+        }
         this->inv_xs = 2.0 / this->delta_x.array();
         this->norms = this->inv_xs.array().sqrt();
 
@@ -318,7 +321,6 @@ public:
     const Eigen::VectorXd &get_norms() const { return norms; }
     int get_polyorder() const { return polyorder; }
 
-private:
     /*
     // Helper function to compute legval
     static double legval(double x, const Eigen::VectorXd &coeffs)
@@ -357,6 +359,7 @@ private:
         return std::make_pair(i, x_tilde);
     }
 
+private:
     // Placeholder for Gauss-Legendre quadrature over [a, b]
     double gauss_legendre_quadrature(double a, double b,
                                      std::function<double(double)> f) const
@@ -669,11 +672,8 @@ public:
                 "Sizes of polys and symm don't match " + std::to_string(polys.size()) + " " + std::to_string(symm.size()));
         }
         for (size_t i = 0; i < polys.size(); ++i) {
-            polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(),
-                                               knots,
-                                               polys[i].l,
-                                               polys[i].get_delta_x(),
-                                               symm(i));
+            polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(), knots,
+                                               polys[i].l, Δx, symm(i));
         }
     }
 

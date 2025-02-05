@@ -43,10 +43,34 @@ TEST_CASE("issorted", "[utils]")
     REQUIRE(sparseir::issorted(ev1) == true);
 }
 
-    using ComplexF64 = std::complex<double>;
+TEST_CASE("diff", "[utils]")
+{
+    SECTION("std::vector")
+    {
+        std::vector<double> xs = {1.0, 3.0, 9.0, 1.0, 2.0};
+        REQUIRE(sparseir::diff(xs) == std::vector<double>({2.0, 6.0, -8.0, 1.0}));
+    }
 
+    SECTION("Eigen::VectorXd")
+    {
+        Eigen::VectorXd ev1(5);
+        ev1 << 1.0, 3.0, 9.0, 1.0, 2.0;
+        Eigen::VectorXd expected(4);
+        expected << 2.0, 6.0, -8.0, 1.0;
+        REQUIRE(sparseir::diff(ev1) == expected);
+    }
 
+    SECTION("Eigen::VectorX<xprec::DDouble>")
+    {
+        Eigen::VectorX<xprec::DDouble> ev1(5);
+        ev1 << 1.0, 3.0, 9.0, 1.0, 2.0;
+        Eigen::VectorX<xprec::DDouble> expected(4);
+        expected << 2.0, 6.0, -8.0, 1.0;
+        REQUIRE(sparseir::diff(ev1) == expected);
+    }
+}
 
+using ComplexF64 = std::complex<double>;
 
 TEST_CASE("movedim", "[utils]"){
     const Eigen::Index s_size = 12;

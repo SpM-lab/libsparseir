@@ -325,16 +325,8 @@ public:
             }
         }
 
-        // Manually compute differences for dsegs_x and dsegs_y
-        Eigen::VectorX<T> dsegs_x(segs_x.size() - 1);
-        for (int i = 0; i < segs_x.size() - 1; ++i) {
-            dsegs_x[i] = segs_x[i + 1] - segs_x[i];
-        }
-
-        Eigen::VectorX<T> dsegs_y(segs_y.size() - 1);
-        for (int i = 0; i < segs_y.size() - 1; ++i) {
-            dsegs_y[i] = segs_y[i + 1] - segs_y[i];
-        }
+        auto dsegs_x = diff(segs_x);
+        auto dsegs_y = diff(segs_y);
 
         // Using nested for loops to multiply u_data
         for (int j = 0; j < u_data.dimension(1); ++j) {
@@ -356,6 +348,17 @@ public:
 
         std::vector<PiecewiseLegendrePoly> polyvec_u;
         std::vector<PiecewiseLegendrePoly> polyvec_v;
+        std::vector<double> segs_x_double(segs_x.size());
+        std::vector<double> segs_y_double(segs_y.size());
+
+        for (int i = 0; i < segs_x.size(); ++i) {
+            segs_x_double[i] = static_cast<double>(segs_x[i]);
+        }
+        for (int i = 0; i < segs_y.size(); ++i) {
+            segs_y_double[i] = static_cast<double>(segs_y[i]);
+        }
+        Eigen::VectorXd knots_x = Eigen::Map<Eigen::VectorXd>(segs_x_double.data(), segs_x_double.size());
+        Eigen::VectorXd knots_y = Eigen::Map<Eigen::VectorXd>(segs_y_double.data(), segs_y_double.size());
 
         for (int i = 0; i < u_data.dimension(2); ++i) {
             Eigen::MatrixXd slice_double(u_data.dimension(0),
@@ -365,16 +368,15 @@ public:
                     slice_double(j, k) = static_cast<double>(u_data(j, k, i));
                 }
             }
-            std::vector<double> segs_x_double;
-            segs_x_double.reserve(segs_x.size());
-            for (const auto &x : segs_x) {
-                segs_x_double.push_back(static_cast<double>(x));
-            }
-            polyvec_u.push_back(PiecewiseLegendrePoly(
-                slice_double,
-                Eigen::VectorXd::Map(segs_x_double.data(),
-                                     segs_x_double.size()),
-                i));
+
+            polyvec_u.push_back(
+                PiecewiseLegendrePoly(
+                    slice_double,
+                    knots_x,
+                    i,
+                    diff(knots_x)
+                )
+            );
         }
 
         // Repeat similar changes for v_data
@@ -387,21 +389,15 @@ public:
                 }
             }
 
-            std::vector<double> segs_y_double;
-            segs_y_double.reserve(segs_y.size());
-            for (const auto &y : segs_y) {
-                segs_y_double.push_back(static_cast<double>(y));
-            }
-
-            polyvec_v.push_back(PiecewiseLegendrePoly(
-                slice_double,
-                Eigen::VectorXd::Map(segs_y_double.data(),
-                                     segs_y_double.size()),
-                i));
+            polyvec_v.push_back(
+                PiecewiseLegendrePoly(
+                    slice_double,
+                    knots_y,
+                    i,
+                    diff(knots_y)
+                )
+            );
         }
-
-
-
 
         PiecewiseLegendrePolyVector ulx(polyvec_u);
         PiecewiseLegendrePolyVector vly(polyvec_v);
