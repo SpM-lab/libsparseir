@@ -113,8 +113,8 @@ public:
         Eigen::VectorXd u_knots = (beta / 2) * (u_knots_.array() + 1);
         Eigen::VectorXd v_knots = wmax * v_knots_;
 
-        Eigen::VectorXd deltax4u = (beta / 2) * diff(u_.get_delta_x());
-        Eigen::VectorXd deltax4v = wmax * diff(v_.get_delta_x());
+        Eigen::VectorXd deltax4u = (beta / 2) * u_.get_delta_x();
+        Eigen::VectorXd deltax4v = wmax * v_.get_delta_x();
         std::vector<int> u_symm_vec;
         for (int i = 0; i < u_.size(); ++i) {
             u_symm_vec.push_back(u_.polyvec[i].get_symm());
@@ -126,8 +126,6 @@ public:
 
         Eigen::VectorXi u_symm = Eigen::Map<Eigen::VectorXi>(u_symm_vec.data(), u_symm_vec.size());
         Eigen::VectorXi v_symm = Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
-
-        std::cout << "deltax4u: " << deltax4u << std::endl;
 
         PiecewiseLegendrePolyVector u_new = PiecewiseLegendrePolyVector(u_, u_knots, deltax4u, u_symm);
         PiecewiseLegendrePolyVector v_new = PiecewiseLegendrePolyVector(v_, v_knots, deltax4v, v_symm);
