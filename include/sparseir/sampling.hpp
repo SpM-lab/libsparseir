@@ -379,7 +379,6 @@ public:
 
         // Calculate buffer dimensions using the new tensor version
         auto buffer_dims = calculate_buffer_size(al, get_matrix(), dim);
-        std::cout << "buffer_dims: " << buffer_dims << std::endl;
 
         // Convert vector to array for tensor construction
         Eigen::array<Eigen::Index, N> dims;

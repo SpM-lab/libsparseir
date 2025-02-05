@@ -36,6 +36,34 @@ TEST_CASE("basis.u[0] test", "[basis]")
     auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
                                                        kernel, sve_result);
 
+    std::vector<double> sampling_points_ref_vec =
+    { -0.9926231612199574,
+      -0.9612900365085015,
+      -0.9055709783447798,
+      -0.8265940603194348,
+      -0.7260516410338869,
+      -0.6062233701847619,
+      -0.46999176945389465,
+      -0.32082393925747893,
+      -0.16270277264190053,
+      -1.8244248383569015e-16,
+      0.16270277264190053,
+      0.32082393925747893,
+      0.46999176945389465,
+      0.606223370184762,
+      0.7260516410338869,
+      0.8265940603194348,
+      0.9055709783447796,
+      0.9612900365085015,
+      0.9926231612199574,
+    };
+
+    auto sampling_points =
+        default_sampling_points(basis->sve_result->u, basis->size());
+    REQUIRE(sampling_points.isApprox(Eigen::Map<Eigen::VectorXd>(
+        sampling_points_ref_vec.data(), sampling_points_ref_vec.size())));
+
+
     std::vector<double> s_ref_vec = {
         1.2621489299919293,     0.8363588547029699,     0.3462622585830318,
         0.12082626967769121,    0.03387861935965415,    0.00796130085778543,
