@@ -605,49 +605,67 @@ template <typename T>
 inline std::tuple<std::vector<Eigen::MatrixX<T>>,
                   std::vector<Eigen::VectorX<T>>,
                   std::vector<Eigen::MatrixX<T>>>
-truncate(std::vector<Eigen::MatrixX<T>> &u_list,
-         std::vector<Eigen::VectorX<T>> &s_list,
-         std::vector<Eigen::MatrixX<T>> &v_list, T rtol = 0.0,
+truncate(const std::vector<Eigen::MatrixX<T>> &u,
+         const std::vector<Eigen::VectorX<T>> &s,
+         const std::vector<Eigen::MatrixX<T>> &v, T rtol = 0.0,
          int lmax = std::numeric_limits<int>::max())
 {
-    std::vector<Eigen::MatrixX<T>> u_list_truncated;
-    std::vector<Eigen::VectorX<T>> s_list_truncated;
-    std::vector<Eigen::MatrixX<T>> v_list_truncated;
-    // Collect all singular values
-    std::vector<T> all_singular_values;
-    for (const auto &s : s_list) {
-        for (int i = 0; i < s.size(); ++i) {
-            all_singular_values.push_back(s(i));
+    // Input validation
+    if (lmax < 0) {
+        throw std::domain_error("lmax must be non-negative");
+    }
+    if (rtol < 0.0 || rtol > 1.0) {
+        throw std::domain_error("rtol must be in [0, 1]");
+    }
+
+    // Collect all singular values and find maximum
+    std::vector<T> sall;
+    for (const auto &si : s) {
+        sall.insert(sall.end(), si.data(), si.data() + si.size());
+    }
+
+    // Find maximum singular value
+    T max_sall = sall[0];
+    for (size_t i = 1; i < sall.size(); ++i) {
+        if (sall[i] > max_sall) {
+            max_sall = sall[i];
         }
     }
-    std::sort(all_singular_values.begin(), all_singular_values.end(),
-              std::greater<T>());
 
-    // Determine cutoff
-    T cutoff = rtol * all_singular_values.front();
-    if (lmax < static_cast<int>(all_singular_values.size())) {
-        cutoff = std::max(cutoff, all_singular_values[lmax - 1]);
+    // Determine cutoff value
+    T cutoff;
+    if (lmax < static_cast<int>(sall.size())) {
+        // Partially sort to find the lmax-th largest value
+        std::nth_element(sall.begin(), sall.begin() + lmax, sall.end(),
+                         std::greater<T>());
+        cutoff = std::max(rtol * max_sall, sall[lmax - 1]);
+    } else {
+        cutoff = rtol * max_sall;
     }
 
-    // Truncate singular values and corresponding vectors
-    for (size_t idx = 0; idx < s_list.size(); ++idx) {
-        const auto &s = s_list[idx];
-        int scount = 0;
-        for (int i = 0; i < s.size(); ++i) {
-            if (s(i) > cutoff) {
-                ++scount;
-            } else {
-                break;
+    // Count surviving singular values in each group
+    std::vector<int> scount(s.size());
+    for (size_t i = 0; i < s.size(); ++i) {
+        scount[i] = 0;
+        for (int j = 0; j < s[i].size(); ++j) {
+            if (s[i](j) > cutoff) {
+                ++scount[i];
             }
         }
-        if (scount < s.size()) {
-            u_list_truncated.push_back(u_list[idx].leftCols(scount));
-            s_list_truncated.push_back(s_list[idx].head(scount));
-            v_list_truncated.push_back(v_list[idx].leftCols(scount));
-        }
     }
-    return std::make_tuple(u_list_truncated, s_list_truncated,
-                           v_list_truncated);
+
+    // Create truncated matrices and vectors
+    std::vector<Eigen::MatrixX<T>> u_cut(u.size());
+    std::vector<Eigen::VectorX<T>> s_cut(s.size());
+    std::vector<Eigen::MatrixX<T>> v_cut(v.size());
+
+    for (size_t i = 0; i < u.size(); ++i) {
+        u_cut[i] = u[i].leftCols(scount[i]);
+        s_cut[i] = s[i].head(scount[i]);
+        v_cut[i] = v[i].leftCols(scount[i]);
+    }
+
+    return std::make_tuple(u_cut, s_cut, v_cut);
 }
 
 template <typename K, typename T>
