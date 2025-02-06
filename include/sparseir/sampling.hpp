@@ -362,14 +362,17 @@ public:
 
     // Evaluate the basis coefficients at sampling points
     template <typename T, int N>
-    Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N> &al,
-                                 int dim = 1) const
+    Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N> &al, int dim = 0) const
     {
         if (dim < 0 || dim >= N) {
             throw std::runtime_error(
                 "evaluate: dimension must be in [0..N). Got dim=" +
                 std::to_string(dim));
         }
+
+        std::cout << "get_matrix().rows(): " << get_matrix().rows() << std::endl;
+        std::cout << "get_matrix().cols(): " << get_matrix().cols() << std::endl;
+        std::cout << "al.dimension(dim): " << al.dimension(dim) << std::endl;
 
         if (get_matrix().cols() != al.dimension(dim)) {
             throw std::runtime_error(
@@ -378,18 +381,17 @@ public:
                 std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
         }
 
-        // Calculate buffer dimensions using the new tensor version
-        auto buffer_dims = calculate_buffer_size(al, get_matrix(), dim);
+        // Convert matrix to tensor
+        Eigen::Tensor<double, 2> matrix_tensor = Eigen::TensorMap<Eigen::Tensor<const double, 2>>(
+            get_matrix().data(), get_matrix().rows(), get_matrix().cols());
 
-        // Convert vector to array for tensor construction
-        Eigen::array<Eigen::Index, N> dims;
-        std::copy(buffer_dims.begin(), buffer_dims.end(), dims.begin());
+        // Specify contraction dimensions
+        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = { Eigen::IndexPair<int>(1, dim) };
 
-        // Create buffer with calculated dimensions
-        Eigen::Tensor<T, N> buffer(dims);
+        // Perform contraction
+        Eigen::Tensor<T, N> temp = matrix_tensor.contract(al, contract_dims);
 
-        matop_along_dim<T, N>(buffer, get_matrix(), al, dim);
-        return buffer;
+        return movedim(temp, 0, dim);
     }
 
     template <typename T, int N>
