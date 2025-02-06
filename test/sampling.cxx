@@ -263,7 +263,6 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
     }
 }
 
-/*
 TEST_CASE("Sampling Tests") {
     double beta = 1.0;
     vector<double> lambdas = {10.0, 42.0};
@@ -333,7 +332,7 @@ TEST_CASE("Sampling Tests") {
                 //std::cout << "gl(0, 0, 0, 0) " << gl(0, 0, 0, 0) << std::endl;
                 //std::cout << "gl(0, 0, 0, 1) " << gl(0, 0, 0, 1) << std::endl;
 
-                //REQUIRE(sparseir::tensorIsApprox(gl_from_tau, gl, 1e-10));
+                REQUIRE(sparseir::tensorIsApprox(gl_from_tau, gl, 1e-10));
             }
 
             // Test evaluate and fit
@@ -346,7 +345,6 @@ TEST_CASE("Sampling Tests") {
         }
     }
 }
-*/
 
 TEST_CASE("Matsubara Sampling Tests") {
     double beta = 1.0;
