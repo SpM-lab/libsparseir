@@ -96,33 +96,33 @@ end
     return Y;
 }
 
-template <typename T, int N>
-Eigen::MatrixX<T>& ldiv_noalloc_inplace(
-    Eigen::MatrixX<T>& Y,
-    const Eigen::JacobiSVD<Eigen::MatrixXd>& A,
-    const Eigen::MatrixX<T>& B,
-    Eigen::VectorX<T>& workarr){
 
-    size_t worklength = A.matrixU().cols() * B.cols();
-
-    if (workarr.size() < worklength) {
-        throw std::runtime_error("Dimension mismatch: workarr.size()=" + std::to_string(workarr.size()) + ", min worksize=" + std::to_string(worklength));
-    }
-    Eigen::Map<Eigen::MatrixX<T>> workarr_view(workarr.data(), A.matrixU().cols(), B.cols());
-    workarr_view = A.matrixU().transpose() * B;
-    for (int i = 0; i < workarr_view.rows(); ++i) {
-        for (int j = 0; j < workarr_view.cols(); ++j) {
-            workarr_view(i, j) /= A.singularValues()(i);
-        }
-    }
-
-    std::cout << "workarr_view.rows(): " << workarr_view.rows() << std::endl;
-    std::cout << "workarr_view.cols(): " << workarr_view.cols() << std::endl;
-    std::cout << "A.matrixV().rows(): " << A.matrixV().rows() << std::endl;
-    std::cout << "A.matrixV().cols(): " << A.matrixV().cols() << std::endl;
-    Y = A.matrixV() * workarr_view;
-    return Y;
+// Convert a Eigen::MatrixX<T> to a Eigen::Tensor<T, 2>
+template <typename T>
+Eigen::TensorMap<const Eigen::Tensor<T, 2>> to_tensormap(const Eigen::MatrixX<T>& mat)
+{
+    return Eigen::TensorMap<const Eigen::Tensor<T, 2>>(mat.data(), mat.rows(), mat.cols());
 }
+
+
+template <typename T, int N>
+Eigen::MatrixX<T> ldiv_noalloc_inplace(
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& svd,
+    const Eigen::MatrixX<T>& B) {
+
+    auto contract_dims = { Eigen::IndexPair<int>(1, 0) };
+
+    Eigen::MatrixX<T> UHB = svd.matrixU().transpose() * B;
+
+    // Apply inverse singular values to the rows of UHB
+    for (int i = 0; i < svd.singularValues().size(); ++i) {
+        UHB.row(i) /= svd.singularValues()(i);
+    }
+
+    return svd.matrixV() * UHB;
+}
+
+
 
 template <typename T, int N>
 Eigen::MatrixX<T>& rdiv_noalloc_inplace(
@@ -206,57 +206,33 @@ ldiv_alloc(Eigen::MatrixX<T> &Y, const Eigen::JacobiSVD<Eigen::MatrixXd> &A,
 }
 
 template <typename T, int N>
-inline Eigen::Tensor<T, N>& div_noalloc_inplace(
-    Eigen::Tensor<T, N>& buffer,
+Eigen::Tensor<T, N> fit_impl(
     const Eigen::JacobiSVD<Eigen::MatrixXd>& svd,
     const Eigen::Tensor<T, N>& arr,
-    Eigen::VectorX<T>& workarr,
     int dim)
 {
     if (dim < 0 || dim >= N) {
         throw std::domain_error("Dimension must be in [0, N).");
     }
-    std::cout << "dim: " << dim << std::endl;
-    if (dim == 0) {
-        // Create a temporary matrix to hold the non-const data
-        Eigen::MatrixX<T> flatarr = Eigen::Map<const Eigen::MatrixX<T>>(
-            arr.data(), arr.dimension(0), arr.size() / arr.dimension(0));
-        Eigen::MatrixX<T> flatbuffer(buffer.dimension(0), buffer.size() / buffer.dimension(0));
-        std::cout << "Calling ldiv_noalloc_inplace" << std::endl;
-        ldiv_noalloc_inplace<T, N>(flatbuffer, svd, flatarr, workarr);
 
-        // Copy back to buffer tensor
-        std::copy(flatbuffer.data(), flatbuffer.data() + flatbuffer.size(), buffer.data());
-        return buffer;
+    // First move the dimension to the first
+    auto arr_ = movedim(arr, dim, 0);
+    
+    // Create a view of the tensor as a matrix
+    Eigen::MatrixX<T> arr_view = Eigen::Map<Eigen::MatrixX<T>>(arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
+
+    Eigen::MatrixX<T> result = ldiv_noalloc_inplace<T, N>(svd, arr_view);
+
+    // Create a tensor from the result using TensorMap
+    Eigen::array<Eigen::Index, N> dims;
+    dims[0] = result.rows();
+    for (int i = 1; i < N; ++i) {
+        dims[i] = arr_.dimension(i);
     }
-    else if (dim != N - 1) {
-        auto perm = getperm<N>(dim, 0);
-        Eigen::Tensor<T, N> arr_perm = movedim(arr, dim, 0);
-        Eigen::Tensor<T, N> buffer_perm = movedim(buffer, dim, 0);
+    Eigen::Tensor<T, N> result_tensor(dims);
+    std::copy(result.data(), result.data() + result.size(), result_tensor.data());
 
-        Eigen::MatrixX<T> flatarr = Eigen::Map<const Eigen::MatrixX<T>>(
-            arr_perm.data(), arr_perm.dimension(0), arr_perm.size() / arr_perm.dimension(0));
-        Eigen::MatrixX<T> flatbuffer(buffer_perm.dimension(0), buffer_perm.size() / buffer_perm.dimension(0));
-
-        // Remove the extra argument '0'
-        ldiv_noalloc_inplace<T, N>(flatbuffer, svd, flatarr, workarr);
-        std::copy(flatbuffer.data(), flatbuffer.data() + flatbuffer.size(), buffer_perm.data());
-        auto inv_perm = getperm<N>(0, dim);
-        buffer = buffer_perm.shuffle(inv_perm).eval();
-        return buffer;
-    }
-    else {
-        // Create temporary matrices for the last dimension case
-        Eigen::MatrixX<T> flatarr = Eigen::Map<const Eigen::MatrixX<T>>(
-            arr.data(), arr.size() / arr.dimension(N-1), arr.dimension(N-1));
-        Eigen::MatrixX<T> flatbuffer(buffer.size() / buffer.dimension(N-1), buffer.dimension(N-1));
-
-        rdiv_noalloc_inplace<T, N>(flatbuffer, flatarr, svd, workarr);
-
-        // Copy back to buffer tensor
-        std::copy(flatbuffer.data(), flatbuffer.data() + flatbuffer.size(), buffer.data());
-        return buffer;
-    }
+    return movedim(result_tensor, 0, dim);
 }
 
 /*
@@ -404,30 +380,15 @@ public:
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>
     Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &ax,
-                            int dim = 1) const
+                            int dim = 0) const
     {
         if (dim < 0 || dim >= N) {
             throw std::runtime_error(
                 "fit: dimension must be in [0..N). Got dim=" +
                 std::to_string(dim));
         }
-        Eigen::VectorX<T> workarr(workarrlength(ax, dim));
-        auto buffer_dims = calculate_buffer_size(ax, get_matrix(), dim);
-        Eigen::array<Eigen::Index, N> dims;
-        std::copy(buffer_dims.begin(), buffer_dims.end(), dims.begin());
-        Eigen::Tensor<T, N> buffer(dims);
-        // std::cout << "buffer.dimensions(): " << buffer.dimensions() << std::endl;
         auto svd = get_matrix_svd();
-        // std::cout << "svd.matrixU().cols(): " << svd.matrixU().cols() << std::endl;
-        // std::cout << "svd.matrixV().rows(): " << svd.matrixV().rows() << std::endl;
-        // std::cout << "svd.singularValues().size(): " << svd.singularValues().size() << std::endl;
-        // std::cout << "ax.dimension(dim): " << ax.dimension(dim) << std::endl;
-
-        if (workarr.size() < workarrlength(ax, dim)) {
-            throw std::runtime_error("Work array is too small");
-        }
-        div_noalloc_inplace<T, N>(buffer, svd, ax, workarr, dim);
-        return buffer;
+        return fit_impl<T, N>(svd, ax, dim);
     }
 
     // Get the sampling points
