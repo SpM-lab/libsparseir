@@ -156,7 +156,8 @@ end
             workarr_view(i, j) /= B.singularValues()(j);
         }
     }
-    Y = workarr_view * B.matrixV().conjugate();
+
+    Y = workarr_view * B.matrixV().transpose();
     return Y;
 }
 
