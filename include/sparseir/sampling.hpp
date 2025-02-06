@@ -240,7 +240,7 @@ inline Eigen::Tensor<T, N>& div_noalloc_inplace(
 
         // Remove the extra argument '0'
         ldiv_noalloc_inplace<T, N>(flatbuffer, svd, flatarr, workarr);
-
+        std::copy(flatbuffer.data(), flatbuffer.data() + flatbuffer.size(), buffer_perm.data());
         auto inv_perm = getperm<N>(0, dim);
         buffer = buffer_perm.shuffle(inv_perm).eval();
         return buffer;
