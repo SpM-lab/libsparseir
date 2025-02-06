@@ -17,7 +17,7 @@ using Catch::Approx;
 
 using ComplexF64 = std::complex<double>;
 
-TEST_CASE("TauSampling test", "[sampling]") {
+TEST_CASE("TauSampling Constructor Test", "[sampling]") {
     double beta = 1.0;
     double Lambda = 10.0;
     auto kernel = LogisticKernel(beta * Lambda);
@@ -73,7 +73,7 @@ TEST_CASE("TauSampling test", "[sampling]") {
     REQUIRE(sampling_points.isApprox(sampling_points_ref));
 }
 
-TEST_CASE("complex_test") {
+TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
     /*
     begin
         Λ = 10.0
@@ -259,7 +259,7 @@ TEST_CASE("complex_test") {
 
         Eigen::Tensor<ComplexF64, 2> gl_from_tau = tau_sampling.fit(gtau, dim);
 
-        //REQUIRE(sparseir::tensorIsApprox(gl_from_tau, gl, 1e-10));
+        REQUIRE(sparseir::tensorIsApprox(gl_from_tau, gl, 1e-10));
     }
 }
 
