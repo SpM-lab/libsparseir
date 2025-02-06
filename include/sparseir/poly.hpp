@@ -930,7 +930,6 @@ public:
         return res;
     }
 
-
     inline PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
     {
         Eigen::VectorXd deriv_x1 = poly.derivs(1.0);
@@ -1003,6 +1002,69 @@ public:
     int zeta() const override { return -1; }
     bool allowed(int n) const override { return n % 2 != 0; }
 };
+
+template <typename S>
+std::function<int(int)> func_for_part(const PiecewiseLegendreFT<S> &poly, bool positive_only)
+{
+    std::function<double(int)> part = nullptr;
+    if (part == nullptr) {
+        int parity = symm(poly);
+        if (parity == 1) {
+            part = std::is_same<S, Bosonic>::value ?
+                    [](std::complex<double> x) { return x.real(); } :
+                    [](std::complex<double> x) { return x.imag(); };
+        }
+        else if (parity == -1) {
+            part = std::is_same<S, Bosonic>::value ?
+                    [](std::complex<double> x) { return x.imag(); } :
+                    [](std::complex<double> x) { return x.real(); };
+        }
+        else {
+            throw std::runtime_error("Cannot detect parity");
+        }
+    }
+
+    return [poly, part](int n) -> double {
+        return part((poly)(MatsubaraFreq<S>(2 * n + poly.zeta())));
+    };
+}
+
+/*
+// Julia code
+function sign_changes(û::PiecewiseLegendreFT; part=nothing, grid=DEFAULT_GRID,
+        positive_only=false)
+    f = func_for_part(û, part)
+    x₀ = find_all(f, grid)
+    x₀ .= 2x₀ .+ zeta(statistics(û))
+    positive_only || symmetrize_matsubara!(x₀)
+    return MatsubaraFreq.(statistics(û), x₀)
+end
+*/
+constexpr std::array<int, 32> DEFAULT_GRID = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+template <typename S>
+std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
+{
+    auto grid = DEFAULT_GRID;
+    auto f = func_for_part(u_hat, positive_only);
+    auto x0 = find_all(f, grid);
+    x0 = 2 * x0 + u_hat.zeta();
+    if (!positive_only) {
+        symmetrize_matsubara(x0);
+    }
+    return MatsubaraFreq<S>(u_hat.statistics(), x0);
+}
+
+template <typename S>
+std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
+{
+    auto f = func_for_part(u_hat, positive_only);
+    auto x0 = find_all(f, DEFAULT_GRID);
+    x0 = 2 * x0 + u_hat.zeta();
+    if (!positive_only) {
+        symmetrize_matsubara(x0);
+    }
+    return MatsubaraFreq<S>(u_hat.statistics(), x0);
+}
 
 } // namespace sparseir
 

@@ -308,6 +308,73 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
     }
 }
 
+template <typename S>
+void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool positive_only) {
+    // Original implementation remains unchanged
+    if (wn.empty()) {
+        return;
+    }
+
+    std::vector<MatsubaraFreq<S>> outer_frequencies;
+    if (positive_only) {
+        outer_frequencies.push_back(wn.back());
+    } else {
+        outer_frequencies.push_back(wn.front());
+        outer_frequencies.push_back(wn.back());
+    }
+
+    for (const auto& wn_outer : outer_frequencies) {
+        int outer_val = static_cast<int>(wn_outer);
+        int diff_val = 2 * static_cast<int>(std::round(0.025 * outer_val));
+        auto wn_diff = MatsubaraFreq<S>(diff_val);
+
+        if (wn.size() >= 20) {
+            wn.push_back(wn_outer - sign(wn_outer) * wn_diff);
+        }
+        if (wn.size() >= 42) {
+            wn.push_back(wn_outer + sign(wn_outer) * wn_diff);
+        }
+    }
+
+    std::sort(wn.begin(), wn.end());
+    wn.erase(std::unique(wn.begin(), wn.end()), wn.end());
+}
+
+// We need implement default_matsubara_sampling_points in C++
+template <typename S>
+Eigen::VectorXd default_matsubara_sampling_points(const PiecewiseLegendreFTVector<S> &u_hat, int L, bool fence = false, bool positive_only = false) {
+    int l_requested = L;
+
+    // Adjust l_requested based on statistics
+    if (std::is_same<S, Fermionic>::value && l_requested % 2 != 0)
+        l_requested += 1;
+    else if (std::is_same<S, Bosonic>::value && l_requested % 2 == 0)
+        l_requested += 1;
+
+    std::vector<MatsubaraFreq<S>> omega_n;
+
+    if (l_requested < u_hat.size()) {
+        omega_n = sign_changes(u_hat[l_requested + 1], positive_only);
+    } else {
+        omega_n = find_extrema(u_hat.back(), positive_only);
+    }
+
+    int expected_size = l_requested;
+    if (positive_only)
+        expected_size = (expected_size + 1) / 2;
+
+    if (omega_n.size() != expected_size) {
+        std::cerr << "Warning: Requested " << expected_size
+                  << " sampling frequencies for basis size L = " << L
+                  << ", but got " << omega_n.size() << ".\n";
+    }
+
+    if (fence){
+        fence_matsubara_sampling(omega_n, positive_only);
+    }
+    return omega_n;
+}
+
 inline std::pair<FiniteTempBasis<Fermionic>,
                  FiniteTempBasis<Bosonic>>
     finite_temp_bases(
