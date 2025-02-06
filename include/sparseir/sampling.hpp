@@ -7,6 +7,8 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <complex>
+#include <tuple>
 
 namespace sparseir {
 
@@ -248,5 +250,205 @@ private:
     Eigen::MatrixXd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
 };
+
+/// A C++ struct mirroring the Julia SplitSVD{T} structure.
+/// In Julia:
+///   struct SplitSVD{T}
+///       A::Matrix{Complex{T}}
+///       UrealT::Matrix{T}
+///       UimagT::Matrix{T}
+///       S::Vector{T}
+///       V::Matrix{T}
+///   end
+template <typename Real>
+struct SplitSVD
+{
+    // A is the original complex matrix
+    Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> A;
+
+    // Real part of u^T
+    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> UrealT;
+
+    // Imag part of u^T
+    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> UimagT;
+
+    // Non-zero singular values
+    Eigen::Matrix<Real, Eigen::Dynamic, 1> S;
+
+    // Copy of V (real)
+    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> V;
+};
+
+/// Equivalent to the Julia constructor:
+///   function SplitSVD(a::Matrix{<:Complex}, (u, s, v))
+///       if any(iszero, s)
+///           filt out zero singular values
+///       end
+///       ut = transpose(u)
+///       SplitSVD(a, real(ut), imag(ut), s, copy(v))
+///   end
+///
+/// Types:
+///   - a: MatrixXcd (N x M complex)
+///   - u: MatrixXcd (N x K complex)
+///   - s: VectorXd  (K real)
+///   - v: MatrixXd  (K x M real)
+template <typename Real>
+SplitSVD<Real> makeSplitSVD(
+    const Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> &a,
+    const std::tuple<
+        Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic>,
+        Eigen::Matrix<Real, Eigen::Dynamic, 1>,
+        Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>
+    > &svdTuple
+)
+{
+    // Unpack tuple: u, s, v
+    const auto &u = std::get<0>(svdTuple);  // complex matrix (N x K)
+    const auto &s = std::get<1>(svdTuple);  // real vector (K)
+    const auto &v = std::get<2>(svdTuple);  // real matrix (K x M)
+
+    // Identify indices of non-zero singular values
+    std::vector<int> nonzeroIndices;
+    nonzeroIndices.reserve(s.size());
+    for (int i = 0; i < s.size(); ++i) {
+        if (s(i) != Real(0)) {
+            nonzeroIndices.push_back(i);
+        }
+    }
+
+    // Filter out zero singular values (and corresponding columns/rows)
+    Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> uFiltered(
+        u.rows(), static_cast<int>(nonzeroIndices.size())
+    );
+    Eigen::Matrix<Real, Eigen::Dynamic, 1> sFiltered(
+        static_cast<int>(nonzeroIndices.size())
+    );
+    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> vFiltered(
+        static_cast<int>(nonzeroIndices.size()), v.cols()
+    );
+
+    for (int col = 0; col < static_cast<int>(nonzeroIndices.size()); ++col) {
+        int idx = nonzeroIndices[col];
+        // Copy over columns for u
+        uFiltered.col(col) = u.col(idx);
+        // Copy over rows for v
+        vFiltered.row(col) = v.row(idx);
+        // Copy singular value
+        sFiltered(col) = s(idx);
+    }
+
+    // Take transpose of u
+    // (uFiltered is N x K'; ut becomes K' x N)
+    Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> ut =
+        uFiltered.transpose();
+
+    // Extract real and imaginary parts of ut
+    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> utReal(ut.rows(), ut.cols());
+    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> utImag(ut.rows(), ut.cols());
+
+    for (int r = 0; r < ut.rows(); ++r) {
+        for (int c = 0; c < ut.cols(); ++c) {
+            utReal(r, c) = std::real(ut(r, c));
+            utImag(r, c) = std::imag(ut(r, c));
+        }
+    }
+
+    // Construct our SplitSVD struct
+    SplitSVD<Real> result;
+    result.A       = a;        // Keep the original complex matrix
+    result.UrealT  = utReal;   // Real part of u^T
+    result.UimagT  = utImag;   // Imag part of u^T
+    result.S       = sFiltered;
+    result.V       = vFiltered;
+    return result;
+}
+
+/*
+function MatsubaraSampling(basis::AbstractBasis; positive_only=false,
+        sampling_points=default_matsubara_sampling_points(basis;
+            positive_only), factorize=true)
+    issorted(sampling_points) || sort!(sampling_points)
+    if positive_only
+        Int(first(sampling_points)) ≥ 0 || error("invalid negative sampling
+frequencies") end matrix = eval_matrix(MatsubaraSampling, basis,
+sampling_points) has_zero = iszero(first(sampling_points)) if factorize
+        svd_matrix = positive_only ? SplitSVD(matrix; has_zero) : svd(matrix)
+    else
+        svd_matrix = nothing
+    end
+    sampling = MatsubaraSampling(sampling_points, matrix, svd_matrix,
+positive_only) if factorize && iswellconditioned(basis) && cond(sampling) > 1e8
+        @warn "Sampling matrix is poorly conditioned (cond =
+$(cond(sampling)))." end return sampling end
+*/
+template <typename S>
+class MatsubaraSampling : public AbstractSampling<S> {
+public:
+    MatsubaraSampling(const std::shared_ptr<AbstractBasis<S>> &basis,
+                       bool positive_only = false,
+                       bool factorize = true)
+        : basis_(basis), positive_only_(positive_only), factorize_(factorize)
+    {
+        // Get default sampling points from basis
+        sampling_points_ = basis_->default_matsubara_sampling_points(positive_only);
+
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points generated");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(this, basis_, sampling_points_);
+
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis_->size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points_.size()) +
+                                     "x" + std::to_string(basis_->size()));
+        }
+
+        // Initialize SVD
+        if (factorize) {
+            if (positive_only) {
+                svd_matrix_ = makeSplitSVD(matrix_, {0});
+            } else {
+                svd_matrix_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
+                    matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
+            }
+        }
+    }
+
+    Eigen::MatrixXd get_matrix() const override { return matrix_; }
+
+    const Eigen::VectorXd &sampling_points() const override
+    {
+        return sampling_points_;
+    }
+
+    const Eigen::VectorXd &matsubara_frequencies() const
+    {
+        return sampling_points_;
+    }
+
+    Eigen::JacobiSVD<Eigen::MatrixXd> get_matrix_svd() const override
+    {
+        return svd_matrix_;
+    }
+
+private:
+    std::shared_ptr<AbstractBasis<S>> basis_;
+    Eigen::VectorXd sampling_points_;
+    Eigen::MatrixXd matrix_;
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd_matrix_;
+    bool positive_only_;
+    bool factorize_;
+};
+
+
 
 } // namespace sparseir
