@@ -1040,7 +1040,9 @@ function sign_changes(û::PiecewiseLegendreFT; part=nothing, grid=DEFAULT_GRID,
     return MatsubaraFreq.(statistics(û), x₀)
 end
 */
-constexpr std::array<int, 32> DEFAULT_GRID = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+
+const std::vector<int> DEFAULT_GRID = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+
 template <typename S>
 std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
 {
@@ -1064,6 +1066,51 @@ std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, 
         symmetrize_matsubara(x0);
     }
     return MatsubaraFreq<S>(u_hat.statistics(), x0);
+}
+
+// Evaluate a polynomial (e.g. in inv_iw) with given coefficients (using
+// Horner's method).
+inline std::complex<double> evalpoly(std::complex<double> x,
+                                     const std::vector<double> &coeffs)
+{
+    std::complex<double> result(0, 0);
+    std::complex<double> xn(1, 0);
+    for (double c : coeffs) {
+        result += c * xn;
+        xn *= x;
+    }
+    return result;
+}
+
+// If the set of Matsubara points is not symmetric, modify the vector by
+// removing zero (if present) and prepending the negatives of the reversed list.
+inline void symmetrize_matsubara(std::vector<double> &xs)
+{
+    if (xs.empty())
+        return;
+    if (xs.front() < 0)
+        throw std::runtime_error("points must be non-negative");
+    if (std::abs(xs.front()) < 1e-12 && !xs.empty())
+        xs.erase(xs.begin());
+    std::vector<double> neg(xs.rbegin(), xs.rend());
+    for (auto &x : neg)
+        x = -x;
+    xs.insert(xs.begin(), neg.begin(), neg.end());
+}
+
+template <typename S>
+inline std::vector<double> find_extrema(const PiecewiseLegendreFT<S> &polyFT,
+             std::function<double(std::complex<double>)> part = nullptr,
+             const std::vector<int> &grid = DEFAULT_GRID,
+             bool positive_only = false)
+{
+    auto f = func_for_part(polyFT, part);
+    auto x0 = discrete_extrema(f, grid);
+    for (auto &x : x0)
+        x = 2.0 * x + 1.0; // here zeta(polyFT) is assumed to be 1.0
+    if (!positive_only)
+        symmetrize_matsubara(x0);
+    return x0;
 }
 
 } // namespace sparseir
