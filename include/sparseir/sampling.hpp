@@ -412,15 +412,18 @@ public:
                                      "x" + std::to_string(basis_->size()));
         }
 
+        /*
         // Initialize SVD
         if (factorize) {
             if (positive_only) {
+                // TODO FIX it
                 svd_matrix_ = makeSplitSVD(matrix_, {0});
             } else {
                 svd_matrix_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
                     matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
             }
         }
+        */
     }
 
     Eigen::MatrixXd get_matrix() const override { return matrix_; }
