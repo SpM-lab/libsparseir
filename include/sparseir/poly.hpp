@@ -850,12 +850,11 @@ inline Eigen::VectorXd power_moments(const Statistics &stat,
                                       Eigen::VectorXd &deriv_x1, int l)
 {
     int statsign = stat.zeta() == 1 ? -1 : 1;
-    Eigen::VectorXd moments = Eigen::VectorXd::Zero(deriv_x1.size());
-    for (int m = 1; m <= deriv_x1.size(); m++) {
-        moments[m-1] = deriv_x1[m-1] *
-            -(statsign * std::pow(-1, m) + std::pow(-1, l)) / std::sqrt(2);
+    for (int m = 0; m < deriv_x1.size(); m++) {
+        deriv_x1[m] = deriv_x1[m] *
+            -(statsign * std::pow(-1, m+1) + std::pow(-1, l)) / std::sqrt(2);
     }
-    return moments;
+    return deriv_x1;
 }
 
 /*
@@ -904,7 +903,7 @@ public:
     std::complex<double>
     operator()(const MatsubaraFreq<S> &omega) const
     {
-        int n = static_cast<int>(omega);
+        int n = static_cast<int>(omega.n);
         if (std::abs(n) < n_asymp) {
             return compute_unl_inner(poly, n);
         } else {
@@ -982,17 +981,20 @@ PiecewiseLegendreFT<StatisticsType>::giw(const PiecewiseLegendreFT &polyFT,
     if (wn == 0)
         return std::complex<double>(0.0, 0.0);
     std::complex<double> inv_iw = 1.0 / iw;
-    std::complex<double> result = inv_iw * evalpoly(inv_iw, model.moments);
+    // Convert Eigen::VectorXd to std::vector<double>
+    std::vector<double> moments_vec(model.moments.data(),
+                                  model.moments.data() + model.moments.size());
+    std::complex<double> result = inv_iw * evalpoly(inv_iw, moments_vec);
     return result;
 }
 
 template <typename StatisticsType>
-std::complex<double> PiecewiseLegendreFT<StatisticsType>::evalpoly(
+inline std::complex<double> PiecewiseLegendreFT<StatisticsType>::evalpoly(
     const std::complex<double> &x, const std::vector<double> &coeffs) const
 {
     std::complex<double> result(0.0, 0.0);
-    for (auto it = coeffs.rbegin(); it != coeffs.rend(); ++it) {
-        result = result * x + *it;
+    for (int i = coeffs.size() - 1; i >= 0; --i) {
+        result = result * x + coeffs[i];
     }
     return result;
 }
@@ -1004,11 +1006,10 @@ public:
 };
 
 template <typename S>
-std::function<int(int)> func_for_part(const PiecewiseLegendreFT<S> &poly, bool positive_only)
+std::function<double(int)> func_for_part(const PiecewiseLegendreFT<S> &polyFT, std::function<double(std::complex<double>)> part = nullptr)
 {
-    std::function<double(int)> part = nullptr;
     if (part == nullptr) {
-        int parity = symm(poly);
+        int parity = polyFT.poly.get_symm();
         if (parity == 1) {
             part = std::is_same<S, Bosonic>::value ?
                     [](std::complex<double> x) { return x.real(); } :
@@ -1024,8 +1025,9 @@ std::function<int(int)> func_for_part(const PiecewiseLegendreFT<S> &poly, bool p
         }
     }
 
-    return [poly, part](int n) -> double {
-        return part((poly)(MatsubaraFreq<S>(2 * n + poly.zeta())));
+    return [polyFT, part](int n) -> double {
+        auto omega = MatsubaraFreq<S>(2 * n + polyFT.zeta());
+        return part(polyFT(omega));
     };
 }
 
