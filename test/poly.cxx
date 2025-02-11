@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include <catch2/catch_approx.hpp> // for Approx
 #include <catch2/catch_test_macros.hpp>
 
 #include <sparseir/sparseir-header-only.hpp>
@@ -20,6 +21,8 @@
 #include <iostream>
 #include <random>
 #include <vector>
+
+using Catch::Approx;
 
 TEST_CASE("StableRNG")
 {
@@ -347,4 +350,27 @@ TEST_CASE("Roots")
         // Verify these are actually roots
         REQUIRE(std::abs(pwlp(roots[i])) < 1e-10);
     }
+}
+
+TEST_CASE("func_for_part tests", "[poly]")
+{
+    double beta = 1.0;
+    double Lambda = 10.0;
+    auto kernel = sparseir::LogisticKernel(beta * Lambda);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, Lambda, 1e-15,
+                                                       kernel, sve_result);
+
+    auto uhat_full = basis->uhat_full[0];
+    std::cout << "uhat_full.poly.symm: " << uhat_full.poly.symm << std::endl;
+    auto func_for_part = sparseir::func_for_part(uhat_full);
+
+    REQUIRE(func_for_part(0) == uhat_full(0).real());
+    REQUIRE(func_for_part(0) == Approx(0.9697214762855008));
+    REQUIRE(func_for_part(1) == uhat_full(2).real());
+    REQUIRE(func_for_part(1) == Approx(0.1581728503925827));
+    REQUIRE(func_for_part(2) == uhat_full(4).real());
+    REQUIRE(func_for_part(2) == Approx(0.05823707470687053));
+    REQUIRE(func_for_part(3) == uhat_full(6).real());
+    REQUIRE(func_for_part(3) == Approx(0.028928207366520377));
 }

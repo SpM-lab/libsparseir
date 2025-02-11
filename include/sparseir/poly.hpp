@@ -850,12 +850,11 @@ inline Eigen::VectorXd power_moments(const Statistics &stat,
                                       Eigen::VectorXd &deriv_x1, int l)
 {
     int statsign = stat.zeta() == 1 ? -1 : 1;
-    Eigen::VectorXd moments = Eigen::VectorXd::Zero(deriv_x1.size());
-    for (int m = 1; m <= deriv_x1.size(); m++) {
-        moments[m-1] = deriv_x1[m-1] *
-            -(statsign * std::pow(-1, m) + std::pow(-1, l)) / std::sqrt(2);
+    for (int m = 0; m < deriv_x1.size(); m++) {
+        deriv_x1[m] = deriv_x1[m] *
+            -(statsign * std::pow(-1, m+1) + std::pow(-1, l)) / std::sqrt(2);
     }
-    return moments;
+    return deriv_x1;
 }
 
 /*
@@ -904,7 +903,7 @@ public:
     std::complex<double>
     operator()(const MatsubaraFreq<S> &omega) const
     {
-        int n = static_cast<int>(omega);
+        int n = static_cast<int>(omega.n);
         if (std::abs(n) < n_asymp) {
             return compute_unl_inner(poly, n);
         } else {
@@ -929,7 +928,6 @@ public:
         }
         return res;
     }
-
 
     inline PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
     {
@@ -983,17 +981,20 @@ PiecewiseLegendreFT<StatisticsType>::giw(const PiecewiseLegendreFT &polyFT,
     if (wn == 0)
         return std::complex<double>(0.0, 0.0);
     std::complex<double> inv_iw = 1.0 / iw;
-    std::complex<double> result = inv_iw * evalpoly(inv_iw, model.moments);
+    // Convert Eigen::VectorXd to std::vector<double>
+    std::vector<double> moments_vec(model.moments.data(),
+                                  model.moments.data() + model.moments.size());
+    std::complex<double> result = inv_iw * evalpoly(inv_iw, moments_vec);
     return result;
 }
 
 template <typename StatisticsType>
-std::complex<double> PiecewiseLegendreFT<StatisticsType>::evalpoly(
+inline std::complex<double> PiecewiseLegendreFT<StatisticsType>::evalpoly(
     const std::complex<double> &x, const std::vector<double> &coeffs) const
 {
     std::complex<double> result(0.0, 0.0);
-    for (auto it = coeffs.rbegin(); it != coeffs.rend(); ++it) {
-        result = result * x + *it;
+    for (int i = coeffs.size() - 1; i >= 0; --i) {
+        result = result * x + coeffs[i];
     }
     return result;
 }
@@ -1003,6 +1004,116 @@ public:
     int zeta() const override { return -1; }
     bool allowed(int n) const override { return n % 2 != 0; }
 };
+
+template <typename S>
+std::function<double(int)> func_for_part(const PiecewiseLegendreFT<S> &polyFT, std::function<double(std::complex<double>)> part = nullptr)
+{
+    if (part == nullptr) {
+        int parity = polyFT.poly.get_symm();
+        if (parity == 1) {
+            part = std::is_same<S, Bosonic>::value ?
+                    [](std::complex<double> x) { return x.real(); } :
+                    [](std::complex<double> x) { return x.imag(); };
+        }
+        else if (parity == -1) {
+            part = std::is_same<S, Bosonic>::value ?
+                    [](std::complex<double> x) { return x.imag(); } :
+                    [](std::complex<double> x) { return x.real(); };
+        }
+        else {
+            throw std::runtime_error("Cannot detect parity");
+        }
+    }
+
+    return [polyFT, part](int n) -> double {
+        auto omega = MatsubaraFreq<S>(2 * n + polyFT.zeta());
+        return part(polyFT(omega));
+    };
+}
+
+/*
+// Julia code
+function sign_changes(û::PiecewiseLegendreFT; part=nothing, grid=DEFAULT_GRID,
+        positive_only=false)
+    f = func_for_part(û, part)
+    x₀ = find_all(f, grid)
+    x₀ .= 2x₀ .+ zeta(statistics(û))
+    positive_only || symmetrize_matsubara!(x₀)
+    return MatsubaraFreq.(statistics(û), x₀)
+end
+*/
+
+const std::vector<int> DEFAULT_GRID = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+
+template <typename S>
+std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
+{
+    auto grid = DEFAULT_GRID;
+    auto f = func_for_part(u_hat, positive_only);
+    auto x0 = find_all(f, grid);
+    x0 = 2 * x0 + u_hat.zeta();
+    if (!positive_only) {
+        symmetrize_matsubara(x0);
+    }
+    return MatsubaraFreq<S>(u_hat.statistics(), x0);
+}
+
+template <typename S>
+std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
+{
+    auto f = func_for_part(u_hat, positive_only);
+    auto x0 = find_all(f, DEFAULT_GRID);
+    x0 = 2 * x0 + u_hat.zeta();
+    if (!positive_only) {
+        symmetrize_matsubara(x0);
+    }
+    return MatsubaraFreq<S>(u_hat.statistics(), x0);
+}
+
+// Evaluate a polynomial (e.g. in inv_iw) with given coefficients (using
+// Horner's method).
+inline std::complex<double> evalpoly(std::complex<double> x,
+                                     const std::vector<double> &coeffs)
+{
+    std::complex<double> result(0, 0);
+    std::complex<double> xn(1, 0);
+    for (double c : coeffs) {
+        result += c * xn;
+        xn *= x;
+    }
+    return result;
+}
+
+// If the set of Matsubara points is not symmetric, modify the vector by
+// removing zero (if present) and prepending the negatives of the reversed list.
+inline void symmetrize_matsubara(std::vector<double> &xs)
+{
+    if (xs.empty())
+        return;
+    if (xs.front() < 0)
+        throw std::runtime_error("points must be non-negative");
+    if (std::abs(xs.front()) < 1e-12 && !xs.empty())
+        xs.erase(xs.begin());
+    std::vector<double> neg(xs.rbegin(), xs.rend());
+    for (auto &x : neg)
+        x = -x;
+    xs.insert(xs.begin(), neg.begin(), neg.end());
+}
+
+template <typename S>
+inline std::vector<double> find_extrema(const PiecewiseLegendreFT<S> &polyFT,
+             std::function<double(std::complex<double>)> part = nullptr,
+             const std::vector<int> &grid = DEFAULT_GRID,
+             bool positive_only = false)
+{
+    auto f = func_for_part(polyFT, part);
+    auto x0 = discrete_extrema(f, grid);
+    for (auto &x : x0)
+        x = 2.0 * x + 1.0; // here zeta(polyFT) is assumed to be 1.0
+    if (!positive_only)
+        symmetrize_matsubara(x0);
+    return x0;
+}
 
 } // namespace sparseir
 
