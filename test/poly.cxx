@@ -388,28 +388,63 @@ TEST_CASE("roots of func_for_part tests", "[poly]")
         auto uhat_full = basis->uhat_full[11];
         auto sign_changes = sparseir::sign_changes(uhat_full);
         std::function<double(int)> f = func_for_part(uhat_full);
-        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
+        auto results = sparseir::find_all(f, DEFAULT_GRID);
         std::vector<int> expected_results = {0, 1, 2, 3, 4, 14};
         REQUIRE(results.size() == expected_results.size());
         for (size_t i = 0; i < results.size(); ++i) {
             REQUIRE(results[i] == expected_results[i]);
         }
+
+        std::vector<int> expected_s_out_default = {-28, -8, -6, -4, -2, 0,
+                                                   2,   4,  6,  8,  28};
+        auto s_out_default = sparseir::sign_changes(uhat_full);
+
+        REQUIRE(s_out_default.size() == expected_s_out_default.size());
+        for (size_t i = 0; i < s_out_default.size(); ++i) {
+            REQUIRE(s_out_default[i].n == expected_s_out_default[i]);
+        }
+
+        bool positive_only = true;
+        std::vector<int> expected_s_out_positive_only = {0, 2, 4, 6, 8, 28};
+        auto s_out_positive_only =
+            sparseir::sign_changes(uhat_full, positive_only);
+        REQUIRE(s_out_positive_only.size() ==
+                expected_s_out_positive_only.size());
+        for (size_t i = 0; i < s_out_positive_only.size(); ++i) {
+            REQUIRE(s_out_positive_only[i].n ==
+                    expected_s_out_positive_only[i]);
+        }
     }
 
     {
         auto uhat_full = basis->uhat_full[0];
-        auto sign_changes = sparseir::sign_changes(uhat_full);
         std::function<double(int)> f = func_for_part(uhat_full);
-        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
+        auto results = sparseir::find_all(f, DEFAULT_GRID);
         REQUIRE(results.size() == 0); // should be empty
-    }
 
+        auto s_out_default = sparseir::sign_changes(uhat_full);
+        REQUIRE(s_out_default.size() == 0);
+
+        bool positive_only = true;
+        auto s_out_positive_only =
+            sparseir::sign_changes(uhat_full, positive_only);
+        REQUIRE(s_out_positive_only.size() == 0);
+    }
     {
         auto uhat_full = basis->uhat_full[1];
-        auto sign_changes = sparseir::sign_changes(uhat_full);
         std::function<double(int)> f = func_for_part(uhat_full);
-        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
+        auto results = sparseir::find_all(f, DEFAULT_GRID);
         REQUIRE(results.size() == 1); // should be empty
         REQUIRE(results[0] == 0);
+
+        auto s_out_default = sparseir::sign_changes(uhat_full);
+        REQUIRE(s_out_default.size() == 1);
+        REQUIRE(s_out_default[0].n == 0);
+
+        bool positive_only = true;
+        auto s_out_positive_only =
+            sparseir::sign_changes(uhat_full, positive_only);
+        REQUIRE(s_out_positive_only.size() == 1);
+        REQUIRE(s_out_positive_only[0].n == 0);
     }
 }
