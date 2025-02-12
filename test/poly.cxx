@@ -374,3 +374,42 @@ TEST_CASE("func_for_part tests", "[poly]")
     REQUIRE(func_for_part(3) == uhat_full(6).real());
     REQUIRE(func_for_part(3) == Approx(0.028928207366520377));
 }
+
+TEST_CASE("roots of func_for_part tests", "[poly]")
+{
+    double beta = 1.0;
+    double Lambda = 10.0;
+    auto kernel = sparseir::LogisticKernel(beta * Lambda);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, Lambda, 1e-15, kernel, sve_result);
+
+    {
+        auto uhat_full = basis->uhat_full[11];
+        auto sign_changes = sparseir::sign_changes(uhat_full);
+        std::function<double(int)> f = func_for_part(uhat_full);
+        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
+        std::vector<int> expected_results = {0, 1, 2, 3, 4, 14};
+        REQUIRE(results.size() == expected_results.size());
+        for (size_t i = 0; i < results.size(); ++i) {
+            REQUIRE(results[i] == expected_results[i]);
+        }
+    }
+
+    {
+        auto uhat_full = basis->uhat_full[0];
+        auto sign_changes = sparseir::sign_changes(uhat_full);
+        std::function<double(int)> f = func_for_part(uhat_full);
+        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
+        REQUIRE(results.size() == 0); // should be empty
+    }
+
+    {
+        auto uhat_full = basis->uhat_full[1];
+        auto sign_changes = sparseir::sign_changes(uhat_full);
+        std::function<double(int)> f = func_for_part(uhat_full);
+        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
+        REQUIRE(results.size() == 1); // should be empty
+        REQUIRE(results[0] == 0);
+    }
+}
