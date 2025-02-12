@@ -1138,13 +1138,20 @@ template <typename S>
 std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
 {
     auto grid = DEFAULT_GRID;
-    auto f = func_for_part(u_hat, positive_only);
+    auto f = func_for_part(u_hat);
     auto x0 = find_all(f, grid);
-    x0 = 2 * x0 + u_hat.zeta();
+    std::vector<MatsubaraFreq<S>> result;
+    for (auto &x : x0) {
+        x = 2 * x + u_hat.zeta();
+        MatsubaraFreq<S> mf(x);
+        result.push_back(mf);
+    }
+    /*
     if (!positive_only) {
         symmetrize_matsubara(x0);
     }
-    return MatsubaraFreq<S>(u_hat.statistics(), x0);
+    */
+    return result;
 }
 
 template <typename S>
