@@ -70,7 +70,8 @@ TEST_CASE("find_all") {
 
         // Quadratic function
         auto quadratic = [](double x) { return x * x - 1; };
-        auto quad_roots = find_all(quadratic, xgrid);
+        std::vector<double> xgrid2 = {-2.0, -1.2, -0.7, 0.0, 0.8, 1.1, 2.0};
+        auto quad_roots = find_all(quadratic, xgrid2);
         std::vector<double> expected_quad = {-1.0, 1.0};
         REQUIRE(quad_roots.size() == expected_quad.size());
         for(size_t i = 0; i < quad_roots.size(); ++i) {

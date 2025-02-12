@@ -33,14 +33,19 @@ inline midpoint(T a, T b) {
     return a + ((b - a) / 2);
 }
 
-// Close enough function for floating-point types
-template<typename T>
-inline bool closeenough(T a, T b, T epsilon) {
-    return std::abs(a - b) <= epsilon;
+// For floating point types, returns true if absolute difference is within
+// epsilon For integer types, performs exact equality comparison
+template <typename T>
+typename std::enable_if<std::is_floating_point<T>::value, bool>::type
+closeenough(T a, T b, T eps)
+{
+    return std::abs(a - b) <= eps;
 }
 
-template<typename T>
-inline bool closeenough(int a, int b, T _dummyepsilon) {
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value, bool>::type
+closeenough(T a, T b, T /*eps*/)
+{
     return a == b;
 }
 
@@ -50,17 +55,21 @@ inline bool signbit(T x) {
     return x < static_cast<T>(0);
 }
 
-// Bisection method to find a root of function f in [a, b]
-template<typename F, typename T>
-T bisect(F f, T a, T b, T fa, T epsilon_x) {
+// Bisection method to find root in interval [a,b] where f(a) and f(b) have
+// opposite signs f: Function (T -> double) a, b: Interval endpoints fa: Value
+// of f(a) eps: Error tolerance (for floating point)
+template <typename T, typename F>
+T bisect(const F &f, T a, T b, T fa, T eps)
+{
     while (true) {
         T mid = midpoint(a, b);
-        assert(epsilon_x > 0);
-        if (closeenough(a, mid, epsilon_x)) {
+        if (closeenough(a, mid, eps)) {
             return mid;
         }
-        T fmid = static_cast<T>(f(mid));
-        if (signbit(fa) != signbit(fmid)) {
+        double fmid = f(mid);
+        // Check for sign change (std::signbit only works for floating point,
+        // but comparison works for integers)
+        if (std::signbit(fa) != std::signbit(fmid)) {
             b = mid;
         } else {
             a = mid;
@@ -130,7 +139,7 @@ std::vector<T> find_all(F f, const std::vector<T> &xgrid)
 
     std::vector<T> x_bisect;
     for (size_t i = 0; i < a.size(); ++i) {
-        double root = bisect(f, a[i], b[i], fa[i], epsilon_x);
+        double root = bisect(f, a[i], b[i], static_cast<T>(fa[i]), epsilon_x);
         x_bisect.push_back(static_cast<T>(root));
     }
 
