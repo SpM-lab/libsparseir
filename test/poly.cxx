@@ -375,7 +375,7 @@ TEST_CASE("func_for_part tests", "[poly]")
     REQUIRE(func_for_part(3) == Approx(0.028928207366520377));
 }
 
-TEST_CASE("roots of func_for_part tests", "[poly]")
+TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
 {
     double beta = 1.0;
     double Lambda = 10.0;
@@ -446,5 +446,103 @@ TEST_CASE("roots of func_for_part tests", "[poly]")
             sparseir::sign_changes(uhat_full, positive_only);
         REQUIRE(s_out_positive_only.size() == 1);
         REQUIRE(s_out_positive_only[0].n == 0);
+    }
+}
+
+TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
+{
+    double beta = 1.0;
+    double Lambda = 10.0;
+    auto kernel = sparseir::LogisticKernel(beta * Lambda);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, Lambda, 1e-15, kernel, sve_result);
+
+    {
+        auto uhat_full = basis->uhat_full[11];
+        std::function<double(int)> f = sparseir::func_for_part(uhat_full);
+        auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
+        std::vector<int> d_extrema_expected = {1, 2, 3, 4, 7, 26};
+        REQUIRE(d_extrema.size() == d_extrema_expected.size());
+        for (size_t i = 0; i < d_extrema.size(); ++i) {
+            REQUIRE(d_extrema[i] == d_extrema_expected[i]);
+        }
+
+        auto results_default = sparseir::find_extrema(uhat_full);
+        std::vector<int> results_expected = {-52, -14, -8, -6, -4, -2,
+                                             2,   4,   6,  8,  14, 52};
+        REQUIRE(results_default.size() == results_expected.size());
+        for (size_t i = 0; i < results_default.size(); ++i) {
+            REQUIRE(results_default[i].n == results_expected[i]);
+        }
+
+        bool positive_only = true;
+        auto results_positive_only =
+            sparseir::find_extrema(uhat_full, positive_only);
+        std::vector<int> results_positive_only_expected = {2, 4, 6, 8, 14, 52};
+        REQUIRE(results_positive_only.size() ==
+                results_positive_only_expected.size());
+        for (size_t i = 0; i < results_positive_only.size(); ++i) {
+            REQUIRE(results_positive_only[i].n ==
+                    results_positive_only_expected[i]);
+        }
+    }
+
+    {
+        auto uhat_full = basis->uhat_full[0];
+        std::function<double(int)> f = sparseir::func_for_part(uhat_full);
+        auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
+        std::vector<int> d_extrema_expected = {0};
+        REQUIRE(d_extrema.size() == d_extrema_expected.size());
+        for (size_t i = 0; i < d_extrema.size(); ++i) {
+            REQUIRE(d_extrema[i] == d_extrema_expected[i]);
+        }
+
+        auto results_default = sparseir::find_extrema(uhat_full);
+        std::vector<int> results_expected = {0};
+        REQUIRE(results_default.size() == results_expected.size());
+        for (size_t i = 0; i < results_default.size(); ++i) {
+            REQUIRE(results_default[i].n == results_expected[i]);
+        }
+
+        bool positive_only = true;
+        auto results_positive_only =
+            sparseir::find_extrema(uhat_full, positive_only);
+        std::vector<int> results_positive_only_expected = {0};
+        REQUIRE(results_positive_only.size() ==
+                results_positive_only_expected.size());
+        for (size_t i = 0; i < results_positive_only.size(); ++i) {
+            REQUIRE(results_positive_only[i].n ==
+                    results_positive_only_expected[i]);
+        }
+    }
+
+    {
+        auto uhat_full = basis->uhat_full[1];
+        std::function<double(int)> f = sparseir::func_for_part(uhat_full);
+        auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
+        std::vector<int> d_extrema_expected = {0, 1};
+        REQUIRE(d_extrema.size() == d_extrema_expected.size());
+        for (size_t i = 0; i < d_extrema.size(); ++i) {
+            REQUIRE(d_extrema[i] == d_extrema_expected[i]);
+        }
+
+        auto results_default = sparseir::find_extrema(uhat_full);
+        std::vector<int> results_expected = {-2, 0, 2};
+        REQUIRE(results_default.size() == results_expected.size());
+        for (size_t i = 0; i < results_default.size(); ++i) {
+            REQUIRE(results_default[i].n == results_expected[i]);
+        }
+
+        bool positive_only = true;
+        auto results_positive_only =
+            sparseir::find_extrema(uhat_full, positive_only);
+        std::vector<int> results_positive_only_expected = {0, 2};
+        REQUIRE(results_positive_only.size() ==
+                results_positive_only_expected.size());
+        for (size_t i = 0; i < results_positive_only.size(); ++i) {
+            REQUIRE(results_positive_only[i].n ==
+                    results_positive_only_expected[i]);
+        }
     }
 }

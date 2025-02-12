@@ -190,8 +190,8 @@ double bisect_discr_extremum(F absf, double a, double b, double absf_a, double a
     }
 }
 
-template <typename F>
-std::vector<double> discrete_extrema(F f, const std::vector<double> &xgrid)
+template <typename F, typename T>
+std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
 {
     std::vector<double> fx(xgrid.size());
     for (size_t i = 0; i < xgrid.size(); ++i) {
@@ -241,7 +241,7 @@ std::vector<double> discrete_extrema(F f, const std::vector<double> &xgrid)
         }
     }
 
-    std::vector<double> res;
+    std::vector<T> res;
     for (size_t i = 0; i < a.size(); ++i) {
         // abs ∘ f
         auto abf = [f](double x) { return std::fabs(f(x)); };
