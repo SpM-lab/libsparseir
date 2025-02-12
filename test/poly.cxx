@@ -388,7 +388,7 @@ TEST_CASE("roots of func_for_part tests", "[poly]")
         auto uhat_full = basis->uhat_full[11];
         auto sign_changes = sparseir::sign_changes(uhat_full);
         std::function<double(int)> f = func_for_part(uhat_full);
-        auto results = sparseir::find_all(f, DEFAULT_GRID);
+        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
         std::vector<int> expected_results = {0, 1, 2, 3, 4, 14};
         REQUIRE(results.size() == expected_results.size());
         for (size_t i = 0; i < results.size(); ++i) {
@@ -419,7 +419,7 @@ TEST_CASE("roots of func_for_part tests", "[poly]")
     {
         auto uhat_full = basis->uhat_full[0];
         std::function<double(int)> f = func_for_part(uhat_full);
-        auto results = sparseir::find_all(f, DEFAULT_GRID);
+        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
         REQUIRE(results.size() == 0); // should be empty
 
         auto s_out_default = sparseir::sign_changes(uhat_full);
@@ -433,7 +433,7 @@ TEST_CASE("roots of func_for_part tests", "[poly]")
     {
         auto uhat_full = basis->uhat_full[1];
         std::function<double(int)> f = func_for_part(uhat_full);
-        auto results = sparseir::find_all(f, DEFAULT_GRID);
+        auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
         REQUIRE(results.size() == 1); // should be empty
         REQUIRE(results[0] == 0);
 
