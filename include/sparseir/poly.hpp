@@ -1181,13 +1181,19 @@ std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, 
 template <typename S>
 std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
 {
-    auto f = func_for_part(u_hat, positive_only);
-    auto x0 = find_all(f, DEFAULT_GRID);
-    x0 = 2 * x0 + u_hat.zeta();
+    auto f = func_for_part(u_hat);
+    auto x0 = discrete_extrema(f, DEFAULT_GRID);
+    for (auto &x : x0) {
+        x = 2 * x + u_hat.zeta();
+    }
     if (!positive_only) {
         symmetrize_matsubara_inplace(x0);
     }
-    return MatsubaraFreq<S>(u_hat.statistics(), x0);
+    std::vector<MatsubaraFreq<S>> results;
+    for (auto x : x0) {
+        results.push_back(MatsubaraFreq<S>(x));
+    }
+    return results;
 }
 
 // Evaluate a polynomial (e.g. in inv_iw) with given coefficients (using
@@ -1204,20 +1210,6 @@ inline std::complex<double> evalpoly(std::complex<double> x,
     return result;
 }
 
-template <typename S>
-inline std::vector<double> find_extrema(const PiecewiseLegendreFT<S> &polyFT,
-             std::function<double(std::complex<double>)> part = nullptr,
-             const std::vector<int> &grid = DEFAULT_GRID,
-             bool positive_only = false)
-{
-    auto f = func_for_part(polyFT, part);
-    auto x0 = discrete_extrema(f, grid);
-    for (auto &x : x0)
-        x = 2.0 * x + 1.0; // here zeta(polyFT) is assumed to be 1.0
-    if (!positive_only)
-        symmetrize_matsubara(x0);
-    return x0;
-}
 
 } // namespace sparseir
 
