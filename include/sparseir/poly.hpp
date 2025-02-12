@@ -1134,23 +1134,47 @@ const std::vector<int> DEFAULT_GRID = {
     33554432,
 };
 
+// If the set of Matsubara points is not symmetric, modify the vector by
+// removing zero (if present) and prepending the negatives of the reversed list.
+inline void symmetrize_matsubara_inplace(std::vector<int> &xs)
+{
+    // is sorted
+    if (!std::is_sorted(xs.begin(), xs.end())) {
+        throw std::runtime_error("points must be sorted");
+    }
+    if (xs.empty())
+        return;
+    if (xs.front() < 0)
+        throw std::runtime_error("points must be non-negative");
+
+    std::vector<int> neg(xs.rbegin(), xs.rend());
+    for (auto &x : neg){
+        x = -x;
+    }
+    if (std::abs(xs.front()) < 1e-12 && !xs.empty()){
+        xs.erase(xs.begin());
+    }
+    xs.insert(xs.begin(), neg.begin(), neg.end());
+}
+
 template <typename S>
 std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
 {
     auto grid = DEFAULT_GRID;
     auto f = func_for_part(u_hat);
     auto x0 = find_all(f, grid);
-    std::vector<MatsubaraFreq<S>> result;
-    for (auto &x : x0) {
-        x = 2 * x + u_hat.zeta();
-        MatsubaraFreq<S> mf(x);
-        result.push_back(mf);
+    for (int i = 0; i < x0.size(); i++) {
+        x0[i] = 2 * x0[i] + u_hat.zeta();
     }
-    /*
+
     if (!positive_only) {
-        symmetrize_matsubara(x0);
+        symmetrize_matsubara_inplace(x0);
     }
-    */
+
+    std::vector<MatsubaraFreq<S>> result;
+    for (auto x : x0) {
+        result.push_back(MatsubaraFreq<S>(x));
+    }
     return result;
 }
 
@@ -1161,7 +1185,7 @@ std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, 
     auto x0 = find_all(f, DEFAULT_GRID);
     x0 = 2 * x0 + u_hat.zeta();
     if (!positive_only) {
-        symmetrize_matsubara(x0);
+        symmetrize_matsubara_inplace(x0);
     }
     return MatsubaraFreq<S>(u_hat.statistics(), x0);
 }
@@ -1178,22 +1202,6 @@ inline std::complex<double> evalpoly(std::complex<double> x,
         xn *= x;
     }
     return result;
-}
-
-// If the set of Matsubara points is not symmetric, modify the vector by
-// removing zero (if present) and prepending the negatives of the reversed list.
-inline void symmetrize_matsubara(std::vector<double> &xs)
-{
-    if (xs.empty())
-        return;
-    if (xs.front() < 0)
-        throw std::runtime_error("points must be non-negative");
-    if (std::abs(xs.front()) < 1e-12 && !xs.empty())
-        xs.erase(xs.begin());
-    std::vector<double> neg(xs.rbegin(), xs.rend());
-    for (auto &x : neg)
-        x = -x;
-    xs.insert(xs.begin(), neg.begin(), neg.end());
 }
 
 template <typename S>
