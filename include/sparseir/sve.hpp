@@ -80,7 +80,7 @@ choose_accuracy(double epsilon, const std::string &Twork)
         }
     } else {
         // Handle the case for xprec::DDouble
-        if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
+        if (epsilon >= sqrt_impl(std::numeric_limits<xprec::DDouble>::epsilon())) {
             return std::make_tuple(epsilon, Twork, "default");
         } else {
             std::cerr << "Warning: Basis cutoff is " << epsilon
