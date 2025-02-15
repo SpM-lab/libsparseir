@@ -225,58 +225,6 @@ public:
 private:
     // Placeholder statistics function
     std::shared_ptr<S> statistics() const { return std::make_shared<S>(); }
-
-    // Default Matsubara sampling points function
-    Eigen::VectorXd defaultMatsubaraSamplingPoints(
-        const PiecewiseLegendreFTVector<S> &u_hat_full, int L,
-        bool fence = false, bool positive_only = false) const
-    {
-        int l_requested = L;
-
-        // Adjust l_requested based on statistics
-        if (std::is_same<S, Fermionic>::value && l_requested % 2 != 0)
-            l_requested += 1;
-        else if (std::is_same<S, Bosonic>::value && l_requested % 2 == 0)
-            l_requested += 1;
-
-        Eigen::VectorXd omega_n;
-
-        if (l_requested < u_hat_full.size()) {
-            omega_n = u_hat_full[l_requested + 1].signChanges(positive_only);
-        } else {
-            // Use extrema as a fallback
-            omega_n = u_hat_full.back().findExtrema(positive_only);
-            if (std::is_same<S, Bosonic>::value) {
-                omega_n.conservativeResize(omega_n.size() + 1);
-                omega_n[omega_n.size() - 1] = 0.0;
-                std::sort(omega_n.data(), omega_n.data() + omega_n.size());
-                omega_n = omega_n.unaryExpr(
-                    [](double x) { return std::unique(&x, &x + 1); });
-            }
-        }
-
-        int expected_size = l_requested;
-        if (positive_only)
-            expected_size = (expected_size + 1) / 2;
-
-        if (omega_n.size() != expected_size) {
-            std::cerr << "Warning: Requested " << expected_size
-                      << " sampling frequencies for basis size L = " << L
-                      << ", but got " << omega_n.size() << ".\n";
-        }
-
-        if (fence)
-            fenceMatsubaraSamplingPoints(omega_n, positive_only);
-
-        return omega_n;
-    }
-
-    // Fence Matsubara sampling points
-    void fenceMatsubaraSamplingPoints(Eigen::VectorXd &omega_n,
-                                      bool positive_only) const
-    {
-        // Implement fencing logic here...
-    }
 };
 
     // Default sampling points function
@@ -309,7 +257,7 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
 }
 
 template <typename S>
-void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool positive_only) {
+inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool positive_only) {
     // Original implementation remains unchanged
     if (wn.empty()) {
         return;
@@ -324,15 +272,15 @@ void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool positive_o
     }
 
     for (const auto& wn_outer : outer_frequencies) {
-        int outer_val = static_cast<int>(wn_outer);
+        int outer_val = wn_outer.n;
         int diff_val = 2 * static_cast<int>(std::round(0.025 * outer_val));
-        auto wn_diff = MatsubaraFreq<S>(diff_val);
+        int wn_diff = MatsubaraFreq<S>(diff_val).n;
 
         if (wn.size() >= 20) {
-            wn.push_back(wn_outer - sign(wn_outer) * wn_diff);
+            wn.push_back(MatsubaraFreq<S>(wn_outer.n - sign(wn_outer) * wn_diff));
         }
         if (wn.size() >= 42) {
-            wn.push_back(wn_outer + sign(wn_outer) * wn_diff);
+            wn.push_back(MatsubaraFreq<S>(wn_outer.n + sign(wn_outer) * wn_diff));
         }
     }
 
