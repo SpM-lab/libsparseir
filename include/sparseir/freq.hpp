@@ -77,6 +77,19 @@ public:
     // n の取得
     inline int get_n() const { return n; }
 
+    // Add comparison operators
+    bool operator<(const MatsubaraFreq& other) const {
+        return n < other.n;
+    }
+
+    bool operator==(const MatsubaraFreq& other) const {
+        return n == other.n;
+    }
+
+    bool operator!=(const MatsubaraFreq& other) const {
+        return !(*this == other);
+    }
+
 private:
     // インスタンスを保持する共有ポインタ
     std::shared_ptr<Statistics> instance_;
