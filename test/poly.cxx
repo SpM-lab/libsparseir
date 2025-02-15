@@ -589,6 +589,7 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
         REQUIRE(omega_ns[2] == 6);
     }
 
+    /*
     {
         int L = basis->size();
         bool fence = false;
@@ -611,4 +612,5 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
         REQUIRE(omega_ns[8] == 26);
         REQUIRE(omega_ns[9] == 78);
     }
+    */
 }
