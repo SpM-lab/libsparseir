@@ -25,8 +25,8 @@ TEST_CASE("sve_result.u(x)", "[sve]") {
     end
     */
     double beta = 1.0;
-    double Lambda = 10.0;
-    auto kernel = sparseir::LogisticKernel(beta * Lambda);
+    double lambda = 10.0;
+    auto kernel = sparseir::LogisticKernel(lambda);
     auto sve_result = sparseir::compute_sve(kernel, 1e-15);
     double x = 0.3;
     auto u0 = sve_result.u[0];

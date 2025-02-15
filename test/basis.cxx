@@ -30,10 +30,10 @@ TEST_CASE("basis.u[0] test", "[basis]")
     end
     */
     double beta = 1.0;
-    double Lambda = 10.0;
-    auto kernel = LogisticKernel(beta * Lambda);
+    double wmax = 10.0;
+    auto kernel = LogisticKernel(beta * wmax);
     auto sve_result = compute_sve(kernel, 1e-15);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
+    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
                                                        kernel, sve_result);
 
     std::vector<double> sampling_points_ref_vec =
@@ -164,11 +164,11 @@ TEST_CASE("basis.u(x)", "[basis]") {
     */
 
     double beta = 1.0;
-    double Lambda = 10.0;
-    auto kernel = LogisticKernel(beta * Lambda);
+    double wmax = 10.0;
+    auto kernel = LogisticKernel(beta * wmax);
     auto sve_result = compute_sve(kernel, 1e-15);
 
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
+    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
     double x = 0.3;
     auto u0 = basis->u[0];
@@ -903,3 +903,4 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         */
     }
 }
+
