@@ -19,10 +19,10 @@ using ComplexF64 = std::complex<double>;
 
 TEST_CASE("TauSampling Constructor Test", "[sampling]") {
     double beta = 1.0;
-    double Lambda = 10.0;
-    auto kernel = LogisticKernel(beta * Lambda);
+    double wmax = 10.0;
+    auto kernel = LogisticKernel(beta * wmax);
     auto sve_result = compute_sve(kernel, 1e-15);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
+    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
     TauSampling<Bosonic> tau_sampling(basis);
 
@@ -189,11 +189,11 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
 
 
     double beta = 1.0;
-    double Lambda = 10.0;
-    auto kernel = LogisticKernel(beta * Lambda);
+    double wmax = 10.0;
+    auto kernel = LogisticKernel(beta * wmax);
     auto sve_result = compute_sve(kernel, 1e-15);
 
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, Lambda, 1e-15,
+    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
 
     // Reshape into matrix with explicit dimensions
@@ -269,10 +269,11 @@ TEST_CASE("Sampling Tests") {
 
     for (auto Lambda : lambdas) {
         SECTION("Testing with Λ=" + std::to_string(Lambda)) {
-            auto kernel = LogisticKernel(beta * Lambda);
+            double wmax = Lambda / beta;
+            auto kernel = LogisticKernel(wmax);
             auto sve_result = compute_sve(kernel, 1e-15);
             auto basis = make_shared<FiniteTempBasis<Bosonic>>(
-                beta, Lambda, 1e-15, kernel, sve_result);
+                beta, wmax, 1e-15, kernel, sve_result);
 
             REQUIRE(basis->size() > 0);  // Check basis size
 
@@ -354,10 +355,11 @@ TEST_CASE("Matsubara Sampling Tests") {
     for (auto Lambda : lambdas) {
         for (bool positive_only : positive_only_options) {
             SECTION("Testing with Λ and positive_only") {
-                auto kernel = LogisticKernel(beta * Lambda);
+                double wmax = Lambda / beta;
+                auto kernel = LogisticKernel(beta * wmax);
                 auto sve_result = compute_sve(kernel, 1e-15);
                 auto basis = make_shared<FiniteTempBasis<Bosonic>>(
-                    beta, Lambda, 1e-15, kernel, sve_result);
+                    beta, wmax, 1e-15, kernel, sve_result);
 
                 /*
                 auto matsu_sampling = make_shared<MatsubaraSampling<double>>(basis, positive_only);
