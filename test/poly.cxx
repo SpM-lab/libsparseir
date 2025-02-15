@@ -546,5 +546,3 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
         }
     }
 }
-
-}
