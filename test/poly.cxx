@@ -546,3 +546,71 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
         }
     }
 }
+
+TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
+{
+    double beta = 1.0;
+    double wmax = 10.0;
+    double Lambda = beta * wmax;
+    auto kernel = sparseir::LogisticKernel(Lambda);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-15, kernel, sve_result);
+    auto uhat_full = basis->uhat_full;
+
+    {
+        int L = 5;
+        auto pts = sparseir::default_matsubara_sampling_points(uhat_full, L);
+        std::vector<int> omega_ns;
+        for (auto &pt : pts) {
+            omega_ns.push_back(pt.n);
+        }
+        REQUIRE(omega_ns.size() == L);
+        REQUIRE(omega_ns[0] == -6);
+        REQUIRE(omega_ns[1] == -2);
+        REQUIRE(omega_ns[2] == 0);
+        REQUIRE(omega_ns[3] == 2);
+        REQUIRE(omega_ns[4] == 6);
+    }
+
+    {
+        int L = 5;
+        bool fence = false;
+        bool positive_only = true;
+        auto pts = sparseir::default_matsubara_sampling_points(
+            uhat_full, L, fence, positive_only);
+        std::vector<int> omega_ns;
+        for (auto &pt : pts) {
+            omega_ns.push_back(pt.n);
+        }
+        REQUIRE(omega_ns.size() == L / 2 + 1);
+        REQUIRE(omega_ns[0] == 0);
+        REQUIRE(omega_ns[1] == 2);
+        REQUIRE(omega_ns[2] == 6);
+    }
+
+    /*
+    {
+        int L = basis->size();
+        bool fence = false;
+        bool positive_only = true;
+        auto pts = sparseir::default_matsubara_sampling_points(
+            uhat_full, L, fence, positive_only);
+        std::vector<int> omega_ns;
+        for (auto &pt : pts) {
+            omega_ns.push_back(pt.n);
+        }
+        REQUIRE(omega_ns.size() == L / 2 + 1);
+        REQUIRE(omega_ns[0] == 0);
+        REQUIRE(omega_ns[1] == 2);
+        REQUIRE(omega_ns[2] == 4);
+        REQUIRE(omega_ns[3] == 6);
+        REQUIRE(omega_ns[4] == 8);
+        REQUIRE(omega_ns[5] == 10);
+        REQUIRE(omega_ns[6] == 12);
+        REQUIRE(omega_ns[7] == 16);
+        REQUIRE(omega_ns[8] == 26);
+        REQUIRE(omega_ns[9] == 78);
+    }
+    */
+}

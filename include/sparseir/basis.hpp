@@ -288,9 +288,12 @@ inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool pos
     wn.erase(std::unique(wn.begin(), wn.end()), wn.end());
 }
 
-// We need implement default_matsubara_sampling_points in C++
 template <typename S>
-Eigen::VectorXd default_matsubara_sampling_points(const PiecewiseLegendreFTVector<S> &u_hat, int L, bool fence = false, bool positive_only = false) {
+std::vector<MatsubaraFreq<S>>
+default_matsubara_sampling_points(const PiecewiseLegendreFTVector<S> &u_hat,
+                                  int L, bool fence = false,
+                                  bool positive_only = false)
+{
     int l_requested = L;
 
     // Adjust l_requested based on statistics
@@ -302,9 +305,9 @@ Eigen::VectorXd default_matsubara_sampling_points(const PiecewiseLegendreFTVecto
     std::vector<MatsubaraFreq<S>> omega_n;
 
     if (l_requested < u_hat.size()) {
-        omega_n = sign_changes(u_hat[l_requested + 1], positive_only);
+        omega_n = sign_changes(u_hat[l_requested], positive_only);
     } else {
-        omega_n = find_extrema(u_hat.back(), positive_only);
+        omega_n = find_extrema(u_hat[u_hat.size() - 1], positive_only);
     }
 
     int expected_size = l_requested;
