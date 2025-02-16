@@ -361,8 +361,8 @@ TEST_CASE("Matsubara Sampling Tests") {
                 auto basis = make_shared<FiniteTempBasis<Bosonic>>(
                     beta, wmax, 1e-15, kernel, sve_result);
 
+                auto matsu_sampling = make_shared<MatsubaraSampling<Bosonic>>(basis, positive_only);
                 /*
-                auto matsu_sampling = make_shared<MatsubaraSampling<double>>(basis, positive_only);
 
                 Eigen::VectorXd rhol = Eigen::VectorXd::Random(basis->size());
                 Eigen::VectorXd gl = basis->s.array() * (-rhol.array());
