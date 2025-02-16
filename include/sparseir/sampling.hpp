@@ -493,7 +493,7 @@ public:
 
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>
-    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &ax, int dim = 0) const
+    Eigen::Tensor<std::complex<T>, N> fit(const Eigen::Tensor<std::complex<T>, N> &ax, int dim = 0) const
     {
         if (dim < 0 || dim >= N) {
             throw std::runtime_error(
@@ -501,7 +501,7 @@ public:
                 std::to_string(dim));
         }
         auto svd = get_matrix_svd();
-        return fit_impl<T, double, N>(svd, ax, dim);
+        return fit_impl<std::complex<T>, std::complex<T>, N>(svd, ax, dim);
     }
 
     Eigen::MatrixXcd get_matrix() const { return matrix_; }
