@@ -263,6 +263,55 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
     }
 }
 
+TEST_CASE("Matsubara Sampling Tests positive only=false", "[sampling]")
+{
+    double beta = 1.0;
+    double wmax = 10.0;
+    double Lambda = beta * wmax;
+    auto kernel = sparseir::LogisticKernel(Lambda);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-15, kernel, sve_result);
+
+    bool positive_only = false;
+    auto matsu_sampling =
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+            basis, positive_only);
+
+    Eigen::VectorXd rhol = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5)) *
+                           Eigen::Vector3d(0.8, -0.2, 0.5);
+    Eigen::VectorXd Gl_ = basis->s.array() * (-rhol.array());
+
+    // norm of Gl_
+    double Gl_magn = Gl_.norm();
+
+    // Convert VectorXd to complex tensor
+    Eigen::Tensor<double, 1> Gl(Gl_.size());
+    for (Eigen::Index i = 0; i < Gl_.size(); ++i) {
+        Gl(i) = Gl_(i);
+    }
+
+    Eigen::Tensor<ComplexF64, 1> Gτ = matsu_sampling->evaluate(Gl);
+
+    double noise = 1e-5;
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(0.0, 1.0);
+    Eigen::Tensor<ComplexF64, 1> Gτ_n(Gτ.size());
+    for (Eigen::Index i = 0; i < Gτ.size(); ++i) {
+        Gτ_n(i) = Gτ(i) + noise * Gl_magn *
+                              std::complex<double>(distribution(generator),
+                                                   distribution(generator));
+    }
+
+    Eigen::MatrixXcd matrix_ = matsu_sampling->get_matrix();
+    std::cout << "matrix_: " << matrix_.rows() << "x" << matrix_.cols()
+              << std::endl;
+
+    Eigen::Tensor<ComplexF64, 1> Gτ_fit = matsu_sampling->fit(Gτ_n);
+
+    sparseir::tensorIsApprox(Gτ_fit, Gτ_n, 12 * noise * Gl_magn);
+}
+
 TEST_CASE("Sampling Tests") {
     double beta = 1.0;
     vector<double> lambdas = {10.0, 42.0};
