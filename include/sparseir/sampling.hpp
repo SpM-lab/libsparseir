@@ -142,6 +142,19 @@ eval_matrix(const TauSampling<S> *tau_sampling,
 }
 
 template <typename S>
+inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
+                                   const std::shared_ptr<AbstractBasis<S>> &basis,
+                                   const Eigen::VectorXd &sampling_points)
+{
+    Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
+    for (int i = 0; i < sampling_points.size(); ++i) {
+        m.col(i) = basis->uhat(sampling_points[i]);
+    }
+    Eigen::MatrixXcd matrix = m.transpose();
+    return matrix;
+}
+
+template <typename S>
 class TauSampling : public AbstractSampling<S> {
 public:
     TauSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
