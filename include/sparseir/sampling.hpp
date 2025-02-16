@@ -69,14 +69,15 @@ _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
                     const Eigen::MatrixX<T> &B)
 {
     using ResultType = decltype(T() * S());
+
     Eigen::Matrix<ResultType, Eigen::Dynamic, Eigen::Dynamic> UHB =
         svd.matrixU().adjoint() * B;
 
     // Apply inverse singular values to the rows of UHB
-    for (int i = 0; i < svd.singularValues().size(); ++i) {
+    for (int i = 0; i < svd.singularValues().size(); ++i)
+    {
         UHB.row(i) /= ResultType(svd.singularValues()(i));
     }
-
     return svd.matrixV() * UHB;
 }
 
@@ -91,13 +92,10 @@ fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
 
     // First move the dimension to the first
     auto arr_ = movedim(arr, dim, 0);
-
     // Create a view of the tensor as a matrix
     Eigen::MatrixX<T> arr_view = Eigen::Map<Eigen::MatrixX<T>>(
         arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
-
     Eigen::MatrixX<T> result = _fit_impl_first_dim<T, S, N>(svd, arr_view);
-
     // Copy the result to a tensor
     Eigen::array<Eigen::Index, N> dims;
     dims[0] = result.rows();
@@ -495,7 +493,7 @@ public:
 
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>
-    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &ax, int dim = 0) const
+    Eigen::Tensor<std::complex<T>, N> fit(const Eigen::Tensor<std::complex<T>, N> &ax, int dim = 0) const
     {
         if (dim < 0 || dim >= N) {
             throw std::runtime_error(
@@ -503,7 +501,7 @@ public:
                 std::to_string(dim));
         }
         auto svd = get_matrix_svd();
-        return fit_impl<T, double, N>(svd, ax, dim);
+        return fit_impl<std::complex<T>, std::complex<T>, N>(svd, ax, dim);
     }
 
     Eigen::MatrixXcd get_matrix() const { return matrix_; }
@@ -518,7 +516,5 @@ public:
         return matrix_svd_;
     }
 };
-
-
 
 } // namespace sparseir
