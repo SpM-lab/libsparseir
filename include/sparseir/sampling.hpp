@@ -454,7 +454,7 @@ private:
     std::shared_ptr<AbstractBasis<S>> basis_;
     Eigen::VectorXd sampling_points_;
     Eigen::MatrixXd matrix_;
-    Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
+    Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
     bool positive_only_;
     bool factorize_;
 };
