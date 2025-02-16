@@ -401,17 +401,17 @@ private:
     Eigen::MatrixXcd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
     bool positive_only_;
-    bool factorize_;
 
 public:
     MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
                        bool positive_only = false,
                        bool factorize = true)
-        : basis_(basis), positive_only_(positive_only), factorize_(factorize)
+        : basis_(basis), positive_only_(positive_only)
     {
         // Get default sampling points from basis
         bool fence = false;
         sampling_points_ = default_matsubara_sampling_points(basis->uhat_full, basis->size(), fence, positive_only);
+        std::sort(sampling_points_.begin(), sampling_points_.end());
 
         // Ensure matrix dimensions are correct
         if (sampling_points_.size() == 0) {
@@ -437,6 +437,73 @@ public:
             matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
                 matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
         }
+    }
+
+    // Evaluate the basis coefficients at sampling points
+    template <typename T, int N>
+    Eigen::Tensor<std::complex<T>, N> evaluate(const Eigen::Tensor<T, N>& al, int dim = 0) const {
+        if (dim < 0 || dim >= N) {
+            throw std::runtime_error(
+                "evaluate: dimension must be in [0..N). Got dim=" +
+                std::to_string(dim));
+        }
+
+        if (get_matrix().cols() != al.dimension(dim)) {
+            throw std::runtime_error(
+                "Mismatch: matrix.cols()=" +
+                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
+                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
+        }
+
+        // Create dimensions array for result tensor
+        Eigen::array<Eigen::Index, N> dims;
+        for (int i = 0; i < N; ++i) {
+            dims[i] = (i == dim) ? matrix_.rows() : al.dimension(i);
+        }
+
+        // Create result tensor
+        Eigen::Tensor<std::complex<T>, N> result(dims);
+
+        // Convert input tensor to complex for contraction
+        Eigen::Tensor<std::complex<T>, N> al_complex = al.template cast<std::complex<T>>();
+
+        // Convert matrix to tensor
+        Eigen::Tensor<std::complex<T>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
+        for (Eigen::Index i = 0; i < matrix_.rows(); ++i) {
+            for (Eigen::Index j = 0; j < matrix_.cols(); ++j) {
+                matrix_tensor(i,j) = matrix_(i,j);
+            }
+        }
+
+        // Specify contraction dimensions
+        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
+            Eigen::IndexPair<int>(1, dim)
+        };
+
+        // Perform contraction
+        result = matrix_tensor.contract(al_complex, contract_dims);
+
+        return result;
+    }
+
+    // template <typename T, int N>
+    // size_t workarrlength(const Eigen::Tensor<T, N> &ax, int dim) const
+    //{
+    // auto svd = get_matrix_svd();
+    // return svd.singularValues().size() * (ax.size() / ax.dimension(dim));
+    //}
+
+    // Fit values at sampling points to basis coefficients
+    template <typename T, int N>
+    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &ax, int dim = 0) const
+    {
+        if (dim < 0 || dim >= N) {
+            throw std::runtime_error(
+                "fit: dimension must be in [0..N). Got dim=" +
+                std::to_string(dim));
+        }
+        auto svd = get_matrix_svd();
+        return fit_impl<T, double, N>(svd, ax, dim);
     }
 
     Eigen::MatrixXcd get_matrix() const { return matrix_; }
