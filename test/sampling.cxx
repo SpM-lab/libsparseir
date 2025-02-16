@@ -362,11 +362,11 @@ TEST_CASE("Matsubara Sampling Tests") {
                     beta, wmax, 1e-15, kernel, sve_result);
 
                 auto matsu_sampling = make_shared<MatsubaraSampling<Bosonic>>(basis, positive_only);
-                /*
 
                 Eigen::VectorXd rhol = Eigen::VectorXd::Random(basis->size());
                 Eigen::VectorXd gl = basis->s.array() * (-rhol.array());
 
+                /*
                 Eigen::VectorXcd giw = matsu_sampling->evaluate(gl);
                 Eigen::VectorXd gl_from_iw = matsu_sampling->fit(giw);
                 REQUIRE(gl.isApprox(gl_from_iw, 1e-6));
@@ -419,4 +419,44 @@ TEST_CASE("Error Handling Tests") {
     REQUIRE_THROWS_AS(matsu_sampling->evaluate(incorrect_size_vec), std::invalid_argument);
     REQUIRE_THROWS_AS(matsu_sampling->fit(incorrect_size_vec), std::invalid_argument);
     */
+}
+
+TEST_CASE("Matsubara Sampling Tests", "[sampling]") {
+    double beta = 1.0;
+    double wmax = 10.0;
+    double Lambda = beta * wmax;
+    auto kernel = sparseir::LogisticKernel(Lambda);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-15, kernel, sve_result);
+
+    bool positive_only = true;
+    auto matsu_sampling = std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis, positive_only);
+
+    Eigen::VectorXd rhol = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5)) * Eigen::Vector3d(0.8, -0.2, 0.5);
+    Eigen::VectorXd Gl_ = basis->s.array() * (-rhol.array());
+
+    // norm of Gl_
+    double Gl_magn = Gl_.norm();
+
+    // Convert VectorXd to complex tensor
+    Eigen::Tensor<double, 1> Gl(Gl_.size());
+    for (Eigen::Index i = 0; i < Gl_.size(); ++i) {
+        Gl(i) = Gl_(i);
+    }
+
+    Eigen::Tensor<ComplexF64, 1> Gτ = matsu_sampling->evaluate(Gl);
+
+    double noise = 1e-5;
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(0.0, 1.0);
+    Eigen::TensorComplexF64, 1> Gτ_n(Gτ.size());
+    for (Eigen::Index i = 0; i < Gτ.size(); ++i) {
+        Gτ_n(i) = Gτ(i) + noise * Gl_magn * std::complex<double>(distribution(generator), distribution(generator));
+    }
+
+    //Eigen::TensorComplexF64, 1> Gτ_fit = matsu_sampling->fit(Gτ_n);
+
+    //sparseir::tensorIsApprox(Gτ_fit, Gτ_n, 12 * noise * Gl_magn);
+
 }
