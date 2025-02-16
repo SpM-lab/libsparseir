@@ -124,9 +124,9 @@ class TauSampling;
 
 template <typename S>
 class MatsubaraSampling;
+
 template <typename S>
-inline Eigen::MatrixXd
-eval_matrix(const TauSampling<S> *tau_sampling,
+inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
             const std::shared_ptr<FiniteTempBasis<S>> &basis,
             const Eigen::VectorXd &x)
 {
@@ -143,8 +143,8 @@ eval_matrix(const TauSampling<S> *tau_sampling,
 
 template <typename S>
 inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
-                                   const std::shared_ptr<AbstractBasis<S>> &basis,
-                                   const Eigen::VectorXd &sampling_points)
+                                   const std::shared_ptr<FiniteTempBasis<S>> &basis,
+                                   const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
     for (int i = 0; i < sampling_points.size(); ++i) {
@@ -395,8 +395,16 @@ $(cond(sampling)))." end return sampling end
 */
 template <typename S>
 class MatsubaraSampling : public AbstractSampling<S> {
+private:
+    std::shared_ptr<FiniteTempBasis<S>> basis_;
+    std::vector<MatsubaraFreq<S>> sampling_points_;
+    Eigen::MatrixXcd matrix_;
+    Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
+    bool positive_only_;
+    bool factorize_;
+
 public:
-    MatsubaraSampling(const std::shared_ptr<AbstractBasis<S>> &basis,
+    MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
                        bool positive_only = false,
                        bool factorize = true)
         : basis_(basis), positive_only_(positive_only), factorize_(factorize)
@@ -424,18 +432,11 @@ public:
                                      "x" + std::to_string(basis_->size()));
         }
 
-        /*
         // Initialize SVD
         if (factorize) {
-            if (positive_only) {
-                // TODO FIX it
-                matrix_svd_ = makeSplitSVD(matrix_, {0});
-            } else {
-                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
-                    matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
-            }
+            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
+                matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
         }
-        */
     }
 
     Eigen::MatrixXcd get_matrix() const { return matrix_; }
@@ -449,14 +450,6 @@ public:
     {
         return matrix_svd_;
     }
-
-private:
-    std::shared_ptr<AbstractBasis<S>> basis_;
-    Eigen::VectorXd sampling_points_;
-    Eigen::MatrixXd matrix_;
-    Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
-    bool positive_only_;
-    bool factorize_;
 };
 
 
