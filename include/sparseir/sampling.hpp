@@ -69,14 +69,15 @@ _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
                     const Eigen::MatrixX<T> &B)
 {
     using ResultType = decltype(T() * S());
+
     Eigen::Matrix<ResultType, Eigen::Dynamic, Eigen::Dynamic> UHB =
         svd.matrixU().adjoint() * B;
 
     // Apply inverse singular values to the rows of UHB
-    for (int i = 0; i < svd.singularValues().size(); ++i) {
+    for (int i = 0; i < svd.singularValues().size(); ++i)
+    {
         UHB.row(i) /= ResultType(svd.singularValues()(i));
     }
-
     return svd.matrixV() * UHB;
 }
 
@@ -91,13 +92,10 @@ fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
 
     // First move the dimension to the first
     auto arr_ = movedim(arr, dim, 0);
-
     // Create a view of the tensor as a matrix
     Eigen::MatrixX<T> arr_view = Eigen::Map<Eigen::MatrixX<T>>(
         arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
-
     Eigen::MatrixX<T> result = _fit_impl_first_dim<T, S, N>(svd, arr_view);
-
     // Copy the result to a tensor
     Eigen::array<Eigen::Index, N> dims;
     dims[0] = result.rows();
@@ -518,7 +516,5 @@ public:
         return matrix_svd_;
     }
 };
-
-
 
 } // namespace sparseir
