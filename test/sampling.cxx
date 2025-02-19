@@ -509,3 +509,89 @@ TEST_CASE("Matsubara Sampling Tests", "[sampling]") {
     //sparseir::tensorIsApprox(Gτ_fit, Gτ_n, 12 * noise * Gl_magn);
 
 }
+
+TEST_CASE("Matsubara Sampling Tests positive only=true", "[sampling]")
+{
+    double beta = 1.0;
+    double wmax = 1.0;
+    double Lambda = beta * wmax;
+    auto kernel = sparseir::LogisticKernel(Lambda);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-15, kernel, sve_result);
+
+    bool positive_only = true;
+    auto matsu_sampling =
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+            basis, positive_only);
+
+    std::vector<double> Gℓ_vec = {0.514817194180103,     0.06941000654265184,
+                                  0.009657811463696882,  0.0005929608069841677,
+                                  1.1857167801273942e-5, 4.4055619742516887e-7,
+                                  1.356281863743248e-8,  1.728372066677617e-10,
+                                  2.985590912328727e-12, 5.717643847110002e-14};
+
+    Eigen::Tensor<double, 1> Gℓ(Gℓ_vec.size());
+    for (int i = 0; i < Gℓ_vec.size(); i++) {
+        Gℓ(i) = Gℓ_vec[i];
+    }
+
+    auto Giw = matsu_sampling->evaluate(Gℓ);
+    std::cout << "Giw: \n" << Giw << std::endl;
+
+    Eigen::Tensor<std::complex<double>, 1> fit_result =
+        matsu_sampling->fit(Giw);
+
+    // Get the actual tensor values by evaluating the expression
+    REQUIRE(fit_result.dimension(0) == Gℓ_vec.size());
+
+    // Compare elements
+    for (Eigen::Index i = 0; i < fit_result.dimension(0); ++i) {
+        REQUIRE(fit_result(i).real() == Approx(Gℓ_vec[i]).margin(1e-10));
+        REQUIRE(fit_result(i).imag() == Approx(0.0).margin(1e-10));
+    }
+}
+
+TEST_CASE("makeSplitSVD", "[sampling]")
+{
+    // Eigen の 3x5 複素数行列 (std::complex<double> 型) を定義
+    Eigen::Matrix<std::complex<double>, 3, 5> A;
+
+    // 1行目の初期化
+    A(0, 0) = std::complex<double>(0.6151905408205645, 0.6491201503794648);
+    A(0, 1) = std::complex<double>(0.06984266107535575, 0.05890187817629955);
+    A(0, 2) = std::complex<double>(0.5081681662602489, 0.3938359266698195);
+    A(0, 3) = std::complex<double>(0.07965418601180585, 0.09314078427258288);
+    A(0, 4) = std::complex<double>(0.5757601025277497, 0.12690424725621652);
+
+    // 2行目の初期化
+    A(1, 0) = std::complex<double>(0.7850415647262474, 0.6538533076509034);
+    A(1, 1) = std::complex<double>(0.8001878770067667, 0.8714898802836404);
+    A(1, 2) = std::complex<double>(0.3850845754724803, 0.5445983221231325);
+    A(1, 3) = std::complex<double>(0.56333871776691, 0.04098652756553345);
+    A(1, 4) = std::complex<double>(0.5074905499683049, 0.5069257697790468);
+
+    // 3行目の初期化
+    A(2, 0) = std::complex<double>(0.49554527311834273, 0.7540215803541244);
+    A(2, 1) = std::complex<double>(0.6988196049973501, 0.7871362394492722);
+    A(2, 2) = std::complex<double>(0.19625883331364058, 0.2997283029235214);
+    A(2, 3) = std::complex<double>(0.6250101801493309, 0.07868380451798473);
+    A(2, 4) = std::complex<double>(0.2344187232400199, 0.034048468932398324);
+
+    auto svd = sparseir::makeSplitSVD(A, false);
+    std::vector<double> svals_expected = {
+        2.5882898597468316, 0.7807498949326078, 0.5561024337919539,
+        0.4302484700046635, 0.07956198767214633};
+    for (int i = 0; i < svals_expected.size(); i++) {
+        REQUIRE(svd.singularValues()(i) == Approx(svals_expected[i]));
+    }
+
+    auto svd_has_zero = sparseir::makeSplitSVD(A, true);
+    std::vector<double> svals_expected_has_zero = {
+        2.5111425303908983, 0.7129749569362869, 0.5560724784271746,
+        0.2813955280177761, 0.04717410206795309};
+    for (int i = 0; i < svals_expected_has_zero.size(); i++) {
+        REQUIRE(svd_has_zero.singularValues()(i) ==
+                Approx(svals_expected_has_zero[i]));
+    }
+}
