@@ -244,7 +244,7 @@ public:
         // Initialize SVD
         if (factorize) {
             matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
-                matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
+                matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
     }
 
@@ -419,7 +419,7 @@ public:
                 matrix_svd_ = makeSplitSVD(matrix_, has_zero);
             } else {
                 matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                    matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
+                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
             }
         }
     }
