@@ -81,6 +81,39 @@ _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
     return svd.matrixV() * UHB;
 }
 
+inline Eigen::MatrixXcd _fit_impl_first_dim_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
+                    const Eigen::MatrixXcd &B)
+{
+    auto U = svd.matrixU();
+
+    Eigen::Index U_halfsize = U.rows() % 2 == 0 ? U.rows() / 2 : U.rows() / 2 + 1;
+
+    Eigen::MatrixXcd U_realT;
+    U_realT = U.block(0, 0, U_halfsize, U.cols()).transpose();
+
+    // Create a properly sized matrix first
+    Eigen::MatrixXcd U_imag = Eigen::MatrixXcd::Zero(U_halfsize, U.cols());
+
+    // Get the blocks we need
+    auto U_imag_ = U.block(U_halfsize, 0, U_halfsize-1, U.cols());
+    auto U_imag_1 = U.block(0, 0, 1, U.cols());
+
+    // Now do the assignments
+    U_imag.topRows(1) = U_imag_1;
+    U_imag.bottomRows(U_imag_.rows()) = U_imag_;
+
+    auto U_imagT = U_imag.transpose();
+
+    Eigen::MatrixXcd UHB = U_realT * B.real();
+    UHB += U_imagT * B.imag();
+
+    // Apply inverse singular values to the rows of UHB
+    for (int i = 0; i < svd.singularValues().size(); ++i) {
+        UHB.row(i) /= std::complex<double>(svd.singularValues()(i));
+    }
+    return svd.matrixV() * UHB;
+}
+
 template <typename T, typename S, int N>
 Eigen::Tensor<decltype(T() * S()), N>
 fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
@@ -103,6 +136,34 @@ fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
         dims[i] = arr_.dimension(i);
     }
     Eigen::Tensor<T, N> result_tensor(dims);
+    std::copy(result.data(), result.data() + result.size(),
+              result_tensor.data());
+
+    return movedim(result_tensor, 0, dim);
+}
+
+template <int N>
+Eigen::Tensor<std::complex<double>, N>
+fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
+         const Eigen::Tensor<std::complex<double>, N> &arr, int dim)
+{
+    if (dim < 0 || dim >= N) {
+        throw std::domain_error("Dimension must be in [0, N).");
+    }
+
+    // First move the dimension to the first
+    auto arr_ = movedim(arr, dim, 0);
+    // Create a view of the tensor as a matrix
+    Eigen::MatrixXcd arr_view = Eigen::Map<Eigen::MatrixXcd>(
+        arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
+    Eigen::MatrixXcd result = _fit_impl_first_dim_split_svd(svd, arr_view);
+    // Copy the result to a tensor
+    Eigen::array<Eigen::Index, N> dims;
+    dims[0] = result.rows();
+    for (int i = 1; i < N; ++i) {
+        dims[i] = arr_.dimension(i);
+    }
+    Eigen::Tensor<std::complex<double>, N> result_tensor(dims);
     std::copy(result.data(), result.data() + result.size(),
               result_tensor.data());
 
@@ -260,117 +321,38 @@ private:
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
 };
 
-/// A C++ struct mirroring the Julia SplitSVD{T} structure.
-/// In Julia:
-///   struct SplitSVD{T}
-///       A::Matrix{Complex{T}}
-///       UrealT::Matrix{T}
-///       UimagT::Matrix{T}
-///       S::Vector{T}
-///       V::Matrix{T}
-///   end
-template <typename Real>
-struct SplitSVD
+inline Eigen::JacobiSVD<Eigen::MatrixXcd> makeSplitSVD(const Eigen::MatrixXcd &mat, bool has_zero = false)
 {
-    // A is the original complex matrix
-    Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> A;
+    const int m = mat.rows(); // Number of rows in the input complex matrix
+    const int n = mat.cols(); // Number of columns in the input complex matrix
 
-    // Real part of u^T
-    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> UrealT;
+    // Determine the starting row for the imaginary part.
+    // If has_zero is true, skip the first row (offset = 1); otherwise, start at
+    // row 0.
+    const int offset_imag = has_zero ? 1 : 0;
 
-    // Imag part of u^T
-    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> UimagT;
+    // Calculate the number of rows to be used from the imaginary part.
+    const int imag_rows = m - offset_imag;
 
-    // Non-zero singular values
-    Eigen::Matrix<Real, Eigen::Dynamic, 1> S;
+    // Total number of rows in the resulting real matrix:
+    // all rows from the real part plus the selected rows from the imaginary
+    // part.
+    const int total_rows = m + imag_rows;
 
-    // Copy of V (real)
-    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> V;
-};
+    // Create a real matrix with 'total_rows' rows and 'n' columns.
+    Eigen::MatrixXcd rmat(total_rows, n);
 
-/// Equivalent to the Julia constructor:
-///   function SplitSVD(a::Matrix{<:Complex}, (u, s, v))
-///       if any(iszero, s)
-///           filt out zero singular values
-///       end
-///       ut = transpose(u)
-///       SplitSVD(a, real(ut), imag(ut), s, copy(v))
-///   end
-///
-/// Types:
-///   - a: MatrixXcd (N x M complex)
-///   - u: MatrixXcd (N x K complex)
-///   - s: VectorXd  (K real)
-///   - v: MatrixXd  (K x M real)
-template <typename Real>
-SplitSVD<Real> makeSplitSVD(
-    const Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> &a,
-    const std::tuple<
-        Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic>,
-        Eigen::Matrix<Real, Eigen::Dynamic, 1>,
-        Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>
-    > &svdTuple
-)
-{
-    // Unpack tuple: u, s, v
-    const auto &u = std::get<0>(svdTuple);  // complex matrix (N x K)
-    const auto &s = std::get<1>(svdTuple);  // real vector (K)
-    const auto &v = std::get<2>(svdTuple);  // real matrix (K x M)
+    // Top part: assign the real part of the input matrix.
+    rmat.topRows(m) = mat.real();
 
-    // Identify indices of non-zero singular values
-    std::vector<int> nonzeroIndices;
-    nonzeroIndices.reserve(s.size());
-    for (int i = 0; i < s.size(); ++i) {
-        if (s(i) != Real(0)) {
-            nonzeroIndices.push_back(i);
-        }
-    }
+    // Bottom part: assign the selected block of the imaginary part.
+    rmat.bottomRows(imag_rows) = mat.imag().block(offset_imag, 0, imag_rows, n);
 
-    // Filter out zero singular values (and corresponding columns/rows)
-    Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> uFiltered(
-        u.rows(), static_cast<int>(nonzeroIndices.size())
-    );
-    Eigen::Matrix<Real, Eigen::Dynamic, 1> sFiltered(
-        static_cast<int>(nonzeroIndices.size())
-    );
-    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> vFiltered(
-        static_cast<int>(nonzeroIndices.size()), v.cols()
-    );
-
-    for (int col = 0; col < static_cast<int>(nonzeroIndices.size()); ++col) {
-        int idx = nonzeroIndices[col];
-        // Copy over columns for u
-        uFiltered.col(col) = u.col(idx);
-        // Copy over rows for v
-        vFiltered.row(col) = v.row(idx);
-        // Copy singular value
-        sFiltered(col) = s(idx);
-    }
-
-    // Take transpose of u
-    // (uFiltered is N x K'; ut becomes K' x N)
-    Eigen::Matrix<std::complex<Real>, Eigen::Dynamic, Eigen::Dynamic> ut =
-        uFiltered.transpose();
-
-    // Extract real and imaginary parts of ut
-    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> utReal(ut.rows(), ut.cols());
-    Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic> utImag(ut.rows(), ut.cols());
-
-    for (int r = 0; r < ut.rows(); ++r) {
-        for (int c = 0; c < ut.cols(); ++c) {
-            utReal(r, c) = std::real(ut(r, c));
-            utImag(r, c) = std::imag(ut(r, c));
-        }
-    }
-
-    // Construct our SplitSVD struct
-    SplitSVD<Real> result;
-    result.A       = a;        // Keep the original complex matrix
-    result.UrealT  = utReal;   // Real part of u^T
-    result.UimagT  = utImag;   // Imag part of u^T
-    result.S       = sFiltered;
-    result.V       = vFiltered;
-    return result;
+    // Compute the SVD of the real matrix.
+    // The options 'ComputeThinU' and 'ComputeThinV' compute the thin
+    // (economical) versions of U and V.
+    Eigen::JacobiSVD<Eigen::MatrixXcd> svd(rmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    return svd;
 }
 
 /*
@@ -432,8 +414,13 @@ public:
 
         // Initialize SVD
         if (factorize) {
-            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
+            if (positive_only_) {
+                bool has_zero = sampling_points_[0].n == 0;
+                matrix_svd_ = makeSplitSVD(matrix_, has_zero);
+            } else {
+                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
+                    matrix_, Eigen::ComputeFullU | Eigen::ComputeFullV);
+            }
         }
     }
 
@@ -501,7 +488,11 @@ public:
                 std::to_string(dim));
         }
         auto svd = get_matrix_svd();
-        return fit_impl<std::complex<T>, std::complex<T>, N>(svd, ax, dim);
+        if (positive_only_) {
+            return fit_impl_split_svd<N>(svd, ax, dim);
+        } else {
+            return fit_impl<std::complex<T>, std::complex<T>, N>(svd, ax, dim);
+        }
     }
 
     Eigen::MatrixXcd get_matrix() const { return matrix_; }
