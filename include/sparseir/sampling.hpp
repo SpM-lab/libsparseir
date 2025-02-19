@@ -81,7 +81,7 @@ _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
     return svd.matrixV() * UHB;
 }
 
-Eigen::MatrixXcd _fit_impl_first_dim_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
+inline Eigen::MatrixXcd _fit_impl_first_dim_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
                     const Eigen::MatrixXcd &B)
 {
     auto U = svd.matrixU();
