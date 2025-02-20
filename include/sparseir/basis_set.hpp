@@ -1,81 +1,89 @@
 #pragma once
 
-#include <memory>
 #include <Eigen/Dense>
+#include <memory>
+#include <vector>
+#include "basis.hpp"
+#include "freq.hpp"
 
 namespace sparseir {
 
-template <typename T>
 class FiniteTempBasisSet {
 public:
-    using Scalar = T;
-    using BasisPtr = std::shared_ptr<AbstractBasis<Scalar>>;
-    using TauSamplingPtr = std::shared_ptr<TauSampling<Scalar>>;
-    using MatsubaraSamplingPtr = std::shared_ptr<MatsubaraSampling<std::complex<Scalar>>>;
+    // Member variables
+    std::shared_ptr<FiniteTempBasis<Fermionic>> basis_f;
+    std::shared_ptr<FiniteTempBasis<Bosonic>> basis_b;
+    Eigen::VectorXd tau;
+    std::vector<int> wn_f;
+    std::vector<int> wn_b;
 
-    // Constructors
-    FiniteTempBasisSet(Scalar beta, Scalar omega_max, Scalar epsilon = std::numeric_limits<Scalar>::quiet_NaN(),
-                       const SVEResult& sve_result = SVEResult())
-        : beta_(beta), omega_max_(omega_max), epsilon_(epsilon) {
-        initialize(sve_result);
+    // Constructor
+    FiniteTempBasisSet(
+        std::shared_ptr<FiniteTempBasis<Fermionic>> basis_f_,
+        std::shared_ptr<FiniteTempBasis<Bosonic>> basis_b_,
+        const Eigen::VectorXd& tau_,
+        const std::vector<int>& wn_f_,
+        const std::vector<int>& wn_b_
+    ) : basis_f(basis_f_)
+      , basis_b(basis_b_)
+      , tau(tau_)
+      , wn_f(wn_f_)
+      , wn_b(wn_b_)
+    {
+        // Validate that bases have same parameters
+        if (std::abs(basis_f->get_beta() - basis_b->get_beta()) > 1e-10) {
+            throw std::runtime_error("Fermionic and bosonic bases must have same beta");
+        }
+        if (std::abs(basis_f->get_wmax() - basis_b->get_wmax()) > 1e-10) {
+            throw std::runtime_error("Fermionic and bosonic bases must have same wmax");
+        }
     }
 
-    // Accessors
-    Scalar beta() const { return beta_; }
-    Scalar omega_max() const { return omega_max_; }
-    Scalar accuracy() const { return epsilon_; }
+    // Getters
+    double beta() const { return basis_f->get_beta(); }
+    double wmax() const { return basis_f->get_wmax(); }
+    const SVEResult& sve_result() const { return *basis_f->sve_result; }
 
-    const BasisPtr& basis_f() const { return basis_f_; }
-    const BasisPtr& basis_b() const { return basis_b_; }
+    // Factory method
+    static std::shared_ptr<FiniteTempBasisSet> create(
+        double beta,
+        double wmax,
+        double epsilon = std::numeric_limits<double>::quiet_NaN()
+    ) {
+        std::pair<FiniteTempBasis<Fermionic>, FiniteTempBasis<Bosonic>> bases = finite_temp_bases(beta, wmax, epsilon);
+        FiniteTempBasis<Fermionic> basis_f = bases.first;
+        FiniteTempBasis<Bosonic> basis_b = bases.second;
 
-    const TauSamplingPtr& smpl_tau_f() const { return smpl_tau_f_; }
-    const TauSamplingPtr& smpl_tau_b() const { return smpl_tau_b_; }
+        // Get default sampling points
+        Eigen::VectorXd tau = basis_f.default_tau_sampling_points();
 
-    const MatsubaraSamplingPtr& smpl_wn_f() const { return smpl_wn_f_; }
-    const MatsubaraSamplingPtr& smpl_wn_b() const { return smpl_wn_b_; }
-
-    const Eigen::VectorXd& tau() const { return smpl_tau_f_->sampling_points(); }
-    const std::vector<int>& wn_f() const { return smpl_wn_f_->sampling_frequencies(); }
-    const std::vector<int>& wn_b() const { return smpl_wn_b_->sampling_frequencies(); }
-
-    const SVEResult& sve_result() const { return sve_result_; }
-
-private:
-     void initialize(const SVEResult& sve_result_input) {
-        if (std::isnan(epsilon_)) {
-            epsilon_ = std::numeric_limits<Scalar>::epsilon();
+        // Get Matsubara frequencies using uhat_full
+        std::vector<int> wn_f;
+        bool fence = false;
+        bool positive_only = false;
+        for (const auto& freq : default_matsubara_sampling_points(basis_f.uhat_full, basis_f.size(), fence, positive_only)) {
+            wn_f.push_back(freq.get_n());
         }
 
-        LogisticKernel kernel(beta_ * omega_max_);
-        sve_result_ = sve_result_input.is_valid() ? sve_result_input : compute_sve(kernel);
+        std::vector<int> wn_b;
+        for (const auto& freq : default_matsubara_sampling_points(basis_b.uhat_full, basis_b.size(), fence, positive_only)) {
+            wn_b.push_back(freq.get_n());
+        }
 
-        basis_f_ = std::make_shared<FiniteTempBasis<Fermionic, LogisticKernel>>(
-            beta_, omega_max_, epsilon_, kernel, sve_result_);
-        basis_b_ = std::make_shared<FiniteTempBasis<Bosonic, LogisticKernel>>(
-            beta_, omega_max_, epsilon_, kernel, sve_result_);
-
-        // Initialize sampling objects
-        smpl_tau_f_ = std::make_shared<TauSampling<Scalar>>(basis_f_);
-        smpl_tau_b_ = std::make_shared<TauSampling<Scalar>>(basis_b_);
-
-        smpl_wn_f_ = std::make_shared<MatsubaraSampling<std::complex<Scalar>>>(basis_f_);
-        smpl_wn_b_ = std::make_shared<MatsubaraSampling<std::complex<Scalar>>>(basis_b_);
+        return std::make_shared<FiniteTempBasisSet>(
+            std::make_shared<FiniteTempBasis<Fermionic>>(basis_f),
+            std::make_shared<FiniteTempBasis<Bosonic>>(basis_b),
+            tau,
+            wn_f,
+            wn_b
+        );
     }
 
-    Scalar beta_;
-    Scalar omega_max_;
-    Scalar epsilon_;
-
-    BasisPtr basis_f_;
-    BasisPtr basis_b_;
-
-    TauSamplingPtr smpl_tau_f_;
-    TauSamplingPtr smpl_tau_b_;
-
-    MatsubaraSamplingPtr smpl_wn_f_;
-    MatsubaraSamplingPtr smpl_wn_b_;
-
-    SVEResult sve_result_;
+    // String representation
+    friend std::ostream& operator<<(std::ostream& os, const FiniteTempBasisSet& b) {
+        os << "FiniteTempBasisSet with β = " << b.beta() << ", ωmax = " << b.wmax();
+        return os;
+    }
 };
 
 } // namespace sparseir

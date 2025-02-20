@@ -191,16 +191,8 @@ public:
     // Getter for Λ
     //double Lambda() const { return lambda; }
 
-    // Default Matsubara sampling points
-    Eigen::VectorXd
-    defaultMatsubaraSamplingPoints(bool positive_only = false) const
-    {
-        return defaultMatsubaraSamplingPoints(
-            uhat_full, static_cast<int>(s.size()), false, positive_only);
-    }
-
     // Default ω sampling points
-    Eigen::VectorXd defaultOmegaSamplingPoints() const
+    Eigen::VectorXd default_omega_sampling_points() const
     {
         Eigen::VectorXd y =
             default_sampling_points(sve_result->v, static_cast<int>(s.size()));
