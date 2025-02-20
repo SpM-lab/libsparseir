@@ -1,40 +1,50 @@
+#pragma once
+
+#include <Eigen/Dense>
+#include <complex>
+#include <memory>
+#include <vector>
+
 namespace sparseir {
+
 template <typename Statistics>
 class MatsubaraPoles {
 public:
     double beta;
     Eigen::VectorXd poles;
 
-    MatsubaraPoles(double beta, const Eigen::VectorXd &poles)
-        : beta(beta), poles(poles)
-    {
-    }
+    MatsubaraPoles(double beta, const Eigen::VectorXd& poles)
+        : beta(beta), poles(poles) { }
 
     // For Fermionic case
-    template <
-        typename = std::enable_if_t<std::is_same<Statistics, Fermionic>::value>>
-    Eigen::VectorXd operator()(const FermionicFreq &n) const
-    {
-        return 1.0 / (valueim(n, beta) - poles.array()).matrix();
+    template <typename T = Statistics>
+    typename std::enable_if<std::is_same<T, Fermionic>::value, Eigen::VectorXcd>::type
+    operator()(const MatsubaraFreq<Fermionic>& n) const {
+        Eigen::VectorXcd result(poles.size());
+        for(Eigen::Index i = 0; i < poles.size(); ++i) {
+            result(i) = 1.0 / (valueim<Fermionic>(n, beta) - poles(i));
+        }
+        return result;
     }
 
     // For Bosonic case
-    template <
-        typename = std::enable_if_t<std::is_same<Statistics, Bosonic>::value>>
-    Eigen::VectorXd operator()(const BosonicFreq &n) const
-    {
-        return (poles.array().tanh() * beta / 2.0 /
-                (valueim(n, beta) - poles.array()))
-            .matrix();
+    template <typename T = Statistics>
+    typename std::enable_if<std::is_same<T, Bosonic>::value, Eigen::VectorXcd>::type
+    operator()(const MatsubaraFreq<Bosonic>& n) const {
+        Eigen::VectorXcd result(poles.size());
+        for(Eigen::Index i = 0; i < poles.size(); ++i) {
+            result(i) = std::tanh(beta * poles(i) / 2.0) /
+                       (valueim<Bosonic>(n, beta) - poles(i));
+        }
+        return result;
     }
 
     // For vector of frequencies
-    template <typename Freq>
-    Eigen::MatrixXd operator()(const std::vector<Freq> &n) const
-    {
-        Eigen::MatrixXd result(poles.size(), n.size());
-        for (size_t i = 0; i < n.size(); ++i) {
-            result.col(i) = (*this)(n[i]);
+    template <typename FreqType>
+    Eigen::MatrixXcd operator()(const std::vector<FreqType>& n) const {
+        Eigen::MatrixXcd result(poles.size(), n.size());
+        for(size_t i = 0; i < n.size(); ++i) {
+            result.col(i) = (*this)(MatsubaraFreq<Statistics>(n[i]));
         }
         return result;
     }
@@ -47,48 +57,36 @@ public:
     Eigen::VectorXd poles;
     double omega_max;
 
-    TauPoles(double beta, const Eigen::VectorXd &poles)
-        : beta(beta), poles(poles), omega_max(poles.array().abs().maxCoeff())
-    {
+    TauPoles(double beta, const Eigen::VectorXd& poles)
+        : beta(beta), poles(poles), omega_max(poles.array().abs().maxCoeff()) { }
+
+    // Evaluate at tau points
+    Eigen::VectorXd operator()(double tau) const {
+        Eigen::VectorXd result(poles.size());
+        for(Eigen::Index i = 0; i < poles.size(); ++i) {
+            double x = poles(i);
+            double xtau = x * tau;
+            if (std::is_same<Statistics, Fermionic>::value) {
+                result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x));
+            } else {
+                result(i) = std::exp(-xtau) / (1.0 - std::exp(-beta * x));
+            }
+        }
+        return result;
     }
 
-    Eigen::MatrixXd operator()(const Eigen::VectorXd &tau) const
-    {
-        // Check bounds
-        for (int i = 0; i < tau.size(); ++i) {
-            if (tau[i] < 0 || tau[i] > beta) {
-                throw std::domain_error(
-                    "τ must be in [0, β], found " + std::to_string(tau[i]) +
-                    " outside of [0, " + std::to_string(beta) + "]]");
-            }
-        }
-
-        // x = reshape(2τ ./ tp.β .- 1, (1, :))
-        Eigen::MatrixXd x =
-            (2.0 * tau.array() / beta - 1.0).matrix().transpose();
-
-        // y = tp.poles ./ tp.ωmax
-        Eigen::VectorXd y = poles.array() / omega_max;
-
-        // Λ = tp.β * tp.ωmax
-        double Lambda = beta * omega_max;
-
-        // Create LogisticKernel
-        LogisticKernel kernel(Lambda);
-
-        // Initialize result matrix
+    // For vector of tau points
+    Eigen::MatrixXd operator()(const Eigen::VectorXd& tau) const {
         Eigen::MatrixXd result(poles.size(), tau.size());
-
-        // Fill result matrix
-        for (int i = 0; i < poles.size(); ++i) {
-            for (int j = 0; j < tau.size(); ++j) {
-                result(i, j) = -kernel(x(0, j), y(i));
-            }
+        for(Eigen::Index i = 0; i < tau.size(); ++i) {
+            result.col(i) = (*this)(tau(i));
         }
-
         return result;
     }
 };
+
+template<typename Basis>
+Eigen::VectorXd default_omega_sampling_points(const Basis& b);
 
 template <typename Statistics, typename Basis>
 class DiscreteLehmannRepresentation : public AbstractBasis<Statistics> {
@@ -100,47 +98,46 @@ public:
     Eigen::MatrixXd fitmat;
     Eigen::BDCSVD<Eigen::MatrixXd> matrix;
 
-    DiscreteLehmannRepresentation(
-        const Basis &b,
-        const Eigen::VectorXd &poles = default_omega_sampling_points(b))
-        : basis(b), poles(poles), u(beta(b), poles), uhat(beta(b), poles)
+    // Constructor with basis and poles
+    DiscreteLehmannRepresentation(const Basis& b, const Eigen::VectorXd& poles)
+        : basis(b), poles(poles),
+          u(b.get_beta(), poles),
+          uhat(b.get_beta(), poles)
     {
         // Fitting matrix from IR
-        fitmat = -basis.s.asDiagonal() * basis.v(poles);
-
-        // Compute SVD of fitmat
+        fitmat = -basis.s.array() * basis.v(poles).array();
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
     }
 
-    size_t length() const { return poles.size(); }
-    std::pair<size_t, size_t> size() const { return {poles.size(), 1}; }
+    // Constructor with just basis
+    explicit DiscreteLehmannRepresentation(const Basis& b)
+        : DiscreteLehmannRepresentation(b, default_omega_sampling_points(b)) {}
 
-    double beta() const { return basis.beta(); }
-    double omega_max() const { return basis.omega_max(); }
-    double Lambda() const { return basis.Lambda(); }
-
-    const Eigen::VectorXd &sampling_points() const { return poles; }
-    Eigen::VectorXd significance() const
-    {
-        return Eigen::VectorXd::Ones(poles.size());
+    // Required virtual function implementations
+    size_t size() const override { return poles.size(); }
+    const Eigen::VectorXd significance() const override {
+        return Eigen::VectorXd::Ones(size());
     }
-    double accuracy() const { return basis.accuracy(); }
+    double get_accuracy() const override { return basis.get_accuracy(); }
+    double get_wmax() const override { return basis.get_wmax(); }
+    const Eigen::VectorXd default_tau_sampling_points() const override {
+        return basis.default_tau_sampling_points();
+    }
 
     // Convert from IR to DLR
     template <typename Derived>
-    Eigen::MatrixXd from_IR(const Eigen::MatrixBase<Derived> &gl,
-                            int dims = 1) const
-    {
+    Eigen::MatrixXd from_IR(const Eigen::MatrixBase<Derived>& gl) const {
         return matrix.solve(gl);
     }
 
     // Convert from DLR to IR
     template <typename Derived>
-    Eigen::MatrixXd to_IR(const Eigen::MatrixBase<Derived> &g_dlr,
-                          int dims = 1) const
-    {
+    Eigen::MatrixXd to_IR(const Eigen::MatrixBase<Derived>& g_dlr) const {
         return fitmat * g_dlr;
     }
+
+    double beta() const { return basis.beta; }
+    double Lambda() const { return basis.Lambda(); }
 };
 
 } // namespace sparseir
