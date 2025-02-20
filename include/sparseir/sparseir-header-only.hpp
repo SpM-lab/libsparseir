@@ -15,4 +15,4 @@
 #include "./augment.hpp"
 #include "./sampling.hpp"
 #include "./dlr.hpp"
-//#include "./basis_set.hpp"
+#include "./basis_set.hpp"
