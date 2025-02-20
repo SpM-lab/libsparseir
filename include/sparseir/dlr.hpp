@@ -86,7 +86,15 @@ public:
 };
 
 template<typename Basis>
-Eigen::VectorXd default_omega_sampling_points(const Basis& b);
+Eigen::VectorXd default_omega_sampling_points(const Basis& b) {
+    double wmax = b.get_wmax();
+    int n = b.size();
+    Eigen::VectorXd omega(n);
+    for (int i = 0; i < n; ++i) {
+        omega(i) = wmax * std::cos(M_PI * (2 * i + 1) / (2 * n));
+    }
+    return omega;
+}
 
 template <typename Statistics, typename Basis>
 class DiscreteLehmannRepresentation : public AbstractBasis<Statistics> {

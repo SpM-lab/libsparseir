@@ -47,16 +47,23 @@ TEST_CASE("DLR Tests", "[dlr]")
             auto Gl = dlr_poles.to_IR(coeffs);
             auto g_dlr = dlr.from_IR(Gl);
 
-            // Test on Matsubara frequencies
+            // Convert Matrix to Tensor
+            Eigen::Tensor<double, 1> Gl_tensor(Gl.size());
+            Eigen::Tensor<double, 1> g_dlr_tensor(g_dlr.size());
+
+            for(Eigen::Index i = 0; i < Gl.size(); ++i) {
+                Gl_tensor(i) = Gl(i);
+                g_dlr_tensor(i) = g_dlr(i);
+            }
+
             auto smpl = MatsubaraSampling<Statistics>(basis);
-            auto smpl_for_dlr = MatsubaraSampling<Statistics>(
-                std::make_shared<decltype(dlr)>(dlr),
-                smpl.sampling_points());
+            auto smpl_for_dlr = MatsubaraSampling<Statistics>(basis);
 
-            auto giv_ref = smpl.evaluate(Gl);
-            auto giv = smpl_for_dlr.evaluate(g_dlr);
+            auto giv_ref = smpl.evaluate(Gl_tensor);
+            auto giv = smpl_for_dlr.evaluate(g_dlr_tensor);
 
-            REQUIRE((giv - giv_ref).array().abs().maxCoeff() <= 300 * epsilon);
+            // Compare using tensorIsApprox
+            sparseir::tensorIsApprox(giv, giv_ref, 300 * epsilon);
         };
 
         test_statistics(Fermionic{});
@@ -79,13 +86,13 @@ TEST_CASE("DLR Tests", "[dlr]")
         Eigen::Vector2d coeff(1.1, 2.0);
         Eigen::Vector2d omega_p(2.2, -1.0);
 
-        auto rho_l_pole = basis_b->v(omega_p) * coeff;
-        auto gl_pole = -basis_b->s.array() * rho_l_pole.array();
+        auto rho_l_pole = basis_b->v(omega_p).array() * coeff.array();
+        auto gl_pole = -basis_b->s.array() * rho_l_pole;
 
-        auto sp = DiscreteLehmannRepresentation(*basis_b, omega_p);
+        auto sp = DiscreteLehmannRepresentation<Bosonic, FiniteTempBasis<Bosonic>>(*basis_b, omega_p);
         auto gl_pole2 = sp.to_IR(coeff);
 
-        REQUIRE((gl_pole - gl_pole2).array().abs().maxCoeff() <= 300 * epsilon);
+        REQUIRE((gl_pole - gl_pole2.array()).abs().maxCoeff() <= 300 * epsilon);
     }
 
     SECTION("MatsubaraPoles Tests")
