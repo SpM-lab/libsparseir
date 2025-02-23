@@ -471,6 +471,45 @@ public:
         return result;
     }
 
+    // Add these new overloads for Vector types
+    template <typename T>
+    Eigen::VectorX<std::complex<T>> evaluate(const Eigen::VectorX<T>& al) const {
+        // Convert Vector to Tensor
+        Eigen::Tensor<T, 1> al_tensor(al.size());
+        for (Eigen::Index i = 0; i < al.size(); ++i) {
+            al_tensor(i) = al(i);
+        }
+
+        // Use existing tensor-based evaluate
+        auto result_tensor = evaluate(al_tensor, 0);
+
+        // Convert result back to Vector
+        Eigen::VectorX<std::complex<T>> result(result_tensor.dimension(0));
+        for (Eigen::Index i = 0; i < result.size(); ++i) {
+            result(i) = result_tensor(i);
+        }
+        return result;
+    }
+
+    template <typename T>
+    Eigen::VectorX<T> fit(const Eigen::VectorX<std::complex<T>>& ax) const {
+        // Convert Vector to Tensor
+        Eigen::Tensor<std::complex<T>, 1> ax_tensor(ax.size());
+        for (Eigen::Index i = 0; i < ax.size(); ++i) {
+            ax_tensor(i) = ax(i);
+        }
+
+        // Use existing tensor-based fit
+        auto result_tensor = fit(ax_tensor, 0);
+
+        // Convert result back to Vector
+        Eigen::VectorX<T> result(result_tensor.dimension(0));
+        for (Eigen::Index i = 0; i < result.size(); ++i) {
+            result(i) = std::real(result_tensor(i));  // Take real part if needed
+        }
+        return result;
+    }
+
     // template <typename T, int N>
     // size_t workarrlength(const Eigen::Tensor<T, N> &ax, int dim) const
     //{
