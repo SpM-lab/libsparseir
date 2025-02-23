@@ -8,25 +8,22 @@
 
 using Catch::Approx;
 
-TEST_CASE("DLR Tests", "[dlr]")
-{
-    SECTION("Compression Tests")
-    {
+TEST_CASE("DLR Tests", "[dlr]") {
+    SECTION("Compression Tests") {
         // Test parameters
-        // const double beta = 10000.0;
-        const double beta = 100.0;
+        const double beta = 10000.0;
         const double omega_max = 1.0;
         const double epsilon = 1e-12;
 
-        LogisticKernel kernel(beta * omega_max);
-        auto sve_result = compute_sve(kernel, epsilon);
+        sparseir::LogisticKernel kernel(beta * omega_max);
+        auto sve_result = sparseir::compute_sve(kernel, epsilon);
 
         auto test_statistics = [&](auto stat) {
             using Statistics = decltype(stat);
 
-            auto basis = std::make_shared<FiniteTempBasis<Statistics>>(
+            auto basis = std::make_shared<sparseir::FiniteTempBasis<Statistics>>(
                 beta, omega_max, epsilon, kernel, sve_result);
-            auto dlr = DiscreteLehmannRepresentation<Statistics>(*basis);
+            auto dlr = sparseir::DiscreteLehmannRepresentation<Statistics>(*basis);
 
             // Random generation
             std::mt19937 gen(982743);
@@ -35,14 +32,14 @@ TEST_CASE("DLR Tests", "[dlr]")
             const int num_poles = 10;
             Eigen::VectorXd poles(num_poles);
             Eigen::VectorXd coeffs(num_poles);
-            for(int i = 0; i < num_poles; ++i) {
+            for (int i = 0; i < num_poles; ++i) {
                 poles(i) = omega_max * (2.0 * dis(gen) - 1.0);
                 coeffs(i) = 2.0 * dis(gen) - 1.0;
             }
 
             REQUIRE(poles.array().abs().maxCoeff() <= omega_max);
 
-            auto dlr_poles = DiscreteLehmannRepresentation<Statistics>(*basis, poles);
+            auto dlr_poles = sparseir::DiscreteLehmannRepresentation<Statistics>(*basis, poles);
             auto Gl = dlr_poles.to_IR(coeffs);
             auto g_dlr = dlr.from_IR(Gl);
 
@@ -50,13 +47,13 @@ TEST_CASE("DLR Tests", "[dlr]")
             Eigen::Tensor<double, 1> Gl_tensor(Gl.size());
             Eigen::Tensor<double, 1> g_dlr_tensor(g_dlr.size());
 
-            for(Eigen::Index i = 0; i < Gl.size(); ++i) {
+            for (Eigen::Index i = 0; i < Gl.size(); ++i) {
                 Gl_tensor(i) = Gl(i);
                 g_dlr_tensor(i) = g_dlr(i);
             }
 
-            auto smpl = MatsubaraSampling<Statistics>(basis);
-            auto smpl_for_dlr = MatsubaraSampling<Statistics>(basis);
+            auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
+            auto smpl_for_dlr = sparseir::MatsubaraSampling<Statistics>(basis);
 
             auto giv_ref = smpl.evaluate(Gl_tensor);
             auto giv = smpl_for_dlr.evaluate(g_dlr_tensor);
@@ -65,12 +62,11 @@ TEST_CASE("DLR Tests", "[dlr]")
             sparseir::tensorIsApprox(giv, giv_ref, 300 * epsilon);
         };
 
-        test_statistics(Fermionic{});
-        test_statistics(Bosonic{});
+        test_statistics(sparseir::Fermionic{});
+        test_statistics(sparseir::Bosonic{});
     }
 
-    SECTION("Boson Specific Tests")
-    {
+    SECTION("Boson Specific Tests") {
         double beta = 2.0;
         double omega_max = 21.0;
         double epsilon = 1e-7;
@@ -96,8 +92,7 @@ TEST_CASE("DLR Tests", "[dlr]")
         REQUIRE((gl_pole.array() - gl_pole2.array()).abs().maxCoeff() <= 300 * epsilon);
     }
 
-    SECTION("MatsubaraPoles Fermionic Tests")
-    {
+    SECTION("MatsubaraPoles Fermionic Tests") {
         double beta = M_PI;
         Eigen::Vector3d poles(2.0, 3.3, 9.3);
 
@@ -126,8 +121,7 @@ TEST_CASE("DLR Tests", "[dlr]")
         }
     }
 
-    SECTION("MatsubaraPoles Bosonic Tests")
-    {
+    SECTION("MatsubaraPoles Bosonic Tests") {
         double beta = M_PI;
         Eigen::Vector3d poles(2.0, 3.3, 9.3);
 
@@ -144,11 +138,14 @@ TEST_CASE("DLR Tests", "[dlr]")
         }
 
         Eigen::MatrixXcd result = mbp(n);
-        for (int i = 0; i < n.size(); ++i) {
-            for (int j = 0; j < poles.size(); ++j) {
-                REQUIRE(std::abs(result(j, i) - tanh(beta * poles[j] / 2.0) / (n[i] - poles[j])) < 1e-12);
+
+        for (size_t i = 0; i < n.size(); ++i) {
+            for (size_t j = 0; j < poles.size(); ++j) {
+                std::complex<double> im(0.0, 1.0);  // imaginary unit i
+                std::complex<double> n_complex = static_cast<double>(n[i]) * im;
+                std::complex<double> numerator = std::tanh(M_PI * poles[j] / 2.0);
+                REQUIRE(std::abs(result(j, i) - numerator / (n_complex - poles[j])) < 1e-12);
             }
         }
     }
 }
-
