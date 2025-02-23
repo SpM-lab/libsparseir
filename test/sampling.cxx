@@ -10,6 +10,8 @@
 #include <random>
 #include <complex>
 #include <memory>
+#include <vector>
+#include <string>
 
 using namespace sparseir;
 using namespace std;
@@ -312,21 +314,29 @@ TEST_CASE("Matsubara Sampling Tests positive only=false", "[sampling]")
     sparseir::tensorIsApprox(Gτ_fit, Gτ_n, 12 * noise * Gl_magn);
 }
 
-TEST_CASE("Sampling Tests") {
+// A helper function template to test both Bosonic and Fermionic in one place
+template <typename Stat>
+void test_fit_from_tau_for_stat()
+{
     double beta = 1.0;
     vector<double> lambdas = {10.0, 42.0};
 
     for (auto Lambda : lambdas) {
-        SECTION("Testing with Λ=" + std::to_string(Lambda)) {
+        SECTION("Testing with Λ=" + std::to_string(Lambda) + " for "
+                + (std::is_same<Stat, Bosonic>::value ? "Bosonic" : "Fermionic"))
+        {
             double wmax = Lambda / beta;
             auto kernel = LogisticKernel(wmax);
             auto sve_result = compute_sve(kernel, 1e-15);
-            auto basis = make_shared<FiniteTempBasis<Bosonic>>(
+
+            // Create a basis matching the template statistic
+            auto basis = make_shared<FiniteTempBasis<Stat>>(
                 beta, wmax, 1e-15, kernel, sve_result);
 
             REQUIRE(basis->size() > 0);  // Check basis size
 
-            auto tau_sampling = make_shared<TauSampling<Bosonic>>(basis);
+            // Create TauSampling with the same statistic
+            auto tau_sampling = make_shared<TauSampling<Stat>>(basis);
 
             // Check sampling points
             REQUIRE(tau_sampling->sampling_points().size() > 0);
@@ -340,60 +350,67 @@ TEST_CASE("Sampling Tests") {
             const Eigen::Index d2 = 3;
             const Eigen::Index d3 = 4;
             Eigen::Tensor<ComplexF64, 4> rhol_tensor(s_size, d1, d2, d3);
+
             std::random_device rd;
             std::mt19937 gen(rd());
             std::uniform_real_distribution<> dis(0, 1);
 
+            // Fill rhol_tensor with random complex values
             for (int i = 0; i < rhol_tensor.size(); ++i) {
                 rhol_tensor.data()[i] = ComplexF64(dis(gen), dis(gen));
             }
-            Eigen::VectorXd s_vector = basis->s; // Assuming basis->s is Eigen::VectorXd
-            Eigen::Tensor<ComplexF64, 1> s_tensor(s_vector.size());
 
+            // Convert basis->s (real) to a complex tensor for elementwise ops
+            Eigen::VectorXd s_vector = basis->s;
+            Eigen::Tensor<ComplexF64, 1> s_tensor(s_vector.size());
             for (Eigen::Index i = 0; i < s_vector.size(); ++i) {
-                s_tensor(i) = ComplexF64(s_vector(i), 0.0); // Assuming real to complex conversion
+                s_tensor(i) = ComplexF64(s_vector(i), 0.0);
             }
+
+            // Reshape and broadcast s_tensor to match rhol_tensor dimensions
             Eigen::array<Eigen::Index, 4> new_shape = {s_size, 1, 1, 1};
             Eigen::Tensor<ComplexF64, 4> s_reshaped = s_tensor.reshape(new_shape);
             Eigen::array<Eigen::Index, 4> bcast = {1, d1, d2, d3};
-            Eigen::Tensor<ComplexF64, 4> originalgl = (-s_reshaped.broadcast(bcast)) * rhol_tensor;
 
+            // originalgl = -s_reshaped * rhol_tensor
+            Eigen::Tensor<ComplexF64, 4> originalgl =
+                (-s_reshaped.broadcast(bcast)) * rhol_tensor;
+
+            // Test evaluate() and fit() along each dimension
             for (int dim = 0; dim < 4; ++dim) {
+                // Move the "frequency" dimension around
                 Eigen::Tensor<ComplexF64, 4> gl = movedim(originalgl, 0, dim);
+
+                // Evaluate from real-time/tau to imaginary-time/tau
                 Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
 
-                //std::cout << "dim: " << dim << std::endl;
-                //std::cout << "gtau.dimensions(): " << gtau.dimensions() << std::endl;
-                //std::cout << "gl.dimensions(): " << gl.dimensions() << std::endl;
-
+                // Check shapes
                 REQUIRE(gtau.dimension(0) == gl.dimension(0));
                 REQUIRE(gtau.dimension(1) == gl.dimension(1));
                 REQUIRE(gtau.dimension(2) == gl.dimension(2));
                 REQUIRE(gtau.dimension(3) == gl.dimension(3));
+
+                // Fit back to original
                 Eigen::Tensor<ComplexF64, 4> gl_from_tau = tau_sampling->fit(gtau, dim);
 
+                // Check shapes again
                 REQUIRE(gl_from_tau.dimension(0) == gl.dimension(0));
                 REQUIRE(gl_from_tau.dimension(1) == gl.dimension(1));
                 REQUIRE(gl_from_tau.dimension(2) == gl.dimension(2));
                 REQUIRE(gl_from_tau.dimension(3) == gl.dimension(3));
 
-                //std::cout << "gl_from_tau(0, 0, 0, 0) " << gl_from_tau(0, 0, 0, 0) << std::endl;
-                //std::cout << "gl_from_tau(0, 0, 0, 1) " << gl_from_tau(0, 0, 0, 1) << std::endl;
-                //std::cout << "gl(0, 0, 0, 0) " << gl(0, 0, 0, 0) << std::endl;
-                //std::cout << "gl(0, 0, 0, 1) " << gl(0, 0, 0, 1) << std::endl;
-
+                // Numerical check
                 REQUIRE(sparseir::tensorIsApprox(gl_from_tau, gl, 1e-10));
             }
-
-            // Test evaluate and fit
-            //Eigen::VectorXd gtau = tau_sampling->evaluate(rhol);
-            //REQUIRE(gtau.size() == tau_sampling->sampling_points().size());
-
-            //Eigen::VectorXd rhol_recovered = tau_sampling->fit(gtau);
-            //REQUIRE(rhol_recovered.size() == rhol.size());
-            //REQUIRE(rhol.isApprox(rhol_recovered, 1e-10));
         }
     }
+}
+
+// Now just call the helper function for both Bosonic and Fermionic
+TEST_CASE("fit from tau for both statistics, Λ in {10, 42}", "[sampling]")
+{
+    test_fit_from_tau_for_stat<Bosonic>();
+    test_fit_from_tau_for_stat<Fermionic>();
 }
 
 TEST_CASE("Matsubara Sampling Tests") {
@@ -415,11 +432,9 @@ TEST_CASE("Matsubara Sampling Tests") {
                 Eigen::VectorXd rhol = Eigen::VectorXd::Random(basis->size());
                 Eigen::VectorXd gl = basis->s.array() * (-rhol.array());
 
-                /*
                 Eigen::VectorXcd giw = matsu_sampling->evaluate(gl);
                 Eigen::VectorXd gl_from_iw = matsu_sampling->fit(giw);
                 REQUIRE(gl.isApprox(gl_from_iw, 1e-6));
-                */
             }
         }
     }
