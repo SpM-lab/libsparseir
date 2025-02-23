@@ -67,8 +67,9 @@ public:
     }
 
     // 複素数の値
-    inline std::complex<double> value_im(double beta) const {
-        return std::complex<double>(0, value(beta));
+    inline std::complex<double> valueim(double beta) const {
+        std::complex<double> im(0, 1);
+        return im * value(beta);
     }
 
     // 統計型の取得
@@ -177,20 +178,6 @@ inline void show(std::ostream &os, const MatsubaraFreq<S> &a)
         os << "-π/β";
     else
         os << a.get_n() << "π/β";
-}
-
-template<typename Statistics>
-inline double valueim(int n, double beta) {
-    if (std::is_same<Statistics, Fermionic>::value) {
-        return (2 * n + 1) * M_PI / beta;
-    } else {
-        return 2 * n * M_PI / beta;
-    }
-}
-
-template<typename Statistics>
-inline double valueim(const MatsubaraFreq<Statistics>& freq, double beta) {
-    return valueim<Statistics>(freq.n, beta);
 }
 
 } // namespace sparseir
