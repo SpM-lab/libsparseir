@@ -499,14 +499,14 @@ TEST_CASE("Matsubara Sampling Tests", "[sampling]") {
     double noise = 1e-5;
     std::default_random_engine generator;
     std::normal_distribution<double> distribution(0.0, 1.0);
-    Eigen::Tensor<ComplexF64, 1> Gτ_n(Gτ.size());
+    Eigen::Tensor<std::complex<double>, 1> Gτ_n(Gτ.size());
     for (Eigen::Index i = 0; i < Gτ.size(); ++i) {
         Gτ_n(i) = Gτ(i) + noise * Gl_magn * std::complex<double>(distribution(generator), distribution(generator));
     }
 
-    //Eigen::TensorComplexF64, 1> Gτ_fit = matsu_sampling->fit(Gτ_n);
+    Eigen::Tensor<std::complex<double>, 1> Gτ_fit = matsu_sampling->fit(Gτ_n);
 
-    //sparseir::tensorIsApprox(Gτ_fit, Gτ_n, 12 * noise * Gl_magn);
+    sparseir::tensorIsApprox(Gτ_fit, Gτ_n, 12 * noise * Gl_magn);
 
 }
 
