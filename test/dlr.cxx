@@ -6,29 +6,24 @@
 #include <random>
 #include <sparseir/sparseir-header-only.hpp>
 
-using namespace sparseir;
 using Catch::Approx;
 
-TEST_CASE("DLR Tests", "[dlr]")
-{
-    /*
-    SECTION("Compression Tests")
-    {
+TEST_CASE("DLR Tests", "[dlr]") {
+    SECTION("Compression Tests") {
         // Test parameters
         const double beta = 10000.0;
         const double omega_max = 1.0;
         const double epsilon = 1e-12;
 
-        LogisticKernel kernel(beta * omega_max);
-        auto sve_result = compute_sve(kernel, epsilon);
+        sparseir::LogisticKernel kernel(beta * omega_max);
+        auto sve_result = sparseir::compute_sve(kernel, epsilon);
 
         auto test_statistics = [&](auto stat) {
             using Statistics = decltype(stat);
-            using BasisType = FiniteTempBasis<Statistics>;
 
-            auto basis = std::make_shared<BasisType>(
+            auto basis = std::make_shared<sparseir::FiniteTempBasis<Statistics>>(
                 beta, omega_max, epsilon, kernel, sve_result);
-            auto dlr = DiscreteLehmannRepresentation<Statistics, BasisType>(*basis);
+            auto dlr = sparseir::DiscreteLehmannRepresentation<Statistics>(*basis);
 
             // Random generation
             std::mt19937 gen(982743);
@@ -37,14 +32,14 @@ TEST_CASE("DLR Tests", "[dlr]")
             const int num_poles = 10;
             Eigen::VectorXd poles(num_poles);
             Eigen::VectorXd coeffs(num_poles);
-            for(int i = 0; i < num_poles; ++i) {
+            for (int i = 0; i < num_poles; ++i) {
                 poles(i) = omega_max * (2.0 * dis(gen) - 1.0);
                 coeffs(i) = 2.0 * dis(gen) - 1.0;
             }
 
-            // REQUIRE(poles.array().abs().maxCoeff() <= omega_max);
+            REQUIRE(poles.array().abs().maxCoeff() <= omega_max);
 
-            auto dlr_poles = DiscreteLehmannRepresentation<Statistics, BasisType>(*basis, poles);
+            auto dlr_poles = sparseir::DiscreteLehmannRepresentation<Statistics>(*basis, poles);
             auto Gl = dlr_poles.to_IR(coeffs);
             auto g_dlr = dlr.from_IR(Gl);
 
@@ -52,91 +47,104 @@ TEST_CASE("DLR Tests", "[dlr]")
             Eigen::Tensor<double, 1> Gl_tensor(Gl.size());
             Eigen::Tensor<double, 1> g_dlr_tensor(g_dlr.size());
 
-            for(Eigen::Index i = 0; i < Gl.size(); ++i) {
+            for (Eigen::Index i = 0; i < Gl.size(); ++i) {
                 Gl_tensor(i) = Gl(i);
                 g_dlr_tensor(i) = g_dlr(i);
             }
 
-            auto smpl = MatsubaraSampling<Statistics>(basis);
-            auto smpl_for_dlr = MatsubaraSampling<Statistics>(basis);
+            auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
+            auto smpl_for_dlr = sparseir::MatsubaraSampling<Statistics>(basis);
 
             auto giv_ref = smpl.evaluate(Gl_tensor);
             auto giv = smpl_for_dlr.evaluate(g_dlr_tensor);
 
             // Compare using tensorIsApprox
-            // sparseir::tensorIsApprox(giv, giv_ref, 300 * epsilon);
+            sparseir::tensorIsApprox(giv, giv_ref, 300 * epsilon);
         };
 
-        test_statistics(Fermionic{});
-        test_statistics(Bosonic{});
+        test_statistics(sparseir::Fermionic{});
+        test_statistics(sparseir::Bosonic{});
     }
-    */
 
-    /*
-    SECTION("Boson Specific Tests")
-    {
+    SECTION("Boson Specific Tests") {
         double beta = 2.0;
         double omega_max = 21.0;
         double epsilon = 1e-7;
 
-        LogisticKernel kernel(beta * omega_max);
-        auto sve_result = compute_sve(kernel, epsilon);
+        sparseir::LogisticKernel kernel(beta * omega_max);
+        auto sve_result = sparseir::compute_sve(kernel, epsilon);
 
-        auto basis_b = std::make_shared<FiniteTempBasis<Bosonic>>(
+        auto basis_b = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
             beta, omega_max, epsilon, kernel, sve_result);
 
         // Test specific coefficients and poles
         Eigen::Vector2d coeff(1.1, 2.0);
         Eigen::Vector2d omega_p(2.2, -1.0);
 
-        auto rho_l_pole = basis_b->v(omega_p).array() * coeff.array();
-        auto gl_pole = -basis_b->s.array() * rho_l_pole;
+        Eigen::MatrixXd rho_l_pole = basis_b->v(omega_p) * coeff;
+        Eigen::ArrayXXd rho_l_pole_array = rho_l_pole.array();
+        Eigen::ArrayXd s_array = basis_b->s.array();
+        Eigen::MatrixXd gl_pole = (-rho_l_pole_array * s_array.replicate(1, rho_l_pole.cols())).matrix();
 
-        auto sp = DiscreteLehmannRepresentation<Bosonic, FiniteTempBasis<Bosonic>>(*basis_b, omega_p);
+        auto sp = sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>(*basis_b, omega_p);
         auto gl_pole2 = sp.to_IR(coeff);
 
-        REQUIRE((gl_pole - gl_pole2.array()).abs().maxCoeff() <= 300 * epsilon);
+        REQUIRE((gl_pole.array() - gl_pole2.array()).abs().maxCoeff() <= 300 * epsilon);
     }
-    */
 
-    SECTION("MatsubaraPoles Tests")
-    {
+    SECTION("MatsubaraPoles Fermionic Tests") {
         double beta = M_PI;
         Eigen::Vector3d poles(2.0, 3.3, 9.3);
 
-        // Test Fermionic poles
-        {
-            MatsubaraPoles<Fermionic> mpb(beta, poles);
-            std::vector<int> n;
-            for(int i = -12345; i <= 987; i += 2) {
-                n.push_back(i);
-            }
-            auto result = mpb(n);
-
-            for(size_t i = 0; i < n.size(); ++i) {
-                for(size_t j = 0; j < poles.size(); ++j) {
-                    std::complex<double> expected(0.0, valueim<Fermionic>(n[i], beta));
-                    expected = 1.0 / (expected - poles[j]);
-                    //REQUIRE(std::abs(result(j, i) - expected) < 1e-12);
-                }
+        // Choose 100 random odd integers between -12345 and 987
+        std::vector<int> n;
+        std::mt19937 gen(42);
+        std::uniform_int_distribution<int> dist(-12345, 987);
+        while (n.size() < 100) {
+            int x = dist(gen);
+            if (x % 2 == 1) {
+                n.push_back(x);
             }
         }
 
-        // Test Bosonic poles
-        {
-            MatsubaraPoles<Bosonic> mbp(beta, poles);
-            std::vector<int> n;
-            for(int i = -234; i <= 13898; i += 2) {
-                n.push_back(i);
-            }
-            auto result = mbp(n);
+        REQUIRE(n.size() == 100);
+        sparseir::MatsubaraPoles<sparseir::Fermionic> mpb(beta, poles);
 
-            for(size_t i = 0; i < n.size(); ++i) {
-                for(size_t j = 0; j < poles.size(); ++j) {
-                    std::complex<double> expected(0.0, valueim<Bosonic>(n[i], beta));
-                    expected = std::tanh(beta * poles[j] / 2.0) / (expected - poles[j]);
-                    //REQUIRE(std::abs(result(j, i) - expected) < 1e-12);
-                }
+        Eigen::MatrixXcd result = mpb(n);
+
+        std::complex<double> im(0.0, 1.0);  // imaginary unit i
+        for (int i = 0; i < n.size(); ++i) {
+            for (int j = 0; j < poles.size(); ++j) {
+                std::complex<double> n_complex = static_cast<double>(n[i]) * im;
+                REQUIRE(std::abs(result(j, i) - 1.0 / (n_complex - poles[j])) < 1e-12);
+            }
+        }
+    }
+
+    SECTION("MatsubaraPoles Bosonic Tests") {
+        double beta = M_PI;
+        Eigen::Vector3d poles(2.0, 3.3, 9.3);
+
+        sparseir::MatsubaraPoles<sparseir::Bosonic> mbp(beta, poles);
+        // Choose 100 random even integers between -234 and 13898
+        std::vector<int> n;
+        std::mt19937 gen(42);
+        std::uniform_int_distribution<int> dist(-234, 13898);
+        while (n.size() < 100) {
+            int x = dist(gen);
+            if (x % 2 == 0) {
+                n.push_back(x);
+            }
+        }
+
+        Eigen::MatrixXcd result = mbp(n);
+
+        for (size_t i = 0; i < n.size(); ++i) {
+            for (size_t j = 0; j < poles.size(); ++j) {
+                std::complex<double> im(0.0, 1.0);  // imaginary unit i
+                std::complex<double> n_complex = static_cast<double>(n[i]) * im;
+                std::complex<double> numerator = std::tanh(M_PI * poles[j] / 2.0);
+                REQUIRE(std::abs(result(j, i) - numerator / (n_complex - poles[j])) < 1e-12);
             }
         }
     }

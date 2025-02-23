@@ -22,7 +22,7 @@ public:
     operator()(const MatsubaraFreq<Fermionic>& n) const {
         Eigen::VectorXcd result(poles.size());
         for(Eigen::Index i = 0; i < poles.size(); ++i) {
-            result(i) = 1.0 / (valueim<Fermionic>(n, beta) - poles(i));
+            result(i) = 1.0 / (n.valueim(beta) - poles(i));
         }
         return result;
     }
@@ -34,7 +34,7 @@ public:
         Eigen::VectorXcd result(poles.size());
         for(Eigen::Index i = 0; i < poles.size(); ++i) {
             result(i) = std::tanh(beta * poles(i) / 2.0) /
-                       (valueim<Bosonic>(n, beta) - poles(i));
+                       (n.valueim(beta) - poles(i));
         }
         return result;
     }
@@ -50,7 +50,7 @@ public:
     }
 };
 
-template <typename Statistics>
+template <typename S>
 class TauPoles {
 public:
     double beta;
@@ -66,7 +66,7 @@ public:
         for(Eigen::Index i = 0; i < poles.size(); ++i) {
             double x = poles(i);
             double xtau = x * tau;
-            if (std::is_same<Statistics, Fermionic>::value) {
+            if (std::is_same<S, Fermionic>::value) {
                 result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x));
             } else {
                 result(i) = std::exp(-xtau) / (1.0 - std::exp(-beta * x));
@@ -85,29 +85,41 @@ public:
     }
 };
 
-template <typename Statistics, typename Basis>
-class DiscreteLehmannRepresentation : public AbstractBasis<Statistics> {
+template <typename S>
+Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S>& basis) {
+    Eigen::VectorXd y = default_sampling_points(basis.sve_result->v, basis.size());
+    return basis.get_wmax() * y;
+}
+
+template <typename S>
+class DiscreteLehmannRepresentation : public AbstractBasis<S> {
 public:
-    Basis basis;
+    FiniteTempBasis<S> basis;
     Eigen::VectorXd poles;
-    TauPoles<Statistics> u;
-    MatsubaraPoles<Statistics> uhat;
+    TauPoles<S> u;
+    MatsubaraPoles<S> uhat;
     Eigen::MatrixXd fitmat;
-    Eigen::BDCSVD<Eigen::MatrixXd> matrix;
+    Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
 
     // Constructor with basis and poles
-    DiscreteLehmannRepresentation(const Basis& b, const Eigen::VectorXd& poles)
+    DiscreteLehmannRepresentation(const FiniteTempBasis<S>& b, const Eigen::VectorXd& poles)
         : basis(b), poles(poles),
           u(b.get_beta(), poles),
           uhat(b.get_beta(), poles)
     {
         // Fitting matrix from IR
-        fitmat = -basis.s.array() * basis.v(poles).array();
+        Eigen::MatrixXd A = basis.v(poles);
+        Eigen::ArrayXXd A_array = A.array();
+        Eigen::ArrayXd s_array = basis.s.array();
+
+        // Perform element-wise multiplication
+        fitmat = (-A_array * s_array.replicate(1, A.cols())).matrix();
+
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
     }
 
     // Constructor with just basis
-    explicit DiscreteLehmannRepresentation(const Basis& b)
+    explicit DiscreteLehmannRepresentation(const FiniteTempBasis<S>& b)
         : DiscreteLehmannRepresentation(b, default_omega_sampling_points(b)) {}
 
     // Required virtual function implementations
