@@ -50,7 +50,7 @@ class MatsubaraFreq {
 public:
     int n;
 
-    // コンストラクタ
+    // Constructor
     inline MatsubaraFreq(int n) : n(n) {
         static_assert(std::is_same<S, Fermionic>::value || std::is_same<S, Bosonic>::value,
                       "S must be Fermionic or Bosonic");
@@ -58,24 +58,25 @@ public:
         if (!stat.allowed(n)) {
             throw std::domain_error("Frequency is not allowed for this type");
         }
-        instance_ = std::make_shared<S>(stat); // 適切な型のインスタンスを保持
+        // Store an instance with a shared pointer
+        instance_ = std::make_shared<S>(stat);
     }
 
-    // 値の計算
+    // Compute the real value
     inline double value(double beta) const {
         return n * M_PI / beta;
     }
 
-    // 複素数の値
+    // Compute the imaginary value
     inline std::complex<double> valueim(double beta) const {
         std::complex<double> im(0, 1);
         return im * value(beta);
     }
 
-    // 統計型の取得
+    // Get the statistics instance
     inline S statistics() const { return *std::static_pointer_cast<S>(instance_); }
 
-    // n の取得
+    // Get n
     inline int get_n() const { return n; }
 
     // Add comparison operators
@@ -92,7 +93,6 @@ public:
     }
 
 private:
-    // インスタンスを保持する共有ポインタ
     std::shared_ptr<Statistics> instance_;
 };
 
