@@ -265,6 +265,8 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
     }
 }
 
+
+
 TEST_CASE("Matsubara Sampling Tests positive only=false", "[sampling]")
 {
     double beta = 1.0;
@@ -525,45 +527,121 @@ TEST_CASE("Matsubara Sampling Tests", "[sampling]") {
 
 }
 
-TEST_CASE("Matsubara Sampling Tests positive only=true", "[sampling]")
+TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
 {
-    double beta = 1.0;
-    double wmax = 1.0;
-    double Lambda = beta * wmax;
-    auto kernel = sparseir::LogisticKernel(Lambda);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-        beta, wmax, 1e-15, kernel, sve_result);
+    // Common test logic in a helper lambda
+    auto run_noise_test = [&](auto stat_tag) {
+        using S = decltype(stat_tag);
 
-    bool positive_only = true;
-    auto matsu_sampling =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            basis, positive_only);
+        double beta = 1.0;
+        double wmax = 10.0;
+        double Lambda = beta * wmax;
 
-    std::vector<double> Gℓ_vec = {0.514817194180103,     0.06941000654265184,
-                                  0.009657811463696882,  0.0005929608069841677,
-                                  1.1857167801273942e-5, 4.4055619742516887e-7,
-                                  1.356281863743248e-8,  1.728372066677617e-10,
-                                  2.985590912328727e-12, 5.717643847110002e-14};
+        // Build kernel and SVE
+        auto kernel = sparseir::LogisticKernel(Lambda);
+        auto sve_result = sparseir::compute_sve(kernel, 1e-15);
 
-    Eigen::Tensor<double, 1> Gℓ(Gℓ_vec.size());
-    for (int i = 0; i < Gℓ_vec.size(); i++) {
-        Gℓ(i) = Gℓ_vec[i];
-    }
+        // Create finite-temperature basis and TauSampling for the given
+        // statistic
+        auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(
+            beta, wmax, 1e-15, kernel, sve_result);
+        auto tau_sampling = std::make_shared<sparseir::TauSampling<S>>(basis);
 
-    auto Giw = matsu_sampling->evaluate(Gℓ);
-    std::cout << "Giw: \n" << Giw << std::endl;
+        // Prepare test data
+        Eigen::MatrixXd out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
+        Eigen::VectorXd rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
+        Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
 
-    Eigen::Tensor<std::complex<double>, 1> fit_result =
-        matsu_sampling->fit(Giw);
+        Eigen::Tensor<double, 1> Gl(Gl_.size());
+        for (Eigen::Index i = 0; i < Gl_.size(); ++i) {
+            Gl(i) = Gl_(i);
+        }
+        double Gl_magn = Gl_.norm();
 
-    // Get the actual tensor values by evaluating the expression
-    REQUIRE(fit_result.dimension(0) == Gℓ_vec.size());
+        // Evaluate
+        Eigen::Tensor<double, 1> Gτ = tau_sampling->evaluate(Gl);
 
-    // Compare elements
-    for (Eigen::Index i = 0; i < fit_result.dimension(0); ++i) {
-        REQUIRE(fit_result(i).real() == Approx(Gℓ_vec[i]).margin(1e-10));
-        REQUIRE(fit_result(i).imag() == Approx(0.0).margin(1e-10));
+        // Compute norm
+        double Gτ_norm = 0.0;
+        for (Eigen::Index i = 0; i < Gτ.size(); ++i) {
+            Gτ_norm += Gτ(i) * Gτ(i);
+        }
+        Gτ_norm = std::sqrt(Gτ_norm);
+
+        // Add noise
+        double noise = 1e-5;
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        std::normal_distribution<double> distribution(0.0, 1.0);
+        Eigen::Tensor<double, 1> Gτ_n(Gτ.size());
+        for (Eigen::Index i = 0; i < Gτ.size(); ++i) {
+            Gτ_n(i) = Gτ(i) + noise * Gτ_norm * distribution(generator);
+        }
+
+        // Fit back
+        Eigen::Tensor<double, 1> Gl_n = tau_sampling->fit(Gτ_n);
+
+        REQUIRE(sparseir::tensorIsApprox(Gl_n, Gl, 12 * noise * Gl_magn));
+    };
+
+    SECTION("Bosonic") { run_noise_test(sparseir::Bosonic{}); }
+
+    SECTION("Fermionic") { run_noise_test(sparseir::Fermionic{}); }
+}
+
+TEST_CASE("iω noise with Lambda = 10, stat = Bosonic", "[sampling]")
+{
+    for (bool positive_only : {true, false}) {
+        CAPTURE(positive_only);
+
+        double beta = 1.0;
+        double wmax = 10.0;
+        double Lambda = beta * wmax;
+        auto kernel = sparseir::LogisticKernel(Lambda);
+        auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+        auto basis =
+            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+                beta, wmax, 1e-15, kernel, sve_result);
+
+        auto matsu_sampling =
+            std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+                basis, positive_only);
+
+        auto out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
+        auto rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
+        Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
+        double Gl_magn = Gl_.norm();
+        Eigen::Tensor<double, 1> Gℓ(Gl_.size());
+        for (Eigen::Index i = 0; i < Gl_.size(); ++i) {
+            Gℓ(i) = Gl_(i);
+        }
+
+        auto Giw = matsu_sampling->evaluate(Gℓ);
+
+        double noise = 1e-5;
+        double Giw_norm = 0.0;
+        for (Eigen::Index i = 0; i < Giw.size(); ++i) {
+            Giw_norm +=
+                Giw(i).real() * Giw(i).real() + Giw(i).imag() * Giw(i).imag();
+        }
+        Giw_norm = std::sqrt(Giw_norm);
+
+        std::random_device rd;
+        std::mt19937 generator(rd());
+        std::normal_distribution<double> distribution(0.0, 1.0);
+
+        Eigen::Tensor<std::complex<double>, 1> Giwn_n(Giw.size());
+        for (Eigen::Index i = 0; i < Giw.size(); ++i) {
+            Giwn_n(i) = Giw(i) + noise * Giw_norm * distribution(generator);
+        }
+
+        Eigen::Tensor<std::complex<double>, 1> Gℓ_n =
+            matsu_sampling->fit(Giwn_n);
+        Eigen::Tensor<double, 1> Gℓ_n_real = Gℓ_n.real();
+
+        REQUIRE(sparseir::tensorIsApprox(Gℓ_n_real, Gℓ,
+                                         40 * std::sqrt(1 + positive_only) *
+                                             noise * Gl_magn));
     }
 }
 
