@@ -1932,9 +1932,9 @@ end
 
 TEST_CASE("SVEResult::part", "[sve]") {
     // Create dummy polynomial vectors (default-constructed)
-    std::vector<PiecewiseLegendrePoly> dummy(4);
-    PiecewiseLegendrePolyVector u_dummy(dummy);
-    PiecewiseLegendrePolyVector v_dummy(dummy);
+    std::vector<sparseir::PiecewiseLegendrePoly> dummy(4);
+    sparseir::PiecewiseLegendrePolyVector u_dummy(dummy);
+    sparseir::PiecewiseLegendrePolyVector v_dummy(dummy);
 
     // Create a singular value vector (for example: 10, 5, 1, 0.1)
     Eigen::VectorXd s_dummy(4);
