@@ -4,18 +4,17 @@
 #include <numeric>
 #include <vector>
 
+#include <catch2/catch_approx.hpp> // for Approx
 #include <catch2/catch_test_macros.hpp>
-
 #include <sparseir/sparseir-header-only.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
+using Catch::Approx;
 using std::invalid_argument;
-
 using xprec::DDouble;
 
-TEST_CASE("gauss", "[Rule]")
+TEST_CASE("Rule constructor", "[gauss]")
 {
-    // Initialize x, w, v, x_forward, x_backward with DDouble values
     std::vector<DDouble> x, w;
     sparseir::Rule<DDouble> r = sparseir::Rule<DDouble>(x, w);
     REQUIRE(1 == 1);
@@ -42,17 +41,17 @@ void gaussValidate(const sparseir::Rule<T> &rule)
         throw invalid_argument("shapes are inconsistent");
     }
 
-    // TODO: Fix me
-    // REQUIRE(equal(rule.x_forward.begin(), rule.x_forward.end(),
-    // rule.x.begin(), [rule](T xi, T x_forward) { return abs(x_forward - (xi -
-    // rule.a)) < 1e-9; })); REQUIRE(equal(rule.x_backward.begin(),
-    // rule.x_backward.end(), rule.x.begin(), [rule](T xi, T x_backward) {
-    // return abs(x_backward - (rule.b - xi)) < 1e-9; }));
+    for (size_t i = 0; i < rule.x_forward.size(); ++i) {
+        REQUIRE(rule.x_forward[i] == Approx(rule.x[i] - rule.a));
+    }
+    for (size_t i = 0; i < rule.x_backward.size(); ++i) {
+        REQUIRE(rule.x_backward[i] == Approx(rule.b - rule.x[i]));
+    }
 }
 
-TEST_CASE("gauss.cpp")
+TEST_CASE("gauss.cpp", "[gauss]")
 {
-    SECTION("Rule")
+    SECTION("Rule constructor")
     {
         std::vector<DDouble> x(20), w(20);
         DDouble a = -1, b = 1;
