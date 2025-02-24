@@ -10,7 +10,7 @@ TEST_CASE("freq", "[freq]")
     REQUIRE(sparseir::create_statistics(1)->zeta() == 1); // Fermionic
 }
 
-TEST_CASE("freq", "[Integer value of FermionicFreq and BosonicFreq]")
+TEST_CASE("Integer value of FermionicFreq and BosonicFreq", "[freq]")
 {
     sparseir::FermionicFreq f(3);
     sparseir::BosonicFreq b(-2);
@@ -18,20 +18,19 @@ TEST_CASE("freq", "[Integer value of FermionicFreq and BosonicFreq]")
     REQUIRE(b.get_n() == -2);
 }
 
-TEST_CASE("freq", "[Integer value of MatsubaraFreq with explicit integer cast]")
+TEST_CASE("Integer value of MatsubaraFreq with explicit integer cast", "[freq]")
 {
     sparseir::BosonicFreq bf(4);
     REQUIRE(bf.get_n() == 4);
 }
 
-TEST_CASE("freq",
-          "[Exceptions for invalid FermionicFreq and BosonicFreq values]")
+TEST_CASE("Exceptions for invalid FermionicFreq and BosonicFreq values", "[freq]")
 {
     REQUIRE_THROWS_AS(sparseir::FermionicFreq(4), std::domain_error);
     REQUIRE_THROWS_AS(sparseir::BosonicFreq(-7), std::domain_error);
 }
 
-TEST_CASE("freq", "[Comparison operators for FermionicFreq and BosonicFreq]")
+TEST_CASE("Comparison operators for FermionicFreq and BosonicFreq", "[freq]")
 {
     sparseir::FermionicFreq f(5);
     sparseir::BosonicFreq b(6);
@@ -40,7 +39,7 @@ TEST_CASE("freq", "[Comparison operators for FermionicFreq and BosonicFreq]")
     REQUIRE(b.get_n() >= b.get_n());
 }
 
-TEST_CASE("freq", "[Value calculation for MatsubaraFreq]")
+TEST_CASE("Value calculation for MatsubaraFreq", "[freq]")
 {
     double beta = 3.0;
     sparseir::FermionicFreq bf(1);
@@ -48,7 +47,7 @@ TEST_CASE("freq", "[Value calculation for MatsubaraFreq]")
     REQUIRE(bf.value(beta) == expected_value);
 }
 
-TEST_CASE("freq", "[Imaginary value calculation for MatsubaraFreq]")
+TEST_CASE("Imaginary value calculation for MatsubaraFreq", "[freq]")
 {
     double beta = 3.0;
     sparseir::BosonicFreq bf(2);
@@ -57,7 +56,7 @@ TEST_CASE("freq", "[Imaginary value calculation for MatsubaraFreq]")
     REQUIRE(bf.valueim(beta) == expected_valueim);
 }
 
-TEST_CASE("freq", "[iszero check for MatsubaraFreq]")
+TEST_CASE("iszero check for MatsubaraFreq", "[freq]")
 {
     sparseir::FermionicFreq f(-3);
     REQUIRE(!is_zero(f));
