@@ -645,7 +645,7 @@ _test_sve() {
     REQUIRE(ssve2_double.n_gauss == 12);
 }
 
-TEST_CASE("sve.cpp", "[SamplingSVE]")
+TEST_CASE("sve double DDouble", "[sve]")
 {
     _test_sve<double>();
     _test_sve<xprec::DDouble>();
@@ -668,13 +668,13 @@ _test_centrosymmsve() {
     // any check?
 }
 
-TEST_CASE("CentrosymmSVE", "[CentrosymmSVE]")
+TEST_CASE("CentrosymmSVE double DDouble", "[sve]")
 {
     _test_centrosymmsve<double>();
     _test_centrosymmsve<xprec::DDouble>();
 }
 
-TEST_CASE("sve.cpp", "[nsvals]")
+TEST_CASE("LogisticKernel", "[sve]")
 {
     // Lambda = 1.0
     {
@@ -709,7 +709,7 @@ TEST_CASE("sve.cpp", "[nsvals]")
     }
 }
 
-TEST_CASE("sve.cpp", "SamplingSVE")
+TEST_CASE("LogisticKerne and LogisticKernelOdd", "[sve]")
 {
     SECTION("even")
     {
@@ -758,7 +758,7 @@ TEST_CASE("sve.cpp", "SamplingSVE")
     }
 }
 
-TEST_CASE("compute_sve", "[compute_sve]"){
+TEST_CASE("compute_sve", "[sve]"){
     auto epsilon = std::numeric_limits<double>::quiet_NaN();
 
     double safe_epsilon;
@@ -780,7 +780,7 @@ TEST_CASE("compute_sve", "[compute_sve]"){
     REQUIRE(std::abs(diff) < 1e-20);
 }
 
-TEST_CASE("sve.cpp", "[choose_accuracy]")
+TEST_CASE("choose_accuracy", "[sve]")
 {
     REQUIRE(sparseir::choose_accuracy(nullptr, nullptr) ==
             std::make_tuple(2.2204460492503131e-16, "Float64x2", "default"));
@@ -811,7 +811,7 @@ TEST_CASE("sve.cpp", "[choose_accuracy]")
 
 }
 
-TEST_CASE("sve.cpp", "[truncate]")
+TEST_CASE("truncate", "[sve]")
 {
     using T = double;
     sparseir::CentrosymmSVE<sparseir::LogisticKernel, T> sve(sparseir::LogisticKernel(5.), 1e-6);
@@ -851,7 +851,7 @@ TEST_CASE("sve.cpp", "[truncate]")
     }
 }
 
-TEST_CASE("sve.cpp", "[matrices]")
+TEST_CASE("matrices", "[sve]")
 {
     /*
     Julia impl
@@ -1930,4 +1930,38 @@ end
                       -1.08115562356321526158977836971309e-07) < 1e-20);
 }
 
+TEST_CASE("SVEResult::part", "[sve]") {
+    // Create dummy polynomial vectors (default-constructed)
+    std::vector<PiecewiseLegendrePoly> dummy(4);
+    PiecewiseLegendrePolyVector u_dummy(dummy);
+    PiecewiseLegendrePolyVector v_dummy(dummy);
 
+    // Create a singular value vector (for example: 10, 5, 1, 0.1)
+    Eigen::VectorXd s_dummy(4);
+    s_dummy << 10, 5, 1, 0.1;
+
+    // Set the object's epsilon to 0.5.
+    double eps = 0.5;
+    sparseir::SVEResult res(u_dummy, s_dummy, v_dummy, eps);
+
+    // When using NaN as eps, the object's epsilon is used.
+    auto tup = res.part(std::numeric_limits<double>::quiet_NaN());
+    auto u_part = std::get<0>(tup);
+    auto s_part = std::get<1>(tup);
+    auto v_part = std::get<2>(tup);
+
+    // For s_dummy, threshold is eps * s[0] = 0.5*10 = 5.
+    // Hence only the first two values (10 and 5) satisfy >=5.
+    REQUIRE(u_part.size() == 2);
+    REQUIRE(s_part.size() == 2);
+    REQUIRE(v_part.size() == 2);
+
+    // Now test with max_size constraint: max_size = 1 should return only one element.
+    auto tup_max = res.part(std::numeric_limits<double>::quiet_NaN(), 1);
+    auto u_part_max = std::get<0>(tup_max);
+    auto s_part_max = std::get<1>(tup_max);
+    auto v_part_max = std::get<2>(tup_max);
+    REQUIRE(u_part_max.size() == 1);
+    REQUIRE(s_part_max.size() == 1);
+    REQUIRE(v_part_max.size() == 1);
+}
