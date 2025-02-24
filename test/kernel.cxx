@@ -6,10 +6,11 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include <catch2/catch_approx.hpp>
 
-// Include your sparseir headers
 #include <sparseir/sparseir-header-only.hpp>
 
+using Catch::Approx;
 using xprec::DDouble;
 
 template <typename Kernel>
@@ -63,7 +64,7 @@ std::tuple<bool, bool> kernel_accuracy_test(Kernel &K)
     return std::make_tuple(b1, b2);
 }
 
-TEST_CASE("LogisticKernel", "[Kernel]")
+TEST_CASE("LogisticKernel", "[kernel]")
 {
     auto kernel = sparseir::LogisticKernel(40000.0);
     auto reduced_kernel = sparseir::get_symmetrized(kernel, std::integral_constant<int, +1>{});
@@ -161,7 +162,54 @@ TEST_CASE("LogisticKernel", "[Kernel]")
     */
 //}
 
-TEST_CASE("kernel.cpp", "[get_symmetrized]")
+TEST_CASE("weight_func for LogisticKernel(42)", "[kernel]")
+{
+    sparseir::LogisticKernel K(42);
+
+    std::integral_constant<int, +1> plus_one{};
+    std::integral_constant<int, -1> minus_one{};
+    sparseir::ReducedKernel<sparseir::LogisticKernel> K_symm =
+        sparseir::get_symmetrized(K, plus_one);
+    REQUIRE(!K_symm.is_centrosymmetric());
+
+    {
+        auto weight_func_bosonic = K.weight_func<double>(sparseir::Bosonic());
+        REQUIRE(weight_func_bosonic(1e-16) == 1.0 / tanh(0.5 * 42 * 1e-16));
+
+        auto weight_func_fermionic =
+            K.weight_func<double>(sparseir::Fermionic());
+        REQUIRE(weight_func_fermionic(482) == 1.0);
+
+        auto weight_func_symm_bosonic =
+            K_symm.weight_func<double>(sparseir::Bosonic());
+        REQUIRE(weight_func_symm_bosonic(1e-16) == 1.0);
+
+        auto weight_func_symm_fermionic =
+            K_symm.weight_func<double>(sparseir::Fermionic());
+        REQUIRE(weight_func_symm_fermionic(482) == 1.0);
+    }
+
+    {
+        auto weight_func_bosonic =
+            K.weight_func<xprec::DDouble>(sparseir::Bosonic());
+        REQUIRE(weight_func_bosonic(1e-16) ==
+                Approx(1.0 / std::tanh(0.5 * 42 * 1e-16)));
+
+        auto weight_func_fermionic =
+            K.weight_func<xprec::DDouble>(sparseir::Fermionic());
+        REQUIRE(weight_func_fermionic(482) == 1.0);
+
+        auto weight_func_symm_bosonic =
+            K_symm.weight_func<xprec::DDouble>(sparseir::Bosonic());
+        REQUIRE(weight_func_symm_bosonic(1e-16) == 1.0);
+
+        auto weight_func_symm_fermionic =
+            K_symm.weight_func<xprec::DDouble>(sparseir::Fermionic());
+        REQUIRE(weight_func_symm_fermionic(482) == 1.0);
+    }
+}
+
+TEST_CASE("kernel.cpp", "[kernel]")
 {
     SECTION("even")
     {
@@ -184,7 +232,7 @@ TEST_CASE("kernel.cpp", "[get_symmetrized]")
     }
 }
 
-TEST_CASE("Kernel Singularity Test")
+TEST_CASE("Kernel Singularity Test", "[kernel]")
 {
     using T = xprec::DDouble;
     std::vector<double> lambdas = {10.0, 42.0, 10000.0};

@@ -42,6 +42,18 @@ public:
     AbstractKernel() { }
     AbstractKernel(double lambda) : lambda_(lambda) { }
 
+    template<typename T>
+    std::function<T(T)> weight_func(Fermionic F) const
+    {
+        return [](T) { return 1.0; };
+    }
+
+    template<typename T>
+    std::function<T(T)> weight_func(Bosonic B) const
+    {
+        return [](T) { return 1.0; };
+    }
+
     /**
      * @brief Evaluate kernel at point (x, y).
      *
@@ -241,7 +253,7 @@ public:
     T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
-        const 
+        const
     {
         // Check that x and y are within the valid ranges
         std::pair<double, double> x_range = this->xrange();
@@ -297,23 +309,20 @@ public:
      * @return A function representing the weight function w(y).
      */
     template<typename T>
-    std::function<T(T)> weight_func(char statistics) const
+    std::function<T(T)> weight_func(Fermionic F) const
+    {
+        return [](T) { return 1.0; };
+    }
+
+    template<typename T>
+    std::function<T(T)> weight_func(Bosonic B) const
     {
         using std::tanh;
-        if (statistics == 'F') {
-            // Fermionic weight function: w(y) == 1
-            return [](T /*y*/) { return 1.0; };
-        } else if (statistics == 'B') {
-            // Bosonic weight function: w(y) == 1 / tanh(Λ*y/2)
-            double lambda = this->lambda_;
-            return [lambda](T y) {
-                return 1.0 / tanh(0.5 * lambda * y);
-            };
-        } else {
-            throw std::invalid_argument(
-                "statistics must be 'F' for fermions or 'B' for bosons");
-        }
+        return [this](T y) {
+            return 1.0 / tanh(0.5 * this->lambda_ * y);
+        };
     }
+
 
 private:
     /**
@@ -410,7 +419,7 @@ public:
     T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
-        const 
+        const
     {
         // Check that x and y are within the valid ranges
         std::pair<double, double> xrange_values = this->xrange();
@@ -460,25 +469,19 @@ public:
      */
     double conv_radius() const override { return 40.0 * this->lambda_; }
 
-    /**
-     * @brief Return the weight function for given statistics.
-     *
-     * @param statistics 'F' for fermions or 'B' for bosons.
-     * @return A function representing the weight function w(y).
-     */
+
     template<typename T>
-    std::function<T(T)> weight_func(char statistics) const
+    std::function<T(T)> weight_func(Fermionic F) const
     {
-        if (statistics == 'F') {
-            throw std::runtime_error(
-                "Kernel is designed for bosonic functions");
-        } else if (statistics == 'B') {
-            // Bosonic weight function: w(y) == 1 / y
-            return [](T y) { return 1.0 / y; };
-        } else {
-            throw std::invalid_argument(
-                "statistics must be 'F' for fermions or 'B' for bosons");
-        }
+        std::cerr << "RegularizedBoseKernel does not support fermionic functions" << std::endl;
+        throw std::invalid_argument("RegularizedBoseKernel does not support fermionic functions");
+    }
+
+    template <typename T>
+    std::function<T(T)> weight_func(Bosonic B) const
+    {
+        using std::tanh;
+        return [this](T y) { return static_cast<T>(1.0) / y; };
     }
 
     template<typename T>
@@ -524,7 +527,7 @@ private:
      * @param v Computed v.
      * @return The value of K(x, y).
      */
-    
+
     template<typename T>
     T
     compute_from_uv(T u_plus, T u_minus, T v) const
@@ -983,7 +986,7 @@ public:
     T compute(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
-        const 
+        const
     {
         using std::cosh;
         using std::sinh;
@@ -1037,8 +1040,6 @@ get_symmetrized(const LogisticKernel &kernel, std::integral_constant<int, -1>)
 {
     return LogisticKernelOdd(kernel, -1);
 }
-
-
 
 /*
 template<typename T>
