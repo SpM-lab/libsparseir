@@ -12,8 +12,6 @@
 #include <sparseir/sparseir-header-only.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
-// test_piecewise_legendre_poly.cpp
-
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
@@ -24,7 +22,7 @@
 
 using Catch::Approx;
 
-TEST_CASE("StableRNG")
+TEST_CASE("StableRNG", "[poly]")
 {
     // Initialize data directly with the given values
     Eigen::MatrixXd data(3, 3);
@@ -51,9 +49,13 @@ TEST_CASE("StableRNG")
 }
 
 TEST_CASE(
-    "sparseir::PiecewiseLegendrePoly(data::Matrix, knots::Vector, l::Int)")
+    "sparseir::PiecewiseLegendrePoly(data::Matrix, knots::Vector, l::Int)", "[poly]")
 {
     // Initialize data and knots as per the test
+    // julia> using StableRNGs
+    // julia> rng = StableRNG(2024)
+    // julia> data = rand(rng, 3, 3)
+    // julia> knots = rand(rng, size(data, 2) + 1) | > sort
     Eigen::MatrixXd data(3, 3);
     data << 0.8177021060277301, 0.7085670484724618, 0.5033588232863977,
         0.3804323567786363, 0.7911959541742282, 0.8268504271915096,
@@ -75,9 +77,25 @@ TEST_CASE(
     REQUIRE(pwlp.knots.isApprox(knots));
     REQUIRE(pwlp.polyorder == data.rows());
     REQUIRE(pwlp.symm == 0);
+
+    // pwlp(x::Real)
+    double x = 0.5328437345518631;
+    int i;
+    double x̃;
+    std::tie(i, x̃) = pwlp.split(x);
+    REQUIRE(i == 0);
+    REQUIRE(x̃ == Approx(-0.25995538114498773));
+
+    // pwlp(x::AbstractVector)
+    Eigen::VectorXd xs(2);
+    xs << 0.5328437345518631, 0.5328437345518631;
+    Eigen::VectorXd ys = pwlp(xs);
+    REQUIRE(ys.size() == 2);
+    REQUIRE(ys[0] == Approx(2.696073744825952));
+    REQUIRE(ys[1] == Approx(2.696073744825952));
 }
 
-TEST_CASE("PiecewiseLegendrePoly(data, p::PiecewiseLegendrePoly; symm=symm(p))")
+TEST_CASE("PiecewiseLegendrePoly(data, p::PiecewiseLegendrePoly; symm=symm(p))", "[poly]")
 {
     // Initialize data and knots as per the test
     Eigen::MatrixXd data(3, 3);
@@ -119,7 +137,7 @@ TEST_CASE("PiecewiseLegendrePoly(data, p::PiecewiseLegendrePoly; symm=symm(p))")
     REQUIRE(pwlp.norms.isApprox(ddata_pwlp.norms));
 }
 
-TEST_CASE("sparseir::PiecewiseLegendrePolyVector")
+TEST_CASE("sparseir::PiecewiseLegendrePolyVector", "[poly]")
 {
     // Initialize data1
     Eigen::MatrixXd data1(16, 2);
@@ -229,7 +247,7 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector")
     REQUIRE(polys_xs.isApprox(expected_xs));
 }
 
-TEST_CASE("Deriv")
+TEST_CASE("Deriv", "[poly]")
 {
     // Initialize data, knots, and create sparseir::PiecewiseLegendrePoly
     Eigen::MatrixXd data(3, 3);
@@ -280,7 +298,7 @@ TEST_CASE("Deriv")
     }
 }
 
-TEST_CASE("Overlap")
+TEST_CASE("Overlap", "[poly]")
 {
     // Initialize data, knots, and create sparseir::PiecewiseLegendrePoly
     Eigen::MatrixXd data(3, 3);
@@ -307,7 +325,7 @@ TEST_CASE("Overlap")
     REQUIRE(std::abs(integral - expected_integral) < 1e-12);
 }
 
-TEST_CASE("Roots")
+TEST_CASE("Roots", "[poly]")
 {
     // Initialize data and knots (from Julia code)
     Eigen::VectorXd v(32);
