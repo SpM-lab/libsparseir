@@ -410,48 +410,11 @@ Eigen::VectorXd derivs(PiecewiseLegendrePoly ppoly, double x){
 
 namespace sparseir {
 
-// Function to compute the spherical Bessel function of the first kind using
-// recursion
-inline double spherical_bessel_j(int l, double x)
-{
-    if (l < 0) {
-        throw std::invalid_argument("Order l must be non-negative");
-    }
-    if (x == 0.0) {
-        return (l == 0) ? 1.0 : 0.0;
-    }
-
-    // Initial values for the recursion
-    double j0 = std::sin(x) / x;
-    if (l == 0) {
-        return j0;
-    }
-
-    double j1 = (std::sin(x) / (x * x)) - (std::cos(x) / x);
-    if (l == 1) {
-        return j1;
-    }
-
-    // Recursion relation:
-    // j_n(x) = ((2n - 1)/x) * j_{n-1}(x) - j_{n-2}(x)
-    double j_prev_prev = j0;
-    double j_prev = j1;
-    double j_curr = 0.0;
-
-    for (int n = 2; n <= l; ++n) {
-        j_curr = ((2.0 * n - 1.0) / x) * j_prev - j_prev_prev;
-        j_prev_prev = j_prev;
-        j_prev = j_curr;
-    }
-    return j_curr;
-}
-
 inline std::complex<double> get_tnl(int l, double w)
 {
     double abs_w = std::abs(w);
     // Compute spherical Bessel function of order l at abs_w
-    double sph_bessel = spherical_bessel_j(l, abs_w);
-
+    double sph_bessel = sphericalbesselj(l, abs_w);
     // Compute 2i^l
     std::complex<double> im_unit(0.0, 1.0);
     std::complex<double> im_power = std::pow(im_unit, l);
