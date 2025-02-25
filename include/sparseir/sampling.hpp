@@ -82,7 +82,7 @@ _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
 }
 
 inline Eigen::MatrixXcd _fit_impl_first_dim_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
-                    const Eigen::MatrixXcd &B)
+                    const Eigen::MatrixXcd &B, bool has_zero)
 {
     auto U = svd.matrixU();
 
@@ -95,12 +95,17 @@ inline Eigen::MatrixXcd _fit_impl_first_dim_split_svd(const Eigen::JacobiSVD<Eig
     Eigen::MatrixXcd U_imag = Eigen::MatrixXcd::Zero(U_halfsize, U.cols());
 
     // Get the blocks we need
-    auto U_imag_ = U.block(U_halfsize, 0, U_halfsize-1, U.cols());
-    auto U_imag_1 = U.block(0, 0, 1, U.cols());
+    if (has_zero) {
+        U_imag = Eigen::MatrixXcd::Zero(U_halfsize, U.cols());
+        auto U_imag_ = U.block(U_halfsize, 0, U_halfsize - 1, U.cols());
+        auto U_imag_1 = U.block(0, 0, 1, U.cols());
 
-    // Now do the assignments
-    U_imag.topRows(1) = U_imag_1;
-    U_imag.bottomRows(U_imag_.rows()) = U_imag_;
+        // Now do the assignments
+        U_imag.topRows(1) = U_imag_1;
+        U_imag.bottomRows(U_imag_.rows()) = U_imag_;
+    } else {
+        U_imag = U.block(U_halfsize, 0, U_halfsize, U.cols());
+    }
 
     auto U_imagT = U_imag.transpose();
 
@@ -145,7 +150,7 @@ fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
 template <int N>
 Eigen::Tensor<std::complex<double>, N>
 fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
-         const Eigen::Tensor<std::complex<double>, N> &arr, int dim)
+         const Eigen::Tensor<std::complex<double>, N> &arr, int dim, bool has_zero)
 {
     if (dim < 0 || dim >= N) {
         throw std::domain_error("Dimension must be in [0, N).");
@@ -156,7 +161,7 @@ fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
     // Create a view of the tensor as a matrix
     Eigen::MatrixXcd arr_view = Eigen::Map<Eigen::MatrixXcd>(
         arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
-    Eigen::MatrixXcd result = _fit_impl_first_dim_split_svd(svd, arr_view);
+    Eigen::MatrixXcd result = _fit_impl_first_dim_split_svd(svd, arr_view, has_zero);
     // Copy the result to a tensor
     Eigen::array<Eigen::Index, N> dims;
     dims[0] = result.rows();
@@ -381,6 +386,7 @@ private:
     Eigen::MatrixXcd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
     bool positive_only_;
+    bool has_zero_;
 
 public:
     MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
@@ -411,12 +417,11 @@ public:
                                      std::to_string(sampling_points_.size()) +
                                      "x" + std::to_string(basis_->size()));
         }
-
+        has_zero_ = sampling_points_[0].n == 0;
         // Initialize SVD
         if (factorize) {
             if (positive_only_) {
-                bool has_zero = sampling_points_[0].n == 0;
-                matrix_svd_ = make_split_svd(matrix_, has_zero);
+                matrix_svd_ = make_split_svd(matrix_, has_zero_);
             } else {
                 matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -509,7 +514,7 @@ public:
         }
         auto svd = get_matrix_svd();
         if (positive_only_) {
-            return fit_impl_split_svd<N>(svd, ax, dim);
+            return fit_impl_split_svd<N>(svd, ax, dim, has_zero_);
         } else {
             return fit_impl<std::complex<T>, std::complex<T>, N>(svd, ax, dim);
         }

@@ -473,11 +473,10 @@ TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
     SECTION("Fermionic") { run_noise_test(sparseir::Fermionic{}); }
 }
 
-TEST_CASE("iω noise with Lambda = 10, stat = Bosonic", "[sampling]")
+TEST_CASE("iω noise with Lambda = 10", "[sampling]")
 {
-    // TODO: support positive_only = true and false
-    // TODO: support stat = Fermionic
-    for (bool positive_only : {true, false}) {
+    auto run_noise_test = [](auto statistic, bool positive_only) {
+        using S = decltype(statistic);
         CAPTURE(positive_only);
 
         double beta = 1.0;
@@ -485,18 +484,18 @@ TEST_CASE("iω noise with Lambda = 10, stat = Bosonic", "[sampling]")
         double Lambda = beta * wmax;
         auto kernel = sparseir::LogisticKernel(Lambda);
         auto sve_result = sparseir::compute_sve(kernel, 1e-15);
-        auto basis =
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-                beta, wmax, 1e-15, kernel, sve_result);
+        auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(
+            beta, wmax, 1e-15, kernel, sve_result);
 
-        auto matsu_sampling =
-            std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-                basis, positive_only);
+        auto matsu_sampling = std::make_shared<sparseir::MatsubaraSampling<S>>(
+            basis, positive_only);
 
         auto out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
         auto rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
         Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
         double Gl_magn = Gl_.norm();
+
+        // Convert Gl_ to a tensor Gℓ
         Eigen::Tensor<double, 1> Gℓ(Gl_.size());
         for (Eigen::Index i = 0; i < Gl_.size(); ++i) {
             Gℓ(i) = Gl_(i);
@@ -512,8 +511,9 @@ TEST_CASE("iω noise with Lambda = 10, stat = Bosonic", "[sampling]")
         }
         Giw_norm = std::sqrt(Giw_norm);
 
-        std::random_device rd;
-        std::mt19937 generator(rd());
+        // Use fixed seed for reproducibility in Fermionic case
+        std::mt19937 generator = std::is_same<S, sparseir::Fermionic>::value ?
+            std::mt19937(42) : std::mt19937(std::random_device()());
         std::normal_distribution<double> distribution(0.0, 1.0);
 
         Eigen::Tensor<std::complex<double>, 1> Giwn_n(Giw.size());
@@ -528,6 +528,20 @@ TEST_CASE("iω noise with Lambda = 10, stat = Bosonic", "[sampling]")
         REQUIRE(sparseir::tensorIsApprox(Gℓ_n_real, Gℓ,
                                          40 * std::sqrt(1 + positive_only) *
                                              noise * Gl_magn));
+    };
+
+    SECTION("Bosonic") {
+        for (bool positive_only : {true, false}) {
+            run_noise_test(sparseir::Bosonic{}, positive_only);
+        }
+    }
+
+    SECTION("Fermionic") {
+        // TODO: support positive_only = true
+        // TODO: support positive_only = false
+        //for (bool positive_only : {false}) {
+        //    run_noise_test(sparseir::Fermionic{}, positive_only);
+        //}
     }
 }
 
