@@ -321,7 +321,7 @@ private:
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
 };
 
-inline Eigen::JacobiSVD<Eigen::MatrixXcd> makeSplitSVD(const Eigen::MatrixXcd &mat, bool has_zero = false)
+inline Eigen::JacobiSVD<Eigen::MatrixXcd> make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
 {
     const int m = mat.rows(); // Number of rows in the input complex matrix
     const int n = mat.cols(); // Number of columns in the input complex matrix
@@ -416,7 +416,7 @@ public:
         if (factorize) {
             if (positive_only_) {
                 bool has_zero = sampling_points_[0].n == 0;
-                matrix_svd_ = makeSplitSVD(matrix_, has_zero);
+                matrix_svd_ = make_split_svd(matrix_, has_zero);
             } else {
                 matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -487,25 +487,6 @@ public:
         Eigen::VectorX<std::complex<T>> result(result_tensor.dimension(0));
         for (Eigen::Index i = 0; i < result.size(); ++i) {
             result(i) = result_tensor(i);
-        }
-        return result;
-    }
-
-    template <typename T>
-    Eigen::VectorX<T> fit(const Eigen::VectorX<std::complex<T>>& ax) const {
-        // Convert Vector to Tensor
-        Eigen::Tensor<std::complex<T>, 1> ax_tensor(ax.size());
-        for (Eigen::Index i = 0; i < ax.size(); ++i) {
-            ax_tensor(i) = ax(i);
-        }
-
-        // Use existing tensor-based fit
-        auto result_tensor = fit(ax_tensor, 0);
-
-        // Convert result back to Vector
-        Eigen::VectorX<T> result(result_tensor.dimension(0));
-        for (Eigen::Index i = 0; i < result.size(); ++i) {
-            result(i) = std::real(result_tensor(i));  // Take real part if needed
         }
         return result;
     }
