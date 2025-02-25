@@ -12,6 +12,10 @@
 
 namespace sparseir {
 
+// Forward declarations
+template <typename S> class FiniteTempBasis;
+template <typename S> class DiscreteLehmannRepresentation;
+
 // Define WorkSize struct
 // struct WorkSize
 //{
@@ -418,6 +422,42 @@ public:
                                      "x" + std::to_string(basis_->size()));
         }
         has_zero_ = sampling_points_[0].n == 0;
+        // Initialize SVD
+        if (factorize) {
+            if (positive_only_) {
+                matrix_svd_ = make_split_svd(matrix_, has_zero_);
+            } else {
+                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
+                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+            }
+        }
+    }
+
+    // Constructor that takes a DiscreteLehmannRepresentation and sampling points
+    MatsubaraSampling(const DiscreteLehmannRepresentation<S> &dlr,
+                      const std::vector<MatsubaraFreq<S>> &sampling_points,
+                      bool positive_only = false,
+                      bool factorize = true)
+        : basis_(nullptr), sampling_points_(sampling_points), positive_only_(positive_only)
+    {
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points provided");
+        }
+
+        // Initialize evaluation matrix
+        matrix_ = Eigen::MatrixXcd(sampling_points_.size(), dlr.size());
+
+        // Fill the matrix with values from MatsubaraPoles
+        for (size_t i = 0; i < sampling_points_.size(); ++i) {
+            auto col = dlr.uhat(sampling_points_[i]);
+            for (Eigen::Index j = 0; j < col.size(); ++j) {
+                matrix_(i, j) = col(j);
+            }
+        }
+
+        has_zero_ = sampling_points_[0].n == 0;
+
         // Initialize SVD
         if (factorize) {
             if (positive_only_) {

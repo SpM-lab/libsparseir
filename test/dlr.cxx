@@ -9,7 +9,8 @@
 using Catch::Approx;
 
 TEST_CASE("DLR Tests", "[dlr]") {
-    SECTION("Compression Tests") {
+    SECTION("Compression Tests")
+    {
         // Test parameters
         const double beta = 10000.0;
         const double omega_max = 1.0;
@@ -21,9 +22,11 @@ TEST_CASE("DLR Tests", "[dlr]") {
         auto test_statistics = [&](auto stat) {
             using Statistics = decltype(stat);
 
-            auto basis = std::make_shared<sparseir::FiniteTempBasis<Statistics>>(
-                beta, omega_max, epsilon, kernel, sve_result);
-            auto dlr = sparseir::DiscreteLehmannRepresentation<Statistics>(*basis);
+            auto basis =
+                std::make_shared<sparseir::FiniteTempBasis<Statistics>>(
+                    beta, omega_max, epsilon, kernel, sve_result);
+            auto dlr =
+                sparseir::DiscreteLehmannRepresentation<Statistics>(*basis);
 
             // Random generation
             std::mt19937 gen(982743);
@@ -39,7 +42,9 @@ TEST_CASE("DLR Tests", "[dlr]") {
 
             REQUIRE(poles.array().abs().maxCoeff() <= omega_max);
 
-            auto dlr_poles = sparseir::DiscreteLehmannRepresentation<Statistics>(*basis, poles);
+            auto dlr_poles =
+                sparseir::DiscreteLehmannRepresentation<Statistics>(*basis,
+                                                                    poles);
             auto Gl = dlr_poles.to_IR(coeffs);
             auto g_dlr = dlr.from_IR(Gl);
 
@@ -53,7 +58,9 @@ TEST_CASE("DLR Tests", "[dlr]") {
             }
 
             auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
-            auto smpl_for_dlr = sparseir::MatsubaraSampling<Statistics>(basis);
+            auto smpl_points = smpl.sampling_points();
+            auto smpl_for_dlr =
+                sparseir::MatsubaraSampling<Statistics>(dlr, smpl_points);
 
             auto giv_ref = smpl.evaluate(Gl_tensor);
             auto giv = smpl_for_dlr.evaluate(g_dlr_tensor);
