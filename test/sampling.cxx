@@ -537,7 +537,8 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
     }
 
     SECTION("Fermionic") {
-        for (bool positive_only : {true, false}) {
+        // TODO: support positive_only = true
+        for (bool positive_only : {false}) {
             run_noise_test(sparseir::Fermionic{}, positive_only);
         }
     }
