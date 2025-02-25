@@ -473,7 +473,7 @@ TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
     SECTION("Fermionic") { run_noise_test(sparseir::Fermionic{}); }
 }
 
-TEST_CASE("iω noise with Lambda = 10, stat = Fermionic", "[sampling]")
+TEST_CASE("iω noise with Lambda = 10, stat = Bosonic", "[sampling]")
 {
     // TODO: support positive_only = true and false
     // TODO: support stat = Fermionic
@@ -531,7 +531,7 @@ TEST_CASE("iω noise with Lambda = 10, stat = Fermionic", "[sampling]")
     }
 }
 
-TEST_CASE("makeSplitSVD", "[sampling]")
+TEST_CASE("make_split_svd", "[sampling]")
 {
     // Eigen の 3x5 複素数行列 (std::complex<double> 型) を定義
     Eigen::Matrix<std::complex<double>, 3, 5> A;
@@ -557,7 +557,7 @@ TEST_CASE("makeSplitSVD", "[sampling]")
     A(2, 3) = std::complex<double>(0.6250101801493309, 0.07868380451798473);
     A(2, 4) = std::complex<double>(0.2344187232400199, 0.034048468932398324);
 
-    auto svd = sparseir::makeSplitSVD(A, false);
+    auto svd = sparseir::make_split_svd(A, false);
     std::vector<double> svals_expected = {
         2.5882898597468316, 0.7807498949326078, 0.5561024337919539,
         0.4302484700046635, 0.07956198767214633};
@@ -565,7 +565,7 @@ TEST_CASE("makeSplitSVD", "[sampling]")
         REQUIRE(svd.singularValues()(i) == Approx(svals_expected[i]));
     }
 
-    auto svd_has_zero = sparseir::makeSplitSVD(A, true);
+    auto svd_has_zero = sparseir::make_split_svd(A, true);
     std::vector<double> svals_expected_has_zero = {
         2.5111425303908983, 0.7129749569362869, 0.5560724784271746,
         0.2813955280177761, 0.04717410206795309};
