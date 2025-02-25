@@ -531,6 +531,63 @@ TEST_CASE("iω noise with Lambda = 10, stat = Bosonic", "[sampling]")
     }
 }
 
+TEST_CASE("iω noise with Lambda = 10, stat = Fermionic", "[debug]")
+{
+    for (bool positive_only : {true, false}) {
+        double beta = 1.0;
+        double wmax = 10.0;
+        double Lambda = beta * wmax;
+        auto kernel = sparseir::LogisticKernel(Lambda);
+        auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+        auto basis =
+            std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+                beta, wmax, 1e-15, kernel, sve_result);
+
+        auto matsu_sampling =
+            std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(
+                basis, positive_only);
+
+        auto mat = matsu_sampling->get_matrix();
+        auto sampling = matsu_sampling->sampling_points();
+
+        auto out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
+        auto rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
+        Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
+        double Gl_magn = Gl_.norm();
+
+        // Convert Gl_ to a tensor Gℓ
+        Eigen::Tensor<double, 1> Gℓ(Gl_.size());
+        for (Eigen::Index i = 0; i < Gl_.size(); ++i) {
+            Gℓ(i) = Gl_(i);
+        }
+
+        auto Giw = matsu_sampling->evaluate(Gℓ);
+        double noise = 1e-5;
+        double Giw_norm = 0.0;
+        for (Eigen::Index i = 0; i < Giw.size(); ++i) {
+            Giw_norm +=
+                Giw(i).real() * Giw(i).real() + Giw(i).imag() * Giw(i).imag();
+        }
+        Giw_norm = std::sqrt(Giw_norm);
+        // Use fixed seed for reproducibility
+        std::mt19937 generator(42);
+        std::normal_distribution<double> distribution(0.0, 1.0);
+
+        Eigen::Tensor<std::complex<double>, 1> Giwn_n(Giw.size());
+        for (Eigen::Index i = 0; i < Giw.size(); ++i) {
+            Giwn_n(i) = Giw(i) + noise * Giw_norm * distribution(generator);
+        }
+
+        Eigen::Tensor<std::complex<double>, 1> Gℓ_n =
+            matsu_sampling->fit(Giwn_n);
+        Eigen::Tensor<double, 1> Gℓ_n_real = Gℓ_n.real();
+
+        REQUIRE(sparseir::tensorIsApprox(Gℓ_n_real, Gℓ,
+                                         40 * std::sqrt(1 + positive_only) *
+                                             noise * Gl_magn));
+    }
+}
+
 TEST_CASE("make_split_svd", "[sampling]")
 {
     // Eigen の 3x5 複素数行列 (std::complex<double> 型) を定義
