@@ -100,4 +100,53 @@ Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt = 1)
     return c;
 }
 
+// -----------------------------
+// Implementation of Bessel function J_mu(x) using series expansion
+// -----------------------------
+// Definition:
+//  J_mu(x) = sum_{m=0}^∞ (-1)^m / (m! Gamma(m+mu+1)) * (x/2)^(2m+mu)
+// Note: Using std::tgamma (available in C++11 and later)
+inline double _besselj_series(double mu, double x)
+{
+    const int maxIter = 100;
+    double sum = 0.0;
+    double halfx = x / 2.0;
+    for (int m = 0; m < maxIter; ++m) {
+        // (-1)^m
+        double sign = (m % 2 == 0) ? 1.0 : -1.0;
+        // Numerator: (x/2)^(2*m + mu)
+        double termNumerator = std::pow(halfx, 2 * m + mu);
+        // Denominator: m! * Gamma(m + mu + 1)
+        double termDenom = std::tgamma(m + 1) * std::tgamma(m + mu + 1);
+        double term = sign * termNumerator / termDenom;
+        sum += term;
+        // Convergence check (terminate when relative error is small enough)
+        if (std::abs(term) < 1e-14 * std::abs(sum)) {
+            break;
+        }
+    }
+    return sum;
+}
+
+// Calculation of Bessel function J_mu(x) (using series expansion)
+// Note: Precision may decrease for large values of x
+inline double _besselj(double mu, double x) { return _besselj_series(mu, x); }
+
+// (2) For general real order
+// By definition:
+//   j_ν(x) = sqrt(pi/(2x)) * J_{ν+1/2}(x)
+inline double sphericalbesselj(int nu, double x)
+{
+    if (x < 0.0) {
+        throw std::domain_error("sphericalbesselj: x must be nonnegative.");
+    }
+    if (x == 0.0) {
+        // For x == 0, j_0(0)=1 when ν=0, otherwise 0 (real solution)
+        return (nu == 0.0 ? 1.0 : 0.0);
+    }
+    double mu = nu + 0.5; // Half-integer exponent
+    double J = _besselj(mu, x);
+    return std::sqrt(M_PI / (2 * x)) * J;
+}
+
 } // namespace sparseir
