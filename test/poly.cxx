@@ -485,7 +485,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
             REQUIRE(d_extrema[i] == d_extrema_expected[i]);
         }
 
-        auto results_default = sparseir::find_extrema(uhat_full);
+        auto results_default = sparseir::find_extrema(uhat_full, (11 + 1) / 2);
         std::vector<int> results_expected = {-52, -14, -8, -6, -4, -2,
                                              2,   4,   6,  8,  14, 52};
         REQUIRE(results_default.size() == results_expected.size());
@@ -495,7 +495,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
 
         bool positive_only = true;
         auto results_positive_only =
-            sparseir::find_extrema(uhat_full, positive_only);
+            sparseir::find_extrema(uhat_full, 6, positive_only);
         std::vector<int> results_positive_only_expected = {2, 4, 6, 8, 14, 52};
         REQUIRE(results_positive_only.size() ==
                 results_positive_only_expected.size());
