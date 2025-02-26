@@ -296,15 +296,17 @@ default_matsubara_sampling_points(const PiecewiseLegendreFTVector<S> &u_hat,
 
     std::vector<MatsubaraFreq<S>> omega_n;
 
+    int positive_only_size = (l_requested + 1) / 2;
+
     if (l_requested < u_hat.size()) {
-        omega_n = sign_changes(u_hat[l_requested], positive_only);
+        omega_n = sign_changes(u_hat[l_requested], positive_only_size, positive_only);
     } else {
-        omega_n = find_extrema(u_hat[u_hat.size() - 1], positive_only);
+        omega_n = find_extrema(u_hat[u_hat.size() - 1], positive_only_size, positive_only);
     }
 
     int expected_size = l_requested;
     if (positive_only)
-        expected_size = (expected_size + 1) / 2;
+        expected_size = positive_only_size;
 
     if (omega_n.size() != expected_size) {
         std::cerr << "Warning: Requested " << expected_size
