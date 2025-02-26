@@ -512,7 +512,9 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         Giw_norm = std::sqrt(Giw_norm);
 
         // Use fixed seed for reproducibility in Fermionic case
-        std::mt19937 generator = std::mt19937(42);
+
+        std::random_device rd;
+        std::mt19937 generator(rd());
         std::normal_distribution<double> distribution(0.0, 1.0);
 
         Eigen::Tensor<std::complex<double>, 1> Giwn_n(Giw.size());
