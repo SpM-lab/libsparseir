@@ -512,8 +512,7 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         Giw_norm = std::sqrt(Giw_norm);
 
         // Use fixed seed for reproducibility in Fermionic case
-        std::mt19937 generator = std::is_same<S, sparseir::Fermionic>::value ?
-            std::mt19937(42) : std::mt19937(std::random_device()());
+        std::mt19937 generator = std::mt19937(42);
         std::normal_distribution<double> distribution(0.0, 1.0);
 
         Eigen::Tensor<std::complex<double>, 1> Giwn_n(Giw.size());
@@ -539,9 +538,9 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
     SECTION("Fermionic") {
         // TODO: support positive_only = true
         // TODO: support positive_only = false
-        //for (bool positive_only : {false}) {
-        //    run_noise_test(sparseir::Fermionic{}, positive_only);
-        //}
+        for (bool positive_only : {true, false}) {
+            run_noise_test(sparseir::Fermionic{}, positive_only);
+        }
     }
 }
 
