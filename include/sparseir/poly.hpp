@@ -1121,13 +1121,18 @@ inline void symmetrize_matsubara_inplace(std::vector<int> &xs)
 }
 
 template <typename S>
-std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
+std::vector<MatsubaraFreq<S>> sign_changes(
+    const PiecewiseLegendreFT<S> &u_hat,
+    int positive_only_size,
+    bool positive_only=false
+)
 {
     auto grid = DEFAULT_GRID;
     auto f = func_for_part(u_hat);
-    auto x0 = find_all(f, grid);
-    for (int i = 0; i < x0.size(); i++) {
-        x0[i] = 2 * x0[i] + u_hat.zeta();
+    auto x0_ = find_all(f, grid);
+    std::vector<int> x0;
+    for (int i = 0; i < positive_only_size; i++) {
+        x0.push_back(2 * x0_[i] + u_hat.zeta());
     }
 
     if (!positive_only) {
@@ -1142,12 +1147,17 @@ std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, 
 }
 
 template <typename S>
-std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, bool positive_only=false)
+std::vector<MatsubaraFreq<S>> find_extrema(
+    const PiecewiseLegendreFT<S> &u_hat,
+    int positive_only_size,
+    bool positive_only=false
+)
 {
     auto f = func_for_part(u_hat);
-    auto x0 = discrete_extrema(f, DEFAULT_GRID);
-    for (auto &x : x0) {
-        x = 2 * x + u_hat.zeta();
+    auto x0_ = discrete_extrema(f, DEFAULT_GRID);
+    std::vector<int> x0;
+    for (int i = 0; i < positive_only_size; i++) {
+        x0.push_back(2 * x0_[i] + u_hat.zeta());
     }
     if (!positive_only) {
         symmetrize_matsubara_inplace(x0);
