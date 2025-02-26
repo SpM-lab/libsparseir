@@ -404,7 +404,6 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
 
     {
         auto uhat_full = basis->uhat_full[11];
-        auto sign_changes = sparseir::sign_changes(uhat_full);
         std::function<double(int)> f = func_for_part(uhat_full);
         auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
         std::vector<int> expected_results = {0, 1, 2, 3, 4, 14};
@@ -415,7 +414,7 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
 
         std::vector<int> expected_s_out_default = {-28, -8, -6, -4, -2, 0,
                                                    2,   4,  6,  8,  28};
-        auto s_out_default = sparseir::sign_changes(uhat_full);
+        auto s_out_default = sparseir::sign_changes(uhat_full, (11 + 1) / 2);
 
         REQUIRE(s_out_default.size() == expected_s_out_default.size());
         for (size_t i = 0; i < s_out_default.size(); ++i) {
@@ -425,7 +424,7 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
         bool positive_only = true;
         std::vector<int> expected_s_out_positive_only = {0, 2, 4, 6, 8, 28};
         auto s_out_positive_only =
-            sparseir::sign_changes(uhat_full, positive_only);
+            sparseir::sign_changes(uhat_full, 6, positive_only);
         REQUIRE(s_out_positive_only.size() ==
                 expected_s_out_positive_only.size());
         for (size_t i = 0; i < s_out_positive_only.size(); ++i) {
@@ -440,12 +439,12 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
         auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
         REQUIRE(results.size() == 0); // should be empty
 
-        auto s_out_default = sparseir::sign_changes(uhat_full);
+        auto s_out_default = sparseir::sign_changes(uhat_full, (0 + 1) / 2);
         REQUIRE(s_out_default.size() == 0);
 
         bool positive_only = true;
         auto s_out_positive_only =
-            sparseir::sign_changes(uhat_full, positive_only);
+            sparseir::sign_changes(uhat_full, 0, positive_only);
         REQUIRE(s_out_positive_only.size() == 0);
     }
     {
@@ -455,13 +454,13 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
         REQUIRE(results.size() == 1); // should be empty
         REQUIRE(results[0] == 0);
 
-        auto s_out_default = sparseir::sign_changes(uhat_full);
+        auto s_out_default = sparseir::sign_changes(uhat_full, (1 + 1) / 2);
         REQUIRE(s_out_default.size() == 1);
         REQUIRE(s_out_default[0].n == 0);
 
         bool positive_only = true;
         auto s_out_positive_only =
-            sparseir::sign_changes(uhat_full, positive_only);
+            sparseir::sign_changes(uhat_full, 1, positive_only);
         REQUIRE(s_out_positive_only.size() == 1);
         REQUIRE(s_out_positive_only[0].n == 0);
     }
@@ -507,27 +506,27 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
     }
 
     {
-        auto uhat_full = basis->uhat_full[0];
-        std::function<double(int)> f = sparseir::func_for_part(uhat_full);
-        auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
-        std::vector<int> d_extrema_expected = {0};
+        //auto uhat_full = basis->uhat_full[0];
+        //std::function<double(int)> f = sparseir::func_for_part(uhat_full);
+        //auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
+        //std::vector<int> d_extrema_expected = {0};
 
         //REQUIRE(d_extrema.size() == d_extrema_expected.size());
         //for (size_t i = 0; i < d_extrema.size(); ++i) {
         //    REQUIRE(d_extrema[i] == d_extrema_expected[i]);
         //}
 
-        auto results_default = sparseir::find_extrema(uhat_full);
-        std::vector<int> results_expected = {0};
+        //auto results_default = sparseir::find_extrema(uhat_full, (0 + 1) / 2);
+        //std::vector<int> results_expected = {0};
         //REQUIRE(results_default.size() == results_expected.size());
         //for (size_t i = 0; i < results_default.size(); ++i) {
         //    REQUIRE(results_default[i].n == results_expected[i]);
         //}
 
-        bool positive_only = true;
-        auto results_positive_only =
-            sparseir::find_extrema(uhat_full, positive_only);
-        std::vector<int> results_positive_only_expected = {0};
+        //bool positive_only = true;
+        //auto results_positive_only =
+        //    sparseir::find_extrema(uhat_full, positive_only);
+        //std::vector<int> results_positive_only_expected = {0};
         //REQUIRE(results_positive_only.size() ==
         //        results_positive_only_expected.size());
         //for (size_t i = 0; i < results_positive_only.size(); ++i) {
@@ -546,7 +545,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
             REQUIRE(d_extrema[i] == d_extrema_expected[i]);
         }
 
-        auto results_default = sparseir::find_extrema(uhat_full);
+        auto results_default = sparseir::find_extrema(uhat_full, (1 + 1) / 2);
         std::vector<int> results_expected = {-2, 0, 2};
         REQUIRE(results_default.size() == results_expected.size());
         for (size_t i = 0; i < results_default.size(); ++i) {
@@ -555,7 +554,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
 
         bool positive_only = true;
         auto results_positive_only =
-            sparseir::find_extrema(uhat_full, positive_only);
+            sparseir::find_extrema(uhat_full, 2, positive_only);
         std::vector<int> results_positive_only_expected = {0, 2};
         REQUIRE(results_positive_only.size() ==
                 results_positive_only_expected.size());
