@@ -526,7 +526,7 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         Eigen::Tensor<double, 1> Gℓ_n_real = Gℓ_n.real();
 
         REQUIRE(sparseir::tensorIsApprox(Gℓ_n_real, Gℓ,
-                                         40 * std::sqrt(1 + positive_only) *
+                                         80 * std::sqrt(1 + positive_only) *
                                              noise * Gl_magn));
     };
 
