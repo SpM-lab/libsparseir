@@ -247,21 +247,20 @@ res.x_backward, res.a, res.b);
 
 Gauss-Legendre quadrature with `n` points on [-1, 1].
 */
-template <typename T = xprec::DDouble>
-inline Rule<T> legendre(int n)
+inline Rule<xprec::DDouble> legendre(int n)
 {
     std::vector<xprec::DDouble> x(n), w(n);
     xprec::gauss_legendre(n, x.data(), w.data());
     // cast to T
     // Eigen::VectorX<T> new_x = Eigen::Map<Eigen::VectorX<T>>(x.data(),
     // x.size());
-    Eigen::VectorX<T> new_x(x.size());
+    Eigen::VectorX<xprec::DDouble> new_x(x.size());
     std::transform(x.begin(), x.end(), new_x.data(),
-                   [](const xprec::DDouble &xi) { return static_cast<T>(xi); });
-    Eigen::VectorX<T> new_w(w.size());
+                   [](const xprec::DDouble &xi) { return xi; });
+    Eigen::VectorX<xprec::DDouble> new_w(w.size());
     std::transform(w.begin(), w.end(), new_w.data(),
-                   [](const xprec::DDouble &wi) { return static_cast<T>(wi); });
-    return Rule<T>(new_x, new_w);
+                   [](const xprec::DDouble &wi) { return wi; });
+    return Rule<xprec::DDouble>(new_x, new_w);
 }
 
 template <typename T>
@@ -299,8 +298,8 @@ legendre_collocation(const Rule<T> &rule, int n = -1)
     return res;
 }
 
-/*template <typename TargetType, typename SourceType>
-inline sparseir::Rule<TargetType> convert(const sparseir::Rule<SourceType>
+template <typename TargetType, typename SourceType>
+inline sparseir::Rule<TargetType> convert_rule(const sparseir::Rule<SourceType>
 &rule)
 {
     // Convert vectors using Eigen::Map to handle the conversion properly
@@ -312,6 +311,6 @@ rule.x_backward.template cast<TargetType>(); TargetType a =
 static_cast<TargetType>(rule.a); TargetType b = static_cast<TargetType>(rule.b);
 
     return sparseir::Rule<TargetType>(x, w, x_forward, x_backward, a, b);
-}*/
+}
 
 } // namespace sparseir
