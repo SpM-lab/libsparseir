@@ -626,7 +626,8 @@ _test_sve() {
     std::vector<T> segs_y = hints.segments_y();
 
     // Ensure `convert` is declared before this line
-    sparseir::Rule<T> rule = sparseir::legendre<T>(n_gauss);
+    auto rule_xprec_ddouble = sparseir::legendre(n_gauss);
+    auto rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
 
     sparseir::Rule<T> gauss_x = rule.piecewise(segs_x);
     sparseir::Rule<T> gauss_y = rule.piecewise(segs_y);
@@ -662,7 +663,8 @@ _test_centrosymmsve() {
     std::vector<T> segs_x = hints.segments_x();
     std::vector<T> segs_y = hints.segments_y();
 
-    sparseir::Rule<T> rule = sparseir::legendre<T>(n_gauss);
+    auto rule_xprec_ddouble = sparseir::legendre(n_gauss);
+    sparseir::Rule<T> rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
 
     auto sve = sparseir::CentrosymmSVE<sparseir::LogisticKernel,T>(lk, 1e-6);
     // any check?
@@ -725,7 +727,7 @@ TEST_CASE("LogisticKerne and LogisticKernelOdd", "[sve]")
         REQUIRE(even.nsvals_hint == 13);
 
         auto even_rule = even.rule;
-        auto ref_rule = sparseir::legendre<xprec::DDouble>(even.n_gauss);
+        auto ref_rule = sparseir::legendre(even.n_gauss);
         REQUIRE(even_rule.x.isApprox(ref_rule.x));
         REQUIRE(even_rule.w.isApprox(ref_rule.w));
         REQUIRE(even_rule.x_forward.isApprox(ref_rule.x_forward));
@@ -748,7 +750,8 @@ TEST_CASE("LogisticKerne and LogisticKernelOdd", "[sve]")
         REQUIRE(odd.nsvals_hint == 13);
 
         auto odd_rule = odd.rule;
-        auto ref_rule = sparseir::legendre<double>(odd.n_gauss);
+        auto ref_rule_xprec_ddouble = sparseir::legendre(odd.n_gauss);
+        auto ref_rule = sparseir::convert_rule<double>(ref_rule_xprec_ddouble);
         REQUIRE(odd_rule.x.isApprox(ref_rule.x));
         REQUIRE(odd_rule.w.isApprox(ref_rule.w));
         REQUIRE(odd_rule.x_forward.isApprox(ref_rule.x_forward));

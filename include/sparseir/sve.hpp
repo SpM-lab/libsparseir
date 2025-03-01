@@ -226,7 +226,7 @@ public:
             (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
         // TODO: Implement Rule<T>(n_gauss)
         auto rule_xprec_ddouble = legendre(n_gauss);
-        auto rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
+        rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
 
         nsvals_hint = hints->nsvals();
         segs_x = hints->segments_x();
