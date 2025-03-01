@@ -366,7 +366,7 @@ TEST_CASE("fit from tau for both statistics, Λ in {10, 42}", "[sampling]")
 }
 
 
-TEST_CASE("Conditioning Tests") {
+TEST_CASE("Conditioning Tests", "[sampling]") {
     double beta = 3.0;
     double wmax = 3.0;
     double epsilon = 1e-6;
@@ -393,48 +393,107 @@ TEST_CASE("Conditioning Tests") {
     REQUIRE(cond_matsu < 20.0);
 }
 
-// Commenting out Error Handling Tests for now as they're causing issues
-// TODO: Fix these tests
-/*
-TEST_CASE("Error Handling Tests") {
-    double beta = 3.0;
-    double wmax = 3.0;
-    double epsilon = 1e-6;
+TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
+    // Test parameters
+    double beta = 10.0;
+    double wmax = 5.0;
+    double eps = 1e-10;
 
-    auto kernel = LogisticKernel(beta * wmax);
-    auto sve_result = compute_sve(kernel, epsilon);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(
-        beta, wmax, epsilon, kernel, sve_result);
+    // Create a kernel
+    LogisticKernel kernel(beta * wmax);
 
-    auto tau_sampling = make_shared<TauSampling<Bosonic>>(basis);
-    auto matsu_sampling = make_shared<MatsubaraSampling<Bosonic>>(basis);
+    // Compute SVE
+    auto sve_result = compute_sve(kernel, eps);
 
-    // Create a tensor with incorrect size (different from basis size)
-    // Make sure it's much larger than the basis size to ensure it's invalid
-    int incorrect_size = 100;
+    // Create basis
+    auto basis = std::make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, eps, kernel, sve_result);
 
-    // Check that the size is actually incorrect
-    REQUIRE(incorrect_size != basis->size());
+    // Create sampling objects
+    TauSampling<Bosonic> tau_sampling(basis);
+    MatsubaraSampling<Bosonic> matsubara_sampling(basis);
 
-    // Create incorrect size tensor for TauSampling
-    Eigen::Tensor<double, 1> incorrect_size_tensor(incorrect_size);
+    SECTION("TauSampling dimensions") {
+        // Check that the sampling matrix has correct dimensions
+        REQUIRE(tau_sampling.get_matrix().rows() == tau_sampling.sampling_points().size());
+        REQUIRE(tau_sampling.get_matrix().cols() == basis->size());
+    }
 
-    // Create incorrect size complex tensor for MatsubaraSampling
-    Eigen::Tensor<std::complex<double>, 1> incorrect_size_complex_tensor(incorrect_size);
+    SECTION("MatsubaraSampling dimensions") {
+        // Check that the sampling matrix has correct dimensions
+        REQUIRE(matsubara_sampling.get_matrix().rows() == matsubara_sampling.sampling_points().size());
+        REQUIRE(matsubara_sampling.get_matrix().cols() == basis->size());
+    }
 
-    // Test that evaluate throws when given incorrect size input for TauSampling
-    REQUIRE_THROWS(tau_sampling->evaluate(incorrect_size_tensor));
+    SECTION("Evaluate and fit consistency") {
+        // Create random coefficients
+        std::mt19937 rng(42);
+        std::uniform_real_distribution<double> dist(-1.0, 1.0);
 
-    // Test that fit throws when given incorrect size input for TauSampling
-    REQUIRE_THROWS(tau_sampling->fit(incorrect_size_tensor));
+        Eigen::VectorXd coeffs(basis->size());
+        for (int i = 0; i < basis->size(); ++i) {
+            coeffs(i) = dist(rng);
+        }
 
-    // Test that evaluate throws when given incorrect size input for MatsubaraSampling
-    REQUIRE_THROWS(matsu_sampling->evaluate(incorrect_size_tensor));
+        // Evaluate at tau points
+        Eigen::VectorXd values_tau = tau_sampling.get_matrix() * coeffs;
 
-    // Test that fit throws when given incorrect size input for MatsubaraSampling
-    REQUIRE_THROWS(matsu_sampling->fit(incorrect_size_complex_tensor));
+        // Convert Vector to Tensor
+        Eigen::Tensor<double, 1> values_tensor(values_tau.size());
+        for (Eigen::Index i = 0; i < values_tau.size(); ++i) {
+            values_tensor(i) = values_tau(i);
+        }
+
+        // Use existing tensor-based fit
+        auto coeffs_fit_tensor = tau_sampling.fit(values_tensor, 0);
+
+        // Convert result back to Vector
+        Eigen::VectorXd coeffs_fit(coeffs_fit_tensor.dimension(0));
+        for (Eigen::Index i = 0; i < coeffs_fit.size(); ++i) {
+            coeffs_fit(i) = coeffs_fit_tensor(i);
+        }
+
+        // Check that the fitted coefficients match the original ones
+        for (int i = 0; i < basis->size(); ++i) {
+            REQUIRE(coeffs_fit(i) == Approx(coeffs(i)).margin(1e-8));
+        }
+    }
+
+    SECTION("Tensor operations") {
+        // Create a 2D tensor (matrix) of coefficients
+        int extra_dim = 3;
+        Eigen::Tensor<double, 2> coeffs_tensor(basis->size(), extra_dim);
+
+        std::mt19937 rng(42);
+        std::uniform_real_distribution<double> dist(-1.0, 1.0);
+
+        for (int i = 0; i < basis->size(); ++i) {
+            for (int j = 0; j < extra_dim; ++j) {
+                coeffs_tensor(i, j) = dist(rng);
+            }
+        }
+
+        // Evaluate tensor along dimension 0
+        Eigen::Tensor<double, 2> values_tensor = tau_sampling.evaluate(coeffs_tensor, 0);
+
+        // Check dimensions
+        REQUIRE(values_tensor.dimension(0) == tau_sampling.sampling_points().size());
+        REQUIRE(values_tensor.dimension(1) == extra_dim);
+
+        // Fit back to coefficients
+        Eigen::Tensor<double, 2> coeffs_fit_tensor = tau_sampling.fit(values_tensor, 0);
+
+        // Check dimensions
+        REQUIRE(coeffs_fit_tensor.dimension(0) == basis->size());
+        REQUIRE(coeffs_fit_tensor.dimension(1) == extra_dim);
+
+        // Check values
+        for (int i = 0; i < basis->size(); ++i) {
+            for (int j = 0; j < extra_dim; ++j) {
+                REQUIRE(coeffs_fit_tensor(i, j) == Approx(coeffs_tensor(i, j)).margin(1e-8));
+            }
+        }
+    }
 }
-*/
 
 TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
 {
