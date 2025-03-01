@@ -713,25 +713,26 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         using T = double;
 
         // Define the kernel
-        auto kernel =sparseir::LogisticKernel(beta * omega_max);
+        auto kernel = sparseir::LogisticKernel(beta * omega_max);
 
         // Specify both template parameters: S and K
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic>;
         using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic>;
 
         std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon);
-        /*
 
-        // Ensure FiniteTempBasisSet is properly instantiated with the kernel type
-        sparseir::FiniteTempBasisSet<sparseir::LogisticKernel> bs(beta, omega_max, epsilon, kernel);
+        // Create the basis set without template parameter
+        sparseir::FiniteTempBasisSet bs(
+            std::make_shared<FermKernel>(bases.first),
+            std::make_shared<BosKernel>(bases.second),
+            Eigen::VectorXd(),  // Empty tau vector
+            std::vector<int>(), // Empty wn_f vector
+            std::vector<int>()  // Empty wn_b vector
+        );
 
-        REQUIRE(bases.first->singular_values().size() == bs.basis_f()->singular_values().size());
-        REQUIRE(bases.second->singular_values().size() == bs.basis_b()->singular_values().size());
-
-        // Clean up dynamically allocated memory if applicable
-        delete bases.first;
-        delete bases.second;
-        */
+        // Use s (singular values) instead of singular_values() method
+        REQUIRE(bases.first.s.size() == bs.basis_f->s.size());
+        REQUIRE(bases.second.s.size() == bs.basis_b->s.size());
     }
 
     SECTION("Sampling consistency") {
@@ -748,21 +749,22 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic>;
 
         std::pair<FermKernel, BosKernel> bases = sparseir::finite_temp_bases(beta, omega_max, epsilon, sve_result);
-        /*
-        sparseir::FiniteTempBasisSet<sparseir::LogisticKernel> bs(beta, omega_max, epsilon, sve_result);
+
+        // Create shared pointers for the bases
+        std::shared_ptr<FermKernel> basis_f_ptr = std::make_shared<FermKernel>(bases.first);
+        std::shared_ptr<BosKernel> basis_b_ptr = std::make_shared<BosKernel>(bases.second);
+
+        // Create the basis set without template parameter
+        sparseir::FiniteTempBasisSet bs(basis_f_ptr, basis_b_ptr,
+                                       Eigen::VectorXd(), // Empty tau vector
+                                       std::vector<int>(), // Empty wn_f vector
+                                       std::vector<int>()); // Empty wn_b vector
 
         // Check sampling points consistency
-        sparseir::TauSampling<sparseir::Fermionic> smpl_tau_f(bases.first);
-        sparseir::TauSampling<sparseir::Bosonic> smpl_tau_b(bases.second);
+        sparseir::TauSampling<sparseir::Fermionic> smpl_tau_f(basis_f_ptr);
+        sparseir::TauSampling<sparseir::Bosonic> smpl_tau_b(basis_b_ptr);
 
         REQUIRE(smpl_tau_f.sampling_points() == smpl_tau_b.sampling_points());
-        REQUIRE(bs.smpl_tau_f()->matrix() == smpl_tau_f.matrix());
-        REQUIRE(bs.smpl_tau_b()->matrix() == smpl_tau_b.matrix());
-
-        // Clean up dynamically allocated memory if applicable
-        delete bases.first;
-        delete bases.second;
-        */
     }
 
     SECTION("Singular value scaling")
@@ -832,9 +834,18 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         REQUIRE(std::fabs(s_double[17] - s_ref[17]) < 1e-10);
         REQUIRE(std::fabs(s_double[18] - s_ref[18]) < 1e-10);
         REQUIRE(std::fabs(s_double[19] - s_ref[19]) < 1e-10);
-        //REQUIRE(std::fabs(s_double[20] - s_ref[20]) < 1e-10);
-        // REQUIRE(std::fabs(s_double[21] - s_ref[21]) < 1e-10);
-        // REQUIRE(std::fabs(s_double[22] - s_ref[22]) < 1e-10);
+        REQUIRE(std::fabs(s_double[20] - s_ref[20]) < 1e-10);
+        REQUIRE(std::fabs(s_double[21] - s_ref[21]) < 1e-10);
+        REQUIRE(std::fabs(s_double[22] - s_ref[22]) < 1e-10);
+        REQUIRE(std::fabs(s_double[23] - s_ref[23]) < 1e-10);
+        REQUIRE(std::fabs(s_double[24] - s_ref[24]) < 1e-10);
+        REQUIRE(std::fabs(s_double[25] - s_ref[25]) < 1e-10);
+        REQUIRE(std::fabs(s_double[26] - s_ref[26]) < 1e-10);
+        REQUIRE(std::fabs(s_double[27] - s_ref[27]) < 1e-10);
+        REQUIRE(std::fabs(s_double[28] - s_ref[28]) < 1e-10);
+        REQUIRE(std::fabs(s_double[29] - s_ref[29]) < 1e-10);
+        REQUIRE(std::fabs(s_double[30] - s_ref[30]) < 1e-10);
+        REQUIRE(std::fabs(s_double[31] - s_ref[31]) < 1e-10);
 
         REQUIRE(sve->u[0].data.rows() == 10);
         REQUIRE(sve->u[0].data.cols() == 32);
@@ -894,10 +905,11 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         REQUIRE(sve->v[3].symm == -1);
 
         //std::cout << "Singular values: " << s.transpose() << std::endl;
-        /*
+
         int L = 10;
         Eigen::VectorXd pts_L = default_sampling_points(sve->u, L);
         REQUIRE(pts_L.size() == L);
+        /*
         Eigen::VectorXd pts_100 = default_sampling_points(sve->u, 100);
         REQUIRE(pts_100.size() == 24);
         */
