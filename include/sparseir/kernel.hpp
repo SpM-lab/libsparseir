@@ -923,13 +923,11 @@ private:
 
 class RegularizedBoseKernelOdd : public AbstractReducedKernel<RegularizedBoseKernel> {
 public:
-    RegularizedBoseKernel inner_kernel_;
-
     RegularizedBoseKernelOdd(const RegularizedBoseKernel& inner, int sign)
         : AbstractReducedKernel<RegularizedBoseKernel>(inner, sign), inner_kernel_(inner)
     {
         using std::abs;
-        if (!this->is_centrosymmetric()) {
+        if (!inner.is_centrosymmetric()) {
             throw std::runtime_error("inner kernel must be centrosymmetric");
         }
         if (abs(sign) != 1) {
@@ -937,37 +935,30 @@ public:
         }
     }
 
-    // Implement the pure virtual function from the parent class
     template<typename T>
     T compute(T x, T y,
-                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      T x_minus = std::numeric_limits<double>::quiet_NaN())
-        const
+              T x_plus = std::numeric_limits<double>::quiet_NaN(),
+              T x_minus = std::numeric_limits<double>::quiet_NaN()) const
     {
-        T v_half = this->inner.lambda_ * 0.5 * y;
+        T v_half = inner_kernel_.lambda_ * 0.5 * y;
         T xv_half = x * v_half;
         bool xy_small = xv_half < 1;
         bool sinh_range = 1e-200 < v_half && v_half < 85;
         if (xy_small && sinh_range) {
             return y * sinh_impl(xv_half) / sinh_impl(v_half);
         } else {
-            return callreduced(*this, x, x, x_plus, x_minus);
+            return callreduced(*this, x, y, x_plus, x_minus);
         }
-    }
-
-    // You'll need to implement the isCentrosymmetric function
-    // Here's a placeholder
-    bool isCentrosymmetric(RegularizedBoseKernel &kernel)
-    {
-        // Implement this function
-        return true;
     }
 
     template<typename T>
     std::shared_ptr<SVEHintsReduced<T>> sve_hints(double epsilon) const
     {
-        return std::make_shared<SVEHintsReduced<T>>(inner_kernel_.sve_hints<T>(epsilon));
+        return std::make_shared<SVEHintsReduced<T>>(inner_kernel_.template sve_hints<T>(epsilon));
     }
+
+private:
+    RegularizedBoseKernel inner_kernel_;
 };
 
 class LogisticKernelOdd : public AbstractReducedKernel<LogisticKernel> {
@@ -1021,6 +1012,17 @@ struct SymmKernelTraits<LogisticKernel, std::integral_constant<int, 1>> {
     using type = ReducedKernel<LogisticKernel>;
 };
 
+// Add the missing specializations for RegularizedBoseKernel
+template<>
+struct SymmKernelTraits<RegularizedBoseKernel, std::integral_constant<int, -1>> {
+    using type = RegularizedBoseKernelOdd;
+};
+
+template<>
+struct SymmKernelTraits<RegularizedBoseKernel, std::integral_constant<int, 1>> {
+    using type = ReducedKernel<RegularizedBoseKernel>;
+};
+
 template<typename K, typename Sign>
 typename SymmKernelTraits<K, Sign>::type
 get_symmetrized(const K &kernel, Sign);
@@ -1039,6 +1041,22 @@ LogisticKernelOdd
 get_symmetrized(const LogisticKernel &kernel, std::integral_constant<int, -1>)
 {
     return LogisticKernelOdd(kernel, -1);
+}
+
+template<>
+inline
+RegularizedBoseKernelOdd
+get_symmetrized(const RegularizedBoseKernel &kernel, std::integral_constant<int, -1>)
+{
+    return RegularizedBoseKernelOdd(kernel, -1);
+}
+
+template<>
+inline
+ReducedKernel<RegularizedBoseKernel>
+get_symmetrized(const RegularizedBoseKernel &kernel, std::integral_constant<int, +1>)
+{
+    return ReducedKernel<RegularizedBoseKernel>(kernel, 1);
 }
 
 /*
