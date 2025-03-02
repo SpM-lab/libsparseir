@@ -11,11 +11,13 @@
 #include <xprec/ddouble-header-only.hpp>
 
 using Catch::Approx;
+using std::complex;
+using std::make_shared;
+using std::pair;
+using std::shared_ptr;
+using std::vector;
 
-using namespace sparseir;
-using namespace std;
-
-using ComplexF64 = std::complex<double>;
+using ComplexF64 = complex<double>;
 
 TEST_CASE("basis.u[0] test", "[basis]")
 {
@@ -31,12 +33,12 @@ TEST_CASE("basis.u[0] test", "[basis]")
     */
     double beta = 1.0;
     double wmax = 10.0;
-    auto kernel = LogisticKernel(beta * wmax);
-    auto sve_result = compute_sve(kernel, 1e-15);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
+    auto kernel = sparseir::LogisticKernel(beta * wmax);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                        kernel, sve_result);
 
-    std::vector<double> sampling_points_ref_vec =
+    vector<double> sampling_points_ref_vec =
     { -0.9926231612199574,
       -0.9612900365085015,
       -0.9055709783447798,
@@ -59,12 +61,12 @@ TEST_CASE("basis.u[0] test", "[basis]")
     };
 
     auto sampling_points =
-        default_sampling_points(basis->sve_result->u, basis->size());
+        sparseir::default_sampling_points(basis->sve_result->u, basis->size());
     REQUIRE(sampling_points.isApprox(Eigen::Map<Eigen::VectorXd>(
         sampling_points_ref_vec.data(), sampling_points_ref_vec.size())));
 
 
-    std::vector<double> s_ref_vec = {
+    vector<double> s_ref_vec = {
         1.2621489299919293,     0.8363588547029699,     0.3462622585830318,
         0.12082626967769121,    0.03387861935965415,    0.00796130085778543,
         0.0015966925515801561,  0.00027823051505153205, 4.276437930624593e-5,
@@ -87,7 +89,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
     REQUIRE(u.l == 0);
     REQUIRE(u.symm == 1);
 
-    std::vector<double> u_knot_ref_vec = {
+    vector<double> u_knot_ref_vec = {
         0.0,
         0.013623446212733203,
         0.0292485379483044,
@@ -124,7 +126,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
     REQUIRE(u_knots.isApprox(Eigen::Map<Eigen::VectorXd>(
         u_knot_ref_vec.data(), u_knot_ref_vec.size())));
 
-    std::vector<double> u_delta_x_ref_vec = {
+    vector<double> u_delta_x_ref_vec = {
         0.013623446212733203, 0.015625091735571195, 0.01788673828888998,
         0.020424728514969015, 0.02324712520287775,  0.026348364680459868,
         0.029702330065998872, 0.03325418433123545,  0.036912091403024316,
@@ -165,16 +167,16 @@ TEST_CASE("basis.u(x)", "[basis]") {
 
     double beta = 1.0;
     double wmax = 10.0;
-    auto kernel = LogisticKernel(beta * wmax);
-    auto sve_result = compute_sve(kernel, 1e-15);
+    auto kernel = sparseir::LogisticKernel(beta * wmax);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
 
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
+    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
     double x = 0.3;
     auto u0 = basis->u[0];
     auto u0x = u0(x);
 
-    std::vector<double> u0_data_vec = {
+    vector<double> u0_data_vec = {
         0.1306343289249387,
         -0.003088620328392153,
         4.332434116041884e-5,
