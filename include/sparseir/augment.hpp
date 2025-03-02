@@ -314,7 +314,11 @@ public:
     }
 
     const Eigen::VectorXd significance() const override {
-        return basis->significance();
+        Eigen::VectorXd result(size());
+        size_t n_aug = augmentations.size();
+        result.head(n_aug).setOnes();
+        result.tail(basis->size()) = basis->significance();
+        return result;
     }
 
     size_t nAug() const { return augmentations.size(); }
