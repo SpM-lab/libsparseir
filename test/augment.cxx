@@ -13,8 +13,6 @@
 #include <sparseir/sparseir-header-only.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
-using namespace std;
-
 TEST_CASE("AbstractAugmentation", "[augment]")
 {
     using Catch::Approx;
@@ -112,44 +110,40 @@ TEST_CASE("AbstractAugmentation", "[augment]")
 }
 
 TEST_CASE("Augmented bosonic basis", "[augment]") {
-    using T = double;
-    T beta = 1000.0;
-    T wmax = 2.0;
+    double beta = 1000.0;
+    double wmax = 2.0;
 
     // Create bosonic basis
     sparseir::LogisticKernel kernel(beta * wmax);
     auto sve_result = sparseir::compute_sve(kernel, 1e-6);
-    shared_ptr<sparseir::FiniteTempBasis<sparseir::Bosonic>> basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
+    std::shared_ptr<sparseir::FiniteTempBasis<sparseir::Bosonic>> basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
     // Create augmented basis with TauConst and TauLinear
-    vector<shared_ptr<sparseir::AbstractAugmentation>> augmentations;
-    augmentations.push_back(make_shared<sparseir::TauConst>(beta));
-    augmentations.push_back(make_shared<sparseir::TauLinear>(beta));
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
     sparseir::PiecewiseLegendrePolyVector u = basis->u;
     sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic> uhat = basis->uhat;
-    using S = sparseir::FiniteTempBasis<sparseir::Bosonic>;
-    using B = sparseir::Bosonic;
-    using F = sparseir::PiecewiseLegendrePolyVector;
-    using FTBosonic = sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic>;
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
-    T pole = 1.0;
-    T c = 1e-2;
+    double pole = 1.0;
+    double c = 1e-2;
     // Create tau sampling points
-    /*
-    auto tau_sampling = sparseir::TauSampling(basis_aug);
-    auto tau = tau_sampling.tau;
-    //REQUIRE(tau.size() == basis_aug.size());
-    Eigen::VectorX<T> gtau(tau.size());
-    for (size_t i = 0; i < tau.size(); ++i) {
-        gtau(i) = c - exp(-tau(i) * pole) / (1 - exp(-beta * pole));
+    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    auto tau_sampling = sparseir::TauSampling<sparseir::Bosonic>(basis_aug);
+    auto tau = tau_sampling.sampling_points();
+    //REQUIRE(tau.size() == basis_aug->size());
+    Eigen::VectorXd gtau(tau.size());
+    for (std::size_t i = 0; i < tau.size(); ++i) {
+        gtau(i) = c - std::exp(-tau(i) * pole) / (1 - std::exp(-beta * pole));
     }
-    T magn = gtau.maxCoeff();
+    double magn = gtau.maxCoeff();
 
     // This illustrates that "naive" fitting is a problem if the fitting matrix
     // is not well-conditioned.
-    Eigen::MatrixXd tau_matrix = tau_sampling.matrix;
-    Eigen::VectorX<T> gl_fit_bad = tau_matrix.completeOrthogonalDecomposition().solve(gtau);
-    Eigen::VectorX<T> gtau_reconst_bad = tau_matrix * gl_fit_bad;
+    Eigen::MatrixXd tau_matrix = tau_sampling.get_matrix();
+    Eigen::VectorXd gl_fit_bad = tau_matrix.completeOrthogonalDecomposition().solve(gtau);
+    Eigen::VectorXd gtau_reconst_bad = tau_matrix * gl_fit_bad;
+    /*
     REQUIRE(!gtau_reconst_bad.isApprox(gtau, 1e-13 * magn));
     REQUIRE(gtau_reconst_bad.isApprox(gtau, 5e-16 * tau_matrix.norm() * magn));
     REQUIRE(tau_matrix.norm() > 1e7);
@@ -166,36 +160,35 @@ TEST_CASE("Augmented bosonic basis", "[augment]") {
 
 
 TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
-    // Fix: Use proper template parameters for Statistics
-    std::vector<std::shared_ptr<sparseir::Statistics>> stats = {
-        std::make_shared<sparseir::Fermionic>(),
-        std::make_shared<sparseir::Bosonic>()
-    };
 
-    for (const auto& stat : stats) {
-        double beta = 1000.0;
-        double wmax = 2.0;
-        /*
-        auto basis = make_shared<FiniteTempBasis<T>>(stat, beta, wmax, 1e-6);
-        vector<shared_ptr<AbstractAugmentation<T>>> augmentations;
-        augmentations.push_back(make_shared<MatsubaraConst<T>>(beta));
-        AugmentedBasis<T> basis_aug(basis, augmentations);
-        REQUIRE(!basis_aug.uhat.empty());
+    double wmax = 2.0;
+    double beta = 1000.0;
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6);
 
-        // G(iν) = c + 1 / (iν - pole)
-        T pole = 1.0;
-        T c = 1.0;
-        auto matsu_sampling = make_matsubara_sampling(basis_aug);
-        Eigen::VectorXcf gi_n(matsu_sampling.wn.size());
-        for (size_t i = 0; i < matsu_sampling.wn.size(); ++i) {
-            complex<T> iwn(0, matsu_sampling.wn(i));
-            gi_n(i) = c + 1.0 / (iwn - pole);
-        }
-        Eigen::VectorXcf gl = fit(matsu_sampling, gi_n);
-        Eigen::VectorXcf gi_n_reconst = evaluate(matsu_sampling, gl);
-        REQUIRE(gi_n_reconst.isApprox(gi_n, gi_n.maxCoeff() * 1e-7));
-        */
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(std::make_shared<sparseir::MatsubaraConst>(beta));
+    sparseir::AugmentedBasis<sparseir::Bosonic> basis_aug(basis, augmentations);
+
+    REQUIRE(basis_aug.uhat != nullptr);
+    // G(iν) = c + 1 / (iν - pole)
+    double pole = 1.0;
+    double c = 1.0;
+    // Create a shared_ptr to AugmentedBasis
+    auto basis_aug_ptr = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+
+    REQUIRE(basis_aug_ptr->uhat != nullptr);
+    /*
+    auto matsu_sampling =
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis_aug_ptr);
+    Eigen::VectorXcf gi_n(matsu_sampling->sampling_points().size());
+    for (std::size_t i = 0; i < matsu_sampling->sampling_points().size(); ++i) {
+        std::complex<double> iwn(0, matsu_sampling->sampling_points()[i].value(beta));
+        gi_n(i) = c + 1.0 / (iwn - pole);
     }
+    Eigen::VectorXcf gl = matsu_sampling->fit(gi_n);
+    Eigen::VectorXcf gi_n_reconst = matsu_sampling->evaluate(gl);
+    REQUIRE(gi_n_reconst.isApprox(gi_n, gi_n.maxCoeff() * 1e-7));
+    */
 }
 
 
@@ -204,19 +197,20 @@ TEST_CASE("unit tests", "[augment]") {
     T beta = 1000.0;
     T wmax = 2.0;
     using S = sparseir::Bosonic;
-    auto basis = make_shared<sparseir::FiniteTempBasis<S>>(beta, wmax, 1e-6);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(beta, wmax, 1e-6);
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
-    augmentations.push_back(make_shared<sparseir::TauConst>(beta));
-    augmentations.push_back(make_shared<sparseir::TauLinear>(beta));
+    augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
     sparseir::AugmentedBasis<S> basis_aug(basis, augmentations);
     /*
-
     SECTION("getindex") {
         REQUIRE(basis_aug.u.size() == basis_aug.size());
         REQUIRE(basis_aug.u[0]->operator()(0.0) == basis_aug[0](0.0));
         REQUIRE(basis_aug.u[1]->operator()(0.0) == basis_aug[1](0.0));
     }
+    */
 
+    /*
     size_t len_basis = basis->size();
     size_t len_aug = len_basis + 2;
 

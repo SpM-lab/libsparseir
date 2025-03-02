@@ -223,6 +223,25 @@ public:
         return result;
     }
 
+    Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const {
+        // Initialize result matrix with correct dimensions
+        // Rows = number of basis functions, Columns = number of points
+        Eigen::MatrixXd result(basis_func.size() + augmentations.size(), x.size());
+
+        // Evaluate basis functions at each point
+        Eigen::MatrixXd basis_result = basis_func(x);
+        result.bottomRows(basis_func.size()) = basis_result;
+
+        // Evaluate each augmentation at each point
+        for (size_t i = 0; i < augmentations.size(); ++i) {
+            for (Eigen::Index j = 0; j < x.size(); ++j) {
+                result(i, j) = (*augmentations[i])(x(j));
+            }
+        }
+
+        return result;
+    }
+
     size_t size() const {
         return augmentations.size() + basis_func.size();
     }
@@ -261,16 +280,16 @@ class AugmentedBasis : public AbstractBasis<S> {
 private:
     std::shared_ptr<FiniteTempBasis<S>> basis_;
     std::vector<std::shared_ptr<AbstractAugmentation>> augmentations_;
-    std::unique_ptr<AugmentedTauFunction> u_;
-    std::unique_ptr<AugmentedMatsubaraFunction<S>> uhat_;
-
 public:
+    std::unique_ptr<AugmentedTauFunction> u;
+    std::unique_ptr<AugmentedMatsubaraFunction<S>> uhat;
+
     AugmentedBasis(std::shared_ptr<FiniteTempBasis<S>> basis,
                   const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
         : basis_(basis)
         , augmentations_(augmentations)
-        , u_(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
-        , uhat_(std::make_unique<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
+        , u(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
+        , uhat(std::make_unique<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
 
     // Prevent copying, allow moving
     AugmentedBasis(const AugmentedBasis&) = delete;
@@ -295,9 +314,6 @@ public:
         return basis_->significance();
     }
 
-    // Accessors
-    const AugmentedTauFunction& u() const { return *u_; }
-    const AugmentedMatsubaraFunction<S>& uhat() const { return *uhat_; }
     size_t nAug() const { return augmentations_.size(); }
 
     const Eigen::VectorXd default_tau_sampling_points() const override {
