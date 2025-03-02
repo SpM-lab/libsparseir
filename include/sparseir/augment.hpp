@@ -261,16 +261,16 @@ class AugmentedBasis : public AbstractBasis<S> {
 private:
     std::shared_ptr<FiniteTempBasis<S>> basis_;
     std::vector<std::shared_ptr<AbstractAugmentation>> augmentations_;
-    std::unique_ptr<AugmentedTauFunction> u_;
-    std::unique_ptr<AugmentedMatsubaraFunction<S>> uhat_;
-
 public:
+    std::unique_ptr<AugmentedTauFunction> u;
+    std::unique_ptr<AugmentedMatsubaraFunction<S>> uhat;
+
     AugmentedBasis(std::shared_ptr<FiniteTempBasis<S>> basis,
                   const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
         : basis_(basis)
         , augmentations_(augmentations)
-        , u_(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
-        , uhat_(std::make_unique<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
+        , u(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
+        , uhat(std::make_unique<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
 
     // Prevent copying, allow moving
     AugmentedBasis(const AugmentedBasis&) = delete;
@@ -295,9 +295,6 @@ public:
         return basis_->significance();
     }
 
-    // Accessors
-    const AugmentedTauFunction& u() const { return *u_; }
-    const AugmentedMatsubaraFunction<S>& uhat() const { return *uhat_; }
     size_t nAug() const { return augmentations_.size(); }
 
     const Eigen::VectorXd default_tau_sampling_points() const override {

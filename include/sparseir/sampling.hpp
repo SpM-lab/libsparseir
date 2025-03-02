@@ -195,7 +195,7 @@ class MatsubaraSampling;
 
 template <typename S>
 inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
-            const std::shared_ptr<FiniteTempBasis<S>> &basis,
+            const std::shared_ptr<AbstractBasis<S>> &basis,
             const Eigen::VectorXd &x)
 {
     // Initialize matrix with correct dimensions
@@ -211,7 +211,7 @@ inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
 
 template <typename S>
 inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
-                                   const std::shared_ptr<FiniteTempBasis<S>> &basis,
+                                   const std::shared_ptr<AbstractBasis<S>> &basis,
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
@@ -225,7 +225,7 @@ inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampli
 template <typename S>
 class TauSampling : public AbstractSampling<S> {
 public:
-    TauSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
+    TauSampling(const std::shared_ptr<AbstractBasis<S>> &basis,
                 bool factorize = true)
         : basis_(basis)
     {
@@ -324,7 +324,7 @@ public:
     }
 
 private:
-    std::shared_ptr<FiniteTempBasis<S>> basis_;
+    std::shared_ptr<AbstractBasis<S>> basis_;
     Eigen::VectorXd sampling_points_;
     Eigen::MatrixXd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;

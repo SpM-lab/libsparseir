@@ -126,17 +126,14 @@ TEST_CASE("Augmented bosonic basis", "[augment]") {
     augmentations.push_back(make_shared<sparseir::TauLinear>(beta));
     sparseir::PiecewiseLegendrePolyVector u = basis->u;
     sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic> uhat = basis->uhat;
-    using S = sparseir::FiniteTempBasis<sparseir::Bosonic>;
-    using B = sparseir::Bosonic;
-    using F = sparseir::PiecewiseLegendrePolyVector;
-    using FTBosonic = sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic>;
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     T pole = 1.0;
     T c = 1e-2;
     // Create tau sampling points
+    auto basis_aug = make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    auto tau_sampling = sparseir::TauSampling<sparseir::Bosonic>(basis_aug);
     /*
-    auto tau_sampling = sparseir::TauSampling(basis_aug);
     auto tau = tau_sampling.tau;
     //REQUIRE(tau.size() == basis_aug.size());
     Eigen::VectorX<T> gtau(tau.size());
