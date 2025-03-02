@@ -13,31 +13,28 @@
 #include <sparseir/sparseir-header-only.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
-using namespace sparseir;
 using namespace std;
 
-
-TEST_CASE("augment.cxx", "[AbstractAugmentation]")
+TEST_CASE("AbstractAugmentation", "[augment]")
 {
     using Catch::Approx;
-    using namespace sparseir;
 
     SECTION("TauConst")
     {
-        REQUIRE_THROWS_AS(TauConst(-34), std::domain_error);
+        REQUIRE_THROWS_AS(sparseir::TauConst(-34), std::domain_error);
 
-        TauConst tc(123);
+        sparseir::TauConst tc(123);
         REQUIRE(tc.beta == 123.0);
 
         REQUIRE_THROWS_AS(tc(-3), std::domain_error);
         REQUIRE_THROWS_AS(tc(321), std::domain_error);
 
         REQUIRE(tc(100) == 1 / std::sqrt(123));
-        MatsubaraFreq<Bosonic> freq0(0);
-        MatsubaraFreq<Bosonic> freq92(92);
+        sparseir::MatsubaraFreq<sparseir::Bosonic> freq0(0);
+        sparseir::MatsubaraFreq<sparseir::Bosonic> freq92(92);
         REQUIRE(tc(freq0) == std::sqrt(123));
         REQUIRE(tc(freq92) == 0.0);
-        MatsubaraFreq<Fermionic> freq93(93);
+        sparseir::MatsubaraFreq<sparseir::Fermionic> freq93(93);
         REQUIRE_THROWS_AS(tc(freq93), std::invalid_argument);
         auto tdc = tc.deriv();
         REQUIRE(tdc(4.2) == 0.0);
@@ -50,9 +47,9 @@ TEST_CASE("augment.cxx", "[AbstractAugmentation]")
 
     SECTION("TauLinear")
     {
-        REQUIRE_THROWS_AS(TauLinear(-34), std::domain_error);
+        REQUIRE_THROWS_AS(sparseir::TauLinear(-34), std::domain_error);
 
-        TauLinear tl(123);
+        sparseir::TauLinear tl(123);
         REQUIRE(tl.beta == Approx(123.0));
 
         REQUIRE_THROWS_AS(tl(-3), std::domain_error);
@@ -61,9 +58,9 @@ TEST_CASE("augment.cxx", "[AbstractAugmentation]")
         double tau = 100;
         REQUIRE(tl(tau) == std::sqrt(3.0 / 123.0) * (2.0 / 123. * tau - 1.));
 
-        MatsubaraFreq<Bosonic> freq0(0);
+        sparseir::MatsubaraFreq<sparseir::Bosonic> freq0(0);
         REQUIRE(tl(freq0) == 0.0);
-        MatsubaraFreq<Bosonic> freq92(92);
+        sparseir::MatsubaraFreq<sparseir::Bosonic> freq92(92);
         // Calculate the expected complex value
         std::complex<double> expected_value = std::sqrt(3. / 123.) * 2. / std::complex<double>(0, 1) * 123. / (92. * M_PI);
         // Get the actual value from the function
@@ -72,7 +69,7 @@ TEST_CASE("augment.cxx", "[AbstractAugmentation]")
         REQUIRE(actual_value.real() == Approx(expected_value.real()));
         REQUIRE(actual_value.imag() == Approx(expected_value.imag()));
 
-        MatsubaraFreq<Fermionic> freq93(93);
+        sparseir::MatsubaraFreq<sparseir::Fermionic> freq93(93);
         REQUIRE_THROWS_AS(tl(freq93), std::invalid_argument);
 
         double x = 4.2;
@@ -87,20 +84,20 @@ TEST_CASE("augment.cxx", "[AbstractAugmentation]")
 
     SECTION("MatsubaraConst")
     {
-        REQUIRE_THROWS_AS(MatsubaraConst(-34), std::domain_error);
+        REQUIRE_THROWS_AS(sparseir::MatsubaraConst(-34), std::domain_error);
 
-        MatsubaraConst mc(123);
+        sparseir::MatsubaraConst mc(123);
         REQUIRE(mc.beta == Approx(123.0));
 
         REQUIRE_THROWS_AS(mc(-3), std::domain_error);
         REQUIRE_THROWS_AS(mc(321), std::domain_error);
 
         REQUIRE(std::isnan(mc(100)));
-        MatsubaraFreq<Bosonic> freq0(0);
+        sparseir::MatsubaraFreq<sparseir::Bosonic> freq0(0);
         REQUIRE(mc(freq0) == 1.0);
-        MatsubaraFreq<Bosonic> freq92(0);
+        sparseir::MatsubaraFreq<sparseir::Bosonic> freq92(0);
         REQUIRE(mc(freq92) == 1.0);
-        MatsubaraFreq<Fermionic> freq93(93);
+        sparseir::MatsubaraFreq<sparseir::Fermionic> freq93(93);
         REQUIRE(mc(freq93) == 1.0);
 
         auto d0mc = mc.deriv(0);
@@ -114,32 +111,32 @@ TEST_CASE("augment.cxx", "[AbstractAugmentation]")
     }
 }
 
-TEST_CASE("Augmented bosonic basis") {
+TEST_CASE("Augmented bosonic basis", "[augment]") {
     using T = double;
     T beta = 1000.0;
     T wmax = 2.0;
 
     // Create bosonic basis
-    LogisticKernel kernel(beta * wmax);
-    auto sve_result = compute_sve(kernel, 1e-6);
-    shared_ptr<FiniteTempBasis<Bosonic>> basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
+    sparseir::LogisticKernel kernel(beta * wmax);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-6);
+    shared_ptr<sparseir::FiniteTempBasis<sparseir::Bosonic>> basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
     // Create augmented basis with TauConst and TauLinear
-    vector<shared_ptr<AbstractAugmentation>> augmentations;
-    augmentations.push_back(make_shared<TauConst>(beta));
-    augmentations.push_back(make_shared<TauLinear>(beta));
-    PiecewiseLegendrePolyVector u = basis->u;
-    PiecewiseLegendreFTVector<Bosonic> uhat = basis->uhat;
-    using S = FiniteTempBasis<Bosonic>;
-    using B = Bosonic;
-    using F = PiecewiseLegendrePolyVector;
-    using FTBosonic = PiecewiseLegendreFTVector<Bosonic>;
+    vector<shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(make_shared<sparseir::TauLinear>(beta));
+    sparseir::PiecewiseLegendrePolyVector u = basis->u;
+    sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic> uhat = basis->uhat;
+    using S = sparseir::FiniteTempBasis<sparseir::Bosonic>;
+    using B = sparseir::Bosonic;
+    using F = sparseir::PiecewiseLegendrePolyVector;
+    using FTBosonic = sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic>;
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     T pole = 1.0;
     T c = 1e-2;
     // Create tau sampling points
     /*
-    auto tau_sampling = TauSampling(basis_aug);
+    auto tau_sampling = sparseir::TauSampling(basis_aug);
     auto tau = tau_sampling.tau;
     //REQUIRE(tau.size() == basis_aug.size());
     Eigen::VectorX<T> gtau(tau.size());
@@ -170,9 +167,9 @@ TEST_CASE("Augmented bosonic basis") {
 
 TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
     // Fix: Use proper template parameters for Statistics
-    std::vector<std::shared_ptr<Statistics>> stats = {
-        std::make_shared<Fermionic>(),
-        std::make_shared<Bosonic>()
+    std::vector<std::shared_ptr<sparseir::Statistics>> stats = {
+        std::make_shared<sparseir::Fermionic>(),
+        std::make_shared<sparseir::Bosonic>()
     };
 
     for (const auto& stat : stats) {
@@ -206,12 +203,12 @@ TEST_CASE("unit tests", "[augment]") {
     using T = double;
     T beta = 1000.0;
     T wmax = 2.0;
-    using S = Bosonic;
-    auto basis = make_shared<FiniteTempBasis<S>>(beta, wmax, 1e-6);
-    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
-    augmentations.push_back(make_shared<TauConst>(beta));
-    augmentations.push_back(make_shared<TauLinear>(beta));
-    AugmentedBasis<S> basis_aug(basis, augmentations);
+    using S = sparseir::Bosonic;
+    auto basis = make_shared<sparseir::FiniteTempBasis<S>>(beta, wmax, 1e-6);
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(make_shared<sparseir::TauLinear>(beta));
+    sparseir::AugmentedBasis<S> basis_aug(basis, augmentations);
     /*
 
     SECTION("getindex") {

@@ -13,7 +13,6 @@
 #include <vector>
 #include <string>
 
-using namespace sparseir;
 using namespace std;
 using Catch::Approx;
 
@@ -22,11 +21,11 @@ using ComplexF64 = std::complex<double>;
 TEST_CASE("TauSampling Constructor Test", "[sampling]") {
     double beta = 1.0;
     double wmax = 10.0;
-    auto kernel = LogisticKernel(beta * wmax);
-    auto sve_result = compute_sve(kernel, 1e-15);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
+    auto kernel = sparseir::LogisticKernel(beta * wmax);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
-    TauSampling<Bosonic> tau_sampling(basis);
+    sparseir::TauSampling<sparseir::Bosonic> tau_sampling(basis);
 
     // Initialize x vector properly
     Eigen::VectorXd x(1);
@@ -192,10 +191,10 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
 
     double beta = 1.0;
     double wmax = 10.0;
-    auto kernel = LogisticKernel(beta * wmax);
-    auto sve_result = compute_sve(kernel, 1e-15);
+    auto kernel = sparseir::LogisticKernel(beta * wmax);
+    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
 
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, 1e-15,
+    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
 
     // Reshape into matrix with explicit dimensions
@@ -220,12 +219,12 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
     REQUIRE(originalgl(1, 0).imag() == Approx(0.7656989082310841));
     REQUIRE(originalgl(1, 1).imag() == Approx(0.32489755829020933));
 
-    auto tau_sampling = TauSampling<Bosonic>(basis);
+    auto tau_sampling = sparseir::TauSampling<sparseir::Bosonic>(basis);
     Eigen::MatrixXd mat = tau_sampling.get_matrix();
 
     {
         int dim = 0;
-        Eigen::Tensor<ComplexF64, 2> gl = movedim(originalgl, 0, dim);
+        Eigen::Tensor<ComplexF64, 2> gl = sparseir::movedim(originalgl, 0, dim);
 
         REQUIRE(sparseir::tensorIsApprox(gl, originalgl, 1e-10));
 
@@ -237,7 +236,7 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
 
     {
         int dim = 1;
-        Eigen::Tensor<ComplexF64, 2> gl = movedim(originalgl, 0, dim);
+        Eigen::Tensor<ComplexF64, 2> gl = sparseir::movedim(originalgl, 0, dim);
 
         REQUIRE(gl(0, 0).real() == originalgl(0, 0).real());
         REQUIRE(gl(0, 1).real() == originalgl(1, 0).real());
@@ -275,20 +274,20 @@ void test_fit_from_tau_for_stat()
 
     for (auto Lambda : lambdas) {
         SECTION("Testing with Λ=" + std::to_string(Lambda) + " for "
-                + (std::is_same<Stat, Bosonic>::value ? "Bosonic" : "Fermionic"))
+                + (std::is_same<Stat, sparseir::Bosonic>::value ? "Bosonic" : "Fermionic"))
         {
             double wmax = Lambda / beta;
-            auto kernel = LogisticKernel(wmax);
-            auto sve_result = compute_sve(kernel, 1e-15);
+            auto kernel = sparseir::LogisticKernel(wmax);
+            auto sve_result = sparseir::compute_sve(kernel, 1e-15);
 
             // Create a basis matching the template statistic
-            auto basis = make_shared<FiniteTempBasis<Stat>>(
+            auto basis = make_shared<sparseir::FiniteTempBasis<Stat>>(
                 beta, wmax, 1e-15, kernel, sve_result);
 
             REQUIRE(basis->size() > 0);  // Check basis size
 
             // Create TauSampling with the same statistic
-            auto tau_sampling = make_shared<TauSampling<Stat>>(basis);
+            auto tau_sampling = make_shared<sparseir::TauSampling<Stat>>(basis);
 
             // Check sampling points
             REQUIRE(tau_sampling->sampling_points().size() > 0);
@@ -331,7 +330,7 @@ void test_fit_from_tau_for_stat()
             // Test evaluate() and fit() along each dimension
             for (int dim = 0; dim < 4; ++dim) {
                 // Move the "frequency" dimension around
-                Eigen::Tensor<ComplexF64, 4> gl = movedim(originalgl, 0, dim);
+                Eigen::Tensor<ComplexF64, 4> gl = sparseir::movedim(originalgl, 0, dim);
 
                 // Evaluate from real-time/tau to imaginary-time/tau
                 Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
@@ -361,8 +360,8 @@ void test_fit_from_tau_for_stat()
 // Now just call the helper function for both Bosonic and Fermionic
 TEST_CASE("fit from tau for both statistics, Λ in {10, 42}", "[sampling]")
 {
-    test_fit_from_tau_for_stat<Bosonic>();
-    test_fit_from_tau_for_stat<Fermionic>();
+    test_fit_from_tau_for_stat<sparseir::Bosonic>();
+    test_fit_from_tau_for_stat<sparseir::Fermionic>();
 }
 
 
@@ -371,13 +370,13 @@ TEST_CASE("Conditioning Tests", "[sampling]") {
     double wmax = 3.0;
     double epsilon = 1e-6;
 
-    auto kernel = LogisticKernel(beta * wmax);
-    auto sve_result = compute_sve(kernel, epsilon);
-    auto basis = make_shared<FiniteTempBasis<Bosonic>>(
+    auto kernel = sparseir::LogisticKernel(beta * wmax);
+    auto sve_result = sparseir::compute_sve(kernel, epsilon);
+    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, epsilon, kernel, sve_result);
 
-    auto tau_sampling = make_shared<TauSampling<Bosonic>>(basis);
-    auto matsu_sampling = make_shared<MatsubaraSampling<Bosonic>>(basis);
+    auto tau_sampling = make_shared<sparseir::TauSampling<sparseir::Bosonic>>(basis);
+    auto matsu_sampling = make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis);
 
     // Calculate condition number as the ratio of largest to smallest singular value
     auto tau_svd = tau_sampling->get_matrix_svd();
@@ -400,17 +399,17 @@ TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
     double eps = 1e-10;
 
     // Create a kernel
-    LogisticKernel kernel(beta * wmax);
+    sparseir::LogisticKernel kernel(beta * wmax);
 
     // Compute SVE
-    auto sve_result = compute_sve(kernel, eps);
+    auto sve_result = sparseir::compute_sve(kernel, eps);
 
     // Create basis
-    auto basis = std::make_shared<FiniteTempBasis<Bosonic>>(beta, wmax, eps, kernel, sve_result);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, eps, kernel, sve_result);
 
     // Create sampling objects
-    TauSampling<Bosonic> tau_sampling(basis);
-    MatsubaraSampling<Bosonic> matsubara_sampling(basis);
+    sparseir::TauSampling<sparseir::Bosonic> tau_sampling(basis);
+    sparseir::MatsubaraSampling<sparseir::Bosonic> matsubara_sampling(basis);
 
     SECTION("TauSampling dimensions") {
         // Check that the sampling matrix has correct dimensions
