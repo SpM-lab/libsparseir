@@ -244,9 +244,9 @@ evaluate_uhat_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
     return basis->uhat(x);
 }
 
-template <typename S, typename T>
-inline std::complex<double> evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                   const T &x)
+template <typename S>
+inline Eigen::VectorXcd evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+                   const MatsubaraFreq<S> &x)
 {
     return basis->uhat(x);
 }

@@ -174,16 +174,31 @@ TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
     // Create a shared_ptr to AugmentedBasis
     auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
 
-    /*
     auto matsu_sampling =
         std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis_aug);
-    Eigen::VectorXcf gi_n(matsu_sampling->sampling_points().size());
+    Eigen::VectorXcd gi_n(matsu_sampling->sampling_points().size());
     for (std::size_t i = 0; i < matsu_sampling->sampling_points().size(); ++i) {
         std::complex<double> iwn(0, matsu_sampling->sampling_points()[i].value(beta));
         gi_n(i) = c + 1.0 / (iwn - pole);
     }
-    Eigen::VectorXcf gl = matsu_sampling->fit(gi_n);
-    Eigen::VectorXcf gi_n_reconst = matsu_sampling->evaluate(gl);
+    // Convert VectorXcd to Tensor
+    Eigen::Tensor<std::complex<double>, 1> gi_n_tensor(gi_n.size());
+    for (std::size_t i = 0; i < gi_n.size(); ++i) {
+        gi_n_tensor(i) = gi_n(i);
+    }
+
+    // Fit the data
+    auto gl = matsu_sampling->fit(gi_n_tensor);
+
+    // Convert tensor result back to vector for evaluation
+    Eigen::VectorXcd gl_vec(gl.dimension(0));
+    for (Eigen::Index i = 0; i < gl.dimension(0); ++i) {
+        gl_vec(i) = gl(i);
+    }
+
+    /*
+    // Now evaluate using the vector version
+    Eigen::VectorXcd gi_n_reconst = matsu_sampling->evaluate(gl_vec);
     REQUIRE(gi_n_reconst.isApprox(gi_n, gi_n.maxCoeff() * 1e-7));
     */
 }
