@@ -177,9 +177,9 @@ TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
     auto basis_aug_ptr = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
 
     REQUIRE(basis_aug_ptr->uhat != nullptr);
-    /*
     auto matsu_sampling =
         std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis_aug_ptr);
+    /*
     Eigen::VectorXcf gi_n(matsu_sampling->sampling_points().size());
     for (std::size_t i = 0; i < matsu_sampling->sampling_points().size(); ++i) {
         std::complex<double> iwn(0, matsu_sampling->sampling_points()[i].value(beta));
