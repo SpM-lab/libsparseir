@@ -161,25 +161,22 @@ TEST_CASE("Augmented bosonic basis", "[augment]") {
 
 TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
 
-    double wmax = 2.0;
     double beta = 1000.0;
+    double wmax = 2.0;
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::MatsubaraConst>(beta));
-    sparseir::AugmentedBasis<sparseir::Bosonic> basis_aug(basis, augmentations);
 
-    REQUIRE(basis_aug.uhat != nullptr);
     // G(iν) = c + 1 / (iν - pole)
     double pole = 1.0;
     double c = 1.0;
     // Create a shared_ptr to AugmentedBasis
-    auto basis_aug_ptr = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
 
-    REQUIRE(basis_aug_ptr->uhat != nullptr);
     /*
     auto matsu_sampling =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis_aug_ptr);
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis_aug);
     Eigen::VectorXcf gi_n(matsu_sampling->sampling_points().size());
     for (std::size_t i = 0; i < matsu_sampling->sampling_points().size(); ++i) {
         std::complex<double> iwn(0, matsu_sampling->sampling_points()[i].value(beta));
@@ -227,4 +224,47 @@ TEST_CASE("unit tests", "[augment]") {
 
     //Further tests omitted for brevity,  adapt as needed from Julia code.
     */
+}
+
+TEST_CASE("AugmentBasis basis_aug->u", "[augment]") {
+    double omega_max = 2.0;
+    // double beta = 1000.0;
+    double beta = 10.0;
+    double epsilon = 1e-6;
+
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon);
+
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
+    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+
+    Eigen::VectorXd sampling_points = basis_aug->default_tau_sampling_points();
+    sparseir::AugmentedTauFunction u = basis_aug->u;
+    // TODO: Check numerical correctness
+    Eigen::VectorXd v = u(1.0);
+
+    Eigen::MatrixXd m = u(sampling_points);
+    REQUIRE(m.cols() == sampling_points.size());
+}
+
+TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
+    double omega_max = 2.0;
+    // double beta = 1000.0;
+    double beta = 10.0;
+    double epsilon = 1e-6;
+
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon);
+
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
+    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    bool fence = false;
+    bool positive_only = true;
+    auto sampling_points = sparseir::default_matsubara_sampling_points(
+        basis_aug->basis->uhat_full, basis_aug->size(), fence, positive_only
+    );
+    Eigen::VectorXcd v = basis_aug->uhat(sampling_points[0]);
+    REQUIRE(v.size() == basis_aug->size());
 }

@@ -197,18 +197,27 @@ template <typename S>
 class AugmentedBasis;
 
 template <typename Basis>
-Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
+inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
             const Eigen::VectorXd &x)
 {
     return basis->u(x);
 }
 
+/*
+inline Eigen::VectorXd evaluate_u_at_x(const AugmentedTauFunction &u,
+                                      const double x)
+{
+    // Call the operator() directly on the AugmentedTauFunction
+    return u(x);
+}
+*/
+
 template <typename S>
-Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
                                 const Eigen::VectorXd &x)
 {
     // Dereference the unique_ptr to access the AugmentedTauFunction
-    return (*basis->u)(x);
+    return basis->u(x);
 }
 
 template <typename S, typename Basis>
@@ -236,16 +245,15 @@ evaluate_uhat_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
 }
 
 template <typename S, typename T>
-inline Eigen::VectorXcd
-evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+inline std::complex<double> evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
                    const T &x)
 {
     return basis->uhat(x);
 }
 
-template <typename S>
+template <typename S, typename Base>
 inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
-                                   const std::shared_ptr<FiniteTempBasis<S>> &basis,
+                                   const std::shared_ptr<Base> &basis,
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
@@ -453,7 +461,7 @@ $(cond(sampling)))." end return sampling end
 template <typename S>
 class MatsubaraSampling : public AbstractSampling<S> {
 private:
-    std::shared_ptr<FiniteTempBasis<S>> basis_;
+    std::shared_ptr<AbstractBasis<S>> basis_;
     std::vector<MatsubaraFreq<S>> sampling_points_;
     Eigen::MatrixXcd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
@@ -488,7 +496,48 @@ public:
                                      ", expected " +
                                      std::to_string(sampling_points_.size()) +
                                      "x" + std::to_string(basis->size()));
+        }
+        has_zero_ = sampling_points_[0].n == 0;
+        // Initialize SVD
+        if (factorize) {
+            if (positive_only_) {
+                matrix_svd_ = make_split_svd(matrix_, has_zero_);
+            } else {
+                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
+                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+            }
+        }
         basis_ = basis;
+    }
+
+    MatsubaraSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
+                       bool positive_only = false,
+                       bool factorize = true)
+        : basis_(basis), positive_only_(positive_only)
+    {
+        // Get default sampling points from basis
+        bool fence = false;
+        // Note that we use basis->basis->uhat_full, not basis->uhat_full
+        sampling_points_ = default_matsubara_sampling_points(basis->basis->uhat_full, basis->size(), fence, positive_only);
+        std::sort(sampling_points_.begin(), sampling_points_.end());
+
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points generated");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(this, basis, sampling_points_);
+
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points_.size()) +
+                                     "x" + std::to_string(basis->size()));
         }
         has_zero_ = sampling_points_[0].n == 0;
         // Initialize SVD
