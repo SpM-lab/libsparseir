@@ -197,18 +197,18 @@ template <typename S>
 class AugmentedBasis;
 
 template <typename Basis>
-Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
+inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
             const Eigen::VectorXd &x)
 {
     return basis->u(x);
 }
 
 template <typename S>
-Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
                                 const Eigen::VectorXd &x)
 {
     // Dereference the unique_ptr to access the AugmentedTauFunction
-    return (*basis->u)(x);
+    return basis->u(x);
 }
 
 template <typename S, typename Basis>
@@ -453,7 +453,7 @@ $(cond(sampling)))." end return sampling end
 template <typename S>
 class MatsubaraSampling : public AbstractSampling<S> {
 private:
-    std::shared_ptr<FiniteTempBasis<S>> basis_;
+    std::shared_ptr<AbstractBasis<S>> basis_;
     std::vector<MatsubaraFreq<S>> sampling_points_;
     Eigen::MatrixXcd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
@@ -505,7 +505,7 @@ public:
     MatsubaraSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
                        bool positive_only = false,
                        bool factorize = true)
-        : positive_only_(positive_only)
+        : basis_(basis), positive_only_(positive_only)
     {
         // Get default sampling points from basis
         bool fence = false;
@@ -541,7 +541,6 @@ public:
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
             }
         }
-        basis_ = basis;
     }
 
     // Constructor that takes a DiscreteLehmannRepresentation and sampling points

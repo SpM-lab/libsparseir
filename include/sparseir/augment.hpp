@@ -280,15 +280,15 @@ class AugmentedBasis : public AbstractBasis<S> {
 public:
     std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
     std::shared_ptr<FiniteTempBasis<S>> basis;
-    std::unique_ptr<AugmentedTauFunction> u;
-    std::unique_ptr<AugmentedMatsubaraFunction<S>> uhat;
+    AugmentedTauFunction u;
+    AugmentedMatsubaraFunction<S> uhat;
 
     AugmentedBasis(std::shared_ptr<FiniteTempBasis<S>> basis,
                   const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
         : basis(basis)
         , augmentations(augmentations)
-        , u(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
-        , uhat(std::make_unique<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
+        , u(basis->u, augmentations)
+        , uhat(basis->uhat, augmentations) {}
 
     // Prevent copying, allow moving
     AugmentedBasis(const AugmentedBasis&) = delete;
