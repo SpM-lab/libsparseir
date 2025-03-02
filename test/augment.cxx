@@ -226,20 +226,45 @@ TEST_CASE("unit tests", "[augment]") {
     */
 }
 
-TEST_CASE("AugmentBasis evaluate_uhat_at_x", "[augment]") {
+TEST_CASE("AugmentBasis basis_aug->u", "[augment]") {
     double omega_max = 2.0;
-    double beta = 1000.0;
+    // double beta = 1000.0;
+    double beta = 10.0;
     double epsilon = 1e-6;
 
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon);
+
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
-    sparseir::AugmentedBasis<sparseir::Bosonic> basis_aug(basis, augmentations);
-    Eigen::VectorXd sampling_points = basis_aug.default_tau_sampling_points();
-    sparseir::AugmentedTauFunction u = basis_aug.u;
-    Eigen::MatrixXd m = u(sampling_points);
+    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
 
-    Eigen::VectorXcd uhat_x = sparseir::evaluate_uhat_at_x(basis, sampling_points[0]);
-    REQUIRE(true);
+    Eigen::VectorXd sampling_points = basis_aug->default_tau_sampling_points();
+    sparseir::AugmentedTauFunction u = basis_aug->u;
+    // TODO: Check numerical correctness
+    Eigen::VectorXd v = u(1.0);
+
+    Eigen::MatrixXd m = u(sampling_points);
+    REQUIRE(m.cols() == sampling_points.size());
+}
+
+TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
+    double omega_max = 2.0;
+    // double beta = 1000.0;
+    double beta = 10.0;
+    double epsilon = 1e-6;
+
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon);
+
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
+    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    bool fence = false;
+    bool positive_only = true;
+    auto sampling_points = sparseir::default_matsubara_sampling_points(
+        basis_aug->basis->uhat_full, basis_aug->size(), fence, positive_only
+    );
+    Eigen::VectorXcd v = basis_aug->uhat(sampling_points[0]);
+    REQUIRE(v.size() == basis_aug->size());
 }
