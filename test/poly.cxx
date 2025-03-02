@@ -380,7 +380,6 @@ TEST_CASE("func_for_part tests", "[poly]")
                                                        kernel, sve_result);
 
     auto uhat_full = basis->uhat_full[0];
-    std::cout << "uhat_full.poly.symm: " << uhat_full.poly.symm << std::endl;
     auto func_for_part = sparseir::func_for_part(uhat_full);
 
     REQUIRE(func_for_part(0) == uhat_full(0).real());
