@@ -194,15 +194,33 @@ template <typename S>
 class MatsubaraSampling;
 
 template <typename S>
+class AugmentedBasis;
+
+template <typename S>
+Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
+            const Eigen::VectorXd &x)
+{
+    return basis->u(x);
+}
+
+template <typename S>
+Eigen::MatrixXd
+evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+                const Eigen::VectorXd &x)
+{
+    return basis->u(x);
+}
+
+template <typename S>
 inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
-            const std::shared_ptr<AbstractBasis<S>> &basis,
+            const std::shared_ptr<FiniteTempBasis<S>> &basis,
             const Eigen::VectorXd &x)
 {
     // Initialize matrix with correct dimensions
     Eigen::MatrixXd matrix(x.size(), basis->size());
 
     // Evaluate basis functions at sampling points
-    auto u_eval = basis->u(x);
+    auto u_eval = evaluate_u_at_x(basis, x);
     // Transpose and scale by singular values
     matrix = u_eval.transpose();
 
@@ -210,13 +228,61 @@ inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
 }
 
 template <typename S>
+inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
+            const std::shared_ptr<AugmentedBasis<S>> &basis,
+            const Eigen::VectorXd &x)
+{
+    // Initialize matrix with correct dimensions
+    Eigen::MatrixXd matrix(x.size(), basis->size());
+
+    // Evaluate basis functions at sampling points
+    auto u_eval = evaluate_u_at_x(basis, x);
+    // Transpose and scale by singular values
+    matrix = u_eval.transpose();
+
+    return matrix;
+}
+
+template <typename S>
+inline Eigen::MatrixXd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
+            const std::shared_ptr<AugmentedBasis<S>> &basis,
+            const Eigen::VectorXd &x)
+{
+    // Initialize matrix with correct dimensions
+    Eigen::MatrixXd matrix(x.size(), basis->size());
+
+    // Evaluate basis functions at sampling points
+    auto u_eval = evaluate_u_at_x(basis, x);
+    // Transpose and scale by singular values
+    matrix = u_eval.transpose();
+
+    return matrix;
+}
+
+template <typename S, typename T>
+inline Eigen::VectorXcd
+evaluate_uhat_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
+                   const T &x)
+{
+    return basis->uhat(x);
+}
+
+template <typename S, typename T>
+inline Eigen::VectorXcd
+evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+                   const T &x)
+{
+    return basis->uhat(x);
+}
+
+template <typename S>
 inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
-                                   const std::shared_ptr<AbstractBasis<S>> &basis,
+                                   const std::shared_ptr<FiniteTempBasis<S>> &basis,
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
     for (int i = 0; i < sampling_points.size(); ++i) {
-        m.col(i) = basis->uhat(sampling_points[i]);
+        m.col(i) = evaluate_uhat_at_x(basis, sampling_points[i]);
     }
     Eigen::MatrixXcd matrix = m.transpose();
     return matrix;
@@ -224,13 +290,18 @@ inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampli
 
 template <typename S>
 class TauSampling : public AbstractSampling<S> {
+private:
+    std::shared_ptr<AbstractBasis<S>> basis_;
+    Eigen::VectorXd sampling_points_;
+    Eigen::MatrixXd matrix_;
+    Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
+
 public:
-    TauSampling(const std::shared_ptr<AbstractBasis<S>> &basis,
+    TauSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
                 bool factorize = true)
-        : basis_(basis)
     {
         // Get default sampling points from basis
-        sampling_points_ = basis_->default_tau_sampling_points();
+        sampling_points_ = basis->default_tau_sampling_points();
 
         // Ensure matrix dimensions are correct
         if (sampling_points_.size() == 0) {
@@ -238,16 +309,16 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis_, sampling_points_);
+        matrix_ = eval_matrix(this, basis, sampling_points_);
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis_->size()) {
+            matrix_.cols() != basis->size()) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
                                      ", expected " +
                                      std::to_string(sampling_points_.size()) +
-                                     "x" + std::to_string(basis_->size()));
+                                     "x" + std::to_string(basis->size()));
         }
 
         // Initialize SVD
@@ -255,6 +326,41 @@ public:
             matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
+
+        basis_ = basis;
+    }
+
+    TauSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
+                bool factorize = true)
+    {
+        // Get default sampling points from basis
+        sampling_points_ = basis->default_tau_sampling_points();
+
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points generated");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(this, basis, sampling_points_);
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points_.size()) +
+                                     "x" + std::to_string(basis->size()));
+        }
+
+        // Initialize SVD
+        if (factorize) {
+            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
+                matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        }
+
+        basis_ = basis;
     }
 
     // Evaluate the basis coefficients at sampling points
@@ -322,12 +428,6 @@ public:
     {
         return matrix_svd_;
     }
-
-private:
-    std::shared_ptr<AbstractBasis<S>> basis_;
-    Eigen::VectorXd sampling_points_;
-    Eigen::MatrixXd matrix_;
-    Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
 };
 
 inline Eigen::JacobiSVD<Eigen::MatrixXcd> make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)

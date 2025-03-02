@@ -29,7 +29,6 @@ add_executable(libsparseirtests
     augment.cxx
     sampling.cxx
     dlr.cxx
-    #basis_set.cxx
 )
 
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
