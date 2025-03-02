@@ -143,19 +143,17 @@ TEST_CASE("Augmented bosonic basis", "[augment]") {
     Eigen::MatrixXd tau_matrix = tau_sampling.get_matrix();
     Eigen::VectorXd gl_fit_bad = tau_matrix.completeOrthogonalDecomposition().solve(gtau);
     Eigen::VectorXd gtau_reconst_bad = tau_matrix * gl_fit_bad;
-    /*
     REQUIRE(!gtau_reconst_bad.isApprox(gtau, 1e-13 * magn));
     REQUIRE(gtau_reconst_bad.isApprox(gtau, 5e-16 * tau_matrix.norm() * magn));
     REQUIRE(tau_matrix.norm() > 1e7);
-    REQUIRE(tau_matrix.rows() == basis_aug.size());
+    REQUIRE(tau_matrix.rows() == basis_aug->size());
     REQUIRE(tau_matrix.cols() == tau.size());
 
     // Now do the fit properly
-    Eigen::VectorX<T> gl_fit = tau_matrix.colPivHouseholderQr().solve(gtau);
-    Eigen::VectorX<T> gtau_reconst = tau_matrix * gl_fit;
+    Eigen::VectorXd gl_fit = tau_matrix.colPivHouseholderQr().solve(gtau);
+    Eigen::VectorXd gtau_reconst = tau_matrix * gl_fit;
 
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
-    */
 }
 
 
@@ -197,6 +195,7 @@ TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
     }
 
     /*
+    // TODO: Check numerical correctness
     // Now evaluate using the vector version
     Eigen::VectorXcd gi_n_reconst = matsu_sampling->evaluate(gl_vec);
     REQUIRE(gi_n_reconst.isApprox(gi_n, gi_n.maxCoeff() * 1e-7));
@@ -215,6 +214,7 @@ TEST_CASE("unit tests", "[augment]") {
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
     sparseir::AugmentedBasis<S> basis_aug(basis, augmentations);
     /*
+    // TODO: resolve compilation error
     SECTION("getindex") {
         REQUIRE(basis_aug.u.size() == basis_aug.size());
         REQUIRE(basis_aug.u[0]->operator()(0.0) == basis_aug[0](0.0));
@@ -222,14 +222,14 @@ TEST_CASE("unit tests", "[augment]") {
     }
     */
 
-    /*
     size_t len_basis = basis->size();
     size_t len_aug = len_basis + 2;
 
     REQUIRE(basis_aug.size() == len_aug);
+    /*
     // REQUIRE(basis_aug.accuracy == basis->accuracy);
-    REQUIRE(basis_aug.Lambda() == beta * wmax);
-    REQUIRE(basis_aug.wmax() == wmax);
+    //REQUIRE(basis_aug.Lambda() == beta * wmax);
+    //REQUIRE(basis_aug.wmax() == wmax);
 
     REQUIRE(basis_aug.u.size() == len_aug);
     REQUIRE(basis_aug.u(0.8).size() == len_aug);
