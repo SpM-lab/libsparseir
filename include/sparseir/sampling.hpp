@@ -196,56 +196,24 @@ class MatsubaraSampling;
 template <typename S>
 class AugmentedBasis;
 
-template <typename S>
-Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
+template <typename Basis>
+Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
             const Eigen::VectorXd &x)
 {
     return basis->u(x);
 }
 
 template <typename S>
-Eigen::MatrixXd
-evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                const Eigen::VectorXd &x)
+Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+                                const Eigen::VectorXd &x)
 {
-    return basis->u(x);
+    // Dereference the unique_ptr to access the AugmentedTauFunction
+    return (*basis->u)(x);
 }
 
-template <typename S>
+template <typename S, typename Basis>
 inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
-            const std::shared_ptr<FiniteTempBasis<S>> &basis,
-            const Eigen::VectorXd &x)
-{
-    // Initialize matrix with correct dimensions
-    Eigen::MatrixXd matrix(x.size(), basis->size());
-
-    // Evaluate basis functions at sampling points
-    auto u_eval = evaluate_u_at_x(basis, x);
-    // Transpose and scale by singular values
-    matrix = u_eval.transpose();
-
-    return matrix;
-}
-
-template <typename S>
-inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
-            const std::shared_ptr<AugmentedBasis<S>> &basis,
-            const Eigen::VectorXd &x)
-{
-    // Initialize matrix with correct dimensions
-    Eigen::MatrixXd matrix(x.size(), basis->size());
-
-    // Evaluate basis functions at sampling points
-    auto u_eval = evaluate_u_at_x(basis, x);
-    // Transpose and scale by singular values
-    matrix = u_eval.transpose();
-
-    return matrix;
-}
-
-template <typename S>
-inline Eigen::MatrixXd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
-            const std::shared_ptr<AugmentedBasis<S>> &basis,
+            const std::shared_ptr<Basis> &basis,
             const Eigen::VectorXd &x)
 {
     // Initialize matrix with correct dimensions

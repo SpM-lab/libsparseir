@@ -223,6 +223,25 @@ public:
         return result;
     }
 
+    Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const {
+        // Initialize result matrix with correct dimensions
+        // Rows = number of basis functions, Columns = number of points
+        Eigen::MatrixXd result(basis_func.size() + augmentations.size(), x.size());
+
+        // Evaluate basis functions at each point
+        Eigen::MatrixXd basis_result = basis_func(x);
+        result.bottomRows(basis_func.size()) = basis_result;
+
+        // Evaluate each augmentation at each point
+        for (size_t i = 0; i < augmentations.size(); ++i) {
+            for (Eigen::Index j = 0; j < x.size(); ++j) {
+                result(i, j) = (*augmentations[i])(x(j));
+            }
+        }
+
+        return result;
+    }
+
     size_t size() const {
         return augmentations.size() + basis_func.size();
     }
