@@ -277,17 +277,16 @@ public:
 // AugmentedBasis
 template <typename S>
 class AugmentedBasis : public AbstractBasis<S> {
-private:
-    std::shared_ptr<FiniteTempBasis<S>> basis_;
-    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations_;
 public:
+    std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
+    std::shared_ptr<FiniteTempBasis<S>> basis;
     std::unique_ptr<AugmentedTauFunction> u;
     std::unique_ptr<AugmentedMatsubaraFunction<S>> uhat;
 
     AugmentedBasis(std::shared_ptr<FiniteTempBasis<S>> basis,
                   const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
-        : basis_(basis)
-        , augmentations_(augmentations)
+        : basis(basis)
+        , augmentations(augmentations)
         , u(std::make_unique<AugmentedTauFunction>(basis->u, augmentations))
         , uhat(std::make_unique<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
 
@@ -299,27 +298,27 @@ public:
 
     // Implement pure virtual functions
     size_t size() const override {
-        return augmentations_.size() + basis_->size();
+        return augmentations.size() + basis->size();
     }
 
     double get_accuracy() const override {
-        return basis_->get_accuracy();
+        return basis->get_accuracy();
     }
 
     double get_wmax() const override {
-        return basis_->get_wmax();
+        return basis->get_wmax();
     }
 
     const Eigen::VectorXd significance() const override {
-        return basis_->significance();
+        return basis->significance();
     }
 
-    size_t nAug() const { return augmentations_.size(); }
+    size_t nAug() const { return augmentations.size(); }
 
     const Eigen::VectorXd default_tau_sampling_points() const override {
-        int sz = this->basis_->sve_result->s.size() + this->augmentations_.size();
-        auto x = default_sampling_points(this->basis_->sve_result->u, sz);
-        return (this->basis_->get_beta() / 2.0) * (x.array() + 1.0);
+        int sz = basis->sve_result->s.size() + augmentations.size();
+        auto x = default_sampling_points(basis->sve_result->u, sz);
+        return (basis->get_beta() / 2.0) * (x.array() + 1.0);
     }
 
     // Factory method

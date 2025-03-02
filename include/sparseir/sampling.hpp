@@ -243,9 +243,9 @@ evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
     return basis->uhat(x);
 }
 
-template <typename S>
+template <typename S, typename Base>
 inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
-                                   const std::shared_ptr<FiniteTempBasis<S>> &basis,
+                                   const std::shared_ptr<Base> &basis,
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
@@ -488,7 +488,6 @@ public:
                                      ", expected " +
                                      std::to_string(sampling_points_.size()) +
                                      "x" + std::to_string(basis->size()));
-        basis_ = basis;
         }
         has_zero_ = sampling_points_[0].n == 0;
         // Initialize SVD
@@ -500,6 +499,49 @@ public:
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
             }
         }
+        basis_ = basis;
+    }
+
+    MatsubaraSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
+                       bool positive_only = false,
+                       bool factorize = true)
+        : positive_only_(positive_only)
+    {
+        // Get default sampling points from basis
+        bool fence = false;
+        // Note that we use basis->basis->uhat_full, not basis->uhat_full
+        sampling_points_ = default_matsubara_sampling_points(basis->basis->uhat_full, basis->size(), fence, positive_only);
+        std::sort(sampling_points_.begin(), sampling_points_.end());
+
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points generated");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(this, basis, sampling_points_);
+
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points_.size()) +
+                                     "x" + std::to_string(basis->size()));
+        }
+        has_zero_ = sampling_points_[0].n == 0;
+        // Initialize SVD
+        if (factorize) {
+            if (positive_only_) {
+                matrix_svd_ = make_split_svd(matrix_, has_zero_);
+            } else {
+                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
+                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+            }
+        }
+        basis_ = basis;
     }
 
     // Constructor that takes a DiscreteLehmannRepresentation and sampling points
