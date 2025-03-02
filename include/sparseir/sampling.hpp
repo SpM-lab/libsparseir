@@ -464,7 +464,7 @@ public:
     MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
                        bool positive_only = false,
                        bool factorize = true)
-        : basis_(basis), positive_only_(positive_only)
+        : positive_only_(positive_only)
     {
         // Get default sampling points from basis
         bool fence = false;
@@ -477,17 +477,18 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis_, sampling_points_);
+        matrix_ = eval_matrix(this, basis, sampling_points_);
 
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis_->size()) {
+            matrix_.cols() != basis->size()) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
                                      ", expected " +
                                      std::to_string(sampling_points_.size()) +
-                                     "x" + std::to_string(basis_->size()));
+                                     "x" + std::to_string(basis->size()));
+        basis_ = basis;
         }
         has_zero_ = sampling_points_[0].n == 0;
         // Initialize SVD
