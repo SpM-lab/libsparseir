@@ -23,7 +23,6 @@
 
 TEST_CASE("svd.cpp")
 {
-    using namespace sparseir;
     using namespace Eigen;
     using namespace xprec;
 
@@ -43,8 +42,8 @@ TEST_CASE("svd.cpp")
     */
 
     // Create a standard matrix
-    MatrixX<DDouble> mat = MatrixX<DDouble>::Random(5, 6);
-    auto svd_result = compute_svd(mat, 0, "default");
+    Eigen::MatrixX<xprec::DDouble> mat = Eigen::MatrixX<xprec::DDouble>::Random(5, 6);
+    auto svd_result = sparseir::compute_svd(mat, 0, "default");
     auto U = std::get<0>(svd_result);
     auto S = std::get<1>(svd_result);
     auto V = std::get<2>(svd_result);
