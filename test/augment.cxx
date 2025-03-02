@@ -15,8 +15,7 @@
 
 using namespace std;
 
-
-TEST_CASE("augment.cxx", "[AbstractAugmentation]")
+TEST_CASE("AbstractAugmentation", "[augment]")
 {
     using Catch::Approx;
 
@@ -112,7 +111,7 @@ TEST_CASE("augment.cxx", "[AbstractAugmentation]")
     }
 }
 
-TEST_CASE("Augmented bosonic basis") {
+TEST_CASE("Augmented bosonic basis", "[augment]") {
     using T = double;
     T beta = 1000.0;
     T wmax = 2.0;

@@ -21,7 +21,7 @@
 #include <random>
 #include <vector>
 
-TEST_CASE("svd.cpp")
+TEST_CASE("svd.cpp", "[svd]")
 {
     using namespace Eigen;
     using namespace xprec;
