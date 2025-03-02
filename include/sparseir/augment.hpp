@@ -261,11 +261,15 @@ public:
         , augmentations(augmentations) {}
 
     template<typename T>
-    std::complex<double> operator()(MatsubaraFreq<T> n) const {
-        std::complex<double> result = basis_func(n);
-        for (const auto& aug : augmentations) {
-            result += (*aug)(n);
+    Eigen::VectorXcd operator()(MatsubaraFreq<T> n) const {
+        Eigen::VectorXcd result = basis_func(n);
+
+        Eigen::VectorXcd aug_result(augmentations.size());
+        for (size_t i = 0; i < augmentations.size(); ++i) {
+            aug_result(i) = (*augmentations[i])(n);
         }
+        result.conservativeResize(result.size() + aug_result.size());
+        result.tail(aug_result.size()) = aug_result;
         return result;
     }
 

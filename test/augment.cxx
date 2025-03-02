@@ -225,3 +225,21 @@ TEST_CASE("unit tests", "[augment]") {
     //Further tests omitted for brevity,  adapt as needed from Julia code.
     */
 }
+
+TEST_CASE("AugmentBasis evaluate_uhat_at_x", "[augment]") {
+    double omega_max = 2.0;
+    double beta = 1000.0;
+    double epsilon = 1e-6;
+
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon);
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
+    augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
+    sparseir::AugmentedBasis<sparseir::Bosonic> basis_aug(basis, augmentations);
+    Eigen::VectorXd sampling_points = basis_aug.default_tau_sampling_points();
+    sparseir::AugmentedTauFunction u = basis_aug.u;
+    Eigen::MatrixXd m = u(sampling_points);
+
+    Eigen::VectorXcd uhat_x = sparseir::evaluate_uhat_at_x(basis, sampling_points[0]);
+    REQUIRE(true);
+}

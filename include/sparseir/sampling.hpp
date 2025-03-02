@@ -203,6 +203,15 @@ inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
     return basis->u(x);
 }
 
+/*
+inline Eigen::VectorXd evaluate_u_at_x(const AugmentedTauFunction &u,
+                                      const double x)
+{
+    // Call the operator() directly on the AugmentedTauFunction
+    return u(x);
+}
+*/
+
 template <typename S>
 inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
                                 const Eigen::VectorXd &x)
@@ -236,8 +245,7 @@ evaluate_uhat_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
 }
 
 template <typename S, typename T>
-inline Eigen::VectorXcd
-evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
+inline std::complex<double> evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
                    const T &x)
 {
     return basis->uhat(x);
