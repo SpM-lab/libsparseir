@@ -588,39 +588,6 @@ public:
     }
 
     // Evaluate the basis coefficients at sampling points
-    template<int N>
-    Eigen::Tensor<std::complex<double>, N> evaluate(const Eigen::Tensor<std::complex<double>, N>& al, int dim = 0) const {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" +
-                std::to_string(dim));
-        }
-
-        // Get dimensions for result tensor
-        auto dims = al.dimensions();
-        Eigen::Tensor<std::complex<double>, N> result(dims);
-
-        // Get the evaluation matrix
-        Eigen::MatrixXcd matrix = get_matrix();
-
-        // Create a view of the input tensor as a matrix
-        Eigen::Map<const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>> al_mat(
-            al.data(),
-            al.dimension(dim),
-            al.size() / al.dimension(dim)
-        );
-
-        // Perform matrix multiplication
-        Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic> result_mat =
-            matrix * al_mat.template cast<std::complex<double>>();
-
-        // Copy back to tensor
-        std::copy(result_mat.data(), result_mat.data() + result_mat.size(), result.data());
-
-        return result;
-    }
-
-    // Evaluate the basis coefficients at sampling points
     template <typename T, int N>
     Eigen::Tensor<std::complex<T>, N> evaluate(const Eigen::Tensor<T, N>& al, int dim = 0) const {
         if (dim < 0 || dim >= N) {

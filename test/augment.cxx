@@ -203,7 +203,7 @@ TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
 
     // Fit the data
     auto gl = matsu_sampling->fit(gi_n_tensor);
-    auto gi_n_reconst = matsu_sampling->evaluate(gl);
+    //auto gi_n_reconst = matsu_sampling->evaluate(gl);
     // TODO: Check if this is correct
     //REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
 }
@@ -238,7 +238,7 @@ TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
 
     // Fit the data
     auto gl = matsu_sampling->fit(gi_n_tensor);
-    auto gi_n_reconst = matsu_sampling->evaluate(gl);
+    //auto gi_n_reconst = matsu_sampling->evaluate(gl);
     // TODO: Check if this is correct
     //REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
 }
