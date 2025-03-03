@@ -135,7 +135,6 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
         std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(
             basis, augmentations);
 
-    std::cout << "basis_aug->size(): " << basis_aug->size() << std::endl;
     auto tau_sampling = sparseir::TauSampling<sparseir::Bosonic>(basis_aug);
     Eigen::VectorXd tau = tau_sampling.sampling_points();
     Eigen::VectorXd gtau(tau.size());
@@ -143,7 +142,6 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
         gtau(i) = c - std::exp(-tau(i) * pole) / (1 - std::exp(-beta * pole));
     }
     double magn = gtau.array().abs().maxCoeff();
-    std::cout << "magn: \n" << magn << std::endl;
 
     // This illustrates that "naive" fitting is a problem if the fitting matrix
     // is not well-conditioned.
@@ -175,7 +173,7 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
 }
 
-TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
+TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
 
     double beta = 1000.0;
     double wmax = 2.0;
@@ -205,16 +203,42 @@ TEST_CASE("Vertex basis with stat = $stat", "[augment]") {
 
     // Fit the data
     auto gl = matsu_sampling->fit(gi_n_tensor);
+    auto gi_n_reconst = matsu_sampling->evaluate(gl);
+    REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
+}
 
-    // Convert tensor result back to vector for evaluation
-    Eigen::VectorXcd gl_vec(gl.dimension(0));
-    for (Eigen::Index i = 0; i < gl.dimension(0); ++i) {
-        gl_vec(i) = gl(i);
+TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
+
+    double beta = 1000.0;
+    double wmax = 2.0;
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, wmax, 1e-6);
+
+    std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
+    augmentations.push_back(std::make_shared<sparseir::MatsubaraConst>(beta));
+
+    // G(iν) = c + 1 / (iν - pole)
+    double pole = 1.0;
+    double c = 1.0;
+    // Create a shared_ptr to AugmentedBasis
+    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Fermionic>>(basis, augmentations);
+
+    auto matsu_sampling =
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(basis_aug);
+    Eigen::VectorXcd gi_n(matsu_sampling->sampling_points().size());
+    for (std::size_t i = 0; i < matsu_sampling->sampling_points().size(); ++i) {
+        std::complex<double> iwn(0, matsu_sampling->sampling_points()[i].value(beta));
+        gi_n(i) = c + 1.0 / (iwn - pole);
+    }
+    // Convert VectorXcd to Tensor
+    Eigen::Tensor<std::complex<double>, 1> gi_n_tensor(gi_n.size());
+    for (std::size_t i = 0; i < gi_n.size(); ++i) {
+        gi_n_tensor(i) = gi_n(i);
     }
 
-    // Commenting out due to compilation issues with complex numbers in Eigen
-    // Eigen::VectorXcd gi_n_reconst = matsu_sampling->evaluate(gl_vec);
-    // REQUIRE(gi_n_reconst.isApprox(gi_n, 1e-7 * std::abs(gi_n.maxCoeff())));
+    // Fit the data
+    auto gl = matsu_sampling->fit(gi_n_tensor);
+    auto gi_n_reconst = matsu_sampling->evaluate(gl);
+    // REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
 }
 
 
