@@ -472,7 +472,7 @@ public:
     MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
                        bool positive_only = false,
                        bool factorize = true)
-        : positive_only_(positive_only)
+        : basis_(basis), positive_only_(positive_only)
     {
         // Get default sampling points from basis
         bool fence = false;
@@ -507,7 +507,6 @@ public:
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
             }
         }
-        basis_ = basis;
     }
 
     MatsubaraSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
@@ -518,7 +517,8 @@ public:
         // Get default sampling points from basis
         bool fence = false;
         // Note that we use basis->basis->uhat_full, not basis->uhat_full
-        sampling_points_ = default_matsubara_sampling_points(basis->basis->uhat_full, basis->size(), fence, positive_only);
+        int sz = basis->basis->size() + basis->augmentations.size();
+        sampling_points_ = default_matsubara_sampling_points(basis->basis->uhat_full, sz, fence, positive_only);
         std::sort(sampling_points_.begin(), sampling_points_.end());
 
         // Ensure matrix dimensions are correct
