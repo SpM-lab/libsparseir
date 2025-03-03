@@ -760,7 +760,7 @@ SVDResult<T> svd_jacobi(Matrix<T, Dynamic, Dynamic> &U,
     return SVDResult<T>{U, s, VT};
 }
 
-Eigen::MatrixXd pinv(const Eigen::MatrixXd &A, double tolerance = 1e-6)
+inline Eigen::MatrixXd pinv(const Eigen::MatrixXd &A, double tolerance = 1e-6)
 {
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU |
                                                  Eigen::ComputeThinV);
