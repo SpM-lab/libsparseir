@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
+#include <iterator>
 // Eigen headers
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
@@ -955,7 +956,7 @@ template <typename StatisticsType>
 inline std::complex<double> PiecewiseLegendreFT<StatisticsType>::evalpoly(
     const std::complex<double> &x, const std::vector<double> &coeffs) const
 {
-    std::complex<double> result(0.0, 0.0);
+    std::complex<double> result(0, 0);
     for (int i = coeffs.size() - 1; i >= 0; --i) {
         result = result * x + coeffs[i];
     }
