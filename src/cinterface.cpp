@@ -13,6 +13,16 @@ struct _spir_kernel {
         : impl(std::move(k)) {}
 };
 
+// Implementation of the opaque type
+struct _spir_basis {
+    // Pointer to the C++ implementation
+    std::unique_ptr<sparseir::FiniteTempBasis<sparseir::Fermionic>> impl;
+    
+    // Constructor
+    explicit _spir_basis(std::unique_ptr<sparseir::FiniteTempBasis<sparseir::Fermionic>> b) 
+        : impl(std::move(b)) {}
+};
+
 // Implementation of the C API
 extern "C" {
 
@@ -49,6 +59,18 @@ int spir_kernel_domain(const spir_kernel* k,
     }
 }
 
+int spir_kernel_evaluate(const spir_kernel* k, double x, double y, double* out) {
+    if (!k || !k->impl || !out) return -1;
+    
+    try {
+        *out = k->impl->compute(x, y);
+        return 0;
+    } catch (...) {
+        return -1;
+    }
+}
+
+
 int spir_kernel_matrix(const spir_kernel* k, 
                       const double* x, int nx,
                       const double* y, int ny, 
@@ -67,6 +89,24 @@ int spir_kernel_matrix(const spir_kernel* k,
     } catch (...) {
         return -1;
     }
+}
+
+// Constructor for basis
+spir_basis* spir_basis_new(double beta, double omega_max, double epsilon) {
+    try {
+        auto impl = std::make_unique<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+            beta, omega_max, epsilon, 
+            sparseir::LogisticKernel(beta * omega_max)
+        );
+        return new _spir_basis(std::move(impl));
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+// Destructor
+void spir_destroy_basis(spir_basis* b) {
+    delete b;
 }
 
 } // extern "C"

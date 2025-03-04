@@ -12,6 +12,7 @@ extern "C" {
 // Opaque types
 struct _spir_kernel;
 struct _spir_sve;
+struct _spir_basis;
 
 /**
  * Kernel
@@ -23,8 +24,13 @@ typedef struct _spir_kernel spir_kernel;
  */
 typedef struct _spir_function spir_function;
 
+/**
+ * Basis
+ */
+typedef struct _spir_basis spir_basis;
 
-/** Make new logistic kernel for given UV cutoff lambda */
+/**
+ * Make new logistic kernel for given UV cutoff lambda */
 spir_kernel *spir_logistic_kernel(double lambda);
 
 /** Make new regularized Bose kernel for given UV cutoff lambda. */
@@ -92,6 +98,12 @@ int spir_iw_value(const spir_function *f, const long *iw,
  * Return 0 on success, -1 if more roots were found.
  */
 int spir_iw_roots(const spir_function *f, long *f0, int n);
+
+// Create new basis
+spir_basis* spir_basis_new(double beta, double omega_max, double epsilon);
+
+// Destroy basis instance
+void spir_destroy_basis(spir_basis* b);
 
 #ifdef __cplusplus
 }
