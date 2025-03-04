@@ -2,7 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include <sparseir/sparseir-header-only.hpp>
+#include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
 using std::invalid_argument;

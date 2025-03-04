@@ -1,4 +1,4 @@
-#pragma once
+#include "sparseir-fwd.hpp"
 
 #include "./utils.hpp"
 #include "./_impl.hpp"
