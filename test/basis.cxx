@@ -7,7 +7,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_approx.hpp> // for Approx
 
-#include <sparseir/sparseir-header-only.hpp>
+#include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
 using Catch::Approx;

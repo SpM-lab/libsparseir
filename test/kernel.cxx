@@ -8,7 +8,7 @@
 #include <vector>
 #include <catch2/catch_approx.hpp>
 
-#include <sparseir/sparseir-header-only.hpp>
+#include <sparseir/sparseir.hpp>
 
 using Catch::Approx;
 using xprec::DDouble;

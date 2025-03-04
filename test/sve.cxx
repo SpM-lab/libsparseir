@@ -8,7 +8,7 @@
 #include <numeric>
 #include <vector>
 
-#include <sparseir/sparseir-header-only.hpp>
+#include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
 using std::invalid_argument;

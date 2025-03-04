@@ -4,7 +4,7 @@
 #include <complex>
 #include <memory>
 #include <random>
-#include <sparseir/sparseir-header-only.hpp>
+#include <sparseir/sparseir.hpp>
 
 using Catch::Approx;
 
