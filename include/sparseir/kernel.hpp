@@ -9,14 +9,17 @@
 #include <utility>
 #include <vector>
 #include <type_traits>
+#include <iostream>
+
+#include "sparseir/sparseir-fwd.hpp"
 
 namespace sparseir {
 
 // Forward declaration
-template <typename K> class ReducedKernel;
-template<typename T> class SVEHintsLogistic;
-template<typename T> class SVEHintsRegularizedBose;
-template<typename T> class SVEHintsReduced;
+//template <typename K> class ReducedKernel;
+//template<typename T> class SVEHintsLogistic;
+//template<typename T> class SVEHintsRegularizedBose;
+//template<typename T> class SVEHintsReduced;
 
 /**
  * @brief Abstract base class for an integral kernel K(x, y).
@@ -43,16 +46,26 @@ public:
     AbstractKernel(double lambda) : lambda_(lambda) { }
 
     template<typename T>
-    std::function<T(T)> weight_func(Fermionic F) const
+    std::function<T(T)> weight_func(Fermionic) const
     {
         return [](T) { return 1.0; };
     }
 
     template<typename T>
-    std::function<T(T)> weight_func(Bosonic B) const
+    std::function<T(T)> weight_func(Bosonic) const
     {
         return [](T) { return 1.0; };
     }
+
+    virtual double compute(
+        double x, double y,
+        double x_plus = std::numeric_limits<double>::quiet_NaN(),
+        double x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
+
+    virtual xprec::DDouble compute(
+        xprec::DDouble x, xprec::DDouble y,
+        xprec::DDouble x_plus = std::numeric_limits<double>::quiet_NaN(),
+        xprec::DDouble x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
 
     /**
      * @brief Evaluate kernel at point (x, y).
@@ -177,8 +190,8 @@ public:
     // Constructor
     AbstractReducedKernel(const InnerKernel &inner_kernel, int sign)
         : AbstractKernel(inner_kernel.lambda_),
-          inner(inner_kernel),
-          sign(sign)
+          sign(sign),
+          inner(inner_kernel)
     {
         // Validate inputs
         if (!inner.is_centrosymmetric()) {
@@ -189,8 +202,12 @@ public:
         }
     }
 
-    template<typename T>
-    T compute(T x, T y, T x_plus = std::numeric_limits<double>::quiet_NaN(), T x_minus = std::numeric_limits<double>::quiet_NaN()) const
+    virtual double compute(double x, double y, double x_plus = std::numeric_limits<double>::quiet_NaN(), double x_minus = std::numeric_limits<double>::quiet_NaN()) const
+    {
+        return callreduced(*this, x, y, x_plus, x_minus);
+    }
+
+    virtual xprec::DDouble compute(xprec::DDouble x, xprec::DDouble y, xprec::DDouble x_plus = std::numeric_limits<double>::quiet_NaN(), xprec::DDouble x_minus = std::numeric_limits<double>::quiet_NaN()) const
     {
         return callreduced(*this, x, y, x_plus, x_minus);
     }
@@ -200,8 +217,8 @@ template<typename T, typename K>
 T callreduced(const K &kernel, T x, T y, T x_plus, T x_minus)
 {
     x_plus += 1;
-    auto K_plus = kernel.inner.template compute<T>(x, +y, x_plus, x_minus);
-    auto K_minus = kernel.inner.template compute<T>(x, -y, x_plus, x_minus);
+    auto K_plus = kernel.inner.compute(x, +y, x_plus, x_minus);
+    auto K_minus = kernel.inner.compute(x, -y, x_plus, x_minus);
     return K_plus + kernel.sign * K_minus;
 }
 
@@ -249,12 +266,23 @@ public:
      * @param x_minus Optional. xmax - x.
      * @return The value of K(x, y).
      */
+    double compute(double x, double y,
+                  double x_plus = std::numeric_limits<double>::quiet_NaN(),
+                  double x_minus = std::numeric_limits<double>::quiet_NaN()) const override {
+        return _compute_impl(x, y, x_plus, x_minus);
+    }
+
+    xprec::DDouble compute(xprec::DDouble x, xprec::DDouble y,
+                          xprec::DDouble x_plus = std::numeric_limits<double>::quiet_NaN(),
+                          xprec::DDouble x_minus = std::numeric_limits<double>::quiet_NaN()) const override {
+        return _compute_impl(x, y, x_plus, x_minus);
+    }
+
+
     template<typename T>
-    T compute(T x, T y,
-                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      T x_minus = std::numeric_limits<double>::quiet_NaN())
-        const
-    {
+    T _compute_impl(T x, T y,
+                   T x_plus = std::numeric_limits<double>::quiet_NaN(),
+                   T x_minus = std::numeric_limits<double>::quiet_NaN()) const {
         // Check that x and y are within the valid ranges
         std::pair<double, double> x_range = this->xrange();
         double xmin = x_range.first;
@@ -309,13 +337,13 @@ public:
      * @return A function representing the weight function w(y).
      */
     template<typename T>
-    std::function<T(T)> weight_func(Fermionic F) const
+    std::function<T(T)> weight_func(Fermionic) const
     {
         return [](T) { return 1.0; };
     }
 
     template<typename T>
-    std::function<T(T)> weight_func(Bosonic B) const
+    std::function<T(T)> weight_func(Bosonic) const
     {
         using std::tanh;
         return [this](T y) {
@@ -415,8 +443,20 @@ public:
      * @param x_minus Optional. xmax - x.
      * @return The value of K(x, y).
      */
+    double compute(double x, double y,
+                  double x_plus = std::numeric_limits<double>::quiet_NaN(),
+                  double x_minus = std::numeric_limits<double>::quiet_NaN()) const override {
+        return _compute_impl(x, y, x_plus, x_minus);
+    }
+
+    xprec::DDouble compute(xprec::DDouble x, xprec::DDouble y,
+                          xprec::DDouble x_plus = std::numeric_limits<double>::quiet_NaN(),
+                          xprec::DDouble x_minus = std::numeric_limits<double>::quiet_NaN()) const override {
+        return _compute_impl(x, y, x_plus, x_minus);
+    }
+
     template<typename T>
-    T compute(T x, T y,
+    T _compute_impl(T x, T y,
                       T x_plus = std::numeric_limits<double>::quiet_NaN(),
                       T x_minus = std::numeric_limits<double>::quiet_NaN())
         const
@@ -471,14 +511,14 @@ public:
 
 
     template<typename T>
-    std::function<T(T)> weight_func(Fermionic F) const
+    std::function<T(T)> weight_func(Fermionic) const
     {
         std::cerr << "RegularizedBoseKernel does not support fermionic functions" << std::endl;
         throw std::invalid_argument("RegularizedBoseKernel does not support fermionic functions");
     }
 
     template <typename T>
-    std::function<T(T)> weight_func(Bosonic B) const
+    std::function<T(T)> weight_func(Bosonic) const
     {
         using std::tanh;
         return [this](T y) { return static_cast<T>(1.0) / y; };
