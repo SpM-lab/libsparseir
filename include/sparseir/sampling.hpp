@@ -587,9 +587,10 @@ public:
         }
     }
 
-    // Evaluate the basis coefficients at sampling points
-    template <typename T, int N>
-    Eigen::Tensor<std::complex<T>, N> evaluate(const Eigen::Tensor<T, N>& al, int dim = 0) const {
+    // Specialized version for complex input tensors to avoid nested complex types
+    template <int N>
+    Eigen::Tensor<std::complex<double>, N> evaluate(
+        const Eigen::Tensor<std::complex<double>, N>& al, int dim = 0) const {
         if (dim < 0 || dim >= N) {
             throw std::runtime_error(
                 "evaluate: dimension must be in [0..N). Got dim=" +
@@ -610,13 +611,10 @@ public:
         }
 
         // Create result tensor
-        Eigen::Tensor<std::complex<T>, N> result(dims);
-
-        // Convert input tensor to complex for contraction
-        Eigen::Tensor<std::complex<T>, N> al_complex = al.template cast<std::complex<T>>();
+        Eigen::Tensor<std::complex<double>, N> result(dims);
 
         // Convert matrix to tensor
-        Eigen::Tensor<std::complex<T>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
+        Eigen::Tensor<std::complex<double>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
         for (Eigen::Index i = 0; i < matrix_.rows(); ++i) {
             for (Eigen::Index j = 0; j < matrix_.cols(); ++j) {
                 matrix_tensor(i,j) = matrix_(i,j);
@@ -628,8 +626,8 @@ public:
             Eigen::IndexPair<int>(1, dim)
         };
 
-        // Perform contraction
-        result = matrix_tensor.contract(al_complex, contract_dims);
+        // Perform contraction directly with complex input
+        result = matrix_tensor.contract(al, contract_dims);
 
         return result;
     }
@@ -648,6 +646,76 @@ public:
 
         // Convert result back to Vector
         Eigen::VectorX<std::complex<T>> result(result_tensor.dimension(0));
+        for (Eigen::Index i = 0; i < result.size(); ++i) {
+            result(i) = result_tensor(i);
+        }
+        return result;
+    }
+
+    // Overload for real-valued tensor input
+    template <int N>
+    Eigen::Tensor<std::complex<double>, N> evaluate(const Eigen::Tensor<double, N>& al, int dim = 0) const {
+        if (dim < 0 || dim >= N) {
+            throw std::runtime_error(
+                "evaluate: dimension must be in [0..N). Got dim=" +
+                std::to_string(dim));
+        }
+
+        if (get_matrix().cols() != al.dimension(dim)) {
+            throw std::runtime_error(
+                "Mismatch: matrix.cols()=" +
+                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
+                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
+        }
+
+        // Create dimensions array for result tensor
+        Eigen::array<Eigen::Index, N> dims;
+        for (int i = 0; i < N; ++i) {
+            dims[i] = (i == dim) ? matrix_.rows() : al.dimension(i);
+        }
+
+        // Create result tensor
+        Eigen::Tensor<std::complex<double>, N> result(dims);
+
+        // Convert matrix to tensor
+        Eigen::Tensor<std::complex<double>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
+        for (Eigen::Index i = 0; i < matrix_.rows(); ++i) {
+            for (Eigen::Index j = 0; j < matrix_.cols(); ++j) {
+                matrix_tensor(i,j) = matrix_(i,j);
+            }
+        }
+
+        // Convert input tensor to complex for contraction
+        Eigen::Tensor<std::complex<double>, N> al_complex(al.dimensions());
+        for (int i = 0; i < al.size(); ++i) {
+            al_complex.data()[i] = std::complex<double>(al.data()[i], 0.0);
+        }
+
+        // Specify contraction dimensions
+        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
+            Eigen::IndexPair<int>(1, dim)
+        };
+
+        // Perform contraction
+        result = matrix_tensor.contract(al_complex, contract_dims);
+
+        return result;
+    }
+
+    // Also add a Vector version for real inputs
+    template <typename T>
+    Eigen::VectorX<std::complex<double>> evaluate(const Eigen::VectorX<T>& al) const {
+        // Convert Vector to Tensor
+        Eigen::Tensor<T, 1> al_tensor(al.size());
+        for (Eigen::Index i = 0; i < al.size(); ++i) {
+            al_tensor(i) = al(i);
+        }
+
+        // Use existing tensor-based evaluate
+        auto result_tensor = evaluate(al_tensor, 0);
+
+        // Convert result back to Vector
+        Eigen::VectorX<std::complex<double>> result(result_tensor.dimension(0));
         for (Eigen::Index i = 0; i < result.size(); ++i) {
             result(i) = result_tensor(i);
         }
