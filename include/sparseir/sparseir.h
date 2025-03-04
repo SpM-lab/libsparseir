@@ -12,7 +12,8 @@ extern "C" {
 // Opaque types
 struct _spir_kernel;
 struct _spir_sve;
-struct _spir_basis;
+struct _spir_fermionic_basis;
+struct _spir_polyvector;
 
 /**
  * Kernel
@@ -27,14 +28,22 @@ typedef struct _spir_function spir_function;
 /**
  * Basis
  */
-typedef struct _spir_basis spir_basis;
+typedef struct _spir_fermionic_basis spir_fermionic_basis;
 
 /**
- * Make new logistic kernel for given UV cutoff lambda */
-spir_kernel *spir_logistic_kernel(double lambda);
+ * Polynomial vector
+ */
+typedef struct _spir_polyvector spir_polyvector;
 
-/** Make new regularized Bose kernel for given UV cutoff lambda. */
-spir_kernel *spir_regularized_bose_kernel(double lambda);
+/**
+ * Create new logistic kernel
+ */
+spir_kernel *spir_kernel_new_logistic(double lambda);
+
+/**
+ * Create new regularized bose kernel
+ */
+spir_kernel *spir_kernel_new_regularized_bose(double lambda);
 
 /** Fill [xmin, xmax], [ymin, ymax] with the domain of the kernel. */
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
@@ -100,10 +109,32 @@ int spir_iw_value(const spir_function *f, const long *iw,
 int spir_iw_roots(const spir_function *f, long *f0, int n);
 
 // Create new basis
-spir_basis* spir_basis_new(double beta, double omega_max, double epsilon);
+spir_fermionic_basis* spir_fermionic_basis_new(double beta, double omega_max, double epsilon);
 
 // Destroy basis instance
-void spir_destroy_basis(spir_basis* b);
+void spir_destroy_basis(spir_fermionic_basis* b);
+
+/**
+ * Get basis functions.
+ * Returns a polynomial vector that must be freed using spir_destroy_polyvector.
+ * 
+ * @param b The basis
+ * @return Polynomial vector, or NULL on error
+ */
+spir_polyvector* spir_basis_u(const spir_fermionic_basis* b);
+
+/**
+ * Get the size of a polynomial vector.
+ * 
+ * @param v The polynomial vector
+ * @return Size of the vector, or -1 on error
+ */
+int spir_polyvector_size(const spir_polyvector* v);
+
+/**
+ * Destroy a polynomial vector.
+ */
+void spir_destroy_polyvector(spir_polyvector* v);
 
 #ifdef __cplusplus
 }
