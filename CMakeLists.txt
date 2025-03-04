@@ -42,8 +42,11 @@ FetchContent_MakeAvailable(XPrec)
 # Building
 
 add_library(sparseir SHARED
-    src/sparseir.cxx
+    src/cinterface.cpp
     )
+if(NOT MSVC)
+    target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
+endif()
 
 target_include_directories(sparseir PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
