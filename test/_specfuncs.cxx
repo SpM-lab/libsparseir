@@ -6,8 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <xprec/ddouble-header-only.hpp>
-
-#include <sparseir/_specfuncs.hpp>
+#include <sparseir/sparseir-header-only.hpp>
 
 using Catch::Approx;
 using Eigen::MatrixXd;

@@ -202,10 +202,10 @@ TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
     }
 
     // Fit the data
-    auto gl = matsu_sampling->fit(gi_n_tensor);
-    //auto gi_n_reconst = matsu_sampling->evaluate(gl);
+    Eigen::Tensor<std::complex<double>, 1> gl = matsu_sampling->fit(gi_n_tensor);
+    Eigen::Tensor<std::complex<double>, 1> gi_n_reconst = matsu_sampling->evaluate(gl);
     // TODO: Check if this is correct
-    //REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
+    REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
 }
 
 TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
@@ -237,12 +237,11 @@ TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
     }
 
     // Fit the data
-    auto gl = matsu_sampling->fit(gi_n_tensor);
-    //auto gi_n_reconst = matsu_sampling->evaluate(gl);
+    Eigen::Tensor<std::complex<double>, 1> gl = matsu_sampling->fit(gi_n_tensor);
+    Eigen::Tensor<std::complex<double>, 1> gi_n_reconst = matsu_sampling->evaluate(gl);
     // TODO: Check if this is correct
-    //REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
+    REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
 }
-
 
 TEST_CASE("unit tests", "[augment]") {
     using T = double;
