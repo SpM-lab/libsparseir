@@ -38,12 +38,12 @@ typedef struct _spir_polyvector spir_polyvector;
 /**
  * Create new logistic kernel
  */
-spir_kernel *spir_kernel_new_logistic(double lambda);
+spir_kernel *spir_kernel_logistic_new(double lambda);
 
 /**
  * Create new regularized bose kernel
  */
-spir_kernel *spir_kernel_new_regularized_bose(double lambda);
+spir_kernel *spir_kernel_regularized_bose_new(double lambda);
 
 /** Fill [xmin, xmax], [ymin, ymax] with the domain of the kernel. */
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,

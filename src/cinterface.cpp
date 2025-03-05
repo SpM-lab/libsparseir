@@ -1,4 +1,3 @@
-#include "sparseir/kernel.hpp"
 #include "sparseir/sparseir.h"
 #include "sparseir/sparseir.hpp"
 #include <stdexcept>
@@ -51,7 +50,7 @@ IMPLEMENT_OPAQUE_TYPE(fermionic_basis,
 extern "C" {
 
 // Create new logistic kernel
-spir_kernel *spir_kernel_new_logistic(double lambda)
+spir_kernel *spir_kernel_logistic_new(double lambda)
 {
     try {
         return create_owned_kernel(
@@ -146,7 +145,7 @@ spir_polyvector *spir_basis_u_view(const spir_fermionic_basis *b)
 }
 
 // Create new regularized bose kernel
-spir_kernel *spir_kernel_new_regularized_bose(double lambda)
+spir_kernel *spir_kernel_regularized_bose_new(double lambda)
 {
     try {
         return create_owned_kernel(
