@@ -111,10 +111,10 @@ public:
                           int l,
                           const Eigen::VectorXd& delta_x_ = Eigen::VectorXd(),
                           int symm = 0)
-        : data(data),
-          knots(knots),
-          l(l),
-          symm(symm) {
+        : knots(knots),
+          data(data),
+          symm(symm),
+          l(l) {
         this->polyorder = data.rows();
         int nsegments = data.cols();
 
@@ -599,10 +599,10 @@ public:
         if (!symm.empty() && symm.size() != data3d.size()) {
             throw std::invalid_argument("Sizes of data and symm don't match");
         }
-        for (size_t i = 0; i < data3d.size(); ++i) {
+        for (auto i = 0; i < data3d.size(); ++i) {
             Eigen::MatrixXd data(data3d.dimension(0), data3d.dimension(1));
-            for (int j = 0; j < data3d.dimension(0); ++j) {
-                for (int k = 0; k < data3d.dimension(1); ++k) {
+            for (auto j = 0; j < data3d.dimension(0); ++j) {
+                for (auto k = 0; k < data3d.dimension(1); ++k) {
                     data(j, k) = data3d(j, k, i);
                 }
             }
@@ -1127,7 +1127,7 @@ std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, 
     auto grid = DEFAULT_GRID;
     auto f = func_for_part(u_hat);
     auto x0 = find_all(f, grid);
-    for (int i = 0; i < x0.size(); i++) {
+    for (std::size_t i = 0; i < x0.size(); i++) {
         x0[i] = 2 * x0[i] + u_hat.zeta();
     }
 

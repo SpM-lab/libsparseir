@@ -1,26 +1,39 @@
 #pragma once
 
 #include <Eigen/Dense>
-#include <unsupported/Eigen/CXX11/Tensor>
-#include <array>
 #include <algorithm>
+#include <array>
 #include <numeric>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
 
 namespace sparseir {
+
+namespace util {
+
+// Implementation of make_unique for C++11
+// This will be used when std::make_unique is not available
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args &&...args)
+{
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+} // namespace util
+
 // julia> sort = sortperm(s; rev=true)
 // Implement sortperm in C++
 inline std::vector<size_t> sortperm_rev(const Eigen::VectorXd &vec)
 {
     std::vector<size_t> indices(vec.size());
     std::iota(indices.begin(), indices.end(), 0);
-        std::sort(indices.begin(), indices.end(),
-                [&vec](size_t i1, size_t i2) { return vec[i1] > vec[i2]; });
-        return indices;
+    std::sort(indices.begin(), indices.end(),
+              [&vec](size_t i1, size_t i2) { return vec[i1] > vec[i2]; });
+    return indices;
 }
 
-template<typename Container>
-bool issorted(const Container& c) {
+template <typename Container>
+bool issorted(const Container &c)
+{
     if (c.size() <= 1) {
         return true;
     }
@@ -29,14 +42,15 @@ bool issorted(const Container& c) {
 }
 
 // Overload for Eigen vectors
-template<typename Derived>
-bool issorted(const Eigen::MatrixBase<Derived>& vec) {
+template <typename Derived>
+bool issorted(const Eigen::MatrixBase<Derived> &vec)
+{
     if (vec.size() <= 1) {
         return true;
     }
 
     for (Eigen::Index i = 1; i < vec.size(); ++i) {
-        if (vec[i] < vec[i-1]) {
+        if (vec[i] < vec[i - 1]) {
             return false;
         }
     }
@@ -62,19 +76,21 @@ bool tensorIsApprox(const Eigen::Tensor<T, N> &a, const Eigen::Tensor<T, N> &b,
 }
 
 template <typename T>
-inline std::vector<T> diff(const std::vector<T> &xs) {
+inline std::vector<T> diff(const std::vector<T> &xs)
+{
     std::vector<T> diff(xs.size() - 1);
     for (size_t i = 0; i < xs.size() - 1; ++i) {
-        diff[i] = xs[i+1] - xs[i];
+        diff[i] = xs[i + 1] - xs[i];
     }
     return diff;
 }
 
 template <typename T>
-inline Eigen::VectorX<T> diff(const Eigen::VectorX<T> &xs) {
+inline Eigen::VectorX<T> diff(const Eigen::VectorX<T> &xs)
+{
     Eigen::VectorX<T> diff(xs.size() - 1);
     for (Eigen::Index i = 0; i < xs.size() - 1; ++i) {
-        diff[i] = xs[i+1] - xs[i];
+        diff[i] = xs[i + 1] - xs[i];
     }
     return diff;
 }

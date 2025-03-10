@@ -179,7 +179,6 @@ fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
     return movedim(result_tensor, 0, dim);
 }
 
-template <typename S>
 class AbstractSampling {
 public:
     virtual ~AbstractSampling() = default;
@@ -265,7 +264,7 @@ inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampli
 }
 
 template <typename S>
-class TauSampling : public AbstractSampling<S> {
+class TauSampling : public AbstractSampling {
 private:
     std::shared_ptr<AbstractBasis<S>> basis_;
     Eigen::VectorXd sampling_points_;
@@ -304,6 +303,12 @@ public:
         }
 
         basis_ = basis;
+    }
+
+    // Add constructor that takes a direct reference to FiniteTempBasis<S>
+    TauSampling(const FiniteTempBasis<S> &basis, bool factorize = true)
+        : TauSampling(std::make_shared<FiniteTempBasis<S>>(basis), factorize)
+    {
     }
 
     TauSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
@@ -459,7 +464,7 @@ positive_only) if factorize && iswellconditioned(basis) && cond(sampling) > 1e8
 $(cond(sampling)))." end return sampling end
 */
 template <typename S>
-class MatsubaraSampling : public AbstractSampling<S> {
+class MatsubaraSampling : public AbstractSampling {
 private:
     std::shared_ptr<AbstractBasis<S>> basis_;
     std::vector<MatsubaraFreq<S>> sampling_points_;
@@ -469,7 +474,7 @@ private:
     bool has_zero_;
 
 public:
-    MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
+    MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis, // SHOULD WE ACCEPT ONLY CONST REFERENCE?
                        bool positive_only = false,
                        bool factorize = true)
         : basis_(basis), positive_only_(positive_only)
@@ -507,6 +512,14 @@ public:
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
             }
         }
+    }
+
+    // Add constructor that takes a direct reference to FiniteTempBasis<S>
+    MatsubaraSampling(const FiniteTempBasis<S> &basis,
+                     bool positive_only = false,
+                     bool factorize = true)
+        : MatsubaraSampling(std::make_shared<FiniteTempBasis<S>>(basis), positive_only, factorize)
+    {
     }
 
     MatsubaraSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
