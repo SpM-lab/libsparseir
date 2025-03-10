@@ -40,7 +40,8 @@
     }
 
 // Implementation of the opaque types
-IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
+//IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
+IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
 IMPLEMENT_OPAQUE_TYPE(polyvector, sparseir::PiecewiseLegendrePolyVector);
 IMPLEMENT_OPAQUE_TYPE(basis, sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(fermionic_basis,
@@ -50,16 +51,19 @@ IMPLEMENT_OPAQUE_TYPE(fermionic_basis,
 extern "C" {
 
 // Create new logistic kernel
-spir_kernel *spir_kernel_logistic_new(double lambda)
+spir_logistic_kernel *spir_logistic_kernel_new(double lambda)
 {
     try {
-        return create_owned_kernel(
+        return create_owned_logistic_kernel(
             std::make_unique<sparseir::LogisticKernel>(lambda));
     } catch (...) {
         return nullptr;
     }
 }
 
+
+
+/*
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax)
 {
@@ -115,6 +119,7 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
         return -1;
     }
 }
+*/
 
 // Constructor for basis
 spir_fermionic_basis *spir_fermionic_basis_new(double beta, double omega_max,
@@ -145,15 +150,15 @@ spir_polyvector *spir_basis_u_view(const spir_fermionic_basis *b)
 }
 
 // Create new regularized bose kernel
-spir_kernel *spir_kernel_regularized_bose_new(double lambda)
-{
-    try {
-        return create_owned_kernel(
-            std::make_unique<sparseir::RegularizedBoseKernel>(lambda));
-    } catch (...) {
-        return nullptr;
-    }
-}
+//spir_regularized_bosonic_kernel *spir_kernel_regularized_bose_new(double lambda)
+//{
+    //try {
+        //return create_owned_regularized_bose_kernel(
+            //std::make_unique<sparseir::RegularizedBoseKernel>(lambda));
+    //} catch (...) {
+        //return nullptr;
+    //}
+//}
 
 } // extern "C"
 

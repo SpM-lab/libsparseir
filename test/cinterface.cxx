@@ -25,27 +25,31 @@ TEST_CASE("Kernel Accuracy Tests", "[kernel]")
     SECTION("Kernel Domain")
     {
         // Create a kernel through C API
-        spir_kernel* kernel = spir_kernel_logistic_new(9);
+        spir_logistic_kernel* kernel = spir_logistic_kernel_new(9);
         REQUIRE(kernel != nullptr);
 
         // Get domain bounds
+        /*
         double xmin, xmax, ymin, ymax;
         int status = spir_kernel_domain(kernel, &xmin, &xmax, &ymin, &ymax);
         REQUIRE(status == 0);
 
         // Compare with C++ implementation
-        //auto cpp_kernel = sparseir::LogisticKernel(9);
-        //auto cpp_xmin = cpp_kernel.xmin();
-        //auto cpp_xmax = cpp_kernel.xmax();
-        //auto cpp_ymin = cpp_kernel.ymin();
-        ////auto cpp_ymax = cpp_kernel.ymax();
-//
-        //REQUIRE(xmin == Approx(cpp_xmin));
-        //REQUIRE(xmax == Approx(cpp_xmax));
-        //REQUIRE(ymin == Approx(cpp_ymin));
-        //REQUIRE(ymax == Approx(cpp_ymax));
+        auto cpp_kernel = sparseir::LogisticKernel(9);
+        auto xrange = cpp_kernel.xrange();
+        auto yrange = cpp_kernel.yrange();
+        auto cpp_xmin = xrange.first;
+        auto cpp_xmax = xrange.second;
+        auto cpp_ymin = yrange.first;
+        auto cpp_ymax = yrange.second;
+
+        REQUIRE(xmin == cpp_xmin);
+        REQUIRE(xmax == cpp_xmax);
+        REQUIRE(ymin == cpp_ymin);
+        REQUIRE(ymax == cpp_ymax);
+        */
 
         // Clean up
-        //spir_kernel_delete(kernel);
+        //spir_destroy_logistic_kernel(kernel);
     }
 }
