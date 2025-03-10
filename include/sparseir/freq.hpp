@@ -6,7 +6,6 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
-#include "sparseir/util.hpp"
 
 namespace sparseir {
 
