@@ -61,12 +61,12 @@ public:
         std::vector<int> wn_f;
         bool fence = false;
         bool positive_only = false;
-        for (const auto& freq : default_matsubara_sampling_points(basis_f.uhat_full, basis_f.size(), fence, positive_only)) {
+        for (const auto& freq : basis_f.default_matsubara_sampling_points(basis_f.size(), fence, positive_only)) {
             wn_f.push_back(freq.get_n());
         }
 
         std::vector<int> wn_b;
-        for (const auto& freq : default_matsubara_sampling_points(basis_b.uhat_full, basis_b.size(), fence, positive_only)) {
+        for (const auto& freq : basis_b.default_matsubara_sampling_points(basis_b.size(), fence, positive_only)) {
             wn_b.push_back(freq.get_n());
         }
 

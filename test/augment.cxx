@@ -319,8 +319,8 @@ TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
     auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
     bool fence = false;
     bool positive_only = true;
-    auto sampling_points = sparseir::default_matsubara_sampling_points(
-        basis_aug->basis->uhat_full, basis_aug->size(), fence, positive_only
+    auto sampling_points = basis_aug->default_matsubara_sampling_points(
+        basis_aug->size(), fence, positive_only
     );
     Eigen::VectorXcd v = basis_aug->uhat(sampling_points[0]);
     REQUIRE(v.size() == basis_aug->size());

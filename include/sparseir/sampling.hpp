@@ -16,19 +16,6 @@ namespace sparseir {
 template <typename S> class FiniteTempBasis;
 template <typename S> class DiscreteLehmannRepresentation;
 
-// Define WorkSize struct
-// struct WorkSize
-//{
-// Eigen::Index rows;
-// Eigen::Index cols;
-//
-// WorkSize(Eigen::Index r, Eigen::Index c) : rows(r), cols(c) { }
-//
-// Eigen::Index prod() const { return rows * cols; }
-// Eigen::Index size() const { return rows; }
-// Eigen::Index dimensions() const { return cols; }
-//};
-
 template <int N>
 Eigen::array<int, N> getperm(int src, int dst)
 {
@@ -283,6 +270,7 @@ inline Eigen::MatrixXcd eval_matrix(
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
+    // FIXME: this can be slow. Evaluate uhat[i] for multiple frequencies at once.
     for (int i = 0; i < sampling_points.size(); ++i) {
         m.col(i) = (basis->uhat)(sampling_points[i]);
     }
@@ -389,13 +377,6 @@ public:
         return _matop_along_dim(matrix_, al, dim);
     }
 
-    // template <typename T, int N>
-    // size_t workarrlength(const Eigen::Tensor<T, N> &ax, int dim) const
-    //{
-    // auto svd = get_matrix_svd();
-    // return svd.singularValues().size() * (ax.size() / ax.dimension(dim));
-    //}
-
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>
     Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &ax, int dim = 0) const
@@ -457,24 +438,6 @@ inline Eigen::JacobiSVD<Eigen::MatrixXcd> make_split_svd(const Eigen::MatrixXcd 
     return svd;
 }
 
-/*
-function MatsubaraSampling(basis::AbstractBasis; positive_only=false,
-        sampling_points=default_matsubara_sampling_points(basis;
-            positive_only), factorize=true)
-    issorted(sampling_points) || sort!(sampling_points)
-    if positive_only
-        Int(first(sampling_points)) ≥ 0 || error("invalid negative sampling
-frequencies") end matrix = eval_matrix(MatsubaraSampling, basis,
-sampling_points) has_zero = iszero(first(sampling_points)) if factorize
-        svd_matrix = positive_only ? SplitSVD(matrix; has_zero) : svd(matrix)
-    else
-        svd_matrix = nothing
-    end
-    sampling = MatsubaraSampling(sampling_points, matrix, svd_matrix,
-positive_only) if factorize && iswellconditioned(basis) && cond(sampling) > 1e8
-        @warn "Sampling matrix is poorly conditioned (cond =
-$(cond(sampling)))." end return sampling end
-*/
 template <typename S>
 class MatsubaraSampling : public AbstractSampling {
 private:
@@ -502,7 +465,7 @@ public:
     {
         // Get default sampling points from basis
         bool fence = false;
-        sampling_points_ = default_matsubara_sampling_points(basis->uhat_full, basis->size(), fence, positive_only);
+        sampling_points_ = basis->default_matsubara_sampling_points(basis->size(), fence, positive_only);
         std::sort(sampling_points_.begin(), sampling_points_.end());
 
         // Ensure matrix dimensions are correct
@@ -552,7 +515,7 @@ public:
         bool fence = false;
         // Note that we use basis->basis->uhat_full, not basis->uhat_full
         int sz = basis->basis->size() + basis->augmentations.size();
-        sampling_points_ = default_matsubara_sampling_points(basis->basis->uhat_full, sz, fence, positive_only);
+        sampling_points_ = basis->default_matsubara_sampling_points(sz, fence, positive_only);
         std::sort(sampling_points_.begin(), sampling_points_.end());
 
         // Ensure matrix dimensions are correct
@@ -647,12 +610,6 @@ public:
         return result;
     }
 
-    // Overload for real-valued tensor input
-    //template <int N>
-    //Eigen::Tensor<std::complex<double>, N> evaluate(const Eigen::Tensor<double, N>& al, int dim = 0) const {
-        //return _matop_along_dim(matrix_, al, dim);
-    //}
-
     // Also add a Vector version for real inputs
     template <typename T>
     Eigen::VectorX<std::complex<double>> evaluate(const Eigen::VectorX<T>& al) const {
@@ -672,13 +629,6 @@ public:
         }
         return result;
     }
-
-    // template <typename T, int N>
-    // size_t workarrlength(const Eigen::Tensor<T, N> &ax, int dim) const
-    //{
-    // auto svd = get_matrix_svd();
-    // return svd.singularValues().size() * (ax.size() / ax.dimension(dim));
-    //}
 
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>

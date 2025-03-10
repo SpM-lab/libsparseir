@@ -133,6 +133,10 @@ public:
         return basis.default_tau_sampling_points();
     }
 
+    std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const override {
+        return basis.default_matsubara_sampling_points(L, fence, positive_only);
+    }
+
     // Convert from IR to DLR
     template <typename Derived>
     Eigen::MatrixXd from_IR(const Eigen::MatrixBase<Derived>& gl) const {

@@ -43,7 +43,7 @@ public:
     virtual double get_wmax() const = 0;
     virtual size_t size() const = 0;
     virtual const Eigen::VectorXd default_tau_sampling_points() const = 0;
-
+    virtual std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const = 0;
 };
 
 } // namespace sparseir
@@ -208,10 +208,15 @@ public:
             lambda, *sve_result, static_cast<int>(s.size()));
     }
 
+    // FIXME: remove `const` from the return type
     const Eigen::VectorXd default_tau_sampling_points() const override {
         int sz = size();
         auto x = default_sampling_points(this->sve_result->u, sz);
         return (this->beta / 2.0) * (x.array() + 1.0);
+    }
+
+    std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const override {
+        return default_matsubara_sampling_points_impl(this->uhat, L, fence, positive_only);
     }
 
 private:
@@ -282,7 +287,7 @@ inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool pos
 
 template <typename S>
 std::vector<MatsubaraFreq<S>>
-default_matsubara_sampling_points(const PiecewiseLegendreFTVector<S> &u_hat,
+default_matsubara_sampling_points_impl(const PiecewiseLegendreFTVector<S> &u_hat,
                                   int L, bool fence = false,
                                   bool positive_only = false)
 {
