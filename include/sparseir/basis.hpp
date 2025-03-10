@@ -116,11 +116,11 @@ public:
         Eigen::VectorXd deltax4u = (beta / 2) * u_.get_delta_x();
         Eigen::VectorXd deltax4v = wmax * v_.get_delta_x();
         std::vector<int> u_symm_vec;
-        for (int i = 0; i < u_.size(); ++i) {
+        for (std::size_t i = 0; i < u_.size(); ++i) {
             u_symm_vec.push_back(u_.polyvec[i].get_symm());
         }
         std::vector<int> v_symm_vec;
-        for (int i = 0; i < v_.size(); ++i) {
+        for (std::size_t i = 0; i < v_.size(); ++i) {
             v_symm_vec.push_back(v_.polyvec[i].get_symm());
         }
 
@@ -286,7 +286,7 @@ default_matsubara_sampling_points(const PiecewiseLegendreFTVector<S> &u_hat,
                                   int L, bool fence = false,
                                   bool positive_only = false)
 {
-    int l_requested = L;
+    std::size_t l_requested = L;
 
     // Adjust l_requested based on statistics
     if (std::is_same<S, Fermionic>::value && l_requested % 2 != 0)
@@ -302,7 +302,7 @@ default_matsubara_sampling_points(const PiecewiseLegendreFTVector<S> &u_hat,
         omega_n = find_extrema(u_hat[u_hat.size() - 1], positive_only);
     }
 
-    int expected_size = l_requested;
+    std::size_t expected_size = l_requested;
     if (positive_only)
         expected_size = (expected_size + 1) / 2;
 

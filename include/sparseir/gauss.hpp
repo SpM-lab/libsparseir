@@ -273,8 +273,8 @@ legendre_collocation(const Rule<T> &rule, int n = -1)
     // Compute the Legendre Vandermonde matrix
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> lv =
         sparseir::legvander<T>(rule.x, n - 1);
-    for (size_t i = 0; i < rule.w.size(); ++i) {
-        for (size_t j = 0; j < lv.cols(); ++j) {
+    for (auto i = 0; i < rule.w.size(); ++i) {
+        for (auto j = 0; j < lv.cols(); ++j) {
             lv(i, j) *= rule.w[i];
         }
     }
@@ -289,8 +289,8 @@ legendre_collocation(const Rule<T> &rule, int n = -1)
     // Normalize the matrix rows
     Eigen::VectorXd invnorm = Eigen::VectorXd::LinSpaced(n, 0.5, n - 0.5);
 
-    for (size_t i = 0; i < invnorm.size(); ++i) {
-        for (size_t j = 0; j < lv.cols(); ++j) {
+    for (auto i = 0; i < invnorm.size(); ++i) {
+        for (auto j = 0; j < lv.cols(); ++j) {
             res(i, j) *= invnorm(i);
         }
     }

@@ -353,10 +353,10 @@ public:
         std::vector<double> segs_x_double(segs_x.size());
         std::vector<double> segs_y_double(segs_y.size());
 
-        for (int i = 0; i < segs_x.size(); ++i) {
+        for (std::size_t i = 0; i < segs_x.size(); ++i) {
             segs_x_double[i] = static_cast<double>(segs_x[i]);
         }
-        for (int i = 0; i < segs_y.size(); ++i) {
+        for (std::size_t i = 0; i < segs_y.size(); ++i) {
             segs_y_double[i] = static_cast<double>(segs_y[i]);
         }
         Eigen::VectorXd knots_x = Eigen::Map<Eigen::VectorXd>(segs_x_double.data(), segs_x_double.size());
