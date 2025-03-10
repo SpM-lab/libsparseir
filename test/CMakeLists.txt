@@ -28,7 +28,7 @@ add_executable(libsparseirtests
     #basis.cxx
     augment.cxx
     sampling.cxx
-    ##dlr.cxx
+    dlr.cxx
     #cinterface.cxx
 )
 

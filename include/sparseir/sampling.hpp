@@ -293,7 +293,7 @@ inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
     Eigen::MatrixXd matrix(x.size(), basis->size());
 
     // Evaluate basis functions at sampling points
-    auto u_eval = evaluate_u_at_x(basis, x);
+    auto u_eval = basis->u(x);
     // Transpose and scale by singular values
     matrix = u_eval.transpose();
 
@@ -322,7 +322,7 @@ inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampli
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
     for (int i = 0; i < sampling_points.size(); ++i) {
-        m.col(i) = evaluate_uhat_at_x(basis, sampling_points[i]);
+        m.col(i) = (basis->uhat)(sampling_points[i]);
     }
     Eigen::MatrixXcd matrix = m.transpose();
     return matrix;
