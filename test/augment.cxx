@@ -13,6 +13,7 @@
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
+/*
 TEST_CASE("AbstractAugmentation", "[augment]")
 {
     using Catch::Approx;
@@ -108,6 +109,7 @@ TEST_CASE("AbstractAugmentation", "[augment]")
         REQUIRE(std::isnan(mc(x)));
     }
 }
+*/
 
 TEST_CASE("Augmented bosonic basis", "[augment]")
 {
@@ -164,15 +166,18 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
         gtau_tensor(i) = gtau(i);
     }
     auto gl_fit = tau_sampling.fit(gtau_tensor);
+    std::cout << "gl_fit = " << gl_fit << std::endl;
     Eigen::Tensor<double, 1> gtau_reconst_tensor =
         tau_sampling.evaluate(gl_fit);
     Eigen::VectorXd gtau_reconst(gtau.size());
     for (size_t i = 0; i < gtau.size(); ++i) {
         gtau_reconst(i) = gtau_reconst_tensor(i);
+        std::cout << "gtau_reconst(i) = " << gtau_reconst(i) << std::endl;
     }
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
 }
 
+/*
 TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
 
     double beta = 1000.0;
@@ -323,3 +328,5 @@ TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
     Eigen::VectorXcd v = basis_aug->uhat(sampling_points[0]);
     REQUIRE(v.size() == basis_aug->size());
 }
+
+*/

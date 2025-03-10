@@ -71,14 +71,16 @@ template <typename T1, typename T2, int N1, int N2>
 Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
 _contract(const Eigen::Tensor<T1, N1> &tensor1,
          const Eigen::Tensor<T2, N2> &tensor2, 
-         const Eigen::array<Eigen::IndexPair<int>, 1> &constract_dims)
+         const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
 {
     using ResultType = decltype(T1() * T2());
     
     // Contract tensors with proper type casting
-    auto result = tensor1.template cast<ResultType>().contract(
-        tensor2.template cast<ResultType>(), constract_dims);
-    
+    // TODO: avoid copying if possible
+    auto tensor1_cast = tensor1.template cast<ResultType>();
+    auto tensor2_cast = tensor2.template cast<ResultType>();
+    auto result = tensor1_cast.contract(tensor2_cast, contract_dims);
+
     return result;
 }
 
