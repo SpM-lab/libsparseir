@@ -67,6 +67,62 @@ Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N> &arr, int src, int dst)
     return arr.shuffle(perm);
 }
 
+template <typename T1, typename T2, int N1, int N2>
+Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
+_contract(const Eigen::Tensor<T1, N1> &tensor1,
+         const Eigen::Tensor<T2, N2> &tensor2, 
+         const Eigen::array<Eigen::IndexPair<int>, 1> &constract_dims)
+{
+    using ResultType = decltype(T1() * T2());
+    
+    // Contract tensors with proper type casting
+    auto result = tensor1.template cast<ResultType>().contract(
+        tensor2.template cast<ResultType>(), constract_dims);
+    
+    return result;
+}
+
+template <typename T1, typename T2, int N2>
+Eigen::Tensor<decltype(T1() * T2()), N2>
+_matop_along_dim(
+    const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+         const Eigen::Tensor<T2, N2> &tensor2, 
+         int dim = 0)
+{
+    using ResultType = decltype(T1() * T2());
+
+    if (dim < 0 || dim >= N2) {
+        throw std::runtime_error(
+            "evaluate: dimension must be in [0..N2). Got dim=" +
+            std::to_string(dim));
+    }
+
+    if (matrix.cols() != tensor2.dimension(dim)) {
+        throw std::runtime_error(
+            "Mismatch: matrix.cols()=" +
+            std::to_string(matrix.cols()) + ", but tensor2.dimension(" +
+            std::to_string(dim) + ")=" + std::to_string(tensor2.dimension(dim)));
+    }
+
+    // Create a temporary tensor from the matrix
+    Eigen::Tensor<T1, 2> matrix_tensor(matrix.rows(), matrix.cols());
+    // Copy data from matrix to tensor
+    for (int i = 0; i < matrix.rows(); ++i) {
+        for (int j = 0; j < matrix.cols(); ++j) {
+            matrix_tensor(i, j) = matrix(i, j);
+        }
+    }
+
+    // specify contraction dimensions
+    Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
+        Eigen::IndexPair<int>(1, dim)
+    };
+
+    auto result = _contract(matrix_tensor, tensor2, contract_dims);
+    return movedim(result, 0, dim);
+}
+
+
 template <typename T, typename S, int N>
 Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
 _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
@@ -366,32 +422,7 @@ public:
     Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N> &al,
                                  int dim = 0) const
     {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" +
-                std::to_string(dim));
-        }
-
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" +
-                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
-                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
-        }
-
-        // Convert matrix to tensor
-        Eigen::Tensor<double, 2> matrix_tensor =
-            Eigen::TensorMap<Eigen::Tensor<const double, 2>>(
-                get_matrix().data(), get_matrix().rows(), get_matrix().cols());
-
-        // Specify contraction dimensions
-        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
-            Eigen::IndexPair<int>(1, dim)};
-
-        // Perform contraction
-        Eigen::Tensor<T, N> temp = matrix_tensor.contract(al, contract_dims);
-
-        return movedim(temp, 0, dim);
+        return _matop_along_dim(matrix_, al, dim);
     }
 
     // template <typename T, int N>
@@ -626,49 +657,10 @@ public:
         }
     }
 
-    // Specialized version for complex input tensors to avoid nested complex types
-    template <int N>
+    template <typename T, int N>
     Eigen::Tensor<std::complex<double>, N> evaluate(
-        const Eigen::Tensor<std::complex<double>, N>& al, int dim = 0) const {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" +
-                std::to_string(dim));
-        }
-
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" +
-                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
-                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
-        }
-
-        // Create dimensions array for result tensor
-        Eigen::array<Eigen::Index, N> dims;
-        for (int i = 0; i < N; ++i) {
-            dims[i] = (i == dim) ? matrix_.rows() : al.dimension(i);
-        }
-
-        // Create result tensor
-        Eigen::Tensor<std::complex<double>, N> result(dims);
-
-        // Convert matrix to tensor
-        Eigen::Tensor<std::complex<double>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
-        for (Eigen::Index i = 0; i < matrix_.rows(); ++i) {
-            for (Eigen::Index j = 0; j < matrix_.cols(); ++j) {
-                matrix_tensor(i,j) = matrix_(i,j);
-            }
-        }
-
-        // Specify contraction dimensions
-        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
-            Eigen::IndexPair<int>(1, dim)
-        };
-
-        // Perform contraction directly with complex input
-        result = matrix_tensor.contract(al, contract_dims);
-
-        return result;
+        const Eigen::Tensor<T, N>& al, int dim = 0) const {
+        return _matop_along_dim(matrix_, al, dim);
     }
 
     // Add these new overloads for Vector types
@@ -692,54 +684,10 @@ public:
     }
 
     // Overload for real-valued tensor input
-    template <int N>
-    Eigen::Tensor<std::complex<double>, N> evaluate(const Eigen::Tensor<double, N>& al, int dim = 0) const {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" +
-                std::to_string(dim));
-        }
-
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" +
-                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
-                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
-        }
-
-        // Create dimensions array for result tensor
-        Eigen::array<Eigen::Index, N> dims;
-        for (int i = 0; i < N; ++i) {
-            dims[i] = (i == dim) ? matrix_.rows() : al.dimension(i);
-        }
-
-        // Create result tensor
-        Eigen::Tensor<std::complex<double>, N> result(dims);
-
-        // Convert matrix to tensor
-        Eigen::Tensor<std::complex<double>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
-        for (Eigen::Index i = 0; i < matrix_.rows(); ++i) {
-            for (Eigen::Index j = 0; j < matrix_.cols(); ++j) {
-                matrix_tensor(i,j) = matrix_(i,j);
-            }
-        }
-
-        // Convert input tensor to complex for contraction
-        Eigen::Tensor<std::complex<double>, N> al_complex(al.dimensions());
-        for (int i = 0; i < al.size(); ++i) {
-            al_complex.data()[i] = std::complex<double>(al.data()[i], 0.0);
-        }
-
-        // Specify contraction dimensions
-        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
-            Eigen::IndexPair<int>(1, dim)
-        };
-
-        // Perform contraction
-        result = matrix_tensor.contract(al_complex, contract_dims);
-
-        return result;
-    }
+    //template <int N>
+    //Eigen::Tensor<std::complex<double>, N> evaluate(const Eigen::Tensor<double, N>& al, int dim = 0) const {
+        //return _matop_along_dim(matrix_, al, dim);
+    //}
 
     // Also add a Vector version for real inputs
     template <typename T>
