@@ -1,14 +1,26 @@
 #include "sparseir/sparseir.h"
 #include "sparseir/sparseir.hpp"
+#include "sparseir/util.hpp"
 #include <stdexcept>
 #include <memory>
-#include <variant>
 
 // Define opaque type and implement its management functions
 #define IMPLEMENT_OPAQUE_TYPE(name, impl_type)                                 \
     struct _spir_##name                                                        \
     {                                                                          \
-        std::variant<std::unique_ptr<impl_type>, std::shared_ptr<impl_type>> ptr; \
+        enum PtrType { Unique, Shared };                                       \
+        PtrType type;                                                          \
+        union {                                                                \
+            std::unique_ptr<impl_type> unique;                                 \
+            std::shared_ptr<impl_type> shared;                                 \
+        };                                                                     \
+        _spir_##name() : type(Unique) {}                                       \
+        ~_spir_##name() {                                                      \
+            if (type == Unique)                                                \
+                unique.~unique_ptr<impl_type>();                               \
+            else                                                               \
+                shared.~shared_ptr<impl_type>();                               \
+        }                                                                      \
     };                                                                         \
     typedef struct _spir_##name spir_##name;                                   \
                                                                                \
@@ -17,14 +29,16 @@
         std::unique_ptr<impl_type> p)                                          \
     {                                                                          \
         auto *obj = new spir_##name;                                           \
-        obj->ptr = std::move(p);                                               \
+        obj->type = _spir_##name::Unique;                                      \
+        new (&obj->unique) std::unique_ptr<impl_type>(std::move(p));           \
         return obj;                                                            \
     }                                                                          \
                                                                                \
     static inline spir_##name *create_view_##name(std::shared_ptr<impl_type> p)\
     {                                                                          \
         auto *obj = new spir_##name;                                           \
-        obj->ptr = std::move(p);                                               \
+        obj->type = _spir_##name::Shared;                                      \
+        new (&obj->shared) std::shared_ptr<impl_type>(std::move(p));           \
         return obj;                                                            \
     }                                                                          \
                                                                                \
@@ -40,10 +54,10 @@
     static inline impl_type* get_impl_##name(const spir_##name *obj)           \
     {                                                                          \
         if (!obj) return nullptr;                                              \
-        if (std::holds_alternative<std::unique_ptr<impl_type>>(obj->ptr)) {    \
-            return std::get<std::unique_ptr<impl_type>>(obj->ptr).get();       \
+        if (obj->type == _spir_##name::Unique) {                               \
+            return obj->unique.get();                                          \
         } else {                                                               \
-            return std::get<std::shared_ptr<impl_type>>(obj->ptr).get();       \
+            return obj->shared.get();                                          \
         }                                                                      \
     }
 
@@ -63,7 +77,7 @@ extern "C" {
 spir_kernel *spir_logistic_kernel_new(double lambda)
 {
     try {
-        auto kernel = std::make_unique<sparseir::LogisticKernel>(lambda);
+        auto kernel = sparseir::util::make_unique<sparseir::LogisticKernel>(lambda);
         auto abstract_kernel = std::unique_ptr<sparseir::AbstractKernel>(kernel.release());
         return create_owned_kernel(std::move(abstract_kernel));
     } catch (...) {
@@ -139,7 +153,7 @@ spir_fermionic_basis *spir_fermionic_basis_new(double beta, double omega_max,
 {
     try {
         return create_owned_fermionic_basis(
-            std::make_unique<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+            sparseir::util::make_unique<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
                 beta, omega_max, epsilon,
                 sparseir::LogisticKernel(beta * omega_max)));
     } catch (...) {
@@ -152,7 +166,7 @@ spir_sampling *spir_tau_sampling_new(const spir_fermionic_basis *b)
     auto impl = get_impl_fermionic_basis(b);
     if (!impl)
         return nullptr;
-    auto smpl = std::make_unique<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
+    auto smpl = sparseir::util::make_unique<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
     return create_owned_sampling(std::move(smpl));
 }
 
@@ -166,7 +180,7 @@ spir_polyvector *spir_basis_u_view(const spir_fermionic_basis *b)
     try {
         // Create a view of the basis functions using a non-owning shared_ptr
         // The empty deleter ensures the object is not deleted when the shared_ptr is destroyed
-        auto shared_view = std::shared_ptr<sparseir::PiecewiseLegendrePolyVector>(&impl->u, [](auto*){});
+        auto shared_view = std::shared_ptr<sparseir::PiecewiseLegendrePolyVector>(&impl->u, [](sparseir::PiecewiseLegendrePolyVector*){});
         return create_view_polyvector(shared_view);
     } catch (...) {
         return nullptr;
@@ -178,7 +192,7 @@ spir_polyvector *spir_basis_u_view(const spir_fermionic_basis *b)
 //{
     //try {
         //return create_owned_regularized_bose_kernel(
-            //std::make_unique<sparseir::RegularizedBoseKernel>(lambda));
+            //sparseir::util::make_unique<sparseir::RegularizedBoseKernel>(lambda));
     //} catch (...) {
         //return nullptr;
     //}

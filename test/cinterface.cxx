@@ -14,7 +14,7 @@
 using Catch::Approx;
 using xprec::DDouble;
 
-TEST_CASE("Kernel Accuracy Tests", "[kernel]")
+TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
 {
     // Test individual kernels
     SECTION("LogisticKernel(9)")
@@ -53,7 +53,7 @@ TEST_CASE("Kernel Accuracy Tests", "[kernel]")
     }
 }
 
-TEST_CASE("Sampling", "[sampling]")
+TEST_CASE("Sampling", "[cinterface]")
 {
     SECTION("TauSampling Constructor")
     {

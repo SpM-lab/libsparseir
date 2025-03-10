@@ -671,7 +671,7 @@ truncate(const std::vector<Eigen::MatrixX<T>> &u,
 }
 
 template <typename K, typename T>
-auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
+std::tuple<SVEResult, std::shared_ptr<AbstractSVE<T>>> pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                      double cutoff = std::numeric_limits<double>::quiet_NaN(),
                      int lmax = std::numeric_limits<int>::max())
 {
@@ -711,8 +711,8 @@ auto pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
     std::tie(u_list_truncated, s_list_truncated, v_list_truncated) =
         truncate(u_list_, s_list_, v_list_, cutoff_actual, lmax);
     // Postprocess to get the SVEResult
-    return sve->postprocess(u_list_truncated, s_list_truncated,
-                            v_list_truncated);
+    return std::make_tuple(sve->postprocess(u_list_truncated, s_list_truncated,
+                            v_list_truncated), sve);
 }
 
 
@@ -732,9 +732,9 @@ SVEResult compute_sve(const K &kernel, double epsilon,
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = sparseir::auto_choose_accuracy(epsilon, Twork);
 
     if (Twork == "Float64") {
-        return pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff, lmax);
+        return std::get<0>(pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff, lmax));
     } else if (Twork == "Float64x2") {
-        return pre_postprocess<K, xprec::DDouble>(kernel, safe_epsilon, n_gauss, cutoff, lmax);
+        return std::get<0>(pre_postprocess<K, xprec::DDouble>(kernel, safe_epsilon, n_gauss, cutoff, lmax));
     } else {
         throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
     }

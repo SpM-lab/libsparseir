@@ -14,21 +14,21 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 add_executable(libsparseirtests
-    #utils.cxx
-    #example.cxx
-    #_linalg.cxx
-    #_specfuncs.cxx
-    #_root.cxx
-    #gauss.cxx
-    #freq.cxx
-    #poly.cxx
-    #kernel.cxx
-    #svd.cxx
-    #sve.cxx
-    #basis.cxx
-    #augment.cxx
-    #sampling.cxx
-    #dlr.cxx
+    utils.cxx
+    example.cxx
+    _linalg.cxx
+    _specfuncs.cxx
+    _root.cxx
+    gauss.cxx
+    freq.cxx
+    poly.cxx
+    kernel.cxx
+    svd.cxx
+    sve.cxx
+    basis.cxx
+    augment.cxx
+    sampling.cxx
+    dlr.cxx
     cinterface.cxx
 )
 

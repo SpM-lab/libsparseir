@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
+#include "sparseir/util.hpp"
 
 namespace sparseir {
 
@@ -35,9 +36,9 @@ public:
 inline std::unique_ptr<Statistics> create_statistics(int zeta)
 {
     if (zeta == 1)
-        return std::make_unique<Fermionic>();
+        return sparseir::util::make_unique<Fermionic>();
     if (zeta == 0)
-        return std::make_unique<Bosonic>();
+        return sparseir::util::make_unique<Bosonic>();
     throw std::domain_error("Unknown statistics type");
 }
 
@@ -102,14 +103,14 @@ using FermionicFreq = MatsubaraFreq<Fermionic>;
 
 // Overload operators for MatsubaraFreq
 template <typename S1, typename S2>
-inline auto operator+(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
+inline MatsubaraFreq<decltype(std::declval<S1>() + std::declval<S2>())> operator+(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
 {
     return MatsubaraFreq<decltype(a.statistics() + b.statistics())>(a.get_n() +
                                                                     b.get_n());
 }
 
 template <typename S1, typename S2>
-inline auto operator-(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
+inline MatsubaraFreq<decltype(std::declval<S1>() + std::declval<S2>())> operator-(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
 {
     return MatsubaraFreq<decltype(a.statistics() + b.statistics())>(a.get_n() -
                                                                     b.get_n());
