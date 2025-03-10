@@ -13,7 +13,6 @@
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
 
-/*
 TEST_CASE("AbstractAugmentation", "[augment]")
 {
     using Catch::Approx;
@@ -109,7 +108,6 @@ TEST_CASE("AbstractAugmentation", "[augment]")
         REQUIRE(std::isnan(mc(x)));
     }
 }
-*/
 
 TEST_CASE("Augmented bosonic basis", "[augment]")
 {
@@ -177,7 +175,6 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
 }
 
-/*
 TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
 
     double beta = 1000.0;
@@ -328,5 +325,3 @@ TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
     Eigen::VectorXcd v = basis_aug->uhat(sampling_points[0]);
     REQUIRE(v.size() == basis_aug->size());
 }
-
-*/
