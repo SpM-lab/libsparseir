@@ -20,10 +20,12 @@ extern "C" {
 /* Declare opaque types */
 struct _spir_kernel;
 
+DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(polyvector);
 DECLARE_OPAQUE_TYPE(basis);
 DECLARE_OPAQUE_TYPE(fermionic_basis);
+DECLARE_OPAQUE_TYPE(sampling);
 
 /**
  * Kernel
@@ -48,7 +50,7 @@ typedef struct _spir_function spir_function;
 /**
  * Create new logistic kernel
  */
-spir_logistic_kernel *spir_logistic_kernel_new(double lambda);
+spir_kernel *spir_logistic_kernel_new(double lambda);
 
 /**
  * Create new regularized bose kernel
@@ -67,8 +69,13 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
                        const double *y, int ny, double *out);
 
+/**
+ * Create a new tau sampling object
+ */
+spir_sampling *spir_tau_sampling_new(const spir_fermionic_basis *b);
+
 /** Destroy instance of kernel */
-void spir_destroy_kernel(spir_kernel *k);
+//void spir_destroy_kernel(spir_kernel *k);
 
 /**
  * Given a kernel k, perform a truncated singular value expansion to precision
@@ -79,19 +86,19 @@ void spir_destroy_kernel(spir_kernel *k);
  * to a level `eps`, and `u[i]`, `s[i]`, and `v[i]` with the i-th left-singular
  * function, i-th singular value, and i-th right-singular function, respectively.
  */
-int spir_sve(const spir_kernel *k,
-             spir_function *u, double *s, spir_function *v, int *n,
-             double eps);
+//int spir_sve(const spir_kernel *k,
+             //spir_function *u, double *s, spir_function *v, int *n,
+             //double eps);
 
 /** Fill [taumin, taumax] with the domain of the function */
-int spir_func_domain(const spir_function *f, double *taumin, double *taumax);
+//int spir_func_domain(const spir_function *f, double *taumin, double *taumax);
 
 /**
  * Takes a function `f` and arrays of size `n`: `tau`, `out`.
  * On exit, set `out[n] = f(tau[n])` to double precision.
  */
-int spir_tau_value(const spir_function *f, const double *tau,
-                   double *out, int n);
+//int spir_tau_value(const spir_function *f, const double *tau,
+                   //double *out, int n);
 
 /**
  * Takes a function `f` and a buffer `f0` of size at least `n`. On exit, set
@@ -99,15 +106,15 @@ int spir_tau_value(const spir_function *f, const double *tau,
  *
  * Return 0 on success, -1 if more roots were found.
  */
-int spir_tau_roots(const spir_function *f, double *f0, int *n);
+//int spir_tau_roots(const spir_function *f, double *f0, int *n);
 
 /**
  * Takes a function `f` and two arrays of arrays of size `n`: `iw`, `out`.
  * On exit, set `out[n] = FT(f)(iw[n])` to double precision, where `FT` denotes
  * the Fourier transform.
  */
-int spir_iw_value(const spir_function *f, const long *iw,
-                  double _Complex *out, int n);
+//int spir_iw_value(const spir_function *f, const long *iw,
+                  //double _Complex *out, int n);
 
 /**
  * Takes a function `f` and a buffer `f0` of size at least `n`. On exit, set
@@ -116,13 +123,13 @@ int spir_iw_value(const spir_function *f, const long *iw,
  *
  * Return 0 on success, -1 if more roots were found.
  */
-int spir_iw_roots(const spir_function *f, long *f0, int n);
+//int spir_iw_roots(const spir_function *f, long *f0, int n);
 
 // Create new basis
 spir_fermionic_basis* spir_fermionic_basis_new(double beta, double omega_max, double epsilon);
 
 // Destroy basis instance
-void spir_destroy_fermionic_basis(spir_fermionic_basis* b);
+//void spir_destroy_fermionic_basis(spir_fermionic_basis* b);
 
 /**
  * Get basis functions.
@@ -131,7 +138,7 @@ void spir_destroy_fermionic_basis(spir_fermionic_basis* b);
  * @param b The basis
  * @return Polynomial vector, or NULL on error
  */
-spir_polyvector* spir_basis_u(const spir_fermionic_basis* b);
+//spir_polyvector* spir_basis_u(const spir_fermionic_basis* b);
 
 /**
  * Get the size of a polynomial vector.
@@ -139,12 +146,12 @@ spir_polyvector* spir_basis_u(const spir_fermionic_basis* b);
  * @param v The polynomial vector
  * @return Size of the vector, or -1 on error
  */
-int spir_polyvector_size(const spir_polyvector* v);
+//int spir_polyvector_size(const spir_polyvector* v);
 
 /**
  * Destroy a polynomial vector.
  */
-void spir_destroy_polyvector(spir_polyvector* v);
+//void spir_destroy_polyvector(spir_polyvector* v);
 
 #ifdef __cplusplus
 }

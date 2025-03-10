@@ -25,11 +25,11 @@ TEST_CASE("Kernel Accuracy Tests", "[kernel]")
     SECTION("Kernel Domain")
     {
         // Create a kernel through C API
-        spir_logistic_kernel* kernel = spir_logistic_kernel_new(9);
+        //spir_logistic_kernel* kernel = spir_logistic_kernel_new(9);
+        spir_kernel* kernel = spir_logistic_kernel_new(9);
         REQUIRE(kernel != nullptr);
 
         // Get domain bounds
-        /*
         double xmin, xmax, ymin, ymax;
         int status = spir_kernel_domain(kernel, &xmin, &xmax, &ymin, &ymax);
         REQUIRE(status == 0);
@@ -47,9 +47,24 @@ TEST_CASE("Kernel Accuracy Tests", "[kernel]")
         REQUIRE(xmax == cpp_xmax);
         REQUIRE(ymin == cpp_ymin);
         REQUIRE(ymax == cpp_ymax);
-        */
 
         // Clean up
-        //spir_destroy_logistic_kernel(kernel);
+        spir_destroy_kernel(kernel);
+    }
+}
+
+TEST_CASE("Sampling", "[sampling]")
+{
+    SECTION("TauSampling Constructor")
+    {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        auto basis = spir_fermionic_basis_new(beta, wmax, 1e-15);
+        REQUIRE(basis != nullptr);
+
+        auto sampling = spir_tau_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+        
     }
 }
