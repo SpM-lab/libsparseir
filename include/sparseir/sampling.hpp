@@ -261,31 +261,7 @@ template <typename S>
 class AugmentedBasis;
 
 template <typename Basis>
-inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
-            const Eigen::VectorXd &x)
-{
-    return basis->u(x);
-}
-
-/*
-inline Eigen::VectorXd evaluate_u_at_x(const AugmentedTauFunction &u,
-                                      const double x)
-{
-    // Call the operator() directly on the AugmentedTauFunction
-    return u(x);
-}
-*/
-
-template <typename S>
-inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                                const Eigen::VectorXd &x)
-{
-    // Dereference the unique_ptr to access the AugmentedTauFunction
-    return basis->u(x);
-}
-
-template <typename S, typename Basis>
-inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
+inline Eigen::MatrixXd eval_matrix(
             const std::shared_ptr<Basis> &basis,
             const Eigen::VectorXd &x)
 {
@@ -300,23 +276,9 @@ inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
     return matrix;
 }
 
-template <typename S, typename T>
-inline Eigen::VectorXcd
-evaluate_uhat_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
-                   const T &x)
-{
-    return basis->uhat(x);
-}
-
-template <typename S>
-inline Eigen::VectorXcd evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                   const MatsubaraFreq<S> &x)
-{
-    return basis->uhat(x);
-}
 
 template <typename S, typename Base>
-inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
+inline Eigen::MatrixXcd eval_matrix(
                                    const std::shared_ptr<Base> &basis,
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
@@ -359,7 +321,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
+        matrix_ = eval_matrix(basis, sampling_points_);
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
             matrix_.cols() != basis->size()) {
@@ -398,7 +360,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
+        matrix_ = eval_matrix(basis, sampling_points_);
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
             matrix_.cols() != basis->size()) {
@@ -549,7 +511,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
+        matrix_ = eval_matrix(basis, sampling_points_);
 
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
@@ -599,7 +561,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
+        matrix_ = eval_matrix(basis, sampling_points_);
 
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
