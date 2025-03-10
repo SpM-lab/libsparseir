@@ -9,6 +9,11 @@
 extern "C" {
 #endif
 
+typedef enum {
+    SPIR_STATISTICS_FERMIONIC = 1,
+    SPIR_STATISTICS_BOSONIC = 0
+} spir_statistics_type;
+
 /* Macro for declaring opaque types and their functions */
 #define DECLARE_OPAQUE_TYPE(name)                                              \
     struct _spir_##name;                                                       \
@@ -23,8 +28,8 @@ struct _spir_kernel;
 DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(polyvector);
-DECLARE_OPAQUE_TYPE(basis);
 DECLARE_OPAQUE_TYPE(fermionic_basis);
+DECLARE_OPAQUE_TYPE(bosonic_basis);
 DECLARE_OPAQUE_TYPE(sampling);
 
 /**
