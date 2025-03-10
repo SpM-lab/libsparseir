@@ -1,8 +1,8 @@
 #include "sparseir/sparseir.h"
 #include "sparseir/sparseir.hpp"
 #include "sparseir/utils.hpp"
-#include <stdexcept>
 #include <memory>
+#include <stdexcept>
 
 // Define opaque type and implement its management functions
 #define IMPLEMENT_OPAQUE_TYPE(name, impl_type)                                 \
@@ -14,8 +14,9 @@
             std::unique_ptr<impl_type> unique;                                 \
             std::shared_ptr<impl_type> shared;                                 \
         };                                                                     \
-        _spir_##name() : type(Unique) {}                                       \
-        ~_spir_##name() {                                                      \
+        _spir_##name() : type(Unique) { }                                      \
+        ~_spir_##name()                                                        \
+        {                                                                      \
             if (type == Unique)                                                \
                 unique.~unique_ptr<impl_type>();                               \
             else                                                               \
@@ -34,7 +35,8 @@
         return obj;                                                            \
     }                                                                          \
                                                                                \
-    static inline spir_##name *create_view_##name(std::shared_ptr<impl_type> p)\
+    static inline spir_##name *create_view_##name(                             \
+        std::shared_ptr<impl_type> p)                                          \
     {                                                                          \
         auto *obj = new spir_##name;                                           \
         obj->type = _spir_##name::Shared;                                      \
@@ -51,9 +53,10 @@
     }                                                                          \
                                                                                \
     /* Helper to get the implementation pointer */                             \
-    static inline impl_type* get_impl_##name(const spir_##name *obj)           \
+    static inline impl_type *get_impl_##name(const spir_##name *obj)           \
     {                                                                          \
-        if (!obj) return nullptr;                                              \
+        if (!obj)                                                              \
+            return nullptr;                                                    \
         if (obj->type == _spir_##name::Unique) {                               \
             return obj->unique.get();                                          \
         } else {                                                               \
@@ -66,7 +69,7 @@ IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
 IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
 IMPLEMENT_OPAQUE_TYPE(polyvector, sparseir::PiecewiseLegendrePolyVector);
 IMPLEMENT_OPAQUE_TYPE(basis, sparseir::FiniteTempBasis<sparseir::Fermionic>);
-IMPLEMENT_OPAQUE_TYPE(fermionic_basis,
+IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
 
@@ -77,14 +80,15 @@ extern "C" {
 spir_kernel *spir_logistic_kernel_new(double lambda)
 {
     try {
-        auto kernel = sparseir::util::make_unique<sparseir::LogisticKernel>(lambda);
-        auto abstract_kernel = std::unique_ptr<sparseir::AbstractKernel>(kernel.release());
+        auto kernel =
+            sparseir::util::make_unique<sparseir::LogisticKernel>(lambda);
+        auto abstract_kernel =
+            std::unique_ptr<sparseir::AbstractKernel>(kernel.release());
         return create_owned_kernel(std::move(abstract_kernel));
     } catch (...) {
         return nullptr;
     }
 }
-
 
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax)
@@ -148,12 +152,14 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
 */
 
 // Constructor for basis
-spir_fermionic_basis *spir_fermionic_basis_new(double beta, double omega_max,
-                                               double epsilon)
+spir_fermionic_finite_temp_basis *
+spir_fermionic_finite_temp_basis_new(double beta, double omega_max,
+                                     double epsilon)
 {
     try {
-        return create_owned_fermionic_basis(
-            sparseir::util::make_unique<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+        return create_owned_fermionic_finite_temp_basis(
+            sparseir::util::make_unique<
+                sparseir::FiniteTempBasis<sparseir::Fermionic>>(
                 beta, omega_max, epsilon,
                 sparseir::LogisticKernel(beta * omega_max)));
     } catch (...) {
@@ -161,26 +167,44 @@ spir_fermionic_basis *spir_fermionic_basis_new(double beta, double omega_max,
     }
 }
 
-spir_sampling *spir_tau_sampling_new(const spir_fermionic_basis *b)
+spir_sampling *
+spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_basis(b);
+    auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto smpl = sparseir::util::make_unique<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
+    auto smpl =
+        sparseir::util::make_unique<sparseir::TauSampling<sparseir::Fermionic>>(
+            *impl);
     return create_owned_sampling(std::move(smpl));
 }
 
-// Get basis functions (returns a view of PiecewiseLegendrePolyVector)
-spir_polyvector *spir_basis_u_view(const spir_fermionic_basis *b)
+int spir_sampling_evaluate(const spir_sampling *s, spir_order_type order,
+                           const double *coeffs, int n_components,
+                           int target_dim, double *out)
 {
-    auto impl = get_impl_fermionic_basis(b);
+    auto impl = get_impl_sampling(s);
+    if (!impl)
+        return -1;
+    Eigen::TensorMap<const Eigen::Tensor<double, 2>> in_mat(coeffs, impl->basis_size(), n_components);
+    //impl->evaluate(coeffs, n_components, target_dim, out_mat);
+    return 0;
+}
+
+// Get basis functions (returns a view of PiecewiseLegendrePolyVector)
+spir_polyvector *spir_basis_u_view(const spir_fermionic_finite_temp_basis *b)
+{
+    auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
 
     try {
         // Create a view of the basis functions using a non-owning shared_ptr
-        // The empty deleter ensures the object is not deleted when the shared_ptr is destroyed
-        auto shared_view = std::shared_ptr<sparseir::PiecewiseLegendrePolyVector>(&impl->u, [](sparseir::PiecewiseLegendrePolyVector*){});
+        // The empty deleter ensures the object is not deleted when the
+        // shared_ptr is destroyed
+        auto shared_view =
+            std::shared_ptr<sparseir::PiecewiseLegendrePolyVector>(
+                &impl->u, [](sparseir::PiecewiseLegendrePolyVector *) { });
         return create_view_polyvector(shared_view);
     } catch (...) {
         return nullptr;
@@ -188,14 +212,15 @@ spir_polyvector *spir_basis_u_view(const spir_fermionic_basis *b)
 }
 
 // Create new regularized bose kernel
-//spir_regularized_bosonic_kernel *spir_kernel_regularized_bose_new(double lambda)
+// spir_regularized_bosonic_kernel *spir_kernel_regularized_bose_new(double
+// lambda)
 //{
-    //try {
-        //return create_owned_regularized_bose_kernel(
-            //sparseir::util::make_unique<sparseir::RegularizedBoseKernel>(lambda));
-    //} catch (...) {
-        //return nullptr;
-    //}
+// try {
+// return create_owned_regularized_bose_kernel(
+// sparseir::util::make_unique<sparseir::RegularizedBoseKernel>(lambda));
+//} catch (...) {
+// return nullptr;
+//}
 //}
 
 } // extern "C"

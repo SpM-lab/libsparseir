@@ -182,6 +182,13 @@ fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
 class AbstractSampling {
 public:
     virtual ~AbstractSampling() = default;
+    
+    // Return number of sampling points
+    virtual std::size_t n_sampling_points() const = 0;
+
+    // Return basis size
+    virtual std::size_t basis_size() const = 0;
+
 };
 
 // Helper function declarations
@@ -272,6 +279,16 @@ private:
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
 
 public:
+    // Implement the pure virtual method from AbstractSampling
+    std::size_t n_sampling_points() const override {
+        return sampling_points_.size();
+    }
+
+    // Implement the pure virtual method from AbstractSampling
+    std::size_t basis_size() const override {
+        return basis_->size();
+    }
+
     TauSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
                 bool factorize = true)
     {
@@ -474,6 +491,15 @@ private:
     bool has_zero_;
 
 public:
+    // Implement the pure virtual method from AbstractSampling
+    std::size_t n_sampling_points() const override {
+        return sampling_points_.size();
+    }
+
+    std::size_t basis_size() const override {
+        return basis_->size();
+    }
+
     MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis, // SHOULD WE ACCEPT ONLY CONST REFERENCE?
                        bool positive_only = false,
                        bool factorize = true)
