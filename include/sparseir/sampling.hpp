@@ -296,7 +296,8 @@ public:
         return this->matrix_.cols();
     }
 
-    TauSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
+    template <typename Basis>
+    TauSampling(const std::shared_ptr<Basis> &basis,
                 bool factorize = true)
     {
         // Get default sampling points from basis
@@ -329,42 +330,12 @@ public:
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
-    TauSampling(const FiniteTempBasis<S> &basis, bool factorize = true)
+    template <typename Basis, typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
+    TauSampling(const Basis &basis, bool factorize = true)
         : TauSampling(std::make_shared<FiniteTempBasis<S>>(basis), factorize)
     {
     }
 
-    TauSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                bool factorize = true)
-    {
-        // Get default sampling points from basis
-        sampling_points_ = basis->default_tau_sampling_points();
-
-        // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points generated");
-        }
-
-        // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(basis, sampling_points_);
-        // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis->size()) {
-            throw std::runtime_error("Matrix dimensions mismatch: got " +
-                                     std::to_string(matrix_.rows()) + "x" +
-                                     std::to_string(matrix_.cols()) +
-                                     ", expected " +
-                                     std::to_string(sampling_points_.size()) +
-                                     "x" + std::to_string(basis->size()));
-        }
-
-        // Initialize SVD
-        if (factorize) {
-            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
-                matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        }
-
-    }
 
     // Evaluate the basis coefficients at sampling points
     template <typename T, int N>
