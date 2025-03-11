@@ -458,7 +458,8 @@ public:
         return basis_->size();
     }
 
-    MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis, // SHOULD WE ACCEPT ONLY CONST REFERENCE?
+    template <typename Basis>
+    MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
                        bool positive_only = false,
                        bool factorize = true)
         : basis_(basis), positive_only_(positive_only)

@@ -216,7 +216,7 @@ public:
     }
 
     std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const override {
-        return default_matsubara_sampling_points_impl(this->uhat, L, fence, positive_only);
+        return default_matsubara_sampling_points_impl(this->uhat_full, L, fence, positive_only);
     }
 
 private:
