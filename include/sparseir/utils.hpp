@@ -6,6 +6,7 @@
 #include <numeric>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
+#include <memory>
 
 namespace sparseir {
 
