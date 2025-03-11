@@ -500,10 +500,12 @@ public:
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
-    MatsubaraSampling(const FiniteTempBasis<S> &basis,
+    template <typename Basis, 
+          typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
+        MatsubaraSampling(const Basis &basis,
                      bool positive_only = false,
                      bool factorize = true)
-        : MatsubaraSampling(std::make_shared<FiniteTempBasis<S>>(basis), positive_only, factorize)
+        : MatsubaraSampling(std::make_shared<Basis>(basis), positive_only, factorize)
     {
     }
 
