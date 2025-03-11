@@ -430,7 +430,7 @@ public:
                        const std::vector<MatsubaraFreq<S>> &sampling_points,
                        bool positive_only = false,
                        bool factorize = true)
-        : positive_only_(positive_only)
+        : positive_only_(positive_only), has_zero_(false)
     {
         sampling_points_ = sampling_points;
         std::sort(sampling_points_.begin(), sampling_points_.end());
@@ -470,7 +470,7 @@ public:
     MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
                        bool positive_only = false,
                        bool factorize = true)
-        : positive_only_(positive_only)
+        : positive_only_(positive_only), has_zero_(false)
     {
         // Get default sampling points from basis
         bool fence = false;
