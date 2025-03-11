@@ -16,6 +16,11 @@ public:
     MatsubaraPoles(double beta, const Eigen::VectorXd& poles)
         : beta(beta), poles(poles) { }
 
+    // Return the size of the poles vector
+    std::size_t size() const {
+        return poles.size();
+    }
+
     // For Fermionic case
     template <typename T = Statistics>
     typename std::enable_if<std::is_same<T, Fermionic>::value, Eigen::VectorXcd>::type
@@ -59,6 +64,11 @@ public:
 
     TauPoles(double beta, const Eigen::VectorXd& poles)
         : beta(beta), poles(poles), omega_max(poles.array().abs().maxCoeff()) { }
+
+    // Return the size of the poles vector
+    std::size_t size() const {
+        return poles.size();
+    }
 
     // Evaluate at tau points
     Eigen::VectorXd operator()(double tau) const {

@@ -26,11 +26,11 @@ add_executable(libsparseirtests
     #svd.cxx
     #sve.cxx
     #basis.cxx
-    #augment.cxx
-    #sampling.cxx
-    #dlr.cxx
+    augment.cxx
+    sampling.cxx
+    dlr.cxx
     #cinterface.cxx
-    sampling_debug.cxx
+    #sampling_debug.cxx
 )
 
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)

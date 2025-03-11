@@ -460,6 +460,47 @@ public:
 
     template <typename Basis>
     MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
+                       const std::vector<MatsubaraFreq<S>> &sampling_points,
+                       bool positive_only = false,
+                       bool factorize = true)
+        : basis_(basis), positive_only_(positive_only)
+    {
+        sampling_points_ = sampling_points;
+        std::sort(sampling_points_.begin(), sampling_points_.end());
+
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points given");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(basis, sampling_points_);
+
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points_.size()) +
+                                     "x" + std::to_string(basis->size()));
+        }
+        has_zero_ = sampling_points_[0].n == 0;
+        // Initialize SVD
+        if (factorize) {
+            if (positive_only_) {
+                matrix_svd_ = make_split_svd(matrix_, has_zero_);
+            } else {
+                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
+                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+            }
+        }
+    }
+
+
+    template <typename Basis>
+    MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
                        bool positive_only = false,
                        bool factorize = true)
         : basis_(basis), positive_only_(positive_only)
@@ -509,82 +550,13 @@ public:
     {
     }
 
-    MatsubaraSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                       bool positive_only = false,
-                       bool factorize = true)
-        : basis_(basis), positive_only_(positive_only)
+    template <typename Basis, 
+      typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
+        MatsubaraSampling(const Basis &basis, const std::vector<MatsubaraFreq<S>> &sampling_points,
+                     bool positive_only = false,
+                     bool factorize = true)
+        : MatsubaraSampling(std::make_shared<Basis>(basis), sampling_points, positive_only, factorize)
     {
-        // Get default sampling points from basis
-        bool fence = false;
-        // Note that we use basis->basis->uhat_full, not basis->uhat_full
-        int sz = basis->basis->size() + basis->augmentations.size();
-        sampling_points_ = basis->default_matsubara_sampling_points(sz, fence, positive_only);
-        std::sort(sampling_points_.begin(), sampling_points_.end());
-
-        // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points generated");
-        }
-
-        // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(basis, sampling_points_);
-
-        // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis->size()) {
-            throw std::runtime_error("Matrix dimensions mismatch: got " +
-                                     std::to_string(matrix_.rows()) + "x" +
-                                     std::to_string(matrix_.cols()) +
-                                     ", expected " +
-                                     std::to_string(sampling_points_.size()) +
-                                     "x" + std::to_string(basis->size()));
-        }
-        has_zero_ = sampling_points_[0].n == 0;
-        // Initialize SVD
-        if (factorize) {
-            if (positive_only_) {
-                matrix_svd_ = make_split_svd(matrix_, has_zero_);
-            } else {
-                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-            }
-        }
-    }
-
-    // Constructor that takes a DiscreteLehmannRepresentation and sampling points
-    MatsubaraSampling(const DiscreteLehmannRepresentation<S> &dlr,
-                      const std::vector<MatsubaraFreq<S>> &sampling_points,
-                      bool positive_only = false,
-                      bool factorize = true)
-        : basis_(nullptr), sampling_points_(sampling_points), positive_only_(positive_only)
-    {
-        // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points provided");
-        }
-
-        // Initialize evaluation matrix
-        matrix_ = Eigen::MatrixXcd(sampling_points_.size(), dlr.size());
-
-        // Fill the matrix with values from MatsubaraPoles
-        for (size_t i = 0; i < sampling_points_.size(); ++i) {
-            auto col = dlr.uhat(sampling_points_[i]);
-            for (Eigen::Index j = 0; j < col.size(); ++j) {
-                matrix_(i, j) = col(j);
-            }
-        }
-
-        has_zero_ = sampling_points_[0].n == 0;
-
-        // Initialize SVD
-        if (factorize) {
-            if (positive_only_) {
-                matrix_svd_ = make_split_svd(matrix_, has_zero_);
-            } else {
-                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-            }
-        }
     }
 
     template <typename T, int N>

@@ -164,13 +164,11 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
         gtau_tensor(i) = gtau(i);
     }
     auto gl_fit = tau_sampling.fit(gtau_tensor);
-    std::cout << "gl_fit = " << gl_fit << std::endl;
     Eigen::Tensor<double, 1> gtau_reconst_tensor =
         tau_sampling.evaluate(gl_fit);
     Eigen::VectorXd gtau_reconst(gtau.size());
     for (size_t i = 0; i < gtau.size(); ++i) {
         gtau_reconst(i) = gtau_reconst_tensor(i);
-        std::cout << "gtau_reconst(i) = " << gtau_reconst(i) << std::endl;
     }
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
 }
