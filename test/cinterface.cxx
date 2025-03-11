@@ -60,10 +60,10 @@ TEST_CASE("Sampling", "[cinterface]")
         double beta = 1.0;
         double wmax = 10.0;
 
-        auto basis = spir_fermionic_basis_new(beta, wmax, 1e-15);
+        auto basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-15);
         REQUIRE(basis != nullptr);
 
-        auto sampling = spir_tau_sampling_new(basis);
+        auto sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
         
     }

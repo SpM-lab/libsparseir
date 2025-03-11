@@ -14,6 +14,13 @@ typedef enum {
     SPIR_STATISTICS_BOSONIC = 0
 } spir_statistics_type;
 
+
+typedef enum {
+    SPIR_ORDER_COLUMN_MAJOR = 1,
+    SPIR_ORDER_ROW_MAJOR = 0
+} spir_order_type;
+
+
 /* Macro for declaring opaque types and their functions */
 #define DECLARE_OPAQUE_TYPE(name)                                              \
     struct _spir_##name;                                                       \
@@ -28,8 +35,8 @@ struct _spir_kernel;
 DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(polyvector);
-DECLARE_OPAQUE_TYPE(fermionic_basis);
-DECLARE_OPAQUE_TYPE(bosonic_basis);
+DECLARE_OPAQUE_TYPE(fermionic_finite_temp_basis);
+DECLARE_OPAQUE_TYPE(bosonic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
 
 /**
@@ -45,7 +52,7 @@ typedef struct _spir_function spir_function;
 /**
  * Basis
  */
-//typedef struct _spir_fermionic_basis spir_fermionic_basis;
+//typedef struct _spir_fermionic_finite_temp_basis spir_fermionic_finite_temp_basis;
 
 /**
  * Polynomial vector
@@ -77,7 +84,17 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
 /**
  * Create a new tau sampling object
  */
-spir_sampling *spir_tau_sampling_new(const spir_fermionic_basis *b);
+spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b);
+
+
+int spir_sampling_evaluate(
+    const spir_sampling *s,
+    spir_order_type order,
+    const double *coeffs,
+    int n_components,
+    int target_dim,
+    double *out);
+
 
 /** Destroy instance of kernel */
 //void spir_destroy_kernel(spir_kernel *k);
@@ -131,10 +148,10 @@ spir_sampling *spir_tau_sampling_new(const spir_fermionic_basis *b);
 //int spir_iw_roots(const spir_function *f, long *f0, int n);
 
 // Create new basis
-spir_fermionic_basis* spir_fermionic_basis_new(double beta, double omega_max, double epsilon);
+spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
 
 // Destroy basis instance
-//void spir_destroy_fermionic_basis(spir_fermionic_basis* b);
+//void spir_destroy_fermionic_basis(spir_fermionic_finite_temp_basis* b);
 
 /**
  * Get basis functions.
@@ -143,7 +160,7 @@ spir_fermionic_basis* spir_fermionic_basis_new(double beta, double omega_max, do
  * @param b The basis
  * @return Polynomial vector, or NULL on error
  */
-//spir_polyvector* spir_basis_u(const spir_fermionic_basis* b);
+//spir_polyvector* spir_basis_u(const spir_fermionic_finite_temp_basis* b);
 
 /**
  * Get the size of a polynomial vector.

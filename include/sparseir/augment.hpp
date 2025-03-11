@@ -329,6 +329,10 @@ public:
         return (basis->get_beta() / 2.0) * (x.array() + 1.0);
     }
 
+    std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const override {
+        return basis->default_matsubara_sampling_points(L, fence, positive_only);
+    }
+
     // Factory method
     static std::shared_ptr<AugmentedBasis<S>> create(
         std::shared_ptr<FiniteTempBasis<S>> basis,

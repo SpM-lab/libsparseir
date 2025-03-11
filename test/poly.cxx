@@ -578,7 +578,7 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
 
     {
         int L = 5;
-        auto pts = sparseir::default_matsubara_sampling_points(uhat_full, L);
+        auto pts = sparseir::default_matsubara_sampling_points_impl(uhat_full, L);
         std::vector<int> omega_ns;
         for (auto &pt : pts) {
             omega_ns.push_back(pt.n);
@@ -595,8 +595,7 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
         int L = 5;
         bool fence = false;
         bool positive_only = true;
-        auto pts = sparseir::default_matsubara_sampling_points(
-            uhat_full, L, fence, positive_only);
+        auto pts = sparseir::default_matsubara_sampling_points_impl(uhat_full, L, fence, positive_only);
         std::vector<int> omega_ns;
         for (auto &pt : pts) {
             omega_ns.push_back(pt.n);
@@ -611,7 +610,7 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
         int L = basis->size();
         bool fence = false;
         bool positive_only = true;
-        auto pts = sparseir::default_matsubara_sampling_points(
+        auto pts = sparseir::default_matsubara_sampling_points_impl(
             uhat_full, L, fence, positive_only);
         std::vector<int> omega_ns;
         for (auto &pt : pts) {

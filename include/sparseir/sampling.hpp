@@ -16,19 +16,6 @@ namespace sparseir {
 template <typename S> class FiniteTempBasis;
 template <typename S> class DiscreteLehmannRepresentation;
 
-// Define WorkSize struct
-// struct WorkSize
-//{
-// Eigen::Index rows;
-// Eigen::Index cols;
-//
-// WorkSize(Eigen::Index r, Eigen::Index c) : rows(r), cols(c) { }
-//
-// Eigen::Index prod() const { return rows * cols; }
-// Eigen::Index size() const { return rows; }
-// Eigen::Index dimensions() const { return cols; }
-//};
-
 template <int N>
 Eigen::array<int, N> getperm(int src, int dst)
 {
@@ -66,6 +53,64 @@ Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N> &arr, int src, int dst)
     auto perm = getperm<N>(src, dst);
     return arr.shuffle(perm);
 }
+
+template <typename T1, typename T2, int N1, int N2>
+Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
+_contract(const Eigen::Tensor<T1, N1> &tensor1,
+         const Eigen::Tensor<T2, N2> &tensor2, 
+         const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
+{
+    using ResultType = decltype(T1() * T2());
+    
+    // Contract tensors with proper type casting
+    // TODO: avoid copying if possible
+    auto tensor1_cast = tensor1.template cast<ResultType>();
+    auto tensor2_cast = tensor2.template cast<ResultType>();
+    auto result = tensor1_cast.contract(tensor2_cast, contract_dims);
+
+    return result;
+}
+
+template <typename T1, typename T2, int N2>
+Eigen::Tensor<decltype(T1() * T2()), N2>
+_matop_along_dim(
+    const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+         const Eigen::Tensor<T2, N2> &tensor2, 
+         int dim = 0)
+{
+    using ResultType = decltype(T1() * T2());
+
+    if (dim < 0 || dim >= N2) {
+        throw std::runtime_error(
+            "evaluate: dimension must be in [0..N2). Got dim=" +
+            std::to_string(dim));
+    }
+
+    if (matrix.cols() != tensor2.dimension(dim)) {
+        throw std::runtime_error(
+            "Mismatch: matrix.cols()=" +
+            std::to_string(matrix.cols()) + ", but tensor2.dimension(" +
+            std::to_string(dim) + ")=" + std::to_string(tensor2.dimension(dim)));
+    }
+
+    // Create a temporary tensor from the matrix
+    Eigen::Tensor<T1, 2> matrix_tensor(matrix.rows(), matrix.cols());
+    // Copy data from matrix to tensor
+    for (int i = 0; i < matrix.rows(); ++i) {
+        for (int j = 0; j < matrix.cols(); ++j) {
+            matrix_tensor(i, j) = matrix(i, j);
+        }
+    }
+
+    // specify contraction dimensions
+    Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
+        Eigen::IndexPair<int>(1, dim)
+    };
+
+    auto result = _contract(matrix_tensor, tensor2, contract_dims);
+    return movedim(result, 0, dim);
+}
+
 
 template <typename T, typename S, int N>
 Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
@@ -182,6 +227,13 @@ fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
 class AbstractSampling {
 public:
     virtual ~AbstractSampling() = default;
+    
+    // Return number of sampling points
+    virtual std::size_t n_sampling_points() const = 0;
+
+    // Return basis size
+    virtual std::size_t basis_size() const = 0;
+
 };
 
 // Helper function declarations
@@ -196,31 +248,7 @@ template <typename S>
 class AugmentedBasis;
 
 template <typename Basis>
-inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<Basis> &basis,
-            const Eigen::VectorXd &x)
-{
-    return basis->u(x);
-}
-
-/*
-inline Eigen::VectorXd evaluate_u_at_x(const AugmentedTauFunction &u,
-                                      const double x)
-{
-    // Call the operator() directly on the AugmentedTauFunction
-    return u(x);
-}
-*/
-
-template <typename S>
-inline Eigen::MatrixXd evaluate_u_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                                const Eigen::VectorXd &x)
-{
-    // Dereference the unique_ptr to access the AugmentedTauFunction
-    return basis->u(x);
-}
-
-template <typename S, typename Basis>
-inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
+inline Eigen::MatrixXd eval_matrix(
             const std::shared_ptr<Basis> &basis,
             const Eigen::VectorXd &x)
 {
@@ -228,36 +256,23 @@ inline Eigen::MatrixXd eval_matrix(const TauSampling<S> *tau_sampling,
     Eigen::MatrixXd matrix(x.size(), basis->size());
 
     // Evaluate basis functions at sampling points
-    auto u_eval = evaluate_u_at_x(basis, x);
+    auto u_eval = basis->u(x);
     // Transpose and scale by singular values
     matrix = u_eval.transpose();
 
     return matrix;
 }
 
-template <typename S, typename T>
-inline Eigen::VectorXcd
-evaluate_uhat_at_x(const std::shared_ptr<FiniteTempBasis<S>> &basis,
-                   const T &x)
-{
-    return basis->uhat(x);
-}
-
-template <typename S>
-inline Eigen::VectorXcd evaluate_uhat_at_x(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                   const MatsubaraFreq<S> &x)
-{
-    return basis->uhat(x);
-}
 
 template <typename S, typename Base>
-inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampling,
+inline Eigen::MatrixXcd eval_matrix(
                                    const std::shared_ptr<Base> &basis,
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
+    // FIXME: this can be slow. Evaluate uhat[i] for multiple frequencies at once.
     for (int i = 0; i < sampling_points.size(); ++i) {
-        m.col(i) = evaluate_uhat_at_x(basis, sampling_points[i]);
+        m.col(i) = (basis->uhat)(sampling_points[i]);
     }
     Eigen::MatrixXcd matrix = m.transpose();
     return matrix;
@@ -266,13 +281,23 @@ inline Eigen::MatrixXcd eval_matrix(const MatsubaraSampling<S> *matsubara_sampli
 template <typename S>
 class TauSampling : public AbstractSampling {
 private:
-    std::shared_ptr<AbstractBasis<S>> basis_;
     Eigen::VectorXd sampling_points_;
     Eigen::MatrixXd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
 
 public:
-    TauSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
+    // Implement the pure virtual method from AbstractSampling
+    std::size_t n_sampling_points() const override {
+        return sampling_points_.size();
+    }
+
+    // Implement the pure virtual method from AbstractSampling
+    std::size_t basis_size() const override {
+        return this->matrix_.cols();
+    }
+
+    template <typename Basis>
+    TauSampling(const std::shared_ptr<Basis> &basis,
                 bool factorize = true)
     {
         // Get default sampling points from basis
@@ -284,7 +309,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
+        matrix_ = eval_matrix(basis, sampling_points_);
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
             matrix_.cols() != basis->size()) {
@@ -302,87 +327,23 @@ public:
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
 
-        basis_ = basis;
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
-    TauSampling(const FiniteTempBasis<S> &basis, bool factorize = true)
+    template <typename Basis, typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
+    TauSampling(const Basis &basis, bool factorize = true)
         : TauSampling(std::make_shared<FiniteTempBasis<S>>(basis), factorize)
     {
     }
 
-    TauSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                bool factorize = true)
-    {
-        // Get default sampling points from basis
-        sampling_points_ = basis->default_tau_sampling_points();
-
-        // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points generated");
-        }
-
-        // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
-        // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis->size()) {
-            throw std::runtime_error("Matrix dimensions mismatch: got " +
-                                     std::to_string(matrix_.rows()) + "x" +
-                                     std::to_string(matrix_.cols()) +
-                                     ", expected " +
-                                     std::to_string(sampling_points_.size()) +
-                                     "x" + std::to_string(basis->size()));
-        }
-
-        // Initialize SVD
-        if (factorize) {
-            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
-                matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        }
-
-        basis_ = basis;
-    }
 
     // Evaluate the basis coefficients at sampling points
     template <typename T, int N>
     Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N> &al,
                                  int dim = 0) const
     {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" +
-                std::to_string(dim));
-        }
-
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" +
-                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
-                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
-        }
-
-        // Convert matrix to tensor
-        Eigen::Tensor<double, 2> matrix_tensor =
-            Eigen::TensorMap<Eigen::Tensor<const double, 2>>(
-                get_matrix().data(), get_matrix().rows(), get_matrix().cols());
-
-        // Specify contraction dimensions
-        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
-            Eigen::IndexPair<int>(1, dim)};
-
-        // Perform contraction
-        Eigen::Tensor<T, N> temp = matrix_tensor.contract(al, contract_dims);
-
-        return movedim(temp, 0, dim);
+        return _matop_along_dim(matrix_, al, dim);
     }
-
-    // template <typename T, int N>
-    // size_t workarrlength(const Eigen::Tensor<T, N> &ax, int dim) const
-    //{
-    // auto svd = get_matrix_svd();
-    // return svd.singularValues().size() * (ax.size() / ax.dimension(dim));
-    //}
 
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>
@@ -445,28 +406,9 @@ inline Eigen::JacobiSVD<Eigen::MatrixXcd> make_split_svd(const Eigen::MatrixXcd 
     return svd;
 }
 
-/*
-function MatsubaraSampling(basis::AbstractBasis; positive_only=false,
-        sampling_points=default_matsubara_sampling_points(basis;
-            positive_only), factorize=true)
-    issorted(sampling_points) || sort!(sampling_points)
-    if positive_only
-        Int(first(sampling_points)) ≥ 0 || error("invalid negative sampling
-frequencies") end matrix = eval_matrix(MatsubaraSampling, basis,
-sampling_points) has_zero = iszero(first(sampling_points)) if factorize
-        svd_matrix = positive_only ? SplitSVD(matrix; has_zero) : svd(matrix)
-    else
-        svd_matrix = nothing
-    end
-    sampling = MatsubaraSampling(sampling_points, matrix, svd_matrix,
-positive_only) if factorize && iswellconditioned(basis) && cond(sampling) > 1e8
-        @warn "Sampling matrix is poorly conditioned (cond =
-$(cond(sampling)))." end return sampling end
-*/
 template <typename S>
 class MatsubaraSampling : public AbstractSampling {
 private:
-    std::shared_ptr<AbstractBasis<S>> basis_;
     std::vector<MatsubaraFreq<S>> sampling_points_;
     Eigen::MatrixXcd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
@@ -474,14 +416,65 @@ private:
     bool has_zero_;
 
 public:
-    MatsubaraSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis, // SHOULD WE ACCEPT ONLY CONST REFERENCE?
+    // Implement the pure virtual method from AbstractSampling
+    std::size_t n_sampling_points() const override {
+        return sampling_points_.size();
+    }
+
+    std::size_t basis_size() const override {
+        return matrix_.cols();
+    }
+
+    template <typename Basis>
+    MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
+                       const std::vector<MatsubaraFreq<S>> &sampling_points,
                        bool positive_only = false,
                        bool factorize = true)
-        : basis_(basis), positive_only_(positive_only)
+        : positive_only_(positive_only), has_zero_(false)
+    {
+        sampling_points_ = sampling_points;
+        std::sort(sampling_points_.begin(), sampling_points_.end());
+
+        // Ensure matrix dimensions are correct
+        if (sampling_points_.size() == 0) {
+            throw std::runtime_error("No sampling points given");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(basis, sampling_points_);
+
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points_.size()) +
+                                     "x" + std::to_string(basis->size()));
+        }
+        has_zero_ = sampling_points_[0].n == 0;
+        // Initialize SVD
+        if (factorize) {
+            if (positive_only_) {
+                matrix_svd_ = make_split_svd(matrix_, has_zero_);
+            } else {
+                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
+                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+            }
+        }
+    }
+
+
+    template <typename Basis>
+    MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
+                       bool positive_only = false,
+                       bool factorize = true)
+        : positive_only_(positive_only), has_zero_(false)
     {
         // Get default sampling points from basis
         bool fence = false;
-        sampling_points_ = default_matsubara_sampling_points(basis->uhat_full, basis->size(), fence, positive_only);
+        sampling_points_ = basis->default_matsubara_sampling_points(basis->size(), fence, positive_only);
         std::sort(sampling_points_.begin(), sampling_points_.end());
 
         // Ensure matrix dimensions are correct
@@ -490,7 +483,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
+        matrix_ = eval_matrix(basis, sampling_points_);
 
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
@@ -515,134 +508,28 @@ public:
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
-    MatsubaraSampling(const FiniteTempBasis<S> &basis,
+    template <typename Basis, 
+          typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
+        MatsubaraSampling(const Basis &basis,
                      bool positive_only = false,
                      bool factorize = true)
-        : MatsubaraSampling(std::make_shared<FiniteTempBasis<S>>(basis), positive_only, factorize)
+        : MatsubaraSampling(std::make_shared<Basis>(basis), positive_only, factorize)
     {
     }
 
-    MatsubaraSampling(const std::shared_ptr<AugmentedBasis<S>> &basis,
-                       bool positive_only = false,
-                       bool factorize = true)
-        : basis_(basis), positive_only_(positive_only)
+    template <typename Basis, 
+      typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
+        MatsubaraSampling(const Basis &basis, const std::vector<MatsubaraFreq<S>> &sampling_points,
+                     bool positive_only = false,
+                     bool factorize = true)
+        : MatsubaraSampling(std::make_shared<Basis>(basis), sampling_points, positive_only, factorize)
     {
-        // Get default sampling points from basis
-        bool fence = false;
-        // Note that we use basis->basis->uhat_full, not basis->uhat_full
-        int sz = basis->basis->size() + basis->augmentations.size();
-        sampling_points_ = default_matsubara_sampling_points(basis->basis->uhat_full, sz, fence, positive_only);
-        std::sort(sampling_points_.begin(), sampling_points_.end());
-
-        // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points generated");
-        }
-
-        // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(this, basis, sampling_points_);
-
-        // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis->size()) {
-            throw std::runtime_error("Matrix dimensions mismatch: got " +
-                                     std::to_string(matrix_.rows()) + "x" +
-                                     std::to_string(matrix_.cols()) +
-                                     ", expected " +
-                                     std::to_string(sampling_points_.size()) +
-                                     "x" + std::to_string(basis->size()));
-        }
-        has_zero_ = sampling_points_[0].n == 0;
-        // Initialize SVD
-        if (factorize) {
-            if (positive_only_) {
-                matrix_svd_ = make_split_svd(matrix_, has_zero_);
-            } else {
-                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-            }
-        }
     }
 
-    // Constructor that takes a DiscreteLehmannRepresentation and sampling points
-    MatsubaraSampling(const DiscreteLehmannRepresentation<S> &dlr,
-                      const std::vector<MatsubaraFreq<S>> &sampling_points,
-                      bool positive_only = false,
-                      bool factorize = true)
-        : basis_(nullptr), sampling_points_(sampling_points), positive_only_(positive_only)
-    {
-        // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points provided");
-        }
-
-        // Initialize evaluation matrix
-        matrix_ = Eigen::MatrixXcd(sampling_points_.size(), dlr.size());
-
-        // Fill the matrix with values from MatsubaraPoles
-        for (size_t i = 0; i < sampling_points_.size(); ++i) {
-            auto col = dlr.uhat(sampling_points_[i]);
-            for (Eigen::Index j = 0; j < col.size(); ++j) {
-                matrix_(i, j) = col(j);
-            }
-        }
-
-        has_zero_ = sampling_points_[0].n == 0;
-
-        // Initialize SVD
-        if (factorize) {
-            if (positive_only_) {
-                matrix_svd_ = make_split_svd(matrix_, has_zero_);
-            } else {
-                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-            }
-        }
-    }
-
-    // Specialized version for complex input tensors to avoid nested complex types
-    template <int N>
+    template <typename T, int N>
     Eigen::Tensor<std::complex<double>, N> evaluate(
-        const Eigen::Tensor<std::complex<double>, N>& al, int dim = 0) const {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" +
-                std::to_string(dim));
-        }
-
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" +
-                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
-                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
-        }
-
-        // Create dimensions array for result tensor
-        Eigen::array<Eigen::Index, N> dims;
-        for (int i = 0; i < N; ++i) {
-            dims[i] = (i == dim) ? matrix_.rows() : al.dimension(i);
-        }
-
-        // Create result tensor
-        Eigen::Tensor<std::complex<double>, N> result(dims);
-
-        // Convert matrix to tensor
-        Eigen::Tensor<std::complex<double>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
-        for (Eigen::Index i = 0; i < matrix_.rows(); ++i) {
-            for (Eigen::Index j = 0; j < matrix_.cols(); ++j) {
-                matrix_tensor(i,j) = matrix_(i,j);
-            }
-        }
-
-        // Specify contraction dimensions
-        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
-            Eigen::IndexPair<int>(1, dim)
-        };
-
-        // Perform contraction directly with complex input
-        result = matrix_tensor.contract(al, contract_dims);
-
-        return result;
+        const Eigen::Tensor<T, N>& al, int dim = 0) const {
+        return _matop_along_dim(matrix_, al, dim);
     }
 
     // Add these new overloads for Vector types
@@ -665,56 +552,6 @@ public:
         return result;
     }
 
-    // Overload for real-valued tensor input
-    template <int N>
-    Eigen::Tensor<std::complex<double>, N> evaluate(const Eigen::Tensor<double, N>& al, int dim = 0) const {
-        if (dim < 0 || dim >= N) {
-            throw std::runtime_error(
-                "evaluate: dimension must be in [0..N). Got dim=" +
-                std::to_string(dim));
-        }
-
-        if (get_matrix().cols() != al.dimension(dim)) {
-            throw std::runtime_error(
-                "Mismatch: matrix.cols()=" +
-                std::to_string(get_matrix().cols()) + ", but al.dimension(" +
-                std::to_string(dim) + ")=" + std::to_string(al.dimension(dim)));
-        }
-
-        // Create dimensions array for result tensor
-        Eigen::array<Eigen::Index, N> dims;
-        for (int i = 0; i < N; ++i) {
-            dims[i] = (i == dim) ? matrix_.rows() : al.dimension(i);
-        }
-
-        // Create result tensor
-        Eigen::Tensor<std::complex<double>, N> result(dims);
-
-        // Convert matrix to tensor
-        Eigen::Tensor<std::complex<double>, 2> matrix_tensor(matrix_.rows(), matrix_.cols());
-        for (Eigen::Index i = 0; i < matrix_.rows(); ++i) {
-            for (Eigen::Index j = 0; j < matrix_.cols(); ++j) {
-                matrix_tensor(i,j) = matrix_(i,j);
-            }
-        }
-
-        // Convert input tensor to complex for contraction
-        Eigen::Tensor<std::complex<double>, N> al_complex(al.dimensions());
-        for (int i = 0; i < al.size(); ++i) {
-            al_complex.data()[i] = std::complex<double>(al.data()[i], 0.0);
-        }
-
-        // Specify contraction dimensions
-        Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
-            Eigen::IndexPair<int>(1, dim)
-        };
-
-        // Perform contraction
-        result = matrix_tensor.contract(al_complex, contract_dims);
-
-        return result;
-    }
-
     // Also add a Vector version for real inputs
     template <typename T>
     Eigen::VectorX<std::complex<double>> evaluate(const Eigen::VectorX<T>& al) const {
@@ -734,13 +571,6 @@ public:
         }
         return result;
     }
-
-    // template <typename T, int N>
-    // size_t workarrlength(const Eigen::Tensor<T, N> &ax, int dim) const
-    //{
-    // auto svd = get_matrix_svd();
-    // return svd.singularValues().size() * (ax.size() / ax.dimension(dim));
-    //}
 
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>

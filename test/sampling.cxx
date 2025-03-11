@@ -41,7 +41,7 @@ TEST_CASE("TauSampling Constructor Test", "[sampling]") {
             -0.4046629597879494,
         };
     Eigen::MatrixXd mat_ref = Eigen::Map<Eigen::MatrixXd>(mat_ref_vec.data(), 1, 19);
-    Eigen::MatrixXd mat = eval_matrix(&tau_sampling, basis, x);
+    Eigen::MatrixXd mat = eval_matrix(basis, x);
 
     REQUIRE(basis->u[0](0.3) == Approx(0.8209004724107448));
 
@@ -573,8 +573,8 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         auto matsu_sampling = std::make_shared<sparseir::MatsubaraSampling<S>>(
             basis, positive_only);
 
-        auto out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
-        auto rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
+        Eigen::MatrixXd out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
+        Eigen::VectorXd rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
         Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
         double Gl_magn = Gl_.norm();
 

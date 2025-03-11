@@ -6,6 +6,7 @@
 #include <numeric>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
+#include <memory>
 
 namespace sparseir {
 
@@ -19,6 +20,15 @@ std::unique_ptr<T> make_unique(Args &&...args)
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 } // namespace util
+
+
+// Type trait to check if a type is a std::shared_ptr
+template <typename T>
+struct is_shared_ptr : std::false_type {};
+
+template <typename T>
+struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
+
 
 // julia> sort = sortperm(s; rev=true)
 // Implement sortperm in C++
