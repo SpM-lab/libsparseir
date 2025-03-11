@@ -281,7 +281,6 @@ inline Eigen::MatrixXcd eval_matrix(
 template <typename S>
 class TauSampling : public AbstractSampling {
 private:
-    std::shared_ptr<AbstractBasis<S>> basis_;
     Eigen::VectorXd sampling_points_;
     Eigen::MatrixXd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
@@ -294,7 +293,7 @@ public:
 
     // Implement the pure virtual method from AbstractSampling
     std::size_t basis_size() const override {
-        return basis_->size();
+        return this->matrix_.cols();
     }
 
     TauSampling(const std::shared_ptr<FiniteTempBasis<S>> &basis,
@@ -327,7 +326,6 @@ public:
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
 
-        basis_ = basis;
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
@@ -366,7 +364,6 @@ public:
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
 
-        basis_ = basis;
     }
 
     // Evaluate the basis coefficients at sampling points
@@ -441,7 +438,6 @@ inline Eigen::JacobiSVD<Eigen::MatrixXcd> make_split_svd(const Eigen::MatrixXcd 
 template <typename S>
 class MatsubaraSampling : public AbstractSampling {
 private:
-    std::shared_ptr<AbstractBasis<S>> basis_;
     std::vector<MatsubaraFreq<S>> sampling_points_;
     Eigen::MatrixXcd matrix_;
     Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
@@ -455,7 +451,7 @@ public:
     }
 
     std::size_t basis_size() const override {
-        return basis_->size();
+        return matrix_.cols();
     }
 
     template <typename Basis>
@@ -463,7 +459,7 @@ public:
                        const std::vector<MatsubaraFreq<S>> &sampling_points,
                        bool positive_only = false,
                        bool factorize = true)
-        : basis_(basis), positive_only_(positive_only)
+        : positive_only_(positive_only)
     {
         sampling_points_ = sampling_points;
         std::sort(sampling_points_.begin(), sampling_points_.end());
@@ -503,7 +499,7 @@ public:
     MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
                        bool positive_only = false,
                        bool factorize = true)
-        : basis_(basis), positive_only_(positive_only)
+        : positive_only_(positive_only)
     {
         // Get default sampling points from basis
         bool fence = false;
