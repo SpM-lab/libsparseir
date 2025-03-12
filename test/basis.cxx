@@ -9,6 +9,7 @@
 
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
+#include "sve_cache.hpp"
 
 using Catch::Approx;
 using std::complex;
@@ -34,7 +35,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                        kernel, sve_result);
 
@@ -170,7 +171,7 @@ TEST_CASE("basis.u(x)", "[basis]") {
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
 
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);

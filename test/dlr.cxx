@@ -5,6 +5,7 @@
 #include <memory>
 #include <random>
 #include <sparseir/sparseir.hpp>
+#include "sve_cache.hpp"
 
 using Catch::Approx;
 
@@ -17,7 +18,7 @@ TEST_CASE("DLR Tests", "[dlr]") {
         const double epsilon = 1e-12;
 
         sparseir::LogisticKernel kernel(beta * omega_max);
-        auto sve_result = sparseir::compute_sve(kernel, epsilon);
+        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
 
         auto test_statistics = [&](auto stat) {
             using Statistics = decltype(stat);
@@ -79,7 +80,7 @@ TEST_CASE("DLR Tests", "[dlr]") {
         double epsilon = 1e-7;
 
         sparseir::LogisticKernel kernel(beta * omega_max);
-        auto sve_result = sparseir::compute_sve(kernel, epsilon);
+        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
 
         auto basis_b = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
             beta, omega_max, epsilon, kernel, sve_result);

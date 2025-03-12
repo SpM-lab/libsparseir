@@ -11,6 +11,7 @@
 
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
+#include "sve_cache.hpp"
 
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
@@ -375,7 +376,7 @@ TEST_CASE("func_for_part tests", "[poly]")
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                        kernel, sve_result);
 
@@ -397,7 +398,7 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, 1e-15, kernel, sve_result);
 
@@ -471,7 +472,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, 1e-15, kernel, sve_result);
 
@@ -571,7 +572,7 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
     double wmax = 10.0;
     double Lambda = beta * wmax;
     auto kernel = sparseir::LogisticKernel(Lambda);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, 1e-15, kernel, sve_result);
     auto uhat_full = (*basis->uhat_full);

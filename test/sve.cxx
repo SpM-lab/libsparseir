@@ -10,6 +10,7 @@
 
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
+#include "sve_cache.hpp"
 
 using std::invalid_argument;
 
@@ -27,7 +28,7 @@ TEST_CASE("sve_result.u(x)", "[sve]") {
     double beta = 1.0;
     double lambda = 10.0;
     auto kernel = sparseir::LogisticKernel(lambda);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     double x = 0.3;
     auto u0 = (*sve_result.u)[0];
     auto u0x = u0(x);
@@ -775,7 +776,7 @@ TEST_CASE("compute_sve", "[sve]"){
     auto lk = sparseir::LogisticKernel(12.0);
 
     //auto sve = sparseir::compute_sve<sparseir::LogisticKernel, T>(lk, safe_epsilon);
-    auto sve = sparseir::compute_sve<sparseir::LogisticKernel>(lk, safe_epsilon);
+    auto sve = SVECache::get_sve_result(lk, safe_epsilon);
     auto s = sve.s;
     //std::cout << "S values: \n" << s << std::endl;
     //std::cout << "diff " << s[0] - 0.52428 << std::endl;
