@@ -37,31 +37,10 @@ set(TEST_FILES
     cinterface.cxx
 )
 
-# Create individual test executables for each test file
-foreach(TEST_FILE ${TEST_FILES})
-    # Extract the base name without extension
-    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
-    
-    # Create executable for this test file
-    add_executable(test_${TEST_NAME} ${TEST_FILE})
-    
-    # Link against required libraries
-    target_link_libraries(test_${TEST_NAME} PRIVATE Catch2::Catch2WithMain)
-    target_link_libraries(test_${TEST_NAME} PRIVATE SparseIR::sparseir)
-    
-    # Add as a test to CTest
-    add_test(NAME ${TEST_NAME} COMMAND test_${TEST_NAME})
-endforeach()
-
-# Keep the original combined test executable for backward compatibility
+# Create a single combined test executable
 add_executable(libsparseirtests ${TEST_FILES})
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(libsparseirtests PRIVATE SparseIR::sparseir)
 add_test(NAME combined_tests COMMAND libsparseirtests)
 
-#if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.12")
-    #set_property(TARGET tests PROPERTY CXX_STANDARD 20)
-#else()
-    #set_property(TARGET tests PROPERTY CXX_STANDARD 17)
-#endif()
 add_test(tests libsparseirtests)
