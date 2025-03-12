@@ -13,7 +13,12 @@ FetchContent_Declare(
 # Goes through find_package first
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(libsparseirtests
+# Enable parallel testing with CTest
+include(CTest)
+enable_testing()
+
+# List of all test files
+set(TEST_FILES
     utils.cxx
     example.cxx
     _linalg.cxx
@@ -32,12 +37,10 @@ add_executable(libsparseirtests
     cinterface.cxx
 )
 
+# Create a single combined test executable
+add_executable(libsparseirtests ${TEST_FILES})
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(libsparseirtests PRIVATE SparseIR::sparseir)
+add_test(NAME combined_tests COMMAND libsparseirtests)
 
-#if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.12")
-    #set_property(TARGET tests PROPERTY CXX_STANDARD 20)
-#else()
-    #set_property(TARGET tests PROPERTY CXX_STANDARD 17)
-#endif()
 add_test(tests libsparseirtests)

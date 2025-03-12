@@ -57,11 +57,11 @@ public:
     std::shared_ptr<SVEResult> sve_result;
     double accuracy;
     //double beta;
-    PiecewiseLegendrePolyVector u;
-    PiecewiseLegendrePolyVector v;
+    std::shared_ptr<PiecewiseLegendrePolyVector> u;
+    std::shared_ptr<PiecewiseLegendrePolyVector> v;
     Eigen::VectorXd s;
-    PiecewiseLegendreFTVector<S> uhat;
-    PiecewiseLegendreFTVector<S> uhat_full;
+    std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat;
+    std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat_full;
 
     FiniteTempBasis(double beta, double omega_max, double epsilon,
                const LogisticKernel &kernel, SVEResult sve_result, int max_size = -1)
@@ -127,25 +127,23 @@ public:
         Eigen::VectorXi u_symm = Eigen::Map<Eigen::VectorXi>(u_symm_vec.data(), u_symm_vec.size());
         Eigen::VectorXi v_symm = Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
 
-        PiecewiseLegendrePolyVector u_new = PiecewiseLegendrePolyVector(u_, u_knots, deltax4u, u_symm);
-        PiecewiseLegendrePolyVector v_new = PiecewiseLegendrePolyVector(v_, v_knots, deltax4v, v_symm);
-        this->u = u_new;
-        this->v = v_new;
+        this->u = std::make_shared<PiecewiseLegendrePolyVector>(u_, u_knots, deltax4u, u_symm);
+        this->v = std::make_shared<PiecewiseLegendrePolyVector>(v_, v_knots, deltax4v, v_symm);
         this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel.ypower()))) * s_;
 
-        Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
+        Eigen::Tensor<double, 3> udata3d = sve_result.u->get_data();
         PiecewiseLegendrePolyVector uhat_base_full =
-            PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, sve_result.u);
+            PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, *sve_result.u);
         S statistics = S();
 
-        this->uhat_full = PiecewiseLegendreFTVector<S>(
+        this->uhat_full = std::make_shared<PiecewiseLegendreFTVector<S>>(
             uhat_base_full, statistics, kernel.conv_radius());
 
         std::vector<PiecewiseLegendreFT<S>> uhat_polyvec;
         for (int i = 0; i < this->s.size(); ++i) {
-            uhat_polyvec.push_back(this->uhat_full[i]);
-            }
-        this->uhat = PiecewiseLegendreFTVector<S>(uhat_polyvec);
+            uhat_polyvec.push_back(this->uhat_full->operator[](i));
+        }
+        this->uhat = std::make_shared<PiecewiseLegendreFTVector<S>>(uhat_polyvec);
     }
 
     // Delegating constructor 1
@@ -195,7 +193,7 @@ public:
     Eigen::VectorXd default_omega_sampling_points() const
     {
         Eigen::VectorXd y =
-            default_sampling_points(sve_result->v, static_cast<int>(s.size()));
+            default_sampling_points(*(sve_result->v), static_cast<int>(s.size()));
         return this->get_wmax() * y.array();
     }
 
@@ -211,12 +209,12 @@ public:
     // FIXME: remove `const` from the return type
     const Eigen::VectorXd default_tau_sampling_points() const override {
         int sz = size();
-        auto x = default_sampling_points(this->sve_result->u, sz);
+        auto x = default_sampling_points(*(this->sve_result->u), sz);
         return (this->beta / 2.0) * (x.array() + 1.0);
     }
 
     std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const override {
-        return default_matsubara_sampling_points_impl(this->uhat_full, L, fence, positive_only);
+        return default_matsubara_sampling_points_impl(*this->uhat_full, L, fence, positive_only);
     }
 
 private:

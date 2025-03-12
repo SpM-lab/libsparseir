@@ -29,7 +29,7 @@ TEST_CASE("sve_result.u(x)", "[sve]") {
     auto kernel = sparseir::LogisticKernel(lambda);
     auto sve_result = sparseir::compute_sve(kernel, 1e-15);
     double x = 0.3;
-    auto u0 = sve_result.u[0];
+    auto u0 = (*sve_result.u)[0];
     auto u0x = u0(x);
     REQUIRE(u0.l == 0);
     REQUIRE(u0.symm == 1);
@@ -848,8 +848,8 @@ TEST_CASE("truncate", "[sve]")
         auto v = std::get<2>(truncated);
 
         auto sveresult = sve.postprocess(u, s, v);
-        REQUIRE(sveresult.u.size() == sveresult.s.size());
-        REQUIRE(sveresult.s.size() == sveresult.v.size());
+        REQUIRE(sveresult.u->size() == sveresult.s.size());
+        REQUIRE(sveresult.s.size() == sveresult.v->size());
         REQUIRE(sveresult.s.size() <= static_cast<size_t>(lmax - 1));
     }
 }

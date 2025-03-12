@@ -256,7 +256,7 @@ inline Eigen::MatrixXd eval_matrix(
     Eigen::MatrixXd matrix(x.size(), basis->size());
 
     // Evaluate basis functions at sampling points
-    auto u_eval = basis->u(x);
+    auto u_eval = (*basis->u)(x);
     // Transpose and scale by singular values
     matrix = u_eval.transpose();
 
@@ -269,10 +269,10 @@ inline Eigen::MatrixXcd eval_matrix(
                                    const std::shared_ptr<Base> &basis,
                                    const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
-    Eigen::MatrixXcd m(basis->uhat.size(), sampling_points.size());
+    Eigen::MatrixXcd m(basis->uhat->size(), sampling_points.size());
     // FIXME: this can be slow. Evaluate uhat[i] for multiple frequencies at once.
     for (int i = 0; i < sampling_points.size(); ++i) {
-        m.col(i) = (basis->uhat)(sampling_points[i]);
+        m.col(i) = (*(basis->uhat))(sampling_points[i]);
     }
     Eigen::MatrixXcd matrix = m.transpose();
     return matrix;
