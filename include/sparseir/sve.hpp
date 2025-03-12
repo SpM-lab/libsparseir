@@ -22,9 +22,9 @@ namespace sparseir {
 // SVEResult class
 class SVEResult {
 public:
-    PiecewiseLegendrePolyVector u;
+    std::shared_ptr<PiecewiseLegendrePolyVector> u;
     Eigen::VectorXd s;
-    PiecewiseLegendrePolyVector v;
+    std::shared_ptr<PiecewiseLegendrePolyVector> v;
 
     double epsilon;
     // Default constructor
@@ -33,7 +33,10 @@ public:
     SVEResult(const PiecewiseLegendrePolyVector &u_, const Eigen::VectorXd &s_,
               const PiecewiseLegendrePolyVector &v_,
               double epsilon_)
-        : u(u_), s(s_), v(v_), epsilon(epsilon_)
+        : u(std::make_shared<PiecewiseLegendrePolyVector>(u_)), 
+          s(s_), 
+          v(std::make_shared<PiecewiseLegendrePolyVector>(v_)), 
+          epsilon(epsilon_)
     {
     }
 
@@ -51,10 +54,10 @@ public:
         if (max_size > 0) {
             cut = std::min(cut, max_size);
         }
-        std::vector<PiecewiseLegendrePoly> u_part_(u.begin(), u.begin() + cut);
+        std::vector<PiecewiseLegendrePoly> u_part_(u->begin(), u->begin() + cut);
         PiecewiseLegendrePolyVector u_part(u_part_);
         Eigen::VectorXd s_part(s.head(cut));
-        std::vector<PiecewiseLegendrePoly> v_part_(v.begin(), v.begin() + cut);
+        std::vector<PiecewiseLegendrePoly> v_part_(v->begin(), v->begin() + cut);
         PiecewiseLegendrePolyVector v_part(v_part_);
         return std::make_tuple(u_part, s_part, v_part);
     }
@@ -463,11 +466,11 @@ public:
 
         // Merge results using vectors instead of insert
         std::vector<PiecewiseLegendrePoly> u_merged;
-        u_merged.reserve(result_even.u.size() + result_odd.u.size());
-        u_merged.insert(u_merged.end(), result_even.u.begin(),
-                        result_even.u.end());
-        u_merged.insert(u_merged.end(), result_odd.u.begin(),
-                        result_odd.u.end());
+        u_merged.reserve(result_even.u->size() + result_odd.u->size());
+        u_merged.insert(u_merged.end(), result_even.u->begin(),
+                        result_even.u->end());
+        u_merged.insert(u_merged.end(), result_odd.u->begin(),
+                        result_odd.u->end());
 
         // Concatenate singular values
         // TODO: sort singular values
@@ -476,11 +479,11 @@ public:
 
         // Merge v vectors
         std::vector<PiecewiseLegendrePoly> v_merged;
-        v_merged.reserve(result_even.v.size() + result_odd.v.size());
-        v_merged.insert(v_merged.end(), result_even.v.begin(),
-                        result_even.v.end());
-        v_merged.insert(v_merged.end(), result_odd.v.begin(),
-                        result_odd.v.end());
+        v_merged.reserve(result_even.v->size() + result_odd.v->size());
+        v_merged.insert(v_merged.end(), result_even.v->begin(),
+                        result_even.v->end());
+        v_merged.insert(v_merged.end(), result_odd.v->begin(),
+                        result_odd.v->end());
 
         // For segments, use the hints from the kernel class
         auto hints = sve_hints<T>(kernel, epsilon);

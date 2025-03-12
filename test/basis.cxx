@@ -61,7 +61,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
     };
 
     auto sampling_points =
-        sparseir::default_sampling_points(basis->sve_result->u, basis->size());
+        sparseir::default_sampling_points(*(basis->sve_result->u), basis->size());
     REQUIRE(sampling_points.isApprox(Eigen::Map<Eigen::VectorXd>(
         sampling_points_ref_vec.data(), sampling_points_ref_vec.size())));
 
@@ -851,8 +851,8 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         REQUIRE(std::fabs(s_double[30] - s_ref[30]) < 1e-10);
         REQUIRE(std::fabs(s_double[31] - s_ref[31]) < 1e-10);
 
-        REQUIRE(sve->u[0].data.rows() == 10);
-        REQUIRE(sve->u[0].data.cols() == 32);
+        REQUIRE((*sve->u)[0].data.rows() == 10);
+        REQUIRE((*sve->u)[0].data.cols() == 32);
 
         std::vector<double> u_knots_ref = {
             -1.0, -0.9768276289532026, -0.9502121116288913, -0.9196860690044226,
@@ -866,7 +866,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
             1.0
         };
         Eigen::VectorXd u_knots_ref_eigen = Eigen::Map<Eigen::VectorXd>(u_knots_ref.data(), u_knots_ref.size());
-        REQUIRE(sve->u[0].knots.isApprox(u_knots_ref_eigen));
+        REQUIRE((*sve->u)[0].knots.isApprox(u_knots_ref_eigen));
 
         std::vector<double> v_knots_ref = {
             -1.0, -0.9833147686254275, -0.9470082310185116, -0.8938959515018162, -0.8283053538395936,
@@ -882,36 +882,36 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
             0.8938959515018162, 0.9470082310185116, 0.9833147686254275, 1.0
         };
         Eigen::VectorXd v_knots_ref_eigen = Eigen::Map<Eigen::VectorXd>(v_knots_ref.data(), v_knots_ref.size());
-        REQUIRE(sve->v[0].knots.isApprox(v_knots_ref_eigen));
+        REQUIRE((*sve->v)[0].knots.isApprox(v_knots_ref_eigen));
 
-        REQUIRE(sve->u[1].xmin == -1.0);
-        REQUIRE(sve->u[1].xmax == 1.0);
+        REQUIRE((*sve->u)[1].xmin == -1.0);
+        REQUIRE((*sve->u)[1].xmax == 1.0);
 
-        REQUIRE(sve->v[1].xmin == -1.0);
-        REQUIRE(sve->v[1].xmax == 1.0);
+        REQUIRE((*sve->v)[1].xmin == -1.0);
+        REQUIRE((*sve->v)[1].xmax == 1.0);
 
-        REQUIRE(sve->u[0].l == 0);
-        REQUIRE(sve->u[1].l == 1);
-        REQUIRE(sve->u[2].l == 2);
+        REQUIRE((*sve->u)[0].l == 0);
+        REQUIRE((*sve->u)[1].l == 1);
+        REQUIRE((*sve->u)[2].l == 2);
 
-        REQUIRE(sve->v[0].l == 0);
-        REQUIRE(sve->v[1].l == 1);
-        REQUIRE(sve->v[2].l == 2);
+        REQUIRE((*sve->v)[0].l == 0);
+        REQUIRE((*sve->v)[1].l == 1);
+        REQUIRE((*sve->v)[2].l == 2);
 
-        REQUIRE(sve->u[0].symm == 1);
-        REQUIRE(sve->u[1].symm == -1);
-        REQUIRE(sve->u[2].symm == 1);
-        REQUIRE(sve->u[3].symm == -1);
+        REQUIRE((*sve->u)[0].symm == 1);
+        REQUIRE((*sve->u)[1].symm == -1);
+        REQUIRE((*sve->u)[2].symm == 1);
+        REQUIRE((*sve->u)[3].symm == -1);
 
-        REQUIRE(sve->v[0].symm == 1);
-        REQUIRE(sve->v[1].symm == -1);
-        REQUIRE(sve->v[2].symm == 1);
-        REQUIRE(sve->v[3].symm == -1);
+        REQUIRE((*sve->v)[0].symm == 1);
+        REQUIRE((*sve->v)[1].symm == -1);
+        REQUIRE((*sve->v)[2].symm == 1);
+        REQUIRE((*sve->v)[3].symm == -1);
 
         //std::cout << "Singular values: " << s.transpose() << std::endl;
 
         int L = 10;
-        Eigen::VectorXd pts_L = default_sampling_points(sve->u, L);
+        Eigen::VectorXd pts_L = default_sampling_points(*(sve->u), L);
         REQUIRE(pts_L.size() == L);
         /*
         Eigen::VectorXd pts_100 = default_sampling_points(sve->u, 100);

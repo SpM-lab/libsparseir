@@ -325,7 +325,7 @@ public:
 
     const Eigen::VectorXd default_tau_sampling_points() const override {
         int sz = basis->size() + augmentations.size();
-        auto x = default_sampling_points(basis->sve_result->u, sz);
+        auto x = default_sampling_points(*(basis->sve_result->u), sz);
         return (basis->get_beta() / 2.0) * (x.array() + 1.0);
     }
 

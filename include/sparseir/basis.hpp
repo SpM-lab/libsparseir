@@ -131,9 +131,9 @@ public:
         this->v = std::make_shared<PiecewiseLegendrePolyVector>(v_, v_knots, deltax4v, v_symm);
         this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel.ypower()))) * s_;
 
-        Eigen::Tensor<double, 3> udata3d = sve_result.u.get_data();
+        Eigen::Tensor<double, 3> udata3d = sve_result.u->get_data();
         PiecewiseLegendrePolyVector uhat_base_full =
-            PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, sve_result.u);
+            PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, *sve_result.u);
         S statistics = S();
 
         this->uhat_full = std::make_shared<PiecewiseLegendreFTVector<S>>(
@@ -193,7 +193,7 @@ public:
     Eigen::VectorXd default_omega_sampling_points() const
     {
         Eigen::VectorXd y =
-            default_sampling_points(sve_result->v, static_cast<int>(s.size()));
+            default_sampling_points(*(sve_result->v), static_cast<int>(s.size()));
         return this->get_wmax() * y.array();
     }
 
@@ -209,7 +209,7 @@ public:
     // FIXME: remove `const` from the return type
     const Eigen::VectorXd default_tau_sampling_points() const override {
         int sz = size();
-        auto x = default_sampling_points(this->sve_result->u, sz);
+        auto x = default_sampling_points(*(this->sve_result->u), sz);
         return (this->beta / 2.0) * (x.array() + 1.0);
     }
 

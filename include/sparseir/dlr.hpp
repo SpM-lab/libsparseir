@@ -97,7 +97,7 @@ public:
 
 template <typename S>
 Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S>& basis) {
-    Eigen::VectorXd y = default_sampling_points(basis.sve_result->v, basis.size());
+    Eigen::VectorXd y = default_sampling_points(*(basis.sve_result->v), basis.size());
     return basis.get_wmax() * y;
 }
 
