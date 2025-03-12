@@ -60,10 +60,12 @@ _contract(const Eigen::Tensor<T1, N1> &tensor1,
          const Eigen::Tensor<T2, N2> &tensor2, 
          const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
 {
+    using ResultType = decltype(T1() * T2());
+    
     // Contract tensors with proper type casting
     // TODO: avoid copying if possible
-    auto tensor1_cast = tensor1.template cast<decltype(T1() * T2())>();
-    auto tensor2_cast = tensor2.template cast<decltype(T1() * T2())>();
+    auto tensor1_cast = tensor1.template cast<ResultType>();
+    auto tensor2_cast = tensor2.template cast<ResultType>();
     auto result = tensor1_cast.contract(tensor2_cast, contract_dims);
 
     return result;
@@ -76,6 +78,8 @@ _matop_along_dim(
          const Eigen::Tensor<T2, N2> &tensor2, 
          int dim = 0)
 {
+    using ResultType = decltype(T1() * T2());
+
     if (dim < 0 || dim >= N2) {
         throw std::runtime_error(
             "evaluate: dimension must be in [0..N2). Got dim=" +
@@ -113,16 +117,15 @@ Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
 _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
                     const Eigen::MatrixX<T> &B)
 {
-    // Remove unused typedef
-    // using ResultType = decltype(T() * S());
+    using ResultType = decltype(T() * S());
 
-    Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic> UHB =
+    Eigen::Matrix<ResultType, Eigen::Dynamic, Eigen::Dynamic> UHB =
         svd.matrixU().adjoint() * B;
 
     // Apply inverse singular values to the rows of UHB
     for (int i = 0; i < svd.singularValues().size(); ++i)
     {
-        UHB.row(i) /= decltype(T() * S())(svd.singularValues()(i));
+        UHB.row(i) /= ResultType(svd.singularValues()(i));
     }
     return svd.matrixV() * UHB;
 }
@@ -268,7 +271,7 @@ inline Eigen::MatrixXcd eval_matrix(
 {
     Eigen::MatrixXcd m(basis->uhat->size(), sampling_points.size());
     // FIXME: this can be slow. Evaluate uhat[i] for multiple frequencies at once.
-    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(sampling_points.size()); ++i) {
+    for (int i = 0; i < sampling_points.size(); ++i) {
         m.col(i) = (*(basis->uhat))(sampling_points[i]);
     }
     Eigen::MatrixXcd matrix = m.transpose();
@@ -308,8 +311,8 @@ public:
         // Initialize evaluation matrix with correct dimensions
         matrix_ = eval_matrix(basis, sampling_points_);
         // Check matrix dimensions
-        if (matrix_.rows() != static_cast<Eigen::Index>(sampling_points_.size()) ||
-            matrix_.cols() != static_cast<Eigen::Index>(basis->size())) {
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
@@ -323,6 +326,7 @@ public:
             matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
+
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
@@ -440,8 +444,8 @@ public:
         matrix_ = eval_matrix(basis, sampling_points_);
 
         // Check matrix dimensions
-        if (matrix_.rows() != static_cast<Eigen::Index>(sampling_points_.size()) ||
-            matrix_.cols() != static_cast<Eigen::Index>(basis->size())) {
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
@@ -482,8 +486,8 @@ public:
         matrix_ = eval_matrix(basis, sampling_points_);
 
         // Check matrix dimensions
-        if (matrix_.rows() != static_cast<Eigen::Index>(sampling_points_.size()) ||
-            matrix_.cols() != static_cast<Eigen::Index>(basis->size())) {
+        if (matrix_.rows() != sampling_points_.size() ||
+            matrix_.cols() != basis->size()) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +

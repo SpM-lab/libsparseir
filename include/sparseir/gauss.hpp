@@ -160,7 +160,6 @@ public:
     Rule<T> astype(const std::string &dtype) const
     {
         // Assuming dtype is either "float" or "double"
-        (void)dtype; // Suppress unused parameter warning
         return *this;
     }
 
@@ -175,6 +174,7 @@ public:
         T prev_b = a;
         Eigen::VectorX<T> x, w, x_forward, x_backward;
 
+        int counter = 0;
         for (const auto &curr : gauss_list) {
             if (curr.a != prev_b) {
                 throw std::invalid_argument("Gauss rules must be ascending");
@@ -200,6 +200,7 @@ public:
             w.tail(curr.w.size()) = curr.w;
             x_forward.tail(curr_x_forward.size()) = curr_x_forward;
             x_backward.tail(curr_x_backward.size()) = curr_x_backward;
+            counter ++;
         }
 
         return Rule<T>(x, w, x_forward, x_backward, a, b);

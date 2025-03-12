@@ -801,7 +801,7 @@ public:
                                 0.02932, 0.02565, 0.02239, 0.01951, 0.01699};
 
         // Truncate diffs if necessary
-        if (static_cast<size_t>(nzeros) < diffs.size()) {
+        if (nzeros < diffs.size()) {
             diffs.resize(nzeros);
         }
 

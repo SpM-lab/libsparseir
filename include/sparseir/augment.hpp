@@ -48,14 +48,15 @@ public:
     }
 
     std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
-        (void)n; // Suppress unused parameter warning
         throw std::invalid_argument("TauConst is not a Fermionic basis.");
         return std::numeric_limits<std::complex<double>>::quiet_NaN();
     }
 
     std::function<double(double)> deriv(int order = 1) const override {
-        (void)order; // Suppress unused parameter warning
-        return [this](double tau) { return (*this)(tau); };
+        if (order == 0) {
+            return [this](double tau) { return (*this)(tau); };
+        }
+        return [](double) { return 0.0; };
     }
 
     std::shared_ptr<AbstractAugmentation> create(
@@ -96,14 +97,17 @@ public:
     }
 
     std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
-        (void)n; // Suppress unused parameter warning
-        throw std::invalid_argument("TauLinear is not a Fermionic basis.");
+        throw std::invalid_argument("TauConst is not a Fermionic basis.");
         return std::numeric_limits<std::complex<double>>::quiet_NaN();
     }
 
     std::function<double(double)> deriv(int order = 1) const override {
-        (void)order; // Suppress unused parameter warning
-        return [this](double tau) { return (*this)(tau); };
+        if (order == 0) {
+            return [this](double tau) { return (*this)(tau); };
+        } else if (order == 1) {
+            return [this](double) { return norm * 2.0 / beta; };
+        }
+        return [](double) { return 0.0; };
     }
 
     std::shared_ptr<AbstractAugmentation> create(
@@ -134,18 +138,14 @@ public:
     }
 
     std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
-        (void)n; // Suppress unused parameter warning
         return 1.0;
     }
 
     std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
-        (void)n; // Suppress unused parameter warning
-        throw std::invalid_argument("MatsubaraConst is not a Fermionic basis.");
-        return std::numeric_limits<std::complex<double>>::quiet_NaN();
+        return 1.0;
     }
 
     std::function<double(double)> deriv(int order = 1) const override {
-        (void)order; // Suppress unused parameter warning
         return [this](double tau) { return (*this)(tau); };
     }
 
