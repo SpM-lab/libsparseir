@@ -88,12 +88,15 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
 
 
 int spir_sampling_evaluate(
-    const spir_sampling *s,
-    spir_order_type order,
-    const double *coeffs,
-    int n_components,
-    int target_dim,
-    double *out);
+    const spir_sampling *s,        // Sampling object
+    spir_order_type order,         // Order type (C or Fortran)
+    int ndim,                      // Number of dimensions
+    int *dims,                     // Array of dimensions
+    int target_dim,                // Target dimension for evaluation
+    int n_components,              // Number of components
+    const double *coeffs,          // Input coefficients array
+    double *out                    // Output array
+    );
 
 
 /** Destroy instance of kernel */
