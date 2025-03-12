@@ -81,13 +81,15 @@ TEST_CASE("basis.u[0] test", "[basis]")
         Eigen::Map<Eigen::VectorXd>(s_ref_vec.data(), s_ref_vec.size());
     REQUIRE(s.isApprox(s_ref));
 
-    auto u = basis->u[0];
+    double x = 0.3;
+    auto u0 = (*basis->u)[0];
+    auto u0x = u0(x);
 
-    REQUIRE(u.xmin == 0.0);
-    REQUIRE(u.xmax == 1.0);
-    REQUIRE(u.get_polyorder() == 16);
-    REQUIRE(u.l == 0);
-    REQUIRE(u.symm == 1);
+    REQUIRE(u0.xmin == 0.0);
+    REQUIRE(u0.xmax == 1.0);
+    REQUIRE(u0.get_polyorder() == 16);
+    REQUIRE(u0.l == 0);
+    REQUIRE(u0.symm == 1);
 
     vector<double> u_knot_ref_vec = {
         0.0,
@@ -122,7 +124,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
         0.9863765537872669,
         1.0,
     };
-    Eigen::Map<Eigen::VectorXd> u_knots(u.knots.data(), u.knots.size());
+    Eigen::Map<Eigen::VectorXd> u_knots(u0.knots.data(), u0.knots.size());
     REQUIRE(u_knots.isApprox(Eigen::Map<Eigen::VectorXd>(
         u_knot_ref_vec.data(), u_knot_ref_vec.size())));
 
@@ -138,14 +140,14 @@ TEST_CASE("basis.u[0] test", "[basis]")
         0.026348364680459868, 0.02324712520287775,  0.020424728514969015,
         0.01788673828888998,  0.015625091735571195, 0.013623446212733203,
     };
-    Eigen::Map<Eigen::VectorXd> u_delta_x(u.delta_x.data(), u.delta_x.size());
+    Eigen::Map<Eigen::VectorXd> u_delta_x(u0.delta_x.data(), u0.delta_x.size());
     REQUIRE(u_delta_x.isApprox(Eigen::Map<Eigen::VectorXd>(
         u_delta_x_ref_vec.data(), u_delta_x_ref_vec.size())));
 
-    REQUIRE(u(0.3) == Approx(0.8209004724107448));
+    REQUIRE(u0(0.3) == Approx(0.8209004724107448));
     int i;
     double x_tilde;
-    std::tie(i, x_tilde) = u.split(0.3);
+    std::tie(i, x_tilde) = u0.split(0.3);
     REQUIRE(i == 10);
     REQUIRE(x_tilde == Approx(0.9304866288710429));
 }
@@ -173,7 +175,7 @@ TEST_CASE("basis.u(x)", "[basis]") {
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
     double x = 0.3;
-    auto u0 = basis->u[0];
+    auto u0 = (*basis->u)[0];
     auto u0x = u0(x);
 
     vector<double> u0_data_vec = {

@@ -379,7 +379,7 @@ TEST_CASE("func_for_part tests", "[poly]")
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                        kernel, sve_result);
 
-    auto uhat_full = basis->uhat_full[0];
+    auto uhat_full = (*basis->uhat_full)[0];
     auto func_for_part = sparseir::func_for_part(uhat_full);
 
     REQUIRE(func_for_part(0) == uhat_full(0).real());
@@ -402,7 +402,7 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
         beta, wmax, 1e-15, kernel, sve_result);
 
     {
-        auto uhat_full = basis->uhat_full[11];
+        auto uhat_full = (*basis->uhat_full)[11];
         auto sign_changes = sparseir::sign_changes(uhat_full);
         std::function<double(int)> f = func_for_part(uhat_full);
         auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
@@ -434,7 +434,7 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
     }
 
     {
-        auto uhat_full = basis->uhat_full[0];
+        auto uhat_full = (*basis->uhat_full)[0];
         std::function<double(int)> f = func_for_part(uhat_full);
         auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
         REQUIRE(results.size() == 0); // should be empty
@@ -448,7 +448,7 @@ TEST_CASE("PiecewiseLegendreFT: roots of func_for_part tests", "[poly]")
         REQUIRE(s_out_positive_only.size() == 0);
     }
     {
-        auto uhat_full = basis->uhat_full[1];
+        auto uhat_full = (*basis->uhat_full)[1];
         std::function<double(int)> f = func_for_part(uhat_full);
         auto results = sparseir::find_all(f, sparseir::DEFAULT_GRID);
         REQUIRE(results.size() == 1); // should be empty
@@ -476,7 +476,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
         beta, wmax, 1e-15, kernel, sve_result);
 
     {
-        auto uhat_full = basis->uhat_full[11];
+        auto uhat_full = (*basis->uhat_full)[11];
         std::function<double(int)> f = sparseir::func_for_part(uhat_full);
         auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
         std::vector<int> d_extrema_expected = {1, 2, 3, 4, 7, 26};
@@ -506,7 +506,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
     }
 
     {
-        auto uhat_full = basis->uhat_full[0];
+        auto uhat_full = (*basis->uhat_full)[0];
         std::function<double(int)> f = sparseir::func_for_part(uhat_full);
         auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
         std::vector<int> d_extrema_expected = {0};
@@ -536,7 +536,7 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
     }
 
     {
-        auto uhat_full = basis->uhat_full[1];
+        auto uhat_full = (*basis->uhat_full)[1];
         std::function<double(int)> f = sparseir::func_for_part(uhat_full);
         auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
         std::vector<int> d_extrema_expected = {0, 1};
@@ -574,7 +574,7 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
     auto sve_result = sparseir::compute_sve(kernel, 1e-15);
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, 1e-15, kernel, sve_result);
-    auto uhat_full = basis->uhat_full;
+    auto uhat_full = (*basis->uhat_full);
 
     {
         int L = 5;

@@ -106,19 +106,19 @@ class DiscreteLehmannRepresentation : public AbstractBasis<S> {
 public:
     FiniteTempBasis<S> basis;
     Eigen::VectorXd poles;
-    TauPoles<S> u;
-    MatsubaraPoles<S> uhat;
+    std::shared_ptr<TauPoles<S>> u;
+    std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
 
     // Constructor with basis and poles
     DiscreteLehmannRepresentation(const FiniteTempBasis<S>& b, const Eigen::VectorXd& poles)
         : basis(b), poles(poles),
-          u(b.get_beta(), poles),
-          uhat(b.get_beta(), poles)
+          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles)),
+          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles))
     {
         // Fitting matrix from IR
-        Eigen::MatrixXd A = basis.v(poles);
+        Eigen::MatrixXd A = (*basis.v)(poles);
         Eigen::ArrayXXd A_array = A.array();
         Eigen::ArrayXd s_array = basis.s.array();
 

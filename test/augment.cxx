@@ -124,8 +124,8 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
-    sparseir::PiecewiseLegendrePolyVector u = basis->u;
-    sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic> uhat = basis->uhat;
+    sparseir::PiecewiseLegendrePolyVector u = *basis->u;
+    sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic> uhat = *basis->uhat;
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     double pole = 1.0;
@@ -254,7 +254,7 @@ TEST_CASE("unit tests", "[augment]") {
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
     sparseir::AugmentedBasis<S> basis_aug(basis, augmentations);
     SECTION("size and access") {
-        REQUIRE(basis_aug.u.size() == basis_aug.size());
+        REQUIRE(basis_aug.u->size() == basis_aug.size());
         // The AugmentedTauFunction doesn't have operator[] so we can't test these
         // REQUIRE(basis_aug.u[0]->operator()(0.0) == basis_aug[0](0.0));
         // REQUIRE(basis_aug.u[1]->operator()(0.0) == basis_aug[1](0.0));
@@ -269,12 +269,12 @@ TEST_CASE("unit tests", "[augment]") {
     REQUIRE(basis_aug.basis->get_beta() * basis_aug.basis->get_wmax() == beta * wmax);
     REQUIRE(basis_aug.get_wmax() == wmax);
 
-    REQUIRE(basis_aug.u.size() == len_aug);
-    REQUIRE(basis_aug.u(0.8).size() == len_aug);
+    REQUIRE(basis_aug.u->size() == len_aug);
+    REQUIRE((*basis_aug.u)(0.8).size() == len_aug);
 
     // Test for MatsubaraFreq
     sparseir::MatsubaraFreq<S> freq4(4);
-    REQUIRE(basis_aug.uhat(freq4).size() == len_aug);
+    REQUIRE((*basis_aug.uhat)(freq4).size() == len_aug);
 
     // AugmentedTauFunction doesn't have minCoeff/maxCoeff methods
     // REQUIRE(basis_aug.u.minCoeff() == 0.0);
@@ -295,7 +295,7 @@ TEST_CASE("AugmentBasis basis_aug->u", "[augment]") {
     auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
 
     Eigen::VectorXd sampling_points = basis_aug->default_tau_sampling_points();
-    sparseir::AugmentedTauFunction u = basis_aug->u;
+    sparseir::AugmentedTauFunction u = *(basis_aug->u);
     // TODO: Check numerical correctness
     Eigen::VectorXd v = u(1.0);
 
@@ -320,6 +320,6 @@ TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
     auto sampling_points = basis_aug->default_matsubara_sampling_points(
         basis_aug->size(), fence, positive_only
     );
-    Eigen::VectorXcd v = basis_aug->uhat(sampling_points[0]);
+    Eigen::VectorXcd v = (*basis_aug->uhat)(sampling_points[0]);
     REQUIRE(v.size() == basis_aug->size());
 }

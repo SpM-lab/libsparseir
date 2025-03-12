@@ -206,16 +206,16 @@ public:
 
 class AugmentedTauFunction {
 public:
-    const PiecewiseLegendrePolyVector& basis_func;
+    std::shared_ptr<PiecewiseLegendrePolyVector> basis_func;
     const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations;
 
-    AugmentedTauFunction(const PiecewiseLegendrePolyVector& basis_func,
+    AugmentedTauFunction(std::shared_ptr<PiecewiseLegendrePolyVector> basis_func,
                         const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
         : basis_func(basis_func)
         , augmentations(augmentations) {}
 
     Eigen::VectorXd operator()(double tau) const {
-        Eigen::VectorXd result = basis_func(tau);
+        Eigen::VectorXd result = (*basis_func)(tau);
         for (const auto& aug : augmentations) {
             result.conservativeResize(result.size() + 1);
             result(result.size() - 1) = (*aug)(tau);
@@ -226,11 +226,11 @@ public:
     Eigen::MatrixXd operator()(const Eigen::VectorXd& x) const {
         // Initialize result matrix with correct dimensions
         // Rows = number of basis functions, Columns = number of points
-        Eigen::MatrixXd result(basis_func.size() + augmentations.size(), x.size());
+        Eigen::MatrixXd result(basis_func->size() + augmentations.size(), x.size());
 
         // Evaluate basis functions at each point
-        Eigen::MatrixXd basis_result = basis_func(x);
-        result.bottomRows(basis_func.size()) = basis_result;
+        Eigen::MatrixXd basis_result = (*basis_func)(x);
+        result.bottomRows(basis_func->size()) = basis_result;
 
         // Evaluate each augmentation at each point
         for (size_t i = 0; i < augmentations.size(); ++i) {
@@ -243,7 +243,7 @@ public:
     }
 
     size_t size() const {
-        return augmentations.size() + basis_func.size();
+        return basis_func->size() + augmentations.size();
     }
 };
 
@@ -252,17 +252,17 @@ class AugmentedMatsubaraFunction {
 public:
     using MatsubaraVec = PiecewiseLegendreFTVector<S>;
 
-    const MatsubaraVec& basis_func;
+    std::shared_ptr<MatsubaraVec> basis_func;
     const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations;
 
-    AugmentedMatsubaraFunction(const MatsubaraVec& basis_func,
+    AugmentedMatsubaraFunction(std::shared_ptr<MatsubaraVec> basis_func,
                               const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
         : basis_func(basis_func)
         , augmentations(augmentations) {}
 
     template<typename T>
     Eigen::VectorXcd operator()(MatsubaraFreq<T> n) const {
-        Eigen::VectorXcd result = basis_func(n);
+        Eigen::VectorXcd result = (*basis_func)(n);
 
         Eigen::VectorXcd aug_result(augmentations.size());
         for (size_t i = 0; i < augmentations.size(); ++i) {
@@ -274,7 +274,7 @@ public:
     }
 
     size_t size() const {
-        return augmentations.size() + basis_func.size();
+        return augmentations.size() + basis_func->size();
     }
 };
 
@@ -284,15 +284,15 @@ class AugmentedBasis : public AbstractBasis<S> {
 public:
     std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
     std::shared_ptr<FiniteTempBasis<S>> basis;
-    AugmentedTauFunction u;
-    AugmentedMatsubaraFunction<S> uhat;
+    std::shared_ptr<AugmentedTauFunction> u;
+    std::shared_ptr<AugmentedMatsubaraFunction<S>> uhat;
 
     AugmentedBasis(std::shared_ptr<FiniteTempBasis<S>> basis,
                   const std::vector<std::shared_ptr<AbstractAugmentation>>& augmentations)
         : basis(basis)
         , augmentations(augmentations)
-        , u(basis->u, augmentations)
-        , uhat(basis->uhat, augmentations) {}
+        , u(std::make_shared<AugmentedTauFunction>(basis->u, augmentations))
+        , uhat(std::make_shared<AugmentedMatsubaraFunction<S>>(basis->uhat, augmentations)) {}
 
     // Prevent copying, allow moving
     AugmentedBasis(const AugmentedBasis&) = delete;

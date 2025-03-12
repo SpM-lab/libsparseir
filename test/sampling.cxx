@@ -43,10 +43,10 @@ TEST_CASE("TauSampling Constructor Test", "[sampling]") {
     Eigen::MatrixXd mat_ref = Eigen::Map<Eigen::MatrixXd>(mat_ref_vec.data(), 1, 19);
     Eigen::MatrixXd mat = eval_matrix(basis, x);
 
-    REQUIRE(basis->u[0](0.3) == Approx(0.8209004724107448));
+    REQUIRE((*basis->u)[0](0.3) == Approx(0.8209004724107448));
 
-    REQUIRE(basis->u(x).transpose().isApprox(mat));
-    REQUIRE(basis->u(x).transpose().isApprox(mat_ref));
+    REQUIRE((*basis->u)(x).transpose().isApprox(mat));
+    REQUIRE((*basis->u)(x).transpose().isApprox(mat_ref));
 
     std::vector<double> sampling_points_ref_vec = {
         0.0036884193900212914,
@@ -515,7 +515,7 @@ TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
         auto tau_sampling = std::make_shared<sparseir::TauSampling<S>>(basis);
 
         // Prepare test data
-        Eigen::MatrixXd out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
+        Eigen::MatrixXd out = (*basis->v)(Eigen::Vector3d(-0.999, -0.01, 0.5));
         Eigen::VectorXd rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
         Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
 
@@ -573,7 +573,7 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         auto matsu_sampling = std::make_shared<sparseir::MatsubaraSampling<S>>(
             basis, positive_only);
 
-        Eigen::MatrixXd out = basis->v(Eigen::Vector3d(-0.999, -0.01, 0.5));
+        Eigen::MatrixXd out = (*basis->v)(Eigen::Vector3d(-0.999, -0.01, 0.5));
         Eigen::VectorXd rhol = out * Eigen::Vector3d(0.8, -0.2, 0.5);
         Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
         double Gl_magn = Gl_.norm();

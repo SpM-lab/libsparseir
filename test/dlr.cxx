@@ -88,7 +88,7 @@ TEST_CASE("DLR Tests", "[dlr]") {
         Eigen::Vector2d coeff(1.1, 2.0);
         Eigen::Vector2d omega_p(2.2, -1.0);
 
-        Eigen::MatrixXd rho_l_pole = basis_b->v(omega_p) * coeff;
+        Eigen::MatrixXd rho_l_pole = (*basis_b->v)(omega_p) * coeff;
         Eigen::ArrayXXd rho_l_pole_array = rho_l_pole.array();
         Eigen::ArrayXd s_array = basis_b->s.array();
         Eigen::MatrixXd gl_pole = (-rho_l_pole_array * s_array.replicate(1, rho_l_pole.cols())).matrix();
