@@ -41,6 +41,4 @@ set(TEST_FILES
 add_executable(libsparseirtests ${TEST_FILES})
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(libsparseirtests PRIVATE SparseIR::sparseir)
-add_test(NAME combined_tests COMMAND libsparseirtests)
-
-add_test(tests libsparseirtests)
+add_test(NAME combined_tests COMMAND libsparseirtests -d yes)

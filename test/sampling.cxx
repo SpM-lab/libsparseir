@@ -6,12 +6,14 @@
 #include <catch2/catch_approx.hpp> // for Approx
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
+#include "sve_cache.hpp"
 
 #include <random>
 #include <complex>
 #include <memory>
 #include <vector>
 #include <string>
+#include <map>
 
 using namespace std;
 using Catch::Approx;
@@ -22,7 +24,7 @@ TEST_CASE("TauSampling Constructor Test", "[sampling]") {
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
     sparseir::TauSampling<sparseir::Bosonic> tau_sampling(basis);
@@ -187,12 +189,10 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
 		rhol_vec(i) = std::complex<double>(realpart[i], imagpart[i]);
 	}
 
-
-
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+    auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
 
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
                                                            kernel, sve_result);
@@ -278,7 +278,7 @@ void test_fit_from_tau_for_stat()
         {
             double wmax = Lambda / beta;
             auto kernel = sparseir::LogisticKernel(wmax);
-            auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+            auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
 
             // Create a basis matching the template statistic
             auto basis = make_shared<sparseir::FiniteTempBasis<Stat>>(
@@ -371,7 +371,7 @@ TEST_CASE("Conditioning Tests", "[sampling]") {
     double epsilon = 1e-6;
 
     auto kernel = sparseir::LogisticKernel(beta * wmax);
-    auto sve_result = sparseir::compute_sve(kernel, epsilon);
+    auto sve_result = SVECache::get_sve_result(kernel, epsilon);
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, epsilon, kernel, sve_result);
 
@@ -402,7 +402,7 @@ TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
     sparseir::LogisticKernel kernel(beta * wmax);
 
     // Compute SVE
-    auto sve_result = sparseir::compute_sve(kernel, eps);
+    auto sve_result = SVECache::get_sve_result(kernel, eps);
 
     // Create basis
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, eps, kernel, sve_result);
@@ -506,7 +506,7 @@ TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
 
         // Build kernel and SVE
         auto kernel = sparseir::LogisticKernel(Lambda);
-        auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+        auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
 
         // Create finite-temperature basis and TauSampling for the given
         // statistic
@@ -566,7 +566,7 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         double wmax = 10.0;
         double Lambda = beta * wmax;
         auto kernel = sparseir::LogisticKernel(Lambda);
-        auto sve_result = sparseir::compute_sve(kernel, 1e-15);
+        auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
         auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(
             beta, wmax, 1e-15, kernel, sve_result);
 
