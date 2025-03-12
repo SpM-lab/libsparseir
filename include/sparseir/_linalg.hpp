@@ -174,7 +174,6 @@ Dynamic, 1>& taus) : factors(factors), taus(taus) {}
 template <typename T>
 MatrixX<T> getPropertyP(const QRPivoted<T> &F)
 {
-    int m = F.factors.rows();
     int n = F.factors.cols();
 
     MatrixX<T> P = MatrixX<T>::Zero(n, n);

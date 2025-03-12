@@ -160,6 +160,13 @@ int spir_sampling_evaluate(
     double *out                    // Output array
     )
 {
+    // Suppress unused parameter warnings
+    (void)order;
+    (void)ndim;
+    (void)dims;
+    (void)target_dim;
+    (void)out;
+    
     auto impl = get_impl_sampling(s);
     if (!impl)
         return -1;

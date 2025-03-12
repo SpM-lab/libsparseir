@@ -172,6 +172,10 @@ public:
                    bool return_error = false, int maxevals = 10000,
                    const std::vector<double> &points = {}) const
     {
+        // Suppress unused parameter warnings
+        (void)rtol;
+        (void)maxevals;
+        
         // Implement numerical integration over the intervals
         // Since C++ does not have a built-in quadgk, we need to implement one
         // or use a library For simplicity, let's use Gauss-Legendre quadrature
@@ -235,7 +239,7 @@ public:
     Eigen::VectorXd refine_grid(const Eigen::VectorXd& grid, int alpha) const {
         Eigen::VectorXd refined((grid.size() - 1) * alpha + 1);
 
-        for (size_t i = 0; i < grid.size() - 1; ++i) {
+        for (Eigen::Index i = 0; i < grid.size() - 1; ++i) {
             double start = grid[i];
             double step = (grid[i + 1] - grid[i]) / alpha;
             for (int j = 0; j < alpha; ++j) {
@@ -266,6 +270,9 @@ public:
     // Roots function
     Eigen::VectorXd roots(double tol = 1e-10) const
     {
+        // Suppress unused parameter warning
+        (void)tol;
+        
         Eigen::VectorXd grid = this->knots;
 
         Eigen::VectorXd refined_grid = refine_grid(grid, 2);
@@ -386,6 +393,12 @@ private:
                                                double a, double b,
                                                double tol) const
     {
+        // Suppress unused parameter warnings
+        (void)f;
+        (void)a;
+        (void)b;
+        (void)tol;
+        
         // Implement a root-finding algorithm like bisection or Brent's method
         std::vector<double> roots;
         // Placeholder: actual implementation needed
@@ -596,21 +609,21 @@ public:
                                 const std::vector<int> &symm = {})
         : polyvec(data3d.size())
     {
-        if (!symm.empty() && symm.size() != data3d.size()) {
+        if (!symm.empty() && static_cast<Eigen::Index>(symm.size()) != data3d.size()) {
             throw std::invalid_argument("Sizes of data and symm don't match");
         }
-        for (auto i = 0; i < data3d.size(); ++i) {
+        for (Eigen::Index i = 0; i < data3d.size(); ++i) {
             Eigen::MatrixXd data(data3d.dimension(0), data3d.dimension(1));
-            for (auto j = 0; j < data3d.dimension(0); ++j) {
-                for (auto k = 0; k < data3d.dimension(1); ++k) {
+            for (Eigen::Index j = 0; j < data3d.dimension(0); ++j) {
+                for (Eigen::Index k = 0; k < data3d.dimension(1); ++k) {
                     data(j, k) = data3d(j, k, i);
                 }
             }
 
             Eigen::VectorXd delta_x = (knots.tail(knots.size() - 1) - knots.head(knots.size() - 1)).matrix();
-            polyvec[i] =
+            polyvec[static_cast<size_t>(i)] =
                 PiecewiseLegendrePoly(data, knots, static_cast<int>(i),
-                                     delta_x, symm.empty() ? 0 : symm[i]);
+                                     delta_x, symm.empty() ? 0 : symm[static_cast<size_t>(i)]);
         }
     }
 
@@ -631,7 +644,7 @@ public:
                                 const Eigen::VectorXi &symm = Eigen::VectorXi())
         : polyvec(polys.size())
     {
-        if (polys.size() != symm.size()) {
+        if (polys.size() != static_cast<size_t>(symm.size())) {
             throw std::invalid_argument(
                 "Sizes of polys and symm don't match " + std::to_string(polys.size()) + " " + std::to_string(symm.size()));
         }
@@ -656,10 +669,10 @@ public:
                                 const PiecewiseLegendrePolyVector &polys)
     {
         std::vector<PiecewiseLegendrePoly> polyvec;
-        if (data.dimension(2) != polys.size()) {
+        if (data.dimension(2) != static_cast<Eigen::Index>(polys.size())) {
             throw std::invalid_argument("Sizes of data and polys don't match");
         }
-        for (size_t i = 0; i < data.dimension(2); ++i) {
+        for (Eigen::Index i = 0; i < data.dimension(2); ++i) {
             Eigen::MatrixXd data2d(data.dimension(0), data.dimension(1));
             for (int j = 0; j < data.dimension(0); ++j) {
                 for (int k = 0; k < data.dimension(1); ++k) {
@@ -941,6 +954,7 @@ std::complex<double>
 PiecewiseLegendreFT<StatisticsType>::giw(const PiecewiseLegendreFT &polyFT,
                                         int wn) const
 {
+    (void)polyFT; // Suppress unused parameter warning
     std::complex<double> iw(0.0, M_PI / 2.0 * wn);
     if (wn == 0)
         return std::complex<double>(0.0, 0.0);

@@ -510,7 +510,7 @@ public:
         // Get the sorted permutation indices
         std::vector<size_t> sorted_indices = sortperm_rev(s_merged);
 
-        assert(sorted_indices.size() == s_merged.size());
+        assert(sorted_indices.size() == static_cast<size_t>(s_merged.size()));
 
         // Apply the sorted permutation to u_complete, v_complete, signs, and s_merged
         std::vector<PiecewiseLegendrePoly> u_sorted(sorted_indices.size());
