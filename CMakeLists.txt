@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "No build type specified, defaulting to Release")
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
+
 set(CMAKE_CXX_STANDARD 11) # TODO: back port to 11
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
