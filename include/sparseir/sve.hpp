@@ -734,9 +734,9 @@ SVEResult compute_sve(const K &kernel, double epsilon,
     std::string svd_strategy_actual;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = sparseir::auto_choose_accuracy(epsilon, Twork);
 
-    if (Twork == "Float64") {
+    if (Twork_actual == "Float64") {
         return std::get<0>(pre_postprocess<K, double>(kernel, safe_epsilon, n_gauss, cutoff, lmax));
-    } else if (Twork == "Float64x2") {
+    } else if (Twork_actual == "Float64x2") {
         return std::get<0>(pre_postprocess<K, xprec::DDouble>(kernel, safe_epsilon, n_gauss, cutoff, lmax));
     } else {
         throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
