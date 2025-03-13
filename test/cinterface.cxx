@@ -53,7 +53,7 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
     }
 }
 
-TEST_CASE("Sampling", "[cinterface]")
+TEST_CASE("TauSampling", "[cinterface]")
 {
     SECTION("TauSampling Constructor")
     {
@@ -65,6 +65,73 @@ TEST_CASE("Sampling", "[cinterface]")
 
         auto sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
-        
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+    }
+
+    SECTION("TauSampling Evaluation 1-dimensional input")
+    {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        // Create basis
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+        REQUIRE(basis != nullptr);
+
+        // Create sampling
+        spir_sampling* sampling = spir_fermionic_tau_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+
+        // Create equivalent C++ objects for comparison
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
+            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
+
+        int basis_size = cpp_basis.size();
+        std::cout << "basis_size: " << basis_size << std::endl;
+        Eigen::VectorXd cpp_Gl_vec = Eigen::VectorXd::Random(basis_size);
+        Eigen::Tensor<double, 1> cpp_Gl(basis_size);
+        for (size_t i = 0; i < basis_size; ++i) {
+            cpp_Gl(i) = cpp_Gl_vec(i);
+        }
+        Eigen::Tensor<double, 1> Gtau_cpp = cpp_sampling.evaluate(cpp_Gl);
+
+        // Set up parameters for evaluation
+        int ndim = 1;
+        int dims[1] = {basis_size};
+        int target_dim = 0;
+
+        // Allocate memory for coefficients
+        double* coeffs = (double*)malloc(basis_size * sizeof(double));
+        // Create coefficients (simple test values)
+        for (int i = 0; i < basis_size; i++) {
+            coeffs[i] = cpp_Gl_vec(i);
+        }
+
+        // Create output buffer
+        double* output = (double*)malloc(basis_size * sizeof(double));
+
+        // Evaluate using C API
+        int status = spir_sampling_evaluate_dd(
+            sampling,
+            SPIR_ORDER_ROW_MAJOR,  // Assuming this enum is defined in the header
+            ndim,
+            dims,
+            target_dim,
+            coeffs,
+            output
+        );
+
+        for (int i = 0; i < basis_size; i++) {
+            REQUIRE(output[i] == Approx(Gtau_cpp(i)));
+        }
+
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+        // Free allocated memory
+        free(coeffs);
+        free(output);
     }
 }
