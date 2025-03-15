@@ -86,7 +86,10 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
  * Create a new tau sampling object
  */
 spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b);
-
+/**
+ * Create a new matsubara sampling object
+ */
+spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
 
 int spir_sampling_evaluate_dd(
     const spir_sampling *s,        // Sampling object
@@ -98,6 +101,25 @@ int spir_sampling_evaluate_dd(
     double *out                    // Output array
     );
 
+int spir_sampling_evaluate_dc(
+    const spir_sampling *s,        // Sampling object
+    spir_order_type order,         // Order type (C or Fortran)
+    int32_t ndim,                  // Number of dimensions
+    int32_t *input_dims,                 // Array of dimensions
+    int32_t target_dim,            // Target dimension for evaluation
+    const double *input,          // Input coefficients array
+    std::complex<double> *out                    // Output array
+    );
+
+int spir_sampling_evaluate_cc(
+    const spir_sampling *s,        // Sampling object
+    spir_order_type order,         // Order type (C or Fortran)
+    int32_t ndim,                  // Number of dimensions
+    int32_t *input_dims,                 // Array of dimensions
+    int32_t target_dim,            // Target dimension for evaluation
+    const std::complex<double> *input,          // Input coefficients array
+    std::complex<double> *out                    // Output array
+    );
 
 /** Destroy instance of kernel */
 //void spir_destroy_kernel(spir_kernel *k);
@@ -159,7 +181,7 @@ spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double be
 /**
  * Get basis functions.
  * Returns a polynomial vector that must be freed using spir_destroy_polyvector.
- * 
+ *
  * @param b The basis
  * @return Polynomial vector, or NULL on error
  */
@@ -167,7 +189,7 @@ spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double be
 
 /**
  * Get the size of a polynomial vector.
- * 
+ *
  * @param v The polynomial vector
  * @return Size of the vector, or -1 on error
  */

@@ -57,11 +57,11 @@ Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N> &arr, int src, int dst)
 template <typename T1, typename T2, int N1, int N2>
 Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
 _contract(const Eigen::TensorMap<const Eigen::Tensor<T1, N1>> &tensor1,
-         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2, 
+         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2,
          const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
 {
     using ResultType = decltype(T1() * T2());
-    
+
     // Contract tensors with proper type casting
     auto tensor1_cast = tensor1.template cast<ResultType>();
     auto tensor2_cast = tensor2.template cast<ResultType>();
@@ -74,7 +74,7 @@ _contract(const Eigen::TensorMap<const Eigen::Tensor<T1, N1>> &tensor1,
 template <typename T1, typename T2, int N1, int N2>
 Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
 _contract(const Eigen::Tensor<T1, N1> &tensor1,
-         const Eigen::Tensor<T2, N2> &tensor2, 
+         const Eigen::Tensor<T2, N2> &tensor2,
          const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
 {
     // Create TensorMaps from the Tensors
@@ -82,7 +82,7 @@ _contract(const Eigen::Tensor<T1, N1> &tensor1,
         const_cast<T1*>(tensor1.data()), tensor1.dimensions());
     Eigen::TensorMap<Eigen::Tensor<T2, N2>> tensor2_map(
         const_cast<T2*>(tensor2.data()), tensor2.dimensions());
-    
+
     // Delegate to the TensorMap version
     return _contract(tensor1_map, tensor2_map, contract_dims);
 }
@@ -91,13 +91,13 @@ _contract(const Eigen::Tensor<T1, N1> &tensor1,
 template <typename T1, typename T2, int N1, int N2>
 Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
 _contract(const Eigen::TensorMap<const Eigen::Tensor<T1, N1>> &tensor1,
-         const Eigen::Tensor<T2, N2> &tensor2, 
+         const Eigen::Tensor<T2, N2> &tensor2,
          const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
 {
     // Create TensorMap from the second Tensor
     Eigen::TensorMap<const Eigen::Tensor<T2, N2>> tensor2_map(
         const_cast<T2*>(tensor2.data()), tensor2.dimensions());
-    
+
     // Delegate to the TensorMap version
     return _contract(tensor1, tensor2_map, contract_dims);
 }
@@ -106,13 +106,13 @@ _contract(const Eigen::TensorMap<const Eigen::Tensor<T1, N1>> &tensor1,
 template <typename T1, typename T2, int N1, int N2>
 Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
 _contract(const Eigen::Tensor<T1, N1> &tensor1,
-         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2, 
+         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2,
          const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
 {
     // Create TensorMap from the first Tensor
     Eigen::TensorMap<const Eigen::Tensor<T1, N1>> tensor1_map(
         const_cast<T1*>(tensor1.data()), tensor1.dimensions());
-    
+
     // Delegate to the TensorMap version
     return _contract(tensor1_map, tensor2, contract_dims);
 }
@@ -121,7 +121,7 @@ template <typename T1, typename T2, int N2>
 Eigen::Tensor<decltype(T1() * T2()), N2>
 _matop_along_dim(
     const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
-         const Eigen::Tensor<T2, N2> &tensor2, 
+         const Eigen::Tensor<T2, N2> &tensor2,
          int dim = 0)
 {
     using ResultType = decltype(T1() * T2());
@@ -162,7 +162,7 @@ template <typename T1, typename T2, int N2>
 Eigen::Tensor<decltype(T1() * T2()), N2>
 _matop_along_dim(
     const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
-         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2, 
+         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2,
          int dim = 0)
 {
     using ResultType = decltype(T1() * T2());
@@ -313,7 +313,7 @@ fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
 class AbstractSampling {
 public:
     virtual ~AbstractSampling() = default;
-    
+
     // Return number of sampling points
     virtual std::size_t n_sampling_points() const = 0;
 
@@ -363,29 +363,29 @@ int evaluate_inplace_impl(
     const Eigen::TensorMap<const Eigen::Tensor<InputScalar, Dim>>& input,
     int dim,
     Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>>& output) {
-    
+
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension
         return -1;
     }
-    
+
     if (sampler.basis_size() != input.dimension(dim)) {
         // Dimension mismatch
         return -2;
     }
-    
+
     // Calculate result using the existing evaluate method
     auto result = sampler.evaluate(input, dim);
-    
+
     // Check if output dimensions match result dimensions
     if (output.dimensions() != result.dimensions()) {
         // Output tensor has wrong dimensions
         return -3;
     }
-    
+
     // Copy the result to the output tensor
     std::copy(result.data(), result.data() + result.size(), output.data());
-    
+
     return 0; // Success
 }
 
@@ -437,7 +437,7 @@ public:
     std::size_t basis_size() const override {
         return this->matrix_.cols();
     }
-    
+
     // Implement evaluate_inplace_dd method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
     int evaluate_inplace_dd(
@@ -495,7 +495,7 @@ public:
     {
         return _matop_along_dim(matrix_, al, dim);
     }
-    
+
     // Overload for Tensor (converts to TensorMap)
     template <typename T, int N>
     Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N> &al,
@@ -585,17 +585,36 @@ public:
     std::size_t basis_size() const override {
         return matrix_.cols();
     }
-    
+
     // Implement evaluate_inplace_dd method using the common implementation
     int evaluate_inplace_dd(
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
         int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override {
+        // not supported
         return -3;
     }
 
+    // Implement evaluate_inplace_dc method using the common implementation
+    // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
+    int evaluate_inplace_dc(
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override {
+        return evaluate_inplace_impl<MatsubaraSampling<S>, double, std::complex<double>, 3>(*this, input, dim, output);
+    }
+
+    // Implement evaluate_inplace_cc method using the common implementation
+    // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
+    int evaluate_inplace_cc (
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override {
+        return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>, std::complex<double>, 3>(*this, input, dim, output);
+    }
+
     template <typename Basis>
-    MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
+    MatsubaraSampling(const std::shared_ptr<Basis> &basis,
                        const std::vector<MatsubaraFreq<S>> &sampling_points,
                        bool positive_only = false,
                        bool factorize = true)
@@ -636,7 +655,7 @@ public:
 
 
     template <typename Basis>
-    MatsubaraSampling(const std::shared_ptr<Basis> &basis, 
+    MatsubaraSampling(const std::shared_ptr<Basis> &basis,
                        bool positive_only = false,
                        bool factorize = true)
         : positive_only_(positive_only), has_zero_(false)
@@ -677,7 +696,7 @@ public:
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
-    template <typename Basis, 
+    template <typename Basis,
           typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
         MatsubaraSampling(const Basis &basis,
                      bool positive_only = false,
@@ -686,7 +705,7 @@ public:
     {
     }
 
-    template <typename Basis, 
+    template <typename Basis,
       typename = typename std::enable_if<!is_shared_ptr<Basis>::value>::type>
         MatsubaraSampling(const Basis &basis, const std::vector<MatsubaraFreq<S>> &sampling_points,
                      bool positive_only = false,
@@ -700,7 +719,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<T, N>>& al, int dim = 0) const {
         return _matop_along_dim(matrix_, al, dim);
     }
-    
+
     // Overload for Tensor (converts to TensorMap)
     template <typename T, int N>
     Eigen::Tensor<std::complex<double>, N> evaluate(
