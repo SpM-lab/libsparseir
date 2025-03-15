@@ -130,16 +130,18 @@ TEST_CASE("TauSampling", "[cinterface]") {
         free(output);
     }
 
-    SECTION("TauSampling Evaluation 2-dimensional input ROW-MAJOR") {
+    SECTION("TauSampling Evaluation 4-dimensional input ROW-MAJOR")
+    {
         double beta = 1.0;
         double wmax = 10.0;
 
         // Create basis
-        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+        spir_fermionic_finite_temp_basis *basis =
+            spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
         REQUIRE(basis != nullptr);
 
         // Create sampling
-        spir_sampling* sampling = spir_fermionic_tau_sampling_new(basis);
+        spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
@@ -150,96 +152,186 @@ TEST_CASE("TauSampling", "[cinterface]") {
         int basis_size = cpp_basis.size();
 
         int d1 = 2;
-        int ndim = 2;
+        int d2 = 3;
+        int d3 = 4;
+        Eigen::Tensor<double, 4> rhol_tensor(basis_size, d1, d2, d3);
+        std::mt19937 gen(42);
+        std::uniform_real_distribution<> dis(0, 1);
 
-        Eigen::Tensor<double, 2> gl_cpp(basis_size, d1);
-        REQUIRE(basis_size == 14);
-        // 14 x d1
-        double input[28] = {0.2738, 0.5183, 0.9021, 0.1847, 0.6451, 0.3379,
-                           0.1156, 0.7972, 0.4850, 0.2301, 0.6123, 0.9630,
-                           0.0417, 0.8888, 0.5023, 0.3190, 0.1746, 0.7325,
-                           0.6574, 0.0192, 0.4512, 0.2843, 0.9056, 0.1324,
-                           0.7765, 0.8437, 0.0689, 0.5555};
-
-        for (int i = 0; i < 28; ++i) {
-            gl_cpp.data()[i] = input[i];
+        for (int i = 0; i < rhol_tensor.size(); ++i) {
+            rhol_tensor.data()[i] = dis(gen);
         }
 
-        double* output = (double*)malloc(basis_size * d1 * sizeof(double));
+        double *output =
+            (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
 
-        // Evaluate from real-time/tau to imaginary-time/tau
-        {
-            int dims[2] = {basis_size, d1};
-            int target_dim = 0;
-            Eigen::Tensor<double, 2> gtau_cpp = cpp_sampling.evaluate(gl_cpp, target_dim);
+        int ndim = 4;
+        int dims1[4] = {basis_size, d1, d2, d3};
+        int dims2[4] = {d1, basis_size, d2, d3};
+        int dims3[4] = {d1, d2, basis_size, d3};
+        int dims4[4] = {d1, d2, d3, basis_size};
 
-            // C-API with row-major input
-            Eigen::Tensor<double, 2, Eigen::RowMajor> gl_cpp_rowmajor(basis_size, d1);
+        std::vector<int *> dims_list = {dims1, dims2, dims3, dims4};
+
+        // Test evaluate() and fit() along each dimension
+        for (int dim = 0; dim < 4; ++dim) {
+            // Move the "frequency" dimension around
+            // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
+            Eigen::Tensor<double, 4> gl_cpp =
+                sparseir::movedim(rhol_tensor, 0, dim);
+
+            // Evaluate from real-time/tau to imaginary-time/tau
+            Eigen::Tensor<double, 4> gtau_cpp =
+                cpp_sampling.evaluate(gl_cpp, dim);
+            int *dims = dims_list[dim];
+            int target_dim = dim;
+
+            // Note that we need to specify Eigen::RowMajor here
+            // because Eigen::Tensor<double, 4> is column-major by default
+            Eigen::Tensor<double, 4, Eigen::RowMajor> gl_cpp_rowmajor(
+                dims[0], dims[1], dims[2], dims[3]);
 
             // Fill row-major tensor in the correct order
-            for (int i = 0; i < basis_size; ++i) {
-                for (int j = 0; j < d1; ++j) {
-                    gl_cpp_rowmajor(i, j) = gl_cpp(i, j);
+            for (int i = 0; i < gl_cpp.dimension(0); ++i) {
+                for (int j = 0; j < gl_cpp.dimension(1); ++j) {
+                    for (int k = 0; k < gl_cpp.dimension(2); ++k) {
+                        for (int l = 0; l < gl_cpp.dimension(3); ++l) {
+                            gl_cpp_rowmajor(i, j, k, l) = gl_cpp(i, j, k, l);
+                        }
+                    }
                 }
             }
-
             // Evaluate using C API
             int status = spir_sampling_evaluate_dd(
-                sampling,
-                SPIR_ORDER_ROW_MAJOR,
-                ndim,
-                dims,
-                target_dim,
-                gl_cpp_rowmajor.data(),
-                output
-            );
+                sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
+                gl_cpp_rowmajor.data(), output);
 
             REQUIRE(status == 0);
 
-            for (int i = 0; i < basis_size; ++i) {
-                for (int j = 0; j < d1; ++j) {
-                    REQUIRE(gtau_cpp(i, j) == output[i * d1 + j]);
-                }
-            }
-        }
-
-        // Evaluate from real-time/tau to imaginary-time/tau
-        {
-            int dims[2] = {d1, basis_size};
-            int target_dim = 1;
-            gl_cpp = sparseir::movedim(gl_cpp, 0, target_dim);
-            Eigen::Tensor<double, 2> gtau_cpp = cpp_sampling.evaluate(gl_cpp, target_dim);
-
-            // C-API with row-major input
-            Eigen::Tensor<double, 2, Eigen::RowMajor> gl_cpp_rowmajor(d1, basis_size);
-
-            // Fill row-major tensor in the correct order
-            for (int i = 0; i < d1; ++i) {
-                for (int j = 0; j < basis_size; ++j) {
-                    gl_cpp_rowmajor(i, j) = gl_cpp(i, j);
-                }
-            }
-
-            // Evaluate using C API
-            int status = spir_sampling_evaluate_dd(
-                sampling,
-                SPIR_ORDER_ROW_MAJOR,
-                ndim,
-                dims,
-                target_dim,
-                gl_cpp_rowmajor.data(),
-                output
-            );
-            REQUIRE(status == 0);
-
-            Eigen::Tensor<double, 2, Eigen::RowMajor> output_tensor(d1, basis_size);
+            // Compare results
+            // Note that we need to specify Eigen::RowMajor here
+            // because Eigen::Tensor<double, 4> is column-major by default
+            Eigen::Tensor<double, 4, Eigen::RowMajor> output_tensor(
+                dims[0], dims[1], dims[2], dims[3]);
             for (int i = 0; i < output_tensor.size(); ++i) {
+                // store output data to output_tensor
                 output_tensor.data()[i] = output[i];
             }
+            // Compare results
+            for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
+                for (int j = 0; j < gtau_cpp.dimension(1); ++j) {
+                    for (int k = 0; k < gtau_cpp.dimension(2); ++k) {
+                        for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
+                            REQUIRE(gtau_cpp(i, j, k, l) ==
+                                    output_tensor(i, j, k, l));
+                        }
+                    }
+                }
+            }
+        }
 
-            for (int i = 0; i < d1; ++i) {
-                for (int j = 0; j < basis_size; ++j) {
-                    REQUIRE(gtau_cpp(i, j) == output_tensor(i, j));
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+        free(output);
+    }
+
+    SECTION("TauSampling Evaluation 4-dimensional complex input/output ROW-MAJOR")
+    {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        // Create basis
+        spir_fermionic_finite_temp_basis *basis =
+            spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+        REQUIRE(basis != nullptr);
+
+        // Create sampling
+        spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+
+        // Create equivalent C++ objects for comparison
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
+            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
+
+        int basis_size = cpp_basis.size();
+
+        int d1 = 2;
+        int d2 = 3;
+        int d3 = 4;
+        Eigen::Tensor<std::complex<double>, 4> rhol_tensor(basis_size, d1, d2, d3);
+        std::mt19937 gen(42);
+        std::uniform_real_distribution<> dis(0, 1);
+
+        for (int i = 0; i < rhol_tensor.size(); ++i) {
+            rhol_tensor.data()[i] = std::complex<double>(dis(gen), dis(gen));
+        }
+
+        std::complex<double> *output =
+            (std::complex<double> *)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+
+        int ndim = 4;
+        int dims1[4] = {basis_size, d1, d2, d3};
+        int dims2[4] = {d1, basis_size, d2, d3};
+        int dims3[4] = {d1, d2, basis_size, d3};
+        int dims4[4] = {d1, d2, d3, basis_size};
+
+        std::vector<int *> dims_list = {dims1, dims2, dims3, dims4};
+
+        // Test evaluate() and fit() along each dimension
+        for (int dim = 0; dim < 4; ++dim) {
+            // Move the "frequency" dimension around
+            // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp =
+                sparseir::movedim(rhol_tensor, 0, dim);
+
+            // Evaluate from real-time/tau to imaginary-time/tau
+            Eigen::Tensor<std::complex<double>, 4> gtau_cpp =
+                cpp_sampling.evaluate(gl_cpp, dim);
+            int *dims = dims_list[dim];
+            int target_dim = dim;
+
+            // Note that we need to specify Eigen::RowMajor here
+            // because Eigen::Tensor<double, 4> is column-major by default
+            Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> gl_cpp_rowmajor(
+                dims[0], dims[1], dims[2], dims[3]);
+
+            // Fill row-major tensor in the correct order
+            for (int i = 0; i < gl_cpp.dimension(0); ++i) {
+                for (int j = 0; j < gl_cpp.dimension(1); ++j) {
+                    for (int k = 0; k < gl_cpp.dimension(2); ++k) {
+                        for (int l = 0; l < gl_cpp.dimension(3); ++l) {
+                            gl_cpp_rowmajor(i, j, k, l) = gl_cpp(i, j, k, l);
+                        }
+                    }
+                }
+            }
+            // Evaluate using C API
+            int status = spir_sampling_evaluate_cc(
+                sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
+                gl_cpp_rowmajor.data(), output);
+
+            REQUIRE(status == 0);
+
+            // Compare results
+            // Note that we need to specify Eigen::RowMajor here
+            // because Eigen::Tensor<double, 4> is column-major by default
+            Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> output_tensor(
+                dims[0], dims[1], dims[2], dims[3]);
+            for (int i = 0; i < output_tensor.size(); ++i) {
+                // store output data to output_tensor
+                output_tensor.data()[i] = output[i];
+            }
+            // Compare results
+            for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
+                for (int j = 0; j < gtau_cpp.dimension(1); ++j) {
+                    for (int k = 0; k < gtau_cpp.dimension(2); ++k) {
+                        for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
+                            REQUIRE(gtau_cpp(i, j, k, l) ==
+                                    output_tensor(i, j, k, l));
+                        }
+                    }
                 }
             }
         }
@@ -329,7 +421,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         free(output);
     }
 
-    SECTION("TauSampling Evaluation 4-dimensional complex input COLUMN-MAJOR") {
+    SECTION("TauSampling Evaluation 4-dimensional complex input/output COLUMN-MAJOR") {
         double beta = 1.0;
         double wmax = 10.0;
 
