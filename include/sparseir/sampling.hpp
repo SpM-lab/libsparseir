@@ -447,6 +447,17 @@ public:
         return evaluate_inplace_impl<TauSampling<S>, double, double, 3>(*this, input, dim, output);
     }
 
+    // Implement evaluate_inplace_dd method using the common implementation
+    // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
+    // supported
+    int evaluate_inplace_cc(
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override{
+        return evaluate_inplace_impl<TauSampling<S>, std::complex<double>, std::complex<double>, 3>(
+            *this, input, dim, output);
+    }
+
     template <typename Basis>
     TauSampling(const std::shared_ptr<Basis> &basis,
                 bool factorize = true)
