@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <complex.h>
+#include <stdint.h>
 
 #include "version.h"
 
@@ -87,14 +88,13 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
 spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b);
 
 
-int spir_sampling_evaluate(
+int spir_sampling_evaluate_dd(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
-    int ndim,                      // Number of dimensions
-    int *dims,                     // Array of dimensions
-    int target_dim,                // Target dimension for evaluation
-    int n_components,              // Number of components
-    const double *coeffs,          // Input coefficients array
+    int32_t ndim,                  // Number of dimensions
+    int32_t *input_dims,                 // Array of dimensions
+    int32_t target_dim,            // Target dimension for evaluation
+    const double *input,          // Input coefficients array
     double *out                    // Output array
     );
 

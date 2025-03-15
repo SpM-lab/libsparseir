@@ -56,19 +56,65 @@ Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N> &arr, int src, int dst)
 
 template <typename T1, typename T2, int N1, int N2>
 Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
-_contract(const Eigen::Tensor<T1, N1> &tensor1,
-         const Eigen::Tensor<T2, N2> &tensor2, 
+_contract(const Eigen::TensorMap<const Eigen::Tensor<T1, N1>> &tensor1,
+         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2, 
          const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
 {
     using ResultType = decltype(T1() * T2());
     
     // Contract tensors with proper type casting
-    // TODO: avoid copying if possible
     auto tensor1_cast = tensor1.template cast<ResultType>();
     auto tensor2_cast = tensor2.template cast<ResultType>();
     auto result = tensor1_cast.contract(tensor2_cast, contract_dims);
 
     return result;
+}
+
+// Overload for regular Tensor in both arguments - delegates to TensorMap version
+template <typename T1, typename T2, int N1, int N2>
+Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
+_contract(const Eigen::Tensor<T1, N1> &tensor1,
+         const Eigen::Tensor<T2, N2> &tensor2, 
+         const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
+{
+    // Create TensorMaps from the Tensors
+    Eigen::TensorMap<Eigen::Tensor<T1, N1>> tensor1_map(
+        const_cast<T1*>(tensor1.data()), tensor1.dimensions());
+    Eigen::TensorMap<Eigen::Tensor<T2, N2>> tensor2_map(
+        const_cast<T2*>(tensor2.data()), tensor2.dimensions());
+    
+    // Delegate to the TensorMap version
+    return _contract(tensor1_map, tensor2_map, contract_dims);
+}
+
+// Overload for TensorMap in first argument, regular Tensor in second
+template <typename T1, typename T2, int N1, int N2>
+Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
+_contract(const Eigen::TensorMap<const Eigen::Tensor<T1, N1>> &tensor1,
+         const Eigen::Tensor<T2, N2> &tensor2, 
+         const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
+{
+    // Create TensorMap from the second Tensor
+    Eigen::TensorMap<const Eigen::Tensor<T2, N2>> tensor2_map(
+        const_cast<T2*>(tensor2.data()), tensor2.dimensions());
+    
+    // Delegate to the TensorMap version
+    return _contract(tensor1, tensor2_map, contract_dims);
+}
+
+// Overload for regular Tensor in first argument, TensorMap in second
+template <typename T1, typename T2, int N1, int N2>
+Eigen::Tensor<decltype(T1() * T2()), (N1 + N2 - 2)>
+_contract(const Eigen::Tensor<T1, N1> &tensor1,
+         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2, 
+         const Eigen::array<Eigen::IndexPair<int>, 1> &contract_dims)
+{
+    // Create TensorMap from the first Tensor
+    Eigen::TensorMap<const Eigen::Tensor<T1, N1>> tensor1_map(
+        const_cast<T1*>(tensor1.data()), tensor1.dimensions());
+    
+    // Delegate to the TensorMap version
+    return _contract(tensor1_map, tensor2, contract_dims);
 }
 
 template <typename T1, typename T2, int N2>
@@ -111,6 +157,46 @@ _matop_along_dim(
     return movedim(result, 0, dim);
 }
 
+// Add overload for TensorMap
+template <typename T1, typename T2, int N2>
+Eigen::Tensor<decltype(T1() * T2()), N2>
+_matop_along_dim(
+    const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+         const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2, 
+         int dim = 0)
+{
+    using ResultType = decltype(T1() * T2());
+
+    if (dim < 0 || dim >= N2) {
+        throw std::runtime_error(
+            "evaluate: dimension must be in [0..N2). Got dim=" +
+            std::to_string(dim));
+    }
+
+    if (matrix.cols() != tensor2.dimension(dim)) {
+        throw std::runtime_error(
+            "Mismatch: matrix.cols()=" +
+            std::to_string(matrix.cols()) + ", but tensor2.dimension(" +
+            std::to_string(dim) + ")=" + std::to_string(tensor2.dimension(dim)));
+    }
+
+    // Create a temporary tensor from the matrix
+    Eigen::Tensor<T1, 2> matrix_tensor(matrix.rows(), matrix.cols());
+    // Copy data from matrix to tensor
+    for (int i = 0; i < matrix.rows(); ++i) {
+        for (int j = 0; j < matrix.cols(); ++j) {
+            matrix_tensor(i, j) = matrix(i, j);
+        }
+    }
+
+    // specify contraction dimensions
+    Eigen::array<Eigen::IndexPair<int>, 1> contract_dims = {
+        Eigen::IndexPair<int>(1, dim)
+    };
+
+    auto result = _contract(matrix_tensor, tensor2, contract_dims);
+    return movedim(result, 0, dim);
+}
 
 template <typename T, typename S, int N>
 Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
@@ -234,6 +320,29 @@ public:
     // Return basis size
     virtual std::size_t basis_size() const = 0;
 
+    // Evaluate the basis functions at the sampling points with double input and double output
+    virtual int evaluate_inplace_dd(
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const {
+            return -3;
+        }
+
+    // Evaluate the basis functions at the sampling points with complex input and complex output
+    virtual int evaluate_inplace_cc(
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const {
+            return -3;
+        }
+
+    // Evaluate the basis functions at the sampling points with double input and complex output
+    virtual int evaluate_inplace_dc(
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const {
+            return -3;
+        }
 };
 
 // Helper function declarations
@@ -246,6 +355,39 @@ class MatsubaraSampling;
 
 template <typename S>
 class AugmentedBasis;
+
+// Common implementation for evaluate_inplace
+template <typename Sampler, typename InputScalar = double, typename OutputScalar = std::complex<double>, int Dim = 3>
+int evaluate_inplace_impl(
+    const Sampler& sampler,
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, Dim>>& input,
+    int dim,
+    Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>>& output) {
+    
+    if (dim < 0 || dim >= Dim) {
+        // Invalid dimension
+        return -1;
+    }
+    
+    if (sampler.basis_size() != input.dimension(dim)) {
+        // Dimension mismatch
+        return -2;
+    }
+    
+    // Calculate result using the existing evaluate method
+    auto result = sampler.evaluate(input, dim);
+    
+    // Check if output dimensions match result dimensions
+    if (output.dimensions() != result.dimensions()) {
+        // Output tensor has wrong dimensions
+        return -3;
+    }
+    
+    // Copy the result to the output tensor
+    std::copy(result.data(), result.data() + result.size(), output.data());
+    
+    return 0; // Success
+}
 
 template <typename Basis>
 inline Eigen::MatrixXd eval_matrix(
@@ -295,6 +437,15 @@ public:
     std::size_t basis_size() const override {
         return this->matrix_.cols();
     }
+    
+    // Implement evaluate_inplace_dd method using the common implementation
+    // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
+    int evaluate_inplace_dd(
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override {
+        return evaluate_inplace_impl<TauSampling<S>, double, double, 3>(*this, input, dim, output);
+    }
 
     template <typename Basis>
     TauSampling(const std::shared_ptr<Basis> &basis,
@@ -339,10 +490,20 @@ public:
 
     // Evaluate the basis coefficients at sampling points
     template <typename T, int N>
-    Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N> &al,
+    Eigen::Tensor<T, N> evaluate(const Eigen::TensorMap<const Eigen::Tensor<T, N>> &al,
                                  int dim = 0) const
     {
         return _matop_along_dim(matrix_, al, dim);
+    }
+    
+    // Overload for Tensor (converts to TensorMap)
+    template <typename T, int N>
+    Eigen::Tensor<T, N> evaluate(const Eigen::Tensor<T, N> &al,
+                                 int dim = 0) const
+    {
+        // Create a TensorMap from the Tensor
+        Eigen::TensorMap<const Eigen::Tensor<T, N>> al_map(al.data(), al.dimensions());
+        return evaluate(al_map, dim);
     }
 
     // Fit values at sampling points to basis coefficients
@@ -423,6 +584,14 @@ public:
 
     std::size_t basis_size() const override {
         return matrix_.cols();
+    }
+    
+    // Implement evaluate_inplace_dd method using the common implementation
+    int evaluate_inplace_dd(
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override {
+        return -3;
     }
 
     template <typename Basis>
@@ -528,8 +697,17 @@ public:
 
     template <typename T, int N>
     Eigen::Tensor<std::complex<double>, N> evaluate(
-        const Eigen::Tensor<T, N>& al, int dim = 0) const {
+        const Eigen::TensorMap<const Eigen::Tensor<T, N>>& al, int dim = 0) const {
         return _matop_along_dim(matrix_, al, dim);
+    }
+    
+    // Overload for Tensor (converts to TensorMap)
+    template <typename T, int N>
+    Eigen::Tensor<std::complex<double>, N> evaluate(
+        const Eigen::Tensor<T, N>& al, int dim = 0) const {
+        // Create a TensorMap from the Tensor
+        Eigen::TensorMap<const Eigen::Tensor<T, N>> al_map(al.data(), al.dimensions());
+        return evaluate(al_map, dim);
     }
 
     // Add these new overloads for Vector types
