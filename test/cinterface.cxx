@@ -123,6 +123,8 @@ TEST_CASE("TauSampling", "[cinterface]")
             output
         );
 
+        REQUIRE(status == 0);
+
         for (int i = 0; i < basis_size; i++) {
             REQUIRE(output[i] == Approx(Gtau_cpp(i)));
         }
