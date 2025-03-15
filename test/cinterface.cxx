@@ -230,12 +230,16 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 gl_cpp_rowmajor.data(),
                 output
             );
-
             REQUIRE(status == 0);
+
+            Eigen::Tensor<double, 2, Eigen::RowMajor> output_tensor(d1, basis_size);
+            for (int i = 0; i < output_tensor.size(); ++i) {
+                output_tensor.data()[i] = output[i];
+            }
 
             for (int i = 0; i < d1; ++i) {
                 for (int j = 0; j < basis_size; ++j) {
-                    REQUIRE(gtau_cpp(i, j) == output[i * basis_size + j]);
+                    REQUIRE(gtau_cpp(i, j) == output_tensor(i, j));
                 }
             }
         }
