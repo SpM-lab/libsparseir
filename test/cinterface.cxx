@@ -136,6 +136,120 @@ TEST_CASE("TauSampling", "[cinterface]")
         free(output);
     }
 
+    TEST_CASE("TauSampling_debug", "[cinterface]")
+    {
+        SECTION("TauSampling Evaluation 2-dimensional input ROW-MAJOR",
+                "[cinterface]")
+        {
+            double beta = 1.0;
+            double wmax = 10.0;
+
+            // Create basis
+            spir_fermionic_finite_temp_basis *basis =
+                spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+            REQUIRE(basis != nullptr);
+
+            // Create sampling
+            spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
+            REQUIRE(sampling != nullptr);
+
+            // Create equivalent C++ objects for comparison
+            sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
+                beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+            sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
+
+            int basis_size = cpp_basis.size();
+
+            int d1 = 2;
+            int ndim = 2;
+
+            Eigen::Tensor<double, 2> gl_cpp(basis_size, d1);
+            REQUIRE(basis_size == 14);
+            // 14 x d1
+            double input[28] = {0.2738, 0.5183, 0.9021, 0.1847, 0.6451, 0.3379,
+                                0.1156, 0.7972, 0.4850, 0.2301, 0.6123, 0.9630,
+                                0.0417, 0.8888, 0.5023, 0.3190, 0.1746, 0.7325,
+                                0.6574, 0.0192, 0.4512, 0.2843, 0.9056, 0.1324,
+                                0.7765, 0.8437, 0.0689, 0.5555};
+
+            for (int i = 0; i < 28; ++i) {
+                gl_cpp.data()[i] = input[i];
+            }
+
+            double *output = (double *)malloc(basis_size * d1 * sizeof(double));
+
+            // Evaluate from real-time/tau to imaginary-time/tau
+            {
+                int dims[2] = {basis_size, d1};
+                int target_dim = 0;
+                Eigen::Tensor<double, 2> gtau_cpp =
+                    cpp_sampling.evaluate(gl_cpp, target_dim);
+
+                // C-API with row-major input
+                Eigen::Tensor<double, 2, Eigen::RowMajor> gl_cpp_rowmajor(
+                    basis_size, d1);
+
+                // Fill row-major tensor in the correct order
+                for (int i = 0; i < basis_size; ++i) {
+                    for (int j = 0; j < d1; ++j) {
+                        gl_cpp_rowmajor(i, j) = gl_cpp(i, j);
+                    }
+                }
+
+                // Evaluate using C API
+                int status = spir_sampling_evaluate_dd(
+                    sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
+                    gl_cpp_rowmajor.data(), output);
+
+                REQUIRE(status == 0);
+
+                for (int i = 0; i < basis_size; ++i) {
+                    for (int j = 0; j < d1; ++j) {
+                        REQUIRE(gtau_cpp(i, j) == output[i * d1 + j]);
+                    }
+                }
+            }
+
+            // Evaluate from real-time/tau to imaginary-time/tau
+            {
+                int dims[2] = {d1, basis_size};
+                int target_dim = 1;
+                gl_cpp = sparseir::movedim(gl_cpp, 0, target_dim);
+                Eigen::Tensor<double, 2> gtau_cpp =
+                    cpp_sampling.evaluate(gl_cpp, target_dim);
+
+                // C-API with row-major input
+                Eigen::Tensor<double, 2, Eigen::RowMajor> gl_cpp_rowmajor(
+                    d1, basis_size);
+
+                // Fill row-major tensor in the correct order
+                for (int i = 0; i < d1; ++i) {
+                    for (int j = 0; j < basis_size; ++j) {
+                        gl_cpp_rowmajor(i, j) = gl_cpp(i, j);
+                    }
+                }
+
+                // Evaluate using C API
+                int status = spir_sampling_evaluate_dd(
+                    sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
+                    gl_cpp_rowmajor.data(), output);
+
+                REQUIRE(status == 0);
+
+                for (int i = 0; i < d1; ++i) {
+                    for (int j = 0; j < basis_size; ++j) {
+                        REQUIRE(gtau_cpp(i, j) == output[i * basis_size + j]);
+                    }
+                }
+            }
+
+            // Clean up
+            spir_destroy_sampling(sampling);
+            spir_destroy_fermionic_finite_temp_basis(basis);
+            free(output);
+        }
+    }
+
     SECTION("TauSampling Evaluation 4-dimensional input COLUMN-MAJOR", "[cinterface]"){
         double beta = 1.0;
         double wmax = 10.0;
