@@ -216,3 +216,167 @@ TEST_CASE("TauSampling", "[cinterface]")
         free(output);
     }
 }
+
+TEST_CASE("MatsubaraSampling", "[cinterface]")
+{
+    SECTION("MatsubaraSampling Constructor")
+    {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        auto basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-15);
+        REQUIRE(basis != nullptr);
+
+        auto sampling = spir_fermionic_matsubara_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+    }
+
+    SECTION("MatsubaraSampling Evaluation 1-dimensional input")
+    {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        // Create basis
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+        REQUIRE(basis != nullptr);
+
+        // Create sampling
+        spir_sampling* sampling = spir_fermionic_matsubara_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+
+        // Create equivalent C++ objects for comparison
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
+            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
+
+        int basis_size = cpp_basis.size();
+        std::cout << "basis_size: " << basis_size << std::endl;
+        Eigen::VectorXd cpp_Gl_vec = Eigen::VectorXd::Random(basis_size);
+        Eigen::Tensor<double, 1> cpp_Gl(basis_size);
+        for (size_t i = 0; i < basis_size; ++i) {
+            cpp_Gl(i) = cpp_Gl_vec(i);
+        }
+        Eigen::Tensor<std::complex<double>, 1> Gmats_cpp = cpp_sampling.evaluate(cpp_Gl);
+
+        // Set up parameters for evaluation
+        int ndim = 1;
+        int dims[1] = {basis_size};
+        int target_dim = 0;
+
+        // Allocate memory for coefficients
+        double* coeffs = (double*)malloc(basis_size * sizeof(double));
+        // Create coefficients (simple test values)
+        for (int i = 0; i < basis_size; i++) {
+            coeffs[i] = cpp_Gl_vec(i);
+        }
+
+        // Create output buffer
+        std::complex<double>* output = (std::complex<double>*)malloc(basis_size * sizeof(std::complex<double>));
+
+        // Evaluate using C API
+        int status = spir_sampling_evaluate_dc(
+            sampling,
+            SPIR_ORDER_ROW_MAJOR,  // Assuming this enum is defined in the header
+            ndim,
+            dims,
+            target_dim,
+            coeffs,
+            output
+        );
+
+        REQUIRE(status == 0);
+
+        for (int i = 0; i < basis_size; i++) {
+            REQUIRE(output[i].real() == Approx(Gmats_cpp(i).real()));
+        }
+
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+        // Free allocated memory
+        free(coeffs);
+        free(output);
+    }
+
+    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR", "[cinterface]"){
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        // Create basis
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+        REQUIRE(basis!= nullptr);
+
+        // Create sampling
+        spir_sampling* sampling = spir_fermionic_matsubara_sampling_new(basis);
+        REQUIRE(sampling!= nullptr);
+
+        // Create equivalent C++ objects for comparison
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
+            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
+
+        int basis_size = cpp_basis.size();
+
+        int d1 = 2;
+        int d2 = 3;
+        int d3 = 4;
+        Eigen::Tensor<double, 4> rhol_tensor(basis_size, d1, d2, d3);
+
+        std::mt19937 gen(42);
+        std::uniform_real_distribution<> dis(0, 1);
+
+        // Fill rhol_tensor with random complex values
+        for (int i = 0; i < rhol_tensor.size(); ++i) {
+            rhol_tensor.data()[i] = dis(gen);
+        }
+
+        std::complex<double>* output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+
+        int ndim = 4;
+        int dims1[4] = {basis_size, d1, d2, d3};
+        int dims2[4] = {d1, basis_size, d2, d3};
+        int dims3[4] = {d1, d2, basis_size, d3};
+        int dims4[4] = {d1, d2, d3, basis_size};
+
+        std::vector<int*> dims_list = {dims1, dims2, dims3, dims4};
+
+        // Test evaluate() and fit() along each dimension
+        for (int dim = 0; dim < 4; ++dim) {
+            // Move the "frequency" dimension around
+            // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
+            Eigen::Tensor<double, 4> gl_cpp = sparseir::movedim(rhol_tensor, 0, dim);
+
+            // Evaluate from real-time/tau to imaginary-time/tau
+            Eigen::Tensor<std::complex<double>, 4> gmats_cpp = cpp_sampling.evaluate(gl_cpp, dim);
+
+            // Set up parameters for evaluation
+            int* dims = dims_list[dim];
+            int target_dim = dim;
+
+            // Evaluate using C API
+            int status = spir_sampling_evaluate_dc(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,  // Assuming this enum is defined in the header
+                ndim,
+                dims,
+                target_dim,
+                gl_cpp.data(),
+                output
+            );
+            REQUIRE(status == 0);
+
+            // Compare with C++ implementation
+            for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
+                REQUIRE(output[i].real() == Approx(gmats_cpp(i).real()));
+            }
+        }
+
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+        free(output);
+    }
+}
