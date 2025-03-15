@@ -83,19 +83,31 @@ static int evaluate_impl(
         return -1;
 
     // Convert dimensions
-    auto dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
-
-    // Create TensorMaps
-    Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input, dims_3d);
-    Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out, dims_3d);
+    std::array<int32_t, 3> dims_3d =
+        collapse_to_3d(ndim, input_dims, target_dim);
 
     if (order == SPIR_ORDER_ROW_MAJOR) {
-        // Convert to column-major order for Eigen
-        input_3d = input_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-        output_3d = output_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-    }
+        std::array<int32_t, 3> input_dims_3d = dims_3d;
+        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
 
-    return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+
+        // Create TensorMaps
+        output_dims_3d[1] = input_dims[target_dim];
+
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input, input_dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out, output_dims_3d);
+        // Convert to column-major order for Eigen
+        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+    } else{
+        // Create TensorMaps
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input,
+                                                                       dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out,
+                                                                   dims_3d);
+
+        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+    }
 }
 
 // Implementation of the C API
