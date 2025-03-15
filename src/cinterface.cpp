@@ -49,6 +49,55 @@ IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
 
+// Helper function to convert N-dimensional array to 3D array by collapsing dimensions
+static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t* dims, int32_t target_dim) {
+    std::array<int32_t, 3> dims_3d = {1, dims[target_dim], 1};
+    // Multiply all dimensions before target_dim into first dimension
+    for (int32_t i = 0; i < target_dim; ++i) {
+        dims_3d[0] *= dims[i];
+    }
+    // Multiply all dimensions after target_dim into last dimension
+    for (int32_t i = target_dim + 1; i < ndim; ++i) {
+        dims_3d[2] *= dims[i];
+    }
+    return dims_3d;
+}
+
+// Template function to handle all evaluation cases - moved outside extern "C" block
+template<typename InputScalar, typename OutputScalar>
+static int evaluate_impl(
+    const spir_sampling *s,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    int32_t target_dim,
+    const InputScalar *input,
+    OutputScalar *out,
+    int (sparseir::AbstractSampling::*eval_func)(
+        const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
+        int,
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &) const)
+{
+    auto impl = get_impl_sampling(s);
+    if (!impl)
+        return -1;
+
+    // Convert dimensions
+    auto dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+
+    // Create TensorMaps
+    Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input, dims_3d);
+    Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out, dims_3d);
+
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        // Convert to column-major order for Eigen
+        input_3d = input_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
+        output_3d = output_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
+    }
+
+    return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+}
+
 // Implementation of the C API
 extern "C" {
 
@@ -161,138 +210,42 @@ spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b)
 }
 
 int spir_sampling_evaluate_dd(
-    const spir_sampling *s,        // Sampling object
-    spir_order_type order,         // Order type (C or Fortran)
-    int32_t ndim,                  // Number of dimensions
-    int32_t *input_dims,                 // Array of dimensions
-    int32_t target_dim,            // Target dimension for evaluation
-    const double *input,          // Input coefficients array
-    double *out                    // Output array
-    )
+    const spir_sampling *s,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    int32_t target_dim,
+    const double *input,
+    double *out)
 {
-    auto impl = get_impl_sampling(s);
-    if (!impl)
-        return -1;
-
-    // Convert N-dimensional array to 3D array by collapsing dimensions before and after target_dim
-    std::array<int32_t, 3> in_dims_3d = {1, input_dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        in_dims_3d[0] *= input_dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        in_dims_3d[2] *= input_dims[i];
-    }
-    // Output dimensions match input dimensions after collapsing to 3D
-    std::array<int32_t, 3> out_dims_3d = {in_dims_3d[0], input_dims[target_dim], in_dims_3d[2]};
-
-    // Create TensorMap for input coefficients (3D)
-    Eigen::TensorMap<const Eigen::Tensor<double, 3>> input_3d(input, in_dims_3d);
-
-    // Create TensorMap for output (3D)
-    Eigen::TensorMap<Eigen::Tensor<double, 3>> output_3d(out, out_dims_3d);
-
-    if (order == SPIR_ORDER_ROW_MAJOR) { // C-style order
-        // Eigen3 uses column-major order by default. Convert to row-major order.
-        // Transpose input_3d to Fortran-style order
-        input_3d = input_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-        output_3d = output_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-    }
-
-    int err = impl->evaluate_inplace_dd(input_3d, 1, output_3d);
-
-    return err;
+    return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
+                        &sparseir::AbstractSampling::evaluate_inplace_dd);
 }
 
 int spir_sampling_evaluate_dc(
-    const spir_sampling *s,        // Sampling object
-    spir_order_type order,         // Order type (C or Fortran)
-    int32_t ndim,                  // Number of dimensions
-    int32_t *input_dims,                 // Array of dimensions
-    int32_t target_dim,            // Target dimension for evaluation
-    const double *input,          // Input coefficients array
-    std::complex<double> *out                    // Output array
-    )
+    const spir_sampling *s,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    int32_t target_dim,
+    const double *input,
+    std::complex<double> *out)
 {
-    auto impl = get_impl_sampling(s);
-    if (!impl)
-        return -1;
-
-    // Convert N-dimensional array to 3D array by collapsing dimensions before and after target_dim
-    std::array<int32_t, 3> in_dims_3d = {1, input_dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        in_dims_3d[0] *= input_dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        in_dims_3d[2] *= input_dims[i];
-    }
-    // Output dimensions match input dimensions after collapsing to 3D
-    std::array<int32_t, 3> out_dims_3d = {in_dims_3d[0], input_dims[target_dim], in_dims_3d[2]};
-
-    // Create TensorMap for input coefficients (3D)
-    Eigen::TensorMap<const Eigen::Tensor<double, 3>> input_3d(input, in_dims_3d);
-
-    // Create TensorMap for output (3D)
-    Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> output_3d(out, out_dims_3d);
-
-    if (order == SPIR_ORDER_ROW_MAJOR) { // C-style order
-        // Eigen3 uses column-major order by default. Convert to row-major order.
-        // Transpose input_3d to Fortran-style order
-        input_3d = input_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-        output_3d = output_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-    }
-
-    int err = impl->evaluate_inplace_dc(input_3d, 1, output_3d);
-
-    return err;
+    return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
+                        &sparseir::AbstractSampling::evaluate_inplace_dc);
 }
 
 int spir_sampling_evaluate_cc(
-    const spir_sampling *s,        // Sampling object
-    spir_order_type order,         // Order type (C or Fortran)
-    int32_t ndim,                  // Number of dimensions
-    int32_t *input_dims,                 // Array of dimensions
-    int32_t target_dim,            // Target dimension for evaluation
-    const std::complex<double> *input,          // Input coefficients array
-    std::complex<double> *out                    // Output array
-    )
+    const spir_sampling *s,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    int32_t target_dim,
+    const std::complex<double> *input,
+    std::complex<double> *out)
 {
-    auto impl = get_impl_sampling(s);
-    if (!impl)
-        return -1;
-
-    // Convert N-dimensional array to 3D array by collapsing dimensions before and after target_dim
-    std::array<int32_t, 3> in_dims_3d = {1, input_dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        in_dims_3d[0] *= input_dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        in_dims_3d[2] *= input_dims[i];
-    }
-    // Output dimensions match input dimensions after collapsing to 3D
-    std::array<int32_t, 3> out_dims_3d = {in_dims_3d[0], input_dims[target_dim], in_dims_3d[2]};
-
-    // Create TensorMap for input coefficients (3D)
-    Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> input_3d(input, in_dims_3d);
-
-    // Create TensorMap for output (3D)
-    Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> output_3d(out, out_dims_3d);
-
-    if (order == SPIR_ORDER_ROW_MAJOR) { // C-style order
-        // Eigen3 uses column-major order by default. Convert to row-major order.
-        // Transpose input_3d to Fortran-style order
-        input_3d = input_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-        output_3d = output_3d.shuffle(std::array<int32_t, 3>({2, 1, 0}));
-    }
-
-    int err = impl->evaluate_inplace_cc(input_3d, 1, output_3d);
-
-    return err;
+    return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
+                        &sparseir::AbstractSampling::evaluate_inplace_cc);
 }
 
 // Get basis functions (returns the PiecewiseLegendrePolyVector)
