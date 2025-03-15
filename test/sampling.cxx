@@ -323,13 +323,17 @@ void test_fit_from_tau_for_stat()
             Eigen::Tensor<ComplexF64, 4> s_reshaped = s_tensor.reshape(new_shape);
             Eigen::array<Eigen::Index, 4> bcast = {1, d1, d2, d3};
 
-            // originalgl = -s_reshaped * rhol_tensor
+            //julia> shape = (2, 3, 4)
+            //julia> rhol = randn(ComplexF64, (length(basis), shape...))
+            //julia> originalgl = -basis.s .* rhol
+
             Eigen::Tensor<ComplexF64, 4> originalgl =
                 (-s_reshaped.broadcast(bcast)) * rhol_tensor;
 
             // Test evaluate() and fit() along each dimension
             for (int dim = 0; dim < 4; ++dim) {
                 // Move the "frequency" dimension around
+                // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
                 Eigen::Tensor<ComplexF64, 4> gl = sparseir::movedim(originalgl, 0, dim);
 
                 // Evaluate from real-time/tau to imaginary-time/tau
