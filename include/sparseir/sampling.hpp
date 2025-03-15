@@ -591,7 +591,26 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
         int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override {
+        // not supported
         return -3;
+    }
+
+    // Implement evaluate_inplace_dc method using the common implementation
+    // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
+    int evaluate_inplace_dc(
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override {
+        return evaluate_inplace_impl<MatsubaraSampling<S>, double, std::complex<double>, 3>(*this, input, dim, output);
+    }
+
+    // Implement evaluate_inplace_cc method using the common implementation
+    // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
+    int evaluate_inplace_cc (
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override {
+        return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>, std::complex<double>, 3>(*this, input, dim, output);
     }
 
     template <typename Basis>
