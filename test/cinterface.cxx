@@ -761,7 +761,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
             }
 
             // Evaluate using C API that has dimension mismatch
-            int status_dimension_mismatch = spir_sampling_evaluate_dd(
+            int evaluate_status_dimension_mismatch = spir_sampling_evaluate_dd(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -770,7 +770,18 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 gl_cpp.data(),
                 output_double
             );
-            REQUIRE(status_dimension_mismatch == -2);
+            REQUIRE(evaluate_status_dimension_mismatch == -2);
+
+            int fit_status_dimension_mismatch = spir_sampling_fit_dd(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims1,
+                target_dim,
+                output_double,
+                output_double
+            );
+            REQUIRE(fit_status_dimension_mismatch == -2);
         }
 
         // Clean up
@@ -1255,6 +1266,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
 
         std::complex<double>* output_complex = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
         double* output_double = (double*)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+        double* fit_output_double = (double*)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+        std::complex<double>* fit_output_complex = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
 
         int ndim = 4;
         int dims1[4] = {basis_size, d1, d2, d3};
@@ -1286,6 +1299,17 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             );
             REQUIRE(status_not_supported == -3);
 
+            int fit_status_not_supported = spir_sampling_fit_dd(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                output_double,
+                fit_output_double
+            );
+            REQUIRE(fit_status_not_supported == -3);
+
             if (dim == 0) {
                 continue;
             }
@@ -1301,6 +1325,17 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 output_complex
             );
             REQUIRE(status_dimension_mismatch == -2);
+
+            int fit_status_dimension_mismatch = spir_sampling_fit_cc(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims1,
+                target_dim,
+                output_complex,
+                fit_output_complex
+            );
+            REQUIRE(fit_status_dimension_mismatch == -2);
         }
 
         // Clean up
@@ -1308,5 +1343,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         spir_destroy_fermionic_finite_temp_basis(basis);
         free(output_complex);
         free(output_double);
+        free(fit_output_double);
+        free(fit_output_complex);
     }
 }
