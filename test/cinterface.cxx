@@ -500,6 +500,95 @@ TEST_CASE("TauSampling", "[cinterface]") {
         spir_destroy_fermionic_finite_temp_basis(basis);
         free(output);
     }
+
+    SECTION("TauSampling Error Status") {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        // Create basis
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+        REQUIRE(basis != nullptr);
+
+        // Create sampling
+        spir_sampling* sampling = spir_fermionic_tau_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+
+        // Create equivalent C++ objects for comparison
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
+            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
+
+        int basis_size = cpp_basis.size();
+
+        int d1 = 2;
+        int d2 = 3;
+        int d3 = 4;
+        Eigen::Tensor<double, 4> rhol_tensor(basis_size, d1, d2, d3);
+
+        std::mt19937 gen(42);
+        std::uniform_real_distribution<> dis(0, 1);
+
+        // Fill rhol_tensor with random complex values
+        for (int i = 0; i < rhol_tensor.size(); ++i) {
+            rhol_tensor.data()[i] = dis(gen);
+        }
+
+        std::complex<double>* output_complex = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        double* output_double = (double*)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+
+        int ndim = 4;
+        int dims1[4] = {basis_size, d1, d2, d3};
+        int dims2[4] = {d1, basis_size, d2, d3};
+        int dims3[4] = {d1, d2, basis_size, d3};
+        int dims4[4] = {d1, d2, d3, basis_size};
+
+        std::vector<int*> dims_list = {dims1, dims2, dims3, dims4};
+
+        // Test evaluate() and fit() along each dimension
+        for (int dim = 0; dim < 4; ++dim) {
+            // Move the "frequency" dimension around
+            // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
+            Eigen::Tensor<double, 4> gl_cpp = sparseir::movedim(rhol_tensor, 0, dim);
+
+            // Set up parameters for evaluation
+            int* dims = dims_list[dim];
+            int target_dim = dim;
+
+            // Evaluate using C API that is not supported
+            int status_not_supported = spir_sampling_evaluate_dc(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                gl_cpp.data(),
+                output_complex
+            );
+            REQUIRE(status_not_supported == -3);
+
+            if (dim == 0) {
+                continue;
+            }
+
+            // Evaluate using C API that has dimension mismatch
+            int status_dimension_mismatch = spir_sampling_evaluate_dd(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims1,
+                target_dim,
+                gl_cpp.data(),
+                output_double
+            );
+            REQUIRE(status_dimension_mismatch == -2);
+        }
+
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+        free(output_complex);
+        free(output_double);
+    }
 }
 
 TEST_CASE("MatsubaraSampling", "[cinterface]") {
@@ -888,5 +977,94 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
         free(output);
+    }
+
+     SECTION("MatsubaraSampling Error Status") {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        // Create basis
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, 1e-10);
+        REQUIRE(basis != nullptr);
+
+        // Create sampling
+        spir_sampling* sampling = spir_fermionic_matsubara_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+
+        // Create equivalent C++ objects for comparison
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
+            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
+
+        int basis_size = cpp_basis.size();
+
+        int d1 = 2;
+        int d2 = 3;
+        int d3 = 4;
+        Eigen::Tensor<double, 4> rhol_tensor(basis_size, d1, d2, d3);
+
+        std::mt19937 gen(42);
+        std::uniform_real_distribution<> dis(0, 1);
+
+        // Fill rhol_tensor with random complex values
+        for (int i = 0; i < rhol_tensor.size(); ++i) {
+            rhol_tensor.data()[i] = dis(gen);
+        }
+
+        std::complex<double>* output_complex = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        double* output_double = (double*)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+
+        int ndim = 4;
+        int dims1[4] = {basis_size, d1, d2, d3};
+        int dims2[4] = {d1, basis_size, d2, d3};
+        int dims3[4] = {d1, d2, basis_size, d3};
+        int dims4[4] = {d1, d2, d3, basis_size};
+
+        std::vector<int*> dims_list = {dims1, dims2, dims3, dims4};
+
+        // Test evaluate() and fit() along each dimension
+        for (int dim = 0; dim < 4; ++dim) {
+            // Move the "frequency" dimension around
+            // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
+            Eigen::Tensor<double, 4> gl_cpp = sparseir::movedim(rhol_tensor, 0, dim);
+
+            // Set up parameters for evaluation
+            int* dims = dims_list[dim];
+            int target_dim = dim;
+
+            // Evaluate using C API that is not supported
+            int status_not_supported = spir_sampling_evaluate_dd(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                gl_cpp.data(),
+                output_double
+            );
+            REQUIRE(status_not_supported == -3);
+
+            if (dim == 0) {
+                continue;
+            }
+
+            // Evaluate using C API that has dimension mismatch
+            int status_dimension_mismatch = spir_sampling_evaluate_dc(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims1,
+                target_dim,
+                gl_cpp.data(),
+                output_complex
+            );
+            REQUIRE(status_dimension_mismatch == -2);
+        }
+
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+        free(output_complex);
+        free(output_double);
     }
 }
