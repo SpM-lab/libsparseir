@@ -421,10 +421,8 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 sparseir::movedim(rhol_tensor, 0, dim);
 
             // Evaluate from real-time/tau to imaginary-time/tau
-            Eigen::Tensor<std::complex<double>, 4> gtau_cpp =
-                cpp_sampling.evaluate(gl_cpp, dim);
-            Eigen::Tensor<std::complex<double>, 4> gl_cpp_fit =
-                cpp_sampling.fit(gtau_cpp, dim);
+            Eigen::Tensor<std::complex<double>, 4> gtau_cpp = cpp_sampling.evaluate(gl_cpp, dim);
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp_fit = cpp_sampling.fit(gtau_cpp, dim);
             int *dims = dims_list[dim];
             int target_dim = dim;
 
@@ -549,10 +547,10 @@ TEST_CASE("TauSampling", "[cinterface]") {
             // Move the "frequency" dimension around
             // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
             Eigen::Tensor<double, 4> gl_cpp = sparseir::movedim(rhol_tensor, 0, dim);
-            Eigen::Tensor<double, 4> gl_cpp_fit = cpp_sampling.fit(gl_cpp, dim);
 
             // Evaluate from real-time/tau to imaginary-time/tau
             Eigen::Tensor<double, 4> gtau_cpp = cpp_sampling.evaluate(gl_cpp, dim);
+            Eigen::Tensor<double, 4> gl_cpp_fit = cpp_sampling.fit(gtau_cpp, dim);
 
             // Set up parameters for evaluation
             int* dims = dims_list[dim];
@@ -586,7 +584,8 @@ TEST_CASE("TauSampling", "[cinterface]") {
             for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
                 REQUIRE(evaluate_output[i] == gtau_cpp(i));
                 // TODO: fix this
-                // REQUIRE(fit_output[i] == gl_cpp_fit(i));
+                REQUIRE(gl_cpp_fit(i) == Approx(gl_cpp(i)));
+                REQUIRE(fit_output[i] == gl_cpp_fit(i));
             }
         }
 
@@ -629,7 +628,8 @@ TEST_CASE("TauSampling", "[cinterface]") {
             rhol_tensor.data()[i] = std::complex<double>(dis(gen), dis(gen));
         }
 
-        std::complex<double>* output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double>* evaluate_output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double>* fit_output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
 
         int ndim = 4;
         int dims1[4] = {basis_size, d1, d2, d3};
@@ -647,34 +647,48 @@ TEST_CASE("TauSampling", "[cinterface]") {
 
             // Evaluate from real-time/tau to imaginary-time/tau
             Eigen::Tensor<std::complex<double>, 4> gtau_cpp = cpp_sampling.evaluate(gl_cpp, dim);
-
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp_fit = cpp_sampling.fit(gtau_cpp, dim);
             // Set up parameters for evaluation
             int* dims = dims_list[dim];
             int target_dim = dim;
 
             // Evaluate using C API
-            int status = spir_sampling_evaluate_cc(
+            int evaluate_status = spir_sampling_evaluate_cc(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
                 dims,
                 target_dim,
                 gl_cpp.data(),
-                output
+                evaluate_output
             );
-            REQUIRE(status == 0);
+            REQUIRE(evaluate_status == 0);
+
+            int fit_status = spir_sampling_fit_cc(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                evaluate_output,
+                fit_output
+            );
+            REQUIRE(fit_status == 0);
 
             // Compare with C++ implementation
             for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-                REQUIRE(output[i].real() == Approx(gtau_cpp(i).real()));
-                REQUIRE(output[i].imag() == Approx(gtau_cpp(i).imag()));
+                REQUIRE(evaluate_output[i].real() == Approx(gtau_cpp(i).real()));
+                REQUIRE(evaluate_output[i].imag() == Approx(gtau_cpp(i).imag()));
+                REQUIRE(fit_output[i].real() == Approx(gl_cpp_fit(i).real()));
+                REQUIRE(fit_output[i].imag() == Approx(gl_cpp_fit(i).imag()));
             }
         }
 
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
     SECTION("TauSampling Error Status") {
@@ -814,7 +828,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             rhol_tensor.data()[i] = dis(gen);
         }
 
-        std::complex<double>* output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double>* evaluate_output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double>* fit_output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
 
         int ndim = 4;
         int dims1[4] = {basis_size, d1, d2, d3};
@@ -832,34 +847,48 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
 
             // Evaluate from real-time/tau to imaginary-time/tau
             Eigen::Tensor<std::complex<double>, 4> gtau_cpp = cpp_sampling.evaluate(gl_cpp, dim);
-
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp_fit = cpp_sampling.fit(gtau_cpp, dim);
             // Set up parameters for evaluation
             int* dims = dims_list[dim];
             int target_dim = dim;
 
             // Evaluate using C API
-            int status = spir_sampling_evaluate_dc(
+            int evaluate_status = spir_sampling_evaluate_dc(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
                 dims,
                 target_dim,
                 gl_cpp.data(),
-                output
+                evaluate_output
             );
-            REQUIRE(status == 0);
+            REQUIRE(evaluate_status == 0);
+
+            int fit_status = spir_sampling_fit_cc(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                evaluate_output,
+                fit_output
+            );
+            REQUIRE(fit_status == 0);
 
             // Compare with C++ implementation
             for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-                REQUIRE(output[i].real() == Approx(gtau_cpp(i).real()));
-                REQUIRE(output[i].imag() == Approx(gtau_cpp(i).imag()));
+                REQUIRE(evaluate_output[i].real() == Approx(gtau_cpp(i).real()));
+                REQUIRE(evaluate_output[i].imag() == Approx(gtau_cpp(i).imag()));
+                REQUIRE(fit_output[i].real() == Approx(gl_cpp_fit(i).real()));
+                REQUIRE(fit_output[i].imag() == Approx(gl_cpp_fit(i).imag()));
             }
         }
 
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
     SECTION("MatsubaraSampling Evaluation 4-dimensional complex input COLUMN-MAJOR") {
@@ -894,7 +923,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             rhol_tensor.data()[i] = std::complex<double>(dis(gen), dis(gen));
         }
 
-        std::complex<double>* output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double>* evaluate_output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double>* fit_output = (std::complex<double>*)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
 
         int ndim = 4;
         int dims1[4] = {basis_size, d1, d2, d3};
@@ -912,34 +942,47 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
 
             // Evaluate from real-time/tau to imaginary-time/tau
             Eigen::Tensor<std::complex<double>, 4> gtau_cpp = cpp_sampling.evaluate(gl_cpp, dim);
-
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp_fit = cpp_sampling.fit(gtau_cpp, dim);
             // Set up parameters for evaluation
             int* dims = dims_list[dim];
             int target_dim = dim;
 
             // Evaluate using C API
-            int status = spir_sampling_evaluate_cc(
+            int evaluate_status = spir_sampling_evaluate_cc(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
                 dims,
                 target_dim,
                 gl_cpp.data(),
-                output
+                evaluate_output
             );
-            REQUIRE(status == 0);
+            REQUIRE(evaluate_status == 0);
+
+            int fit_status = spir_sampling_fit_cc(
+                sampling,
+                SPIR_ORDER_COLUMN_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                evaluate_output,
+                fit_output);
+            REQUIRE(fit_status == 0);
 
             // Compare with C++ implementation
             for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-                REQUIRE(output[i].real() == Approx(gtau_cpp(i).real()));
-                REQUIRE(output[i].imag() == Approx(gtau_cpp(i).imag()));
+                REQUIRE(evaluate_output[i].real() == Approx(gtau_cpp(i).real()));
+                REQUIRE(evaluate_output[i].imag() == Approx(gtau_cpp(i).imag()));
+                REQUIRE(fit_output[i].real() == Approx(gl_cpp_fit(i).real()));
+                REQUIRE(fit_output[i].imag() == Approx(gl_cpp_fit(i).imag()));
             }
         }
 
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
     SECTION("MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR")
@@ -974,7 +1017,9 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             rhol_tensor.data()[i] = dis(gen);
         }
 
-        std::complex<double> *output =
+        std::complex<double> *evaluate_output =
+            (std::complex<double> *)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double> *fit_output =
             (std::complex<double> *)malloc(basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
 
         int ndim = 4;
@@ -995,6 +1040,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             // Evaluate from real-time/tau to imaginary-time/tau
             Eigen::Tensor<std::complex<double>, 4> gtau_cpp =
                 cpp_sampling.evaluate(gl_cpp, dim);
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp_fit = cpp_sampling.fit(gtau_cpp, dim);
             int *dims = dims_list[dim];
             int target_dim = dim;
 
@@ -1014,20 +1060,27 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 }
             }
             // Evaluate using C API
-            int status = spir_sampling_evaluate_dc(
+            int evaluate_status = spir_sampling_evaluate_dc(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
-                gl_cpp_rowmajor.data(), output);
+                gl_cpp_rowmajor.data(), evaluate_output);
+            REQUIRE(evaluate_status == 0);
 
-            REQUIRE(status == 0);
+            int fit_status = spir_sampling_fit_cc(
+                sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
+                evaluate_output, fit_output);
+            REQUIRE(fit_status == 0);
 
             // Compare results
             // Note that we need to specify Eigen::RowMajor here
             // because Eigen::Tensor<double, 4> is column-major by default
             Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> output_tensor(
                 dims[0], dims[1], dims[2], dims[3]);
+            Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> fit_tensor(
+                dims[0], dims[1], dims[2], dims[3]);
             for (int i = 0; i < output_tensor.size(); ++i) {
                 // store output data to output_tensor
-                output_tensor.data()[i] = output[i];
+                output_tensor.data()[i] = evaluate_output[i];
+                fit_tensor.data()[i] = fit_output[i];
             }
             // Compare results
             for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -1036,6 +1089,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                         for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
                             REQUIRE(gtau_cpp(i, j, k, l) ==
                                     output_tensor(i, j, k, l));
+                            REQUIRE(gl_cpp_fit(i, j, k, l) ==
+                                    fit_tensor(i, j, k, l));
                         }
                     }
                 }
@@ -1045,7 +1100,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
     SECTION("MatsubaraSampling Evaluation 4-dimensional complex input ROW-MAJOR")
@@ -1081,7 +1137,9 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             rhol_tensor.data()[i] = std::complex<double>(dis(gen), dis(gen));
         }
 
-        std::complex<double> *output = (std::complex<double> *)malloc(
+        std::complex<double> *evaluate_output = (std::complex<double> *)malloc(
+            basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
+        std::complex<double> *fit_output = (std::complex<double> *)malloc(
             basis_size * d1 * d2 * d3 * sizeof(std::complex<double>));
 
         int ndim = 4;
@@ -1096,12 +1154,10 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         for (int dim = 0; dim < 4; ++dim) {
             // Move the "frequency" dimension around
             // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
-            Eigen::Tensor<std::complex<double>, 4> gl_cpp =
-                sparseir::movedim(rhol_tensor, 0, dim);
-
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp = sparseir::movedim(rhol_tensor, 0, dim);
             // Evaluate from real-time/tau to imaginary-time/tau
-            Eigen::Tensor<std::complex<double>, 4> gtau_cpp =
-                cpp_sampling.evaluate(gl_cpp, dim);
+            Eigen::Tensor<std::complex<double>, 4> gtau_cpp = cpp_sampling.evaluate(gl_cpp, dim);
+            Eigen::Tensor<std::complex<double>, 4> gl_cpp_fit = cpp_sampling.fit(gtau_cpp, dim);
             int *dims = dims_list[dim];
             int target_dim = dim;
 
@@ -1121,20 +1177,27 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 }
             }
             // Evaluate using C API
-            int status = spir_sampling_evaluate_cc(
+            int evaluate_status = spir_sampling_evaluate_cc(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
-                gl_cpp_rowmajor.data(), output);
+                gl_cpp_rowmajor.data(), evaluate_output);
+            REQUIRE(evaluate_status == 0);
 
-            REQUIRE(status == 0);
+            int fit_status = spir_sampling_fit_cc(
+                sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
+                evaluate_output, fit_output);
+            REQUIRE(fit_status == 0);
 
             // Compare results
             // Note that we need to specify Eigen::RowMajor here
             // because Eigen::Tensor<T, 4> is column-major by default
             Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor>
                 output_tensor(dims[0], dims[1], dims[2], dims[3]);
+            Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor>
+                fit_tensor(dims[0], dims[1], dims[2], dims[3]);
             for (int i = 0; i < output_tensor.size(); ++i) {
                 // store output data to output_tensor
-                output_tensor.data()[i] = output[i];
+                output_tensor.data()[i] = evaluate_output[i];
+                fit_tensor.data()[i] = fit_output[i];
             }
             // Compare results
             for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -1143,6 +1206,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                         for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
                             REQUIRE(gtau_cpp(i, j, k, l) ==
                                     output_tensor(i, j, k, l));
+                            REQUIRE(gl_cpp_fit(i, j, k, l) ==
+                                    fit_tensor(i, j, k, l));
                         }
                     }
                 }
@@ -1152,7 +1217,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
      SECTION("MatsubaraSampling Error Status") {
