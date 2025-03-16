@@ -104,7 +104,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         }
 
         // Create output buffer
-        double* output = (double*)malloc(basis_size * sizeof(double));
+        double* evaluate_output = (double*)malloc(basis_size * sizeof(double));
         double* fit_output = (double*)malloc(basis_size * sizeof(double));
 
         // Evaluate using C API
@@ -115,13 +115,13 @@ TEST_CASE("TauSampling", "[cinterface]") {
             dims,
             target_dim,
             coeffs,
-            output
+            evaluate_output
         );
 
         REQUIRE(evaluate_status == 0);
 
         for (int i = 0; i < basis_size; i++) {
-            REQUIRE(output[i] == Approx(Gtau_cpp(i)));
+            REQUIRE(evaluate_output[i] == Approx(Gtau_cpp(i)));
         }
 
         int fit_status = spir_sampling_fit_dd(
@@ -130,15 +130,14 @@ TEST_CASE("TauSampling", "[cinterface]") {
             ndim,
             dims,
             target_dim,
-            output,
+            evaluate_output,
             fit_output
         );
 
         REQUIRE(fit_status == 0);
 
         for (int i = 0; i < basis_size; i++) {
-            std::cout << "fit_output[" << i << "] = " << fit_output[i] << ", " << "gl_from_tau[" << i << "] = " << gl_from_tau(i) << ", "<< "cpp_gl[" << i << "] = " << cpp_Gl(i) << std::endl;
-            //REQUIRE(fit_output[i] == Approx(gl_from_tau(i)));
+            REQUIRE(fit_output[i] == Approx(gl_from_tau(i)));
         }
 
         // Clean up
@@ -146,7 +145,8 @@ TEST_CASE("TauSampling", "[cinterface]") {
         spir_destroy_fermionic_finite_temp_basis(basis);
         // Free allocated memory
         free(coeffs);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
     SECTION("TauSampling Evaluation 4-dimensional input ROW-MAJOR")
