@@ -432,7 +432,7 @@ int fit_inplace_impl(
     }
 
     // Calculate result using the existing evaluate method
-    auto result = sampler.evaluate(input, dim);
+    auto result = sampler.fit(input, dim);
 
     // Check if output dimensions match result dimensions
     if (output.dimensions() != result.dimensions()) {
@@ -594,7 +594,7 @@ public:
 
     // Fit values at sampling points to basis coefficients
     template <typename T, int N>
-    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &ax, int dim = 0) const
+    Eigen::Tensor<T, N> fit(const Eigen::TensorMap<const Eigen::Tensor<T, N>> &ax, int dim = 0) const
     {
         if (dim < 0 || dim >= N) {
             throw std::runtime_error(
@@ -604,6 +604,17 @@ public:
         auto svd = get_matrix_svd();
         return fit_impl<T, double, N>(svd, ax, dim);
     }
+
+    // Overload for Tensor (converts to TensorMap)
+    template <typename T, int N>
+    Eigen::Tensor<T, N> fit(const Eigen::Tensor<T, N> &al,
+                                 int dim = 0) const
+    {
+        // Create a TensorMap from the Tensor
+        Eigen::TensorMap<const Eigen::Tensor<T, N>> al_map(al.data(), al.dimensions());
+        return fit(al_map, dim);
+    }
+
 
     Eigen::MatrixXd get_matrix() const { return matrix_; }
 
@@ -817,7 +828,7 @@ public:
 
     // Primary template for complex input tensors
     template <typename T, int N>
-    Eigen::Tensor<std::complex<T>, N> fit(const Eigen::Tensor<std::complex<T>, N> &ax, int dim = 0) const
+    Eigen::Tensor<std::complex<T>, N> fit(const Eigen::TensorMap<const Eigen::Tensor<std::complex<T>, N>> &ax, int dim = 0) const
     {
         if (dim < 0 || dim >= N) {
             throw std::runtime_error(
@@ -830,6 +841,15 @@ public:
         } else {
             return fit_impl<std::complex<T>, std::complex<T>, N>(svd, ax, dim);
         }
+    }
+
+    // Overload for Tensor (converts to TensorMap)
+    template <typename T, int N>
+    Eigen::Tensor<std::complex<double>, N> fit(
+        const Eigen::Tensor<T, N>& al, int dim = 0) const {
+        // Create a TensorMap from the Tensor
+        Eigen::TensorMap<const Eigen::Tensor<T, N>> al_map(al.data(), al.dimensions());
+        return fit(al_map, dim);
     }
 
     Eigen::MatrixXcd get_matrix() const { return matrix_; }
