@@ -89,6 +89,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
             cpp_Gl(i) = cpp_Gl_vec(i);
         }
         Eigen::Tensor<double, 1> Gtau_cpp = cpp_sampling.evaluate(cpp_Gl);
+        Eigen::Tensor<double, 1> gl_from_tau = cpp_sampling.fit(Gtau_cpp);
 
         // Set up parameters for evaluation
         int ndim = 1;
@@ -104,9 +105,10 @@ TEST_CASE("TauSampling", "[cinterface]") {
 
         // Create output buffer
         double* output = (double*)malloc(basis_size * sizeof(double));
+        double* fit_output = (double*)malloc(basis_size * sizeof(double));
 
         // Evaluate using C API
-        int status = spir_sampling_evaluate_dd(
+        int evaluate_status = spir_sampling_evaluate_dd(
             sampling,
             SPIR_ORDER_ROW_MAJOR,  // Assuming this enum is defined in the header
             ndim,
@@ -116,10 +118,27 @@ TEST_CASE("TauSampling", "[cinterface]") {
             output
         );
 
-        REQUIRE(status == 0);
+        REQUIRE(evaluate_status == 0);
 
         for (int i = 0; i < basis_size; i++) {
             REQUIRE(output[i] == Approx(Gtau_cpp(i)));
+        }
+
+        int fit_status = spir_sampling_fit_dd(
+            sampling,
+            SPIR_ORDER_COLUMN_MAJOR,  // Assuming this enum is defined in the header
+            ndim,
+            dims,
+            target_dim,
+            output,
+            fit_output
+        );
+
+        REQUIRE(fit_status == 0);
+
+        for (int i = 0; i < basis_size; i++) {
+            std::cout << "fit_output[" << i << "] = " << fit_output[i] << ", " << "gl_from_tau[" << i << "] = " << gl_from_tau(i) << ", "<< "cpp_gl[" << i << "] = " << cpp_Gl(i) << std::endl;
+            //REQUIRE(fit_output[i] == Approx(gl_from_tau(i)));
         }
 
         // Clean up

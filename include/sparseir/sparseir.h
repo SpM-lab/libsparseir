@@ -121,6 +121,26 @@ int spir_sampling_evaluate_cc(
     std::complex<double> *out                    // Output array
     );
 
+
+int spir_sampling_fit_dd(
+    const spir_sampling *s,        // Sampling object
+    spir_order_type order,         // Order type (C or Fortran)
+    int32_t ndim,                  // Number of dimensions
+    int32_t *input_dims,                 // Array of dimensions
+    int32_t target_dim,            // Target dimension for evaluation
+    const double *input,          // Input coefficients array
+    double *out                    // Output array
+    );
+
+int spir_sampling_fit_cc(
+    const spir_sampling *s,        // Sampling object
+    spir_order_type order,         // Order type (C or Fortran)
+    int32_t ndim,                  // Number of dimensions
+    int32_t *input_dims,                 // Array of dimensions
+    int32_t target_dim,            // Target dimension for evaluation
+    const std::complex<double> *input,          // Input coefficients array
+    std::complex<double> *out                    // Output array
+    );
 /** Destroy instance of kernel */
 //void spir_destroy_kernel(spir_kernel *k);
 
