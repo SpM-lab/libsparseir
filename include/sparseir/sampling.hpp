@@ -832,38 +832,6 @@ public:
         }
     }
 
-    // Specialization for real input tensors
-    template <typename T, int N>
-    Eigen::Tensor<std::complex<T>, N> fit(const Eigen::Tensor<T, N> &ax, int dim = 0) const
-    {
-        // Convert real tensor to complex tensor
-        Eigen::Tensor<std::complex<T>, N> complex_ax(ax.dimensions());
-        for (int i = 0; i < ax.size(); ++i) {
-            complex_ax.data()[i] = std::complex<T>(ax.data()[i]);
-        }
-        return fit(complex_ax, dim);
-    }
-
-    // Specialization for TensorMap with complex input
-    template <typename T, int N>
-    Eigen::Tensor<std::complex<T>, N> fit(
-        const Eigen::TensorMap<const Eigen::Tensor<std::complex<T>, N>>& ax, int dim = 0) const
-    {
-        Eigen::Tensor<std::complex<T>, N> tensor_ax(ax.dimensions());
-        std::copy(ax.data(), ax.data() + ax.size(), tensor_ax.data());
-        return fit(tensor_ax, dim);
-    }
-
-    // Specialization for TensorMap with real input
-    template <typename T, int N>
-    Eigen::Tensor<std::complex<T>, N> fit(
-        const Eigen::TensorMap<const Eigen::Tensor<T, N>>& ax, int dim = 0) const
-    {
-        Eigen::Tensor<T, N> tensor_ax(ax.dimensions());
-        std::copy(ax.data(), ax.data() + ax.size(), tensor_ax.data());
-        return fit(tensor_ax, dim);
-    }
-
     Eigen::MatrixXcd get_matrix() const { return matrix_; }
 
     const std::vector<MatsubaraFreq<S>> &sampling_points() const
