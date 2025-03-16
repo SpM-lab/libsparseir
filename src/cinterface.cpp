@@ -110,6 +110,52 @@ static int evaluate_impl(
     }
 }
 
+template<typename InputScalar, typename OutputScalar>
+static int fit_impl(
+    const spir_sampling *s,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    int32_t target_dim,
+    const InputScalar *input,
+    OutputScalar *out,
+    int (sparseir::AbstractSampling::*eval_func)(
+        const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
+        int,
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &) const)
+{
+    auto impl = get_impl_sampling(s);
+    if (!impl)
+        return -1;
+
+    // Convert dimensions
+    std::array<int32_t, 3> dims_3d =
+        collapse_to_3d(ndim, input_dims, target_dim);
+
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::array<int32_t, 3> input_dims_3d = dims_3d;
+        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
+
+        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+
+        // Create TensorMaps
+        output_dims_3d[1] = input_dims[target_dim];
+
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input, input_dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out, output_dims_3d);
+        // Convert to column-major order for Eigen
+        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+    } else{
+        // Create TensorMaps
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input,
+                                                                       dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out,
+                                                                   dims_3d);
+
+        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+    }
+}
+
 // Implementation of the C API
 extern "C" {
 
@@ -259,6 +305,33 @@ int spir_sampling_evaluate_cc(
     return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
                         &sparseir::AbstractSampling::evaluate_inplace_cc);
 }
+
+int spir_sampling_fit_dd(
+    const spir_sampling *s,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    int32_t target_dim,
+    const double *input,
+    double *out)
+{
+    return fit_impl(s, order, ndim, input_dims, target_dim, input, out,
+                        &sparseir::AbstractSampling::fit_inplace_dd);
+}
+
+int spir_sampling_fit_cc(
+    const spir_sampling *s,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    int32_t target_dim,
+    const std::complex<double> *input,
+    std::complex<double> *out)
+{
+    return fit_impl(s, order, ndim, input_dims, target_dim, input, out,
+                        &sparseir::AbstractSampling::fit_inplace_cc);
+}
+
 
 // Get basis functions (returns the PiecewiseLegendrePolyVector)
 spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)

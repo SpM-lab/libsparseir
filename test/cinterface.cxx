@@ -89,6 +89,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
             cpp_Gl(i) = cpp_Gl_vec(i);
         }
         Eigen::Tensor<double, 1> Gtau_cpp = cpp_sampling.evaluate(cpp_Gl);
+        Eigen::Tensor<double, 1> gl_from_tau = cpp_sampling.fit(Gtau_cpp);
 
         // Set up parameters for evaluation
         int ndim = 1;
@@ -103,23 +104,40 @@ TEST_CASE("TauSampling", "[cinterface]") {
         }
 
         // Create output buffer
-        double* output = (double*)malloc(basis_size * sizeof(double));
+        double* evaluate_output = (double*)malloc(basis_size * sizeof(double));
+        double* fit_output = (double*)malloc(basis_size * sizeof(double));
 
         // Evaluate using C API
-        int status = spir_sampling_evaluate_dd(
+        int evaluate_status = spir_sampling_evaluate_dd(
             sampling,
             SPIR_ORDER_ROW_MAJOR,  // Assuming this enum is defined in the header
             ndim,
             dims,
             target_dim,
             coeffs,
-            output
+            evaluate_output
         );
 
-        REQUIRE(status == 0);
+        REQUIRE(evaluate_status == 0);
 
         for (int i = 0; i < basis_size; i++) {
-            REQUIRE(output[i] == Approx(Gtau_cpp(i)));
+            REQUIRE(evaluate_output[i] == Approx(Gtau_cpp(i)));
+        }
+
+        int fit_status = spir_sampling_fit_dd(
+            sampling,
+            SPIR_ORDER_COLUMN_MAJOR,  // Assuming this enum is defined in the header
+            ndim,
+            dims,
+            target_dim,
+            evaluate_output,
+            fit_output
+        );
+
+        REQUIRE(fit_status == 0);
+
+        for (int i = 0; i < basis_size; i++) {
+            REQUIRE(fit_output[i] == Approx(gl_from_tau(i)));
         }
 
         // Clean up
@@ -127,7 +145,8 @@ TEST_CASE("TauSampling", "[cinterface]") {
         spir_destroy_fermionic_finite_temp_basis(basis);
         // Free allocated memory
         free(coeffs);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
     SECTION("TauSampling Evaluation 4-dimensional input ROW-MAJOR")
@@ -162,7 +181,9 @@ TEST_CASE("TauSampling", "[cinterface]") {
             rhol_tensor.data()[i] = dis(gen);
         }
 
-        double *output =
+        double *evaluate_output =
+            (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+        double *fit_output =
             (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
 
         int ndim = 4;
@@ -183,6 +204,10 @@ TEST_CASE("TauSampling", "[cinterface]") {
             // Evaluate from real-time/tau to imaginary-time/tau
             Eigen::Tensor<double, 4> gtau_cpp =
                 cpp_sampling.evaluate(gl_cpp, dim);
+
+            Eigen::Tensor<double, 4> gl_cpp_fit =
+                cpp_sampling.fit(gtau_cpp, dim);
+
             int *dims = dims_list[dim];
             int target_dim = dim;
 
@@ -202,20 +227,41 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 }
             }
             // Evaluate using C API
-            int status = spir_sampling_evaluate_dd(
-                sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
-                gl_cpp_rowmajor.data(), output);
+            int evaluate_status = spir_sampling_evaluate_dd(
+                sampling,
+                SPIR_ORDER_ROW_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                gl_cpp_rowmajor.data(),
+                evaluate_output
+            );
 
-            REQUIRE(status == 0);
+            REQUIRE(evaluate_status == 0);
+
+            int fit_status = spir_sampling_fit_dd(
+                sampling,
+                SPIR_ORDER_ROW_MAJOR,
+                ndim,
+                dims,
+                target_dim,
+                evaluate_output,
+                fit_output
+            );
+
+            REQUIRE(fit_status == 0);
 
             // Compare results
             // Note that we need to specify Eigen::RowMajor here
             // because Eigen::Tensor<T, 4> is column-major by default
             Eigen::Tensor<double, 4, Eigen::RowMajor> output_tensor(
                 dims[0], dims[1], dims[2], dims[3]);
+            Eigen::Tensor<double, 4, Eigen::RowMajor> fit_tensor(
+                dims[0], dims[1], dims[2], dims[3]);
             for (int i = 0; i < output_tensor.size(); ++i) {
                 // store output data to output_tensor
-                output_tensor.data()[i] = output[i];
+                output_tensor.data()[i] = evaluate_output[i];
+                fit_tensor.data()[i] = fit_output[i];
             }
             // Compare results
             for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -224,6 +270,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
                         for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
                             REQUIRE(gtau_cpp(i, j, k, l) ==
                                     output_tensor(i, j, k, l));
+                            REQUIRE(gl_cpp_fit(i, j, k, l) == fit_tensor(i, j, k, l));
                         }
                     }
                 }
@@ -233,7 +280,8 @@ TEST_CASE("TauSampling", "[cinterface]") {
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
-        free(output);
+        free(evaluate_output);
+        free(fit_output);
     }
 
     SECTION("TauSampling Evaluation 4-dimensional complex input/output ROW-MAJOR")
