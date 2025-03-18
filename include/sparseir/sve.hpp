@@ -415,7 +415,7 @@ public:
 template <typename K, typename T>
 class CentrosymmSVE : public AbstractSVE<T> {
 public:
-    K kernel;
+    std::shared_ptr<AbstractKernel> kernel;
     double epsilon;
     SamplingSVE<typename SymmKernelTraits<K, std::integral_constant<int, +1>>::type, T> even;
     SamplingSVE<typename SymmKernelTraits<K, std::integral_constant<int, -1>>::type, T> odd;
