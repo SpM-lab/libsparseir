@@ -733,11 +733,6 @@ private:
     */
 };
 
-
-
-} // namespace sparseir
-
-namespace sparseir {
 /*
     AbstractSVEHints
 
