@@ -33,9 +33,9 @@ public:
     SVEResult(const PiecewiseLegendrePolyVector &u_, const Eigen::VectorXd &s_,
               const PiecewiseLegendrePolyVector &v_,
               double epsilon_)
-        : u(std::make_shared<PiecewiseLegendrePolyVector>(u_)), 
-          s(s_), 
-          v(std::make_shared<PiecewiseLegendrePolyVector>(v_)), 
+        : u(std::make_shared<PiecewiseLegendrePolyVector>(u_)),
+          s(s_),
+          v(std::make_shared<PiecewiseLegendrePolyVector>(v_)),
           epsilon(epsilon_)
     {
     }
@@ -422,27 +422,20 @@ public:
     int nsvals_hint;
 
     CentrosymmSVE(const K &kernel_, double epsilon_, int n_gauss_ = -1)
-        : kernel(kernel_),
+        : kernel(std::make_shared<K>(kernel_)),
           epsilon(epsilon_),
           even(get_symmetrized(kernel_, std::integral_constant<int, +1>{}), epsilon_, n_gauss_),
           odd(get_symmetrized(kernel_, std::integral_constant<int, -1>{}), epsilon_, n_gauss_)
     {
-        /*
-        auto evenk_ = get_symmetrized(kernel_, +1);
-        auto oddk_ = get_symmetrized(kernel_, -1);
-        SamplingSVE<K, T> even_(static_cast<K &>(*evenk_), epsilon_, n_gauss_);
-        SamplingSVE<K, T> odd_(static_cast<K &>(*oddk_), epsilon_, n_gauss_);
-        auto evenk_copy_ = K(static_cast<K &>(*evenk_));
-        auto oddk_copy_ = K(static_cast<K &>(*oddk_));
-        //std::cout << typeid(even.kernel).name() << std::endl;
-        std::cout << typeid(odd.kernel).name() << std::endl;
-        std::cout << "even at 0.5, 0.5 " << (*evenk_)(0.5, 0.5) << std::endl;
-        std::cout << "odd at 0.5, 0.5 " << (*oddk_)(0.5, 0.5) << std::endl;
-        std::cout << "even at 0.5, 0.5 " << (evenk_copy_)(0.5, 0.5) << std::endl;
-        std::cout << "odd at 0.5, 0.5 " << (oddk_copy_)(0.5, 0.5) << std::endl;
-        std::cout << "even at 0.5, 0.5 " << even_.kernel(0.5, 0.5) << std::endl;
-        std::cout << "odd at 0.5, 0.5 " << odd_.kernel(0.5, 0.5) << std::endl;
-        */
+        nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
+    }
+
+    CentrosymmSVE(const std::shared_ptr<AbstractKernel> &kernel_, double epsilon_, int n_gauss_ = -1)
+        : kernel(kernel_),
+          epsilon(epsilon_),
+          even(get_symmetrized(*std::dynamic_pointer_cast<K>(kernel_), std::integral_constant<int, +1>{}), epsilon_, n_gauss_),
+          odd(get_symmetrized(*std::dynamic_pointer_cast<K>(kernel_), std::integral_constant<int, -1>{}), epsilon_, n_gauss_)
+    {
         nsvals_hint = std::max(even.nsvals_hint, odd.nsvals_hint);
     }
 
@@ -487,8 +480,8 @@ public:
 
         // For segments, use the hints from the kernel class
         auto hints = sve_hints<T>(kernel, epsilon);
-        auto segs_x_full = hints.segments_x();
-        auto segs_y_full = hints.segments_y();
+        auto segs_x_full = hints->segments_x();
+        auto segs_y_full = hints->segments_y();
 
         // Rest of the implementation...
         // Create PiecewiseLegendrePolyVector from merged vectors
@@ -527,9 +520,8 @@ public:
         // Update signs to be the sorted signs
         signs = signs_sorted;
 
-        auto full_hints = sve_hints<T>(kernel, epsilon);
-        auto segs_x_vec = full_hints.segments_x();
-        auto segs_y_vec = full_hints.segments_y();
+        auto segs_x_vec = segs_x_full;
+        auto segs_y_vec = segs_y_full;
 
         std::vector<double> segs_x_double(segs_x_vec.size());
         std::vector<double> segs_y_double(segs_y_vec.size());

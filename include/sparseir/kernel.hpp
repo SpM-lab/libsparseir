@@ -257,14 +257,18 @@ public:
         }
     }
 
+    std::vector<std::shared_ptr<AbstractKernel>> get_derived_kernels() const override {
+        std::vector<std::shared_ptr<AbstractKernel>> kernels;
+        kernels.push_back(std::make_shared<LogisticKernel>(*this));
+        return kernels;
+    }
+
     /**
      * @brief Evaluate the kernel at point (x, y).
      *
-     * @param x The x value.
-     * @param y The y value.
-     * @param x_plus Optional. x - xmin.
-     * @param x_minus Optional. xmax - x.
-     * @return The value of K(x, y).
+     * @param x The x coordinate.
+     * @param y The y coordinate.
+     * @return The kernel value at (x, y).
      */
     double compute(double x, double y,
                   double x_plus = std::numeric_limits<double>::quiet_NaN(),
