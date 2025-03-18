@@ -45,6 +45,10 @@ public:
     AbstractKernel() { }
     AbstractKernel(double lambda) : lambda_(lambda) { }
 
+    virtual std::vector<std::shared_ptr<AbstractKernel>> get_derived_kernels() const {
+        return std::vector<std::shared_ptr<AbstractKernel>>();
+    }
+
     template<typename T>
     std::function<T(T)> weight_func(Fermionic) const
     {
@@ -426,16 +430,25 @@ private:
  */
 class RegularizedBoseKernel : public AbstractKernel {
 public:
+    // Default constructor
+    RegularizedBoseKernel() : AbstractKernel() { }
+
     /**
      * @brief Constructor for RegularizedBoseKernel.
      *
      * @param lambda The kernel cutoff Λ.
      */
-    explicit RegularizedBoseKernel(double lambda) : AbstractKernel(lambda)
+    RegularizedBoseKernel(double lambda) : AbstractKernel(lambda)
     {
         if (lambda < 0) {
             throw std::domain_error("Kernel cutoff Λ must be non-negative");
         }
+    }
+
+    std::vector<std::shared_ptr<AbstractKernel>> get_derived_kernels() const override {
+        std::vector<std::shared_ptr<AbstractKernel>> kernels;
+        kernels.push_back(std::make_shared<RegularizedBoseKernel>(*this));
+        return kernels;
     }
 
     /**
@@ -533,7 +546,6 @@ public:
     {
         return std::make_shared<SVEHintsRegularizedBose<T>>(*this, epsilon);
     }
-
 
 private:
     /**
@@ -1225,45 +1237,18 @@ private:
 
 // Function to provide SVE hints
 template<typename T>
-SVEHintsLogistic<T> sve_hints(const LogisticKernel &kernel, double epsilon)
-{
-    return SVEHintsLogistic<T>(kernel, epsilon);
-}
-
-template<typename T>
-SVEHintsRegularizedBose<T> sve_hints(const RegularizedBoseKernel &kernel,
-                                         double epsilon)
-{
-    return SVEHintsRegularizedBose<T>(kernel, epsilon);
-}
-
-/*
-template<typename T>
 std::shared_ptr<AbstractSVEHints<T>>
-sve_hints(std::shared_ptr<const AbstractKernel> kernel, double epsilon)
-{
-    if (auto logisticKernel =
-            std::dynamic_pointer_cast<const LogisticKernel>(kernel)) {
-        return std::make_shared<SVEHintsLogistic<T>>(*logisticKernel, epsilon);
-    } else if (auto boseKernel =
-                   std::dynamic_pointer_cast<const RegularizedBoseKernel>(
-                       kernel)) {
-        return std::make_shared<SVEHintsRegularizedBose<T>>(*boseKernel, epsilon);
-    } else if (auto reducedKernel =
-                   std::dynamic_pointer_cast<const AbstractReducedKernel>(
-                       kernel)) {
-        return std::make_shared<SVEHintsReduced<T>>(sve_hints<T>(reducedKernel, epsilon));
-    } else {
-        throw std::invalid_argument("Unsupported kernel type for SVE hints");
+sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon) {
+    auto derived_kernels = kernel->get_derived_kernels();
+    for (const auto &derived_kernel : derived_kernels) {
+        if (auto logistic = std::dynamic_pointer_cast<const LogisticKernel>(derived_kernel)) {
+            return std::make_shared<SVEHintsLogistic<T>>(*logistic, epsilon);
+        }
+        if (auto bose = std::dynamic_pointer_cast<const RegularizedBoseKernel>(derived_kernel)) {
+            return std::make_shared<SVEHintsRegularizedBose<T>>(*bose, epsilon);
+        }
     }
-}
-*/
-
-template<typename T, typename K>
-SVEHintsReduced<T> sve_hints(const AbstractReducedKernel<K> &kernel,
-                                 double epsilon)
-{
-    return SVEHintsReduced<T>(sve_hints<T>(kernel.inner, epsilon));
+    throw std::runtime_error("Unsupported kernel type");
 }
 
 /*
