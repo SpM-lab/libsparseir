@@ -209,7 +209,7 @@ public:
 template <typename K, typename T>
 class SamplingSVE : public AbstractSVE<T> {
 public:
-    K kernel;
+    std::shared_ptr<AbstractKernel> kernel;
     double epsilon;
     int n_gauss;
     int nsvals_hint;
@@ -222,9 +222,27 @@ public:
 
     // Constructor
     SamplingSVE(const K &kernel_, double epsilon_, int n_gauss_ = -1)
+        : kernel(std::make_shared<K>(kernel_)), epsilon(epsilon_)
+    {
+        auto hints = sve_hints<T>(kernel, epsilon);
+        n_gauss =
+            (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
+        // TODO: Implement Rule<T>(n_gauss)
+        auto rule_xprec_ddouble = legendre(n_gauss);
+        rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
+
+        nsvals_hint = hints->nsvals();
+        segs_x = hints->segments_x();
+        segs_y = hints->segments_y();
+        gauss_x = rule.piecewise(segs_x);
+        gauss_y = rule.piecewise(segs_y);
+    }
+
+    // Constructor for shared_ptr
+    SamplingSVE(const std::shared_ptr<AbstractKernel> &kernel_, double epsilon_, int n_gauss_ = -1)
         : kernel(kernel_), epsilon(epsilon_)
     {
-        auto hints = kernel.template sve_hints<T>(epsilon);
+        auto hints = sve_hints<T>(kernel, epsilon);
         n_gauss =
             (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
         // TODO: Implement Rule<T>(n_gauss)
@@ -597,6 +615,20 @@ determine_sve(const K &kernel, double safe_epsilon, int n_gauss)
     }
 }
 
+// Overload for std::shared_ptr<AbstractKernel>
+template <typename T>
+std::shared_ptr<AbstractSVE<T>>
+determine_sve(const std::shared_ptr<AbstractKernel> &kernel, double safe_epsilon, int n_gauss)
+{
+    if (kernel->is_centrosymmetric()) {
+        // We need to handle this case differently as CentrosymmSVE requires knowledge of the concrete type
+        // For now, we'll use SamplingSVE directly as a fallback
+        return std::make_shared<SamplingSVE<AbstractKernel, T>>(kernel, safe_epsilon, n_gauss);
+    } else {
+        return std::make_shared<SamplingSVE<AbstractKernel, T>>(kernel, safe_epsilon, n_gauss);
+    }
+}
+
 // Function to truncate singular values
 template <typename T>
 inline std::tuple<std::vector<Eigen::MatrixX<T>>,
@@ -710,6 +742,50 @@ std::tuple<SVEResult, std::shared_ptr<AbstractSVE<T>>> pre_postprocess(const K &
                             v_list_truncated), sve);
 }
 
+// Overload for std::shared_ptr<AbstractKernel>
+template <typename T>
+std::tuple<SVEResult, std::shared_ptr<AbstractSVE<T>>> pre_postprocess(const std::shared_ptr<AbstractKernel> &kernel, double safe_epsilon, int n_gauss,
+                     double cutoff = std::numeric_limits<double>::quiet_NaN(),
+                     int lmax = std::numeric_limits<int>::max())
+{
+    auto sve = determine_sve<T>(kernel, safe_epsilon, n_gauss);
+    // Compute SVDs
+    std::vector<Eigen::MatrixX<T>> matrices = sve->matrices();
+    // TODO: implement SVD Resutls
+    std::vector<
+        std::tuple<Eigen::MatrixX<T>, Eigen::MatrixX<T>, Eigen::MatrixX<T>>>
+        svds;
+    for (const auto &mat : matrices) {
+        auto svd = sparseir::compute_svd(mat);
+        svds.push_back(svd);
+    }
+
+    // Extract singular values and vectors
+    std::vector<Eigen::MatrixX<T>> u_list_, v_list_;
+    std::vector<Eigen::VectorX<T>> s_list_;
+    for (const auto &svd : svds) {
+        auto u = std::get<0>(svd);
+        auto s = std::get<1>(svd);
+        auto v = std::get<2>(svd);
+        u_list_.push_back(u);
+        s_list_.push_back(s);
+        v_list_.push_back(v);
+    }
+    // Apply cutoff and lmax
+    T cutoff_actual = std::isnan(cutoff)
+                          ? T(2) * T(std::numeric_limits<T>::epsilon())
+                          : T(cutoff);
+
+    std::vector<Eigen::MatrixX<T>> u_list_truncated;
+    std::vector<Eigen::VectorX<T>> s_list_truncated;
+    std::vector<Eigen::MatrixX<T>> v_list_truncated;
+
+    std::tie(u_list_truncated, s_list_truncated, v_list_truncated) =
+        truncate(u_list_, s_list_, v_list_, cutoff_actual, lmax);
+    // Postprocess to get the SVEResult
+    return std::make_tuple(sve->postprocess(u_list_truncated, s_list_truncated,
+                            v_list_truncated), sve);
+}
 
 // Function to compute SVE result
 template <typename K >
@@ -735,5 +811,27 @@ SVEResult compute_sve(const K &kernel, double epsilon,
     }
 }
 
+// Overload for std::shared_ptr<AbstractKernel>
+inline SVEResult compute_sve(const std::shared_ptr<AbstractKernel> &kernel, double epsilon,
+            double cutoff = std::numeric_limits<double>::quiet_NaN(),
+            int lmax = std::numeric_limits<int>::max(),
+            int n_gauss = -1,
+            std::string Twork = "Float64x2"
+            )
+{
+    // TODO: Sort out the logic
+    double safe_epsilon;
+    std::string Twork_actual;
+    std::string svd_strategy_actual;
+    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) = sparseir::auto_choose_accuracy(epsilon, Twork);
+
+    if (Twork_actual == "Float64") {
+        return std::get<0>(pre_postprocess<double>(kernel, safe_epsilon, n_gauss, cutoff, lmax));
+    } else if (Twork_actual == "Float64x2") {
+        return std::get<0>(pre_postprocess<xprec::DDouble>(kernel, safe_epsilon, n_gauss, cutoff, lmax));
+    } else {
+        throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
+    }
+}
 
 } // namespace sparseir

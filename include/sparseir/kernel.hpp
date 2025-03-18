@@ -184,16 +184,32 @@ public:
     virtual ~AbstractKernel() = default;
 };
 
+/**
+ * @brief Non-templated base class for all reduced kernels.
+ * This allows us to use dynamic_pointer_cast with all reduced kernel types.
+ */
+class AbstractReducedKernelBase : public AbstractKernel {
+public:
+    AbstractReducedKernelBase(double lambda) : AbstractKernel(lambda) {}
+    virtual ~AbstractReducedKernelBase() {}
+
+    /**
+     * @brief Get the inner kernel.
+     *
+     * @return A shared pointer to the inner kernel.
+     */
+    virtual std::shared_ptr<const AbstractKernel> get_inner_kernel() const = 0;
+};
 
 template<typename InnerKernel>
-class AbstractReducedKernel : public AbstractKernel {
+class AbstractReducedKernel : public AbstractReducedKernelBase {
 public:
     int sign;
     const InnerKernel inner;
 
     // Constructor
     AbstractReducedKernel(const InnerKernel &inner_kernel, int sign)
-        : AbstractKernel(inner_kernel.lambda_),
+        : AbstractReducedKernelBase(inner_kernel.lambda_),
           sign(sign),
           inner(inner_kernel)
     {
@@ -648,6 +664,15 @@ public:
     }
 
     /**
+     * @brief Get the inner kernel.
+     *
+     * @return A shared pointer to the inner kernel.
+     */
+    std::shared_ptr<const AbstractKernel> get_inner_kernel() const override {
+        return std::make_shared<K>(inner_kernel_);
+    }
+
+    /**
      * @brief Evaluate the reduced kernel at point (x, y).
      *
      * @param x The x value.
@@ -719,6 +744,7 @@ public:
     {
         return std::make_shared<SVEHintsReduced<T>>(inner_kernel_.template sve_hints<T>(epsilon));
     }
+
 private:
     /**
      * @brief Evaluate the reduced kernel.
@@ -986,6 +1012,15 @@ public:
         }
     }
 
+    /**
+     * @brief Get the inner kernel.
+     *
+     * @return A shared pointer to the inner kernel.
+     */
+    std::shared_ptr<const AbstractKernel> get_inner_kernel() const override {
+        return std::make_shared<RegularizedBoseKernel>(inner_kernel_);
+    }
+
     template<typename T>
     T compute(T x, T y,
               T x_plus = std::numeric_limits<double>::quiet_NaN(),
@@ -1014,8 +1049,6 @@ private:
 
 class LogisticKernelOdd : public AbstractReducedKernel<LogisticKernel> {
 public:
-    LogisticKernel inner_kernel_;
-
     LogisticKernelOdd(const LogisticKernel& inner, int sign)
         : AbstractReducedKernel<LogisticKernel>(inner, sign), inner_kernel_(inner)
     {
@@ -1023,11 +1056,21 @@ public:
             throw std::invalid_argument("sign must be -1");
         }
     }
-    // Implement the pure virtual function from the parent class
+
+    /**
+     * @brief Get the inner kernel.
+     *
+     * @return A shared pointer to the inner kernel.
+     */
+    std::shared_ptr<const AbstractKernel> get_inner_kernel() const override {
+        return std::make_shared<LogisticKernel>(inner_kernel_);
+    }
+
+    // Implement the compute method
     template<typename T>
     T compute(T x, T y,
-                      T x_plus = std::numeric_limits<double>::quiet_NaN(),
-                      T x_minus = std::numeric_limits<double>::quiet_NaN())
+               T x_plus = std::numeric_limits<double>::quiet_NaN(),
+               T x_minus = std::numeric_limits<double>::quiet_NaN())
         const
     {
         using std::cosh;
@@ -1042,11 +1085,15 @@ public:
         }
     }
 
+    // Implement the pure virtual function from the parent class
     template<typename T>
     std::shared_ptr<SVEHintsReduced<T>> sve_hints(double epsilon) const
     {
         return std::make_shared<SVEHintsReduced<T>>(inner_kernel_.sve_hints<T>(epsilon));
     }
+
+private:
+    LogisticKernel inner_kernel_;
 };
 
 // Traits class
@@ -1169,6 +1216,37 @@ Eigen::MatrixX<T> matrix_from_gauss(const K &kernel,
     return res;
 }
 
+// Specialization of matrix_from_gauss for std::shared_ptr<AbstractKernel>
+template <typename T>
+Eigen::MatrixX<T> matrix_from_gauss(const std::shared_ptr<AbstractKernel> &kernel,
+                                    const Rule<T> &gauss_x,
+                                    const Rule<T> &gauss_y)
+{
+    size_t n = gauss_x.x.size();
+    size_t m = gauss_y.x.size();
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> res(n, m);
+
+    // Parallelize using threads
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < n; ++i) {
+        threads.emplace_back([&, i]() {
+            for (size_t j = 0; j < m; ++j) {
+                if (std::is_same<T, double>::value) {
+                    res(i, j) = kernel->compute(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
+                } else {
+                    res(i, j) = kernel->compute(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
+                }
+            }
+        });
+    }
+
+    for (auto &thread : threads) {
+        thread.join();
+    }
+
+    return res;
+}
+
 // Function to validate symmetry and extract the right-hand side of the segments
 template <typename T>
 std::vector<T> symm_segments(const std::vector<T> &x)
@@ -1234,6 +1312,15 @@ private:
 template<typename T>
 std::shared_ptr<AbstractSVEHints<T>>
 sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon) {
+    // First check if the kernel itself is one of the supported types
+    if (auto logistic = std::dynamic_pointer_cast<const LogisticKernel>(kernel)) {
+        return std::make_shared<SVEHintsLogistic<T>>(*logistic, epsilon);
+    }
+    if (auto bose = std::dynamic_pointer_cast<const RegularizedBoseKernel>(kernel)) {
+        return std::make_shared<SVEHintsRegularizedBose<T>>(*bose, epsilon);
+    }
+
+    // Then check derived kernels
     auto derived_kernels = kernel->get_derived_kernels();
     for (const auto &derived_kernel : derived_kernels) {
         if (auto logistic = std::dynamic_pointer_cast<const LogisticKernel>(derived_kernel)) {
@@ -1243,6 +1330,16 @@ sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon) {
             return std::make_shared<SVEHintsRegularizedBose<T>>(*bose, epsilon);
         }
     }
+
+    // Special handling for ReducedKernel types
+    if (auto reduced = std::dynamic_pointer_cast<const AbstractReducedKernelBase>(kernel)) {
+        auto inner_kernel = reduced->get_inner_kernel();
+        if (inner_kernel) {
+            auto inner_hints = sve_hints<T>(inner_kernel, epsilon);
+            return std::make_shared<SVEHintsReduced<T>>(inner_hints);
+        }
+    }
+
     throw std::runtime_error("Unsupported kernel type");
 }
 
