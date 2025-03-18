@@ -160,15 +160,15 @@ TEST_CASE("sve_result.u(x)", "[sve]") {
         4.964092300409242e-8,
         -6.841888454869215e-10,
         8.45142444088915e-12,
-        -8.915612056827141e-14,
+        8.915612056827141e-14,
         8.362314469143777e-16,
-        -6.0234895174712546e-18,
+        6.0234895174712546e-18,
         -5.277316485609017e-17,
-        2.5316204613489296e-18,
+        -2.5316204613489296e-18,
         -9.203110228857883e-17,
-        2.053684309629933e-18,
+        -2.053684309629933e-18,
         -2.1582025252842366e-17,
-        3.4544177495993926e-19,
+        -3.4544177495993926e-19,
         0.1299329360557847,
         -0.0044505687852619,
         0.00015923080726201497,
@@ -184,7 +184,7 @@ TEST_CASE("sve_result.u(x)", "[sve]") {
         -9.044347906363985e-17,
         1.9607087542271804e-18,
         -2.1212523005683314e-17,
-        3.300068208808041e-19,
+        -3.300068208808041e-19,
         0.12742205869276685,
         -0.004079739261690625,
         0.00016460133801271778,
@@ -611,20 +611,21 @@ template<typename T>
 void
 _test_sve() {
     auto lk = sparseir::LogisticKernel(10.0);
+    auto lk_ptr = std::make_shared<sparseir::LogisticKernel>(lk);
     REQUIRE(lk.is_centrosymmetric());
     REQUIRE(lk.lambda_ == 10.0);
 
     // Float64(sqrt(eps(SparseIR.Float64x2)))
     // sve_hints for small epsilon = 2.220446049250313e-16
-    auto hints_small = sparseir::sve_hints<T>(lk, 2.220446049250313e-16);
-    REQUIRE(hints_small.ngauss() == 16);
+    auto hints_small = sparseir::sve_hints<T>(lk_ptr, 2.220446049250313e-16);
+    REQUIRE(hints_small->ngauss() == 16);
 
     // sve_hints for epsilon = 1e-6
-    auto hints = sparseir::sve_hints<T>(lk, 1e-6);
-    int nsvals_hint = hints.nsvals();
-    int n_gauss = hints.ngauss();
-    std::vector<T> segs_x = hints.segments_x();
-    std::vector<T> segs_y = hints.segments_y();
+    auto hints = sparseir::sve_hints<T>(lk_ptr, 1e-6);
+    int nsvals_hint = hints->nsvals();
+    int n_gauss = hints->ngauss();
+    std::vector<T> segs_x = hints->segments_x();
+    std::vector<T> segs_y = hints->segments_y();
 
     // Ensure `convert` is declared before this line
     auto rule_xprec_ddouble = sparseir::legendre(n_gauss);
@@ -658,11 +659,12 @@ template<typename T>
 void
 _test_centrosymmsve() {
     auto lk = sparseir::LogisticKernel(10.0);
-    auto hints = sparseir::sve_hints<T>(lk, 1e-6);
-    int nsvals_hint = hints.nsvals();
-    int n_gauss = hints.ngauss();
-    std::vector<T> segs_x = hints.segments_x();
-    std::vector<T> segs_y = hints.segments_y();
+    auto lk_ptr = std::make_shared<sparseir::LogisticKernel>(lk);
+    auto hints = sparseir::sve_hints<T>(lk_ptr, 1e-6);
+    int nsvals_hint = hints->nsvals();
+    int n_gauss = hints->ngauss();
+    std::vector<T> segs_x = hints->segments_x();
+    std::vector<T> segs_y = hints->segments_y();
 
     auto rule_xprec_ddouble = sparseir::legendre(n_gauss);
     sparseir::Rule<T> rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
@@ -683,11 +685,12 @@ TEST_CASE("LogisticKernel", "[sve]")
     {
         double lambda = 1.0;
         auto lk = sparseir::LogisticKernel(lambda);
+        auto lk_ptr = std::make_shared<sparseir::LogisticKernel>(lk);
         // Float64(sqrt(eps(SparseIR.Float64x2)))
         // sve_hints for small epsilon = 2.220446049250313e-16
-        auto epsilon = 2.220446049250313e-16;
-        auto hints = sparseir::sve_hints<double>(lk, epsilon);
-        REQUIRE(hints.nsvals() == 26);
+        double epsilon = 2.220446049250313e-16;
+        auto hints = sparseir::sve_hints<double>(lk_ptr, epsilon);
+        REQUIRE(hints->nsvals() == 26);
 
         sparseir::ReducedKernel<sparseir::LogisticKernel> reduced_kernel =
             sparseir::get_symmetrized(lk, std::integral_constant<int, +1>{});
@@ -699,11 +702,12 @@ TEST_CASE("LogisticKernel", "[sve]")
     {
         double lambda = 1000.0;
         auto lk = sparseir::LogisticKernel(lambda);
+        auto lk_ptr = std::make_shared<sparseir::LogisticKernel>(lk);
         // Float64(sqrt(eps(SparseIR.Float64x2)))
         // sve_hints for small epsilon = 2.220446049250313e-16
-        auto epsilon = 2.220446049250313e-16;
-        auto hints = sparseir::sve_hints<double>(lk, epsilon);
-        REQUIRE(hints.nsvals() == (25 + 3) * 3); // 84
+        double epsilon = 2.220446049250313e-16;
+        auto hints = sparseir::sve_hints<double>(lk_ptr, epsilon);
+        REQUIRE(hints->nsvals() == (25 + 3) * 3); // 84
 
         sparseir::ReducedKernel<sparseir::LogisticKernel> reduced_kernel =
             sparseir::get_symmetrized(lk, std::integral_constant<int, +1>{});

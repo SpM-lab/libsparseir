@@ -39,6 +39,7 @@ DECLARE_OPAQUE_TYPE(polyvector);
 DECLARE_OPAQUE_TYPE(fermionic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(bosonic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
+DECLARE_OPAQUE_TYPE(sve_result);
 
 /**
  * Kernel
@@ -64,6 +65,11 @@ typedef struct _spir_function spir_function;
  * Create new logistic kernel
  */
 spir_kernel *spir_logistic_kernel_new(double lambda);
+
+/**
+ * Create new SVE result
+ */
+spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon);
 
 /**
  * Create new regularized bose kernel

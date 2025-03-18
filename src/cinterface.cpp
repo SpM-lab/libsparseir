@@ -48,6 +48,7 @@ IMPLEMENT_OPAQUE_TYPE(basis, sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
+IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
 
 // Helper function to convert N-dimensional array to 3D array by collapsing dimensions
 static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t* dims, int32_t target_dim) {
@@ -231,6 +232,20 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
     }
 }
 */
+
+// Create new SVE result
+spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon)
+{
+    try {
+        auto impl = get_impl_kernel(k);
+        if (!impl)
+            return nullptr;
+        auto sve = sparseir::compute_sve(impl, epsilon);
+        return create_sve_result(std::make_shared<sparseir::SVEResult>(sve));
+    } catch (...) {
+        return nullptr;
+    }
+}
 
 // Constructor for basis
 spir_fermionic_finite_temp_basis *
