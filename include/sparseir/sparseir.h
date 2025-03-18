@@ -69,7 +69,7 @@ spir_kernel *spir_logistic_kernel_new(double lambda);
 /**
  * Create new SVE result
  */
-spir_sve_result* spir_sve_result_new(const spir_logistic_kernel* k, double epsilon);
+spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon);
 
 /**
  * Create new regularized bose kernel

@@ -234,13 +234,13 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
 */
 
 // Create new SVE result
-spir_sve_result* spir_sve_result_new(const spir_logistic_kernel* k, double epsilon)
+spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon)
 {
     try {
-        auto impl = get_impl_logistic_kernel(k);
+        auto impl = get_impl_kernel(k);
         if (!impl)
             return nullptr;
-        auto sve = sparseir::compute_sve(*impl, epsilon);
+        auto sve = sparseir::compute_sve(impl, epsilon);
         return create_sve_result(std::make_shared<sparseir::SVEResult>(sve));
     } catch (...) {
         return nullptr;
