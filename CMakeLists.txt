@@ -101,6 +101,7 @@ add_library(SparseIR::sparseir ALIAS sparseir)
 if(SPARSEIR_BUILD_FORTRAN)
     add_library(sparseir_fortran SHARED
         fortran/sparseir.f90
+        fortran/sparseir_impl.f90
     )
     set_target_properties(sparseir_fortran PROPERTIES
         VERSION ${PROJECT_VERSION}
