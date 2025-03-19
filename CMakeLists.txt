@@ -31,20 +31,44 @@ project(
     DESCRIPTION "SparseIR library"
     )
 
+# Add Fortran language support if building Fortran bindings
+option(SPARSEIR_BUILD_FORTRAN "Build Fortran bindings" OFF)
+if(SPARSEIR_BUILD_FORTRAN)
+    enable_language(Fortran)
+    message(STATUS "Fortran support enabled for building Fortran bindings")
+endif()
+
 # Eigen3
 find_package (Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(Threads REQUIRED)
 
-# libxprec
+# libxprec - built only as a static dependency, not for installation
 include(FetchContent)
 FetchContent_Declare(XPrec
     GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
     GIT_TAG mainline
-    )
-FetchContent_MakeAvailable(XPrec)
+)
+
+# Extract the content but don't process it through add_subdirectory yet
+FetchContent_GetProperties(XPrec)
+if(NOT xprec_POPULATED)
+    FetchContent_Populate(XPrec)
+endif()
+
+# Set options before adding the subdirectory
+set(XPREC_INSTALL OFF CACHE BOOL "Disable XPrec installation" FORCE)
+set(XPREC_INSTALL_CONFIG OFF CACHE BOOL "Disable XPrec config installation" FORCE)
+set(XPREC_BUILD_SHARED_LIBS OFF CACHE BOOL "Build XPrec as static libraries" FORCE)
+set(XPREC_INSTALL_COMPONENT_NAME "xprec_component" CACHE STRING "Custom component name for XPrec" FORCE)
+
+# Now add the subdirectory with our settings
+add_subdirectory(${xprec_SOURCE_DIR} ${xprec_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 # ---------------------------------
 # Building
+
+# Set the default component name for installations
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
 add_library(sparseir SHARED
     src/cinterface.cpp
@@ -64,13 +88,50 @@ set_target_properties(sparseir PROPERTIES
     CXX_STANDARD_REQUIRED ON
     )
 
-target_link_libraries(sparseir Eigen3::Eigen XPrec::xprec Threads::Threads)
+target_link_libraries(sparseir PRIVATE Eigen3::Eigen XPrec::xprec Threads::Threads)
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
-export(TARGETS sparseir
-    NAMESPACE SparseIR::
-    FILE SparseIRTargets.cmake)
+
+# Build Fortran bindings if enabled
+if(SPARSEIR_BUILD_FORTRAN)
+    add_library(sparseir_fortran SHARED
+        fortran/sparseir.f90
+    )
+    set_target_properties(sparseir_fortran PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+        Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran
+        POSITION_INDEPENDENT_CODE ON
+    )
+    target_link_libraries(sparseir_fortran PRIVATE sparseir)
+    
+    # Install Fortran module files
+    install(
+        DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/sparseir/fortran
+        FILES_MATCHING PATTERN "*.mod"
+    )
+    
+    # Add alias
+    add_library(SparseIR::sparseir_fortran ALIAS sparseir_fortran)
+    
+    # Build Fortran test program
+    add_executable(test_kernel fortran/test_kernel.f90)
+    target_link_libraries(test_kernel PRIVATE sparseir_fortran)
+    set_target_properties(test_kernel PROPERTIES
+        Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran
+    )
+    
+    # Add Fortran test to CTest if testing is enabled
+    if(SPARSEIR_BUILD_TESTING)
+        add_test(
+            NAME test_kernel
+            COMMAND test_kernel
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+    endif()
+endif()
 
 # ------------------------------
 # Installation
@@ -78,55 +139,67 @@ export(TARGETS sparseir
 # Provides CMAKE_INSTALL_* directories
 include(GNUInstallDirs)
 set(SPARSEIR_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}"
-    CACHE PATH "directory into which to install xprec include files")
+    CACHE PATH "directory into which to install sparseir include files")
 set(SPARSEIR_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}"
-    CACHE PATH "directory into which to install xprec library files")
-set(SPARSEIR_INSTALL_CMAKEDIR "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
-    CACHE PATH "directory into which to install xprec cmake files")
-option(SPARSEIR_INSTALL_CMAKE_PACKAGE "Installs CMake configuration files" ON)
+    CACHE PATH "directory into which to install sparseir library files")
 
-install(TARGETS xprec
+# Install only the C API library and headers
+install(TARGETS sparseir
     DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
-    EXPORT SparseIRTargets
-    )
-    install(DIRECTORY include/
-    DESTINATION "${SPARSEIR_INSTALL_INCLUDEDIR}"
-    PATTERN "ddouble-header-only.h" EXCLUDE
-    )
+    COMPONENT sparseir
+)
 
-if (SPARSEIR_INSTALL_CMAKE_PACKAGE)
-    # These are essentially magic incantantions copied from the CMake tutorial:
-    include(CMakePackageConfigHelpers)
-    configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/package/SparseIRConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfig.cmake"
-        INSTALL_DESTINATION "${SPARSEIR_INSTALL_CMAKEDIR}"
-        NO_SET_AND_CHECK_MACRO
-        NO_CHECK_REQUIRED_COMPONENTS_MACRO
-        )
-    write_basic_package_version_file(
-        "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfigVersion.cmake"
-        VERSION "${SPARSEIR_VERSION}"
-        COMPATIBILITY SameMajorVersion
-        )
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfigVersion.cmake"
-        DESTINATION "${SPARSEIR_INSTALL_CMAKEDIR}"
-        )
-    install(EXPORT SparseIRTargets
-        NAMESPACE SparseIR::
-        DESTINATION "${SPARSEIR_INSTALL_CMAKEDIR}"
-        )
+if(SPARSEIR_BUILD_FORTRAN)
+    install(TARGETS sparseir_fortran
+        DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+        COMPONENT sparseir
+    )
 endif()
 
+# Install only necessary header files (C API)
+install(FILES 
+    include/sparseir/sparseir.h
+    include/sparseir/version.h
+    DESTINATION "${SPARSEIR_INSTALL_INCLUDEDIR}/sparseir"
+    COMPONENT sparseir
+)
 
 # -------------------------------------
 # Testing
 
-option(SPARSEIR_BUILD_TESTING "Enable creation of xprec tests." ${BUILD_TESTING})
+option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." ${BUILD_TESTING})
 
 if (SPARSEIR_BUILD_TESTING)
     enable_testing()
+    
+    # Make Eigen and XPrec available to test code
+    if(TARGET Catch2::Catch2WithMain)
+        # Catch2 already available
+    else()
+        # Fetch Catch2 for testing if needed
+        FetchContent_Declare(
+            Catch2
+            GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+            GIT_TAG v3.0.1 # or a later release
+        )
+        FetchContent_MakeAvailable(Catch2)
+    endif()
+    
+    # Set include paths for tests
+    set(TEST_INCLUDE_DIRS
+        ${EIGEN3_INCLUDE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${xprec_SOURCE_DIR}/include
+    )
+    
+    # Also make sure XPrec is available to tests
+    if(TARGET XPrec::xprec)
+        get_target_property(XPREC_INCLUDE_DIRS XPrec::xprec INTERFACE_INCLUDE_DIRECTORIES)
+        if(XPREC_INCLUDE_DIRS)
+            list(APPEND TEST_INCLUDE_DIRS ${XPREC_INCLUDE_DIRS})
+        endif()
+    endif()
+    
+    # Pass include paths to test subdirectory
     add_subdirectory("test")
 endif()
