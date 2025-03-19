@@ -17,7 +17,7 @@ cmake .. \
   -DBUILD_TESTING=ON
 
 # Build (including tests)
-cmake --build . --config Release
+cmake --build . --config Release -j 4
 
 # Run tests
 ctest --output-on-failure

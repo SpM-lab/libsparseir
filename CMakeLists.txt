@@ -60,6 +60,7 @@ set(XPREC_INSTALL OFF CACHE BOOL "Disable XPrec installation" FORCE)
 set(XPREC_INSTALL_CONFIG OFF CACHE BOOL "Disable XPrec config installation" FORCE)
 set(XPREC_BUILD_SHARED_LIBS OFF CACHE BOOL "Build XPrec as static libraries" FORCE)
 set(XPREC_INSTALL_COMPONENT_NAME "xprec_component" CACHE STRING "Custom component name for XPrec" FORCE)
+set(XPREC_BUILD_TESTING OFF CACHE BOOL "Disable XPrec tests" FORCE)
 
 # Now add the subdirectory with our settings
 add_subdirectory(${xprec_SOURCE_DIR} ${xprec_BINARY_DIR} EXCLUDE_FROM_ALL)
