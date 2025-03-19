@@ -99,43 +99,7 @@ add_library(SparseIR::sparseir ALIAS sparseir)
 
 # Build Fortran bindings if enabled
 if(SPARSEIR_BUILD_FORTRAN)
-    add_library(sparseir_fortran SHARED
-        fortran/sparseir.f90
-        fortran/sparseir_impl.f90
-    )
-    set_target_properties(sparseir_fortran PROPERTIES
-        VERSION ${PROJECT_VERSION}
-        SOVERSION ${PROJECT_VERSION_MAJOR}
-        Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran
-        POSITION_INDEPENDENT_CODE ON
-    )
-    target_link_libraries(sparseir_fortran PRIVATE sparseir)
-    
-    # Install Fortran module files
-    install(
-        DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran/
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/sparseir/fortran
-        FILES_MATCHING PATTERN "*.mod"
-    )
-    
-    # Add alias
-    add_library(SparseIR::sparseir_fortran ALIAS sparseir_fortran)
-    
-    # Build Fortran test program
-    add_executable(test_kernel fortran/test_kernel.f90)
-    target_link_libraries(test_kernel PRIVATE sparseir_fortran)
-    set_target_properties(test_kernel PROPERTIES
-        Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran
-    )
-    
-    # Add Fortran test to CTest if testing is enabled
-    if(SPARSEIR_BUILD_TESTING)
-        add_test(
-            NAME test_kernel
-            COMMAND test_kernel
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        )
-    endif()
+    add_subdirectory(fortran)
 endif()
 
 # ------------------------------
@@ -154,13 +118,6 @@ install(TARGETS sparseir
     COMPONENT sparseir
 )
 
-if(SPARSEIR_BUILD_FORTRAN)
-    install(TARGETS sparseir_fortran
-        DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
-        COMPONENT sparseir
-    )
-endif()
-
 # Install only necessary header files (C API)
 install(FILES 
     include/sparseir/sparseir.h
@@ -176,21 +133,6 @@ option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." ${BUILD_TESTI
 
 if (SPARSEIR_BUILD_TESTING)
     enable_testing()
-    
-    # Set include paths for tests
-    set(TEST_INCLUDE_DIRS
-        ${EIGEN3_INCLUDE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${xprec_SOURCE_DIR}/include
-    )
-    
-    # Also make sure XPrec is available to tests
-    if(TARGET XPrec::xprec)
-        get_target_property(XPREC_INCLUDE_DIRS XPrec::xprec INTERFACE_INCLUDE_DIRECTORIES)
-        if(XPREC_INCLUDE_DIRS)
-            list(APPEND TEST_INCLUDE_DIRS ${XPREC_INCLUDE_DIRS})
-        endif()
-    endif()
     
     # Pass include paths to test subdirectory
     add_subdirectory("test")

@@ -2,6 +2,21 @@ include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 11)
 
+# Set include paths for tests
+set(TEST_INCLUDE_DIRS
+    ${EIGEN3_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../include
+    ${xprec_SOURCE_DIR}/include
+)
+
+# Also make sure XPrec is available to tests
+if(TARGET XPrec::xprec)
+    get_target_property(XPREC_INCLUDE_DIRS XPrec::xprec INTERFACE_INCLUDE_DIRECTORIES)
+    if(XPREC_INCLUDE_DIRS)
+        list(APPEND TEST_INCLUDE_DIRS ${XPREC_INCLUDE_DIRS})
+    endif()
+endif()
+
 # Use Catch2 from parent scope if available
 if(NOT TARGET Catch2::Catch2WithMain)
     # Require Catch2 for tests

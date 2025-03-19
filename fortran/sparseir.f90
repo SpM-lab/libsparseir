@@ -76,7 +76,7 @@ module sparseir
     end subroutine
   end interface
 
-  ! モジュール手続きのインターフェース宣言
+  ! Interface declarations for module procedures
   interface
     ! Check if kernel is initialized
     module function kernel_is_initialized(this) result(initialized)
