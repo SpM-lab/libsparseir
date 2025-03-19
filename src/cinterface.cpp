@@ -352,7 +352,9 @@ spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
         auto kernel_impl = get_impl_kernel(k);
         if (!sve_impl || !kernel_impl)
             return nullptr;
-        return create_fermionic_finite_temp_basis(std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, omega_max, kernel_impl, *sve_impl));
+        return create_fermionic_finite_temp_basis(
+            std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+                beta, omega_max, kernel_impl, *sve_impl));
     } catch (...) {
         return nullptr;
     }
