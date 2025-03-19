@@ -149,20 +149,24 @@ public:
     // Delegating constructor 1
     FiniteTempBasis(double beta, double omega_max, double epsilon,
                     int max_size = -1)
-    {
-        auto kernel = std::make_shared<LogisticKernel>(beta * omega_max);
-        *this = FiniteTempBasis(beta, omega_max, epsilon, kernel,
-                               compute_sve(*kernel, epsilon), max_size);
-    }
+    : FiniteTempBasis(
+            beta, omega_max, epsilon,
+            std::make_shared<LogisticKernel>(beta * omega_max),
+            compute_sve(LogisticKernel(beta * omega_max),
+                        epsilon),
+            max_size)
+    {}
 
     // Delegating constructor 2
     FiniteTempBasis(double beta, double omega_max,
-                    double epsilon, const LogisticKernel& kernel)
-    {
-        auto kernel_ptr = std::make_shared<LogisticKernel>(beta * omega_max);
-        *this = FiniteTempBasis(beta, omega_max, epsilon, kernel_ptr,
-                               compute_sve(*kernel_ptr, epsilon), -1);
-    }
+                    double epsilon, const LogisticKernel& kernel) :
+            FiniteTempBasis(beta, omega_max, epsilon,
+                            std::make_shared<LogisticKernel>(beta * omega_max),
+                            compute_sve(LogisticKernel(beta * omega_max), epsilon), -1)    {}
+
+    // Delegating constructor 3
+    FiniteTempBasis(double beta, double omega_max, std::shared_ptr<AbstractKernel> kernel_ptr, SVEResult sve_result)
+    : FiniteTempBasis(beta, omega_max, sve_result.epsilon, kernel_ptr, sve_result, -1){}
 
     // Overload operator[] for indexing (get a subset of the basis)
     FiniteTempBasis<S> operator[](const std::pair<int, int> &range) const
