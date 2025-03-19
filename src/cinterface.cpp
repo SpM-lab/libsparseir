@@ -336,8 +336,7 @@ spir_fermionic_finite_temp_basis_new(double beta, double omega_max,
     try {
         return create_fermionic_finite_temp_basis(
             std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
-                beta, omega_max, epsilon,
-                sparseir::LogisticKernel(beta * omega_max)));
+                beta, omega_max, epsilon));
     } catch (...) {
         return nullptr;
     }
