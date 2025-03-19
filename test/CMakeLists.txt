@@ -1,6 +1,6 @@
 include(FetchContent)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 # Use Catch2 from parent scope if available
 if(NOT TARGET Catch2::Catch2WithMain)
@@ -8,7 +8,7 @@ if(NOT TARGET Catch2::Catch2WithMain)
     FetchContent_Declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v2.13.9 # for C++11 compatibility
+        GIT_TAG v3.4.0
         )
 
     # Goes through find_package first
