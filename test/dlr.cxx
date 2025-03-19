@@ -17,15 +17,15 @@ TEST_CASE("DLR Tests", "[dlr]") {
         const double omega_max = 1.0;
         const double epsilon = 1e-12;
 
-        sparseir::LogisticKernel kernel(beta * omega_max);
-        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
+        auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
+        auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
 
         auto test_statistics = [&](auto stat) {
             using Statistics = decltype(stat);
 
             auto basis =
                 std::make_shared<sparseir::FiniteTempBasis<Statistics>>(
-                    beta, omega_max, epsilon, kernel, sve_result);
+                    beta, omega_max, epsilon, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
             auto dlr =
                 sparseir::DiscreteLehmannRepresentation<Statistics>(*basis);
 
@@ -79,11 +79,11 @@ TEST_CASE("DLR Tests", "[dlr]") {
         double omega_max = 21.0;
         double epsilon = 1e-7;
 
-        sparseir::LogisticKernel kernel(beta * omega_max);
-        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
+        auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
+        auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
 
         auto basis_b = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-            beta, omega_max, epsilon, kernel, sve_result);
+            beta, omega_max, epsilon, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
         // Test specific coefficients and poles
         Eigen::Vector2d coeff(1.1, 2.0);

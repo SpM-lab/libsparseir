@@ -116,11 +116,10 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
     double wmax = 2.0;
     double Lambda = beta * wmax;
     // Create bosonic basis
-    sparseir::LogisticKernel kernel(Lambda);
-    auto sve_result = SVECache::get_sve_result(kernel, 1e-6);
-    std::shared_ptr<sparseir::FiniteTempBasis<sparseir::Bosonic>> basis =
-        std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-            beta, wmax, 1e-6, kernel, sve_result);
+    auto kernel = std::make_shared<sparseir::LogisticKernel>(Lambda);
+    auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
     // Create augmented basis with TauConst and TauLinear
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
@@ -179,9 +178,9 @@ TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
     double beta = 1000.0;
     double wmax = 2.0;
     // Create kernel and get SVE result from cache
-    sparseir::LogisticKernel kernel(beta * wmax);
-    auto sve_result = SVECache::get_sve_result(kernel, 1e-6);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6, kernel, sve_result);
+    auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
+    auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::MatsubaraConst>(beta));
@@ -217,9 +216,9 @@ TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
     double beta = 1000.0;
     double wmax = 2.0;
     // Create kernel and get SVE result from cache
-    sparseir::LogisticKernel kernel(beta * wmax);
-    auto sve_result = SVECache::get_sve_result(kernel, 1e-6);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, wmax, 1e-6, kernel, sve_result);
+    auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
+    auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::MatsubaraConst>(beta));
@@ -256,9 +255,9 @@ TEST_CASE("unit tests", "[augment]") {
     T wmax = 2.0;
     using S = sparseir::Bosonic;
     // Create kernel and get SVE result from cache
-    sparseir::LogisticKernel kernel(beta * wmax);
-    auto sve_result = SVECache::get_sve_result(kernel, 1e-6);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(beta, wmax, 1e-6, kernel, sve_result);
+    auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
+    auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
@@ -298,9 +297,9 @@ TEST_CASE("AugmentBasis basis_aug->u", "[augment]") {
     double epsilon = 1e-6;
 
     // Create kernel and get SVE result from cache
-    sparseir::LogisticKernel kernel(beta * omega_max);
-    auto sve_result = SVECache::get_sve_result(kernel, epsilon);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon, kernel, sve_result);
+    auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
+    auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
@@ -323,9 +322,9 @@ TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
     double epsilon = 1e-6;
 
     // Create kernel and get SVE result from cache
-    sparseir::LogisticKernel kernel(beta * omega_max);
-    auto sve_result = SVECache::get_sve_result(kernel, epsilon);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon, kernel, sve_result);
+    auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
+    auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
