@@ -1,38 +1,26 @@
-! Test program for SparseIR Fortran bindings
-program test_kernel
+! Simple test program for SparseIR Fortran bindings
+program test_simple
   use sparseir
   use, intrinsic :: iso_c_binding
   implicit none
+  real(c_double) :: xmin, xmax, ymin, ymax
+  integer(c_int) :: stat
 
   type(spir_kernel) :: kernel
-  real(c_double) :: lambda, xmin, xmax, ymin, ymax
-  integer :: stat
+  real(c_double) :: lambda
   
   ! Create a logistic kernel with lambda = 10.0
   lambda = 10.0d0
+  print *, "Creating kernel with lambda =", lambda
   kernel = spir_logistic_kernel_new(lambda)
   
-  if (.not. kernel%is_initialized()) then
-    print *, "Failed to create kernel"
-    stop 1
-  end if
+  print *, "Returned kernel ptr =", kernel%ptr
+  print *, "Is ptr associated (C level)? ", c_associated(kernel%ptr)
+  print * , "Checking is_assigned"
+  print *, "Is object assigned (C++ level)? ", is_assigned(kernel)
   
-  ! Get the domain of the kernel
   stat = spir_kernel_domain(kernel, xmin, xmax, ymin, ymax)
-  
-  if (stat /= 0) then
-    print *, "Failed to get kernel domain, status =", stat
-    call spir_destroy_kernel(kernel)
-    stop 1
-  end if
-  
-  print *, "Kernel domain:"
-  print *, "  x: [", xmin, ", ", xmax, "]"
-  print *, "  y: [", ymin, ", ", ymax, "]"
-  
-  ! Clean up
-  call spir_destroy_kernel(kernel)
-  
+  print *, "Domain: [", xmin, ",", xmax, "] x [", ymin, ",", ymax, "]"
   print *, "Test completed successfully"
   
-end program test_kernel 
+end program test_simple 

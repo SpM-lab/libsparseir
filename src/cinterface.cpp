@@ -4,6 +4,14 @@
 #include <memory>
 #include <stdexcept>
 #include <cstdint>
+#include <iostream>
+
+// Debug macro
+#ifdef DEBUG_CINTERFACE
+#define DEBUG_LOG(msg) std::cerr << "[DEBUG] " << msg << std::endl
+#else
+#define DEBUG_LOG(msg)
+#endif
 
 // Define opaque type and implement its management functions
 #define IMPLEMENT_OPAQUE_TYPE(name, impl_type)                                 \
@@ -24,19 +32,76 @@
         return obj;                                                            \
     }                                                                          \
                                                                                \
+    /* Check if the shared_ptr has a valid object */                           \
+    int spir_is_assigned_##name(const spir_##name *obj)                        \
+    {                                                                          \
+        if (!obj) {                                                            \
+            DEBUG_LOG(#name << " object is null");                             \
+            return 0;                                                          \
+        }                                                                      \
+        bool is_assigned = static_cast<bool>(obj->ptr);                        \
+        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get() << ", is_assigned=" << is_assigned); \
+        return is_assigned ? 1 : 0;                                            \
+    }                                                                          \
+                                                                               \
+    /* Clone function */                                                       \
+    spir_##name *spir_clone_##name(const spir_##name *src)                   \
+    {                                                                          \
+        DEBUG_LOG("Cloning " << #name << " at " << src);                       \
+        if (!src) {                                                            \
+            DEBUG_LOG("Source " << #name << " is null");                       \
+            return nullptr;                                                    \
+        }                                                                      \
+                                                                               \
+        try {                                                                  \
+            /* Create a new structure */                                       \
+            spir_##name *result = new spir_##name();                           \
+                                                                               \
+            /* If source has a valid shared_ptr, copy it */                    \
+            if (src->ptr) {                                                    \
+                /* Create a new shared_ptr instance that shares ownership */   \
+                result->ptr = src->ptr;                                        \
+                DEBUG_LOG("Cloned " << #name << " to " << result << ", shared_ptr points to " << result->ptr.get()); \
+            } else {                                                           \
+                DEBUG_LOG("Source " << #name << " has null shared_ptr");       \
+                result->ptr = nullptr;                                         \
+            }                                                                  \
+                                                                               \
+            return result;                                                     \
+        } catch (const std::exception& e) {                                    \
+            DEBUG_LOG("Exception in " << #name << "_clone: " << e.what());     \
+            return nullptr;                                                    \
+        } catch (...) {                                                        \
+            DEBUG_LOG("Unknown exception in " << #name << "_clone");           \
+            return nullptr;                                                    \
+        }                                                                      \
+    }                                                                          \
+                                                                               \
     /* Destroy function */                                                     \
     void spir_destroy_##name(spir_##name *obj)                                 \
     {                                                                          \
-        if (obj) {                                                             \
-            delete obj;                                                        \
+        if (!obj) {                                                            \
+            DEBUG_LOG(#name << " object is null");                             \
+            return;                                                            \
         }                                                                      \
+        DEBUG_LOG("Destroying " << #name << " object at " << obj);             \
+        /* リセットする前に確認 */                                                \
+        if (obj->ptr) {                                                        \
+            DEBUG_LOG("Resetting shared_ptr in " << #name << " at " << obj->ptr.get()); \
+            obj->ptr.reset();                                                  \
+        }                                                                      \
+        /* オブジェクトを安全に削除 */                                              \
+        delete obj;                                                            \
     }                                                                          \
                                                                                \
     /* Helper to get the implementation shared_ptr */                          \
     static inline std::shared_ptr<impl_type> get_impl_##name(const spir_##name *obj) \
     {                                                                          \
-        if (!obj)                                                              \
+        if (!obj) {                                                            \
+            DEBUG_LOG(#name << " object is null");                             \
             return nullptr;                                                    \
+        }                                                                      \
+        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get());\
         return obj->ptr;                                                       \
     }
 
@@ -163,11 +228,18 @@ extern "C" {
 // Create new logistic kernel
 spir_kernel *spir_logistic_kernel_new(double lambda)
 {
+    DEBUG_LOG("Creating LogisticKernel with lambda=" << lambda);
     try {
         auto kernel = std::make_shared<sparseir::LogisticKernel>(lambda);
         auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel);
-        return create_kernel(abstract_kernel);
+        auto result = create_kernel(abstract_kernel);
+        DEBUG_LOG("Created LogisticKernel at " << result << ", ptr=" << result->ptr.get());
+        return result;
+    } catch (const std::exception& e) {
+        DEBUG_LOG("Exception in spir_logistic_kernel_new: " << e.what());
+        return nullptr;
     } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_logistic_kernel_new");
         return nullptr;
     }
 }
@@ -175,21 +247,30 @@ spir_kernel *spir_logistic_kernel_new(double lambda)
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax)
 {
+    DEBUG_LOG("spir_kernel_domain called with kernel=" << k);
     auto impl = get_impl_kernel(k);
-    if (!impl)
+    if (!impl) {
+        DEBUG_LOG("Failed to get kernel implementation");
         return -1;
+    }
 
     try {
+        DEBUG_LOG("Getting xrange and yrange");
         auto xrange = impl->xrange();
         auto yrange = impl->yrange();
 
+        DEBUG_LOG("Setting output values: xrange=(" << xrange.first << ", " << xrange.second << "), yrange=(" << yrange.first << ", " << yrange.second << ")");
         *xmin = xrange.first;
         *xmax = xrange.second;
         *ymin = yrange.first;
         *ymax = yrange.second;
 
         return 0;
+    } catch (const std::exception& e) {
+        DEBUG_LOG("Exception in spir_kernel_domain: " << e.what());
+        return -1;
     } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_domain");
         return -1;
     }
 }

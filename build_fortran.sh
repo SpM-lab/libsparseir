@@ -13,6 +13,7 @@ cd build
 # Configure with Fortran bindings
 cmake .. \
   -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX:-$HOME/opt/libsparseir} \
+  -DCMAKE_BUILD_TYPE=Debug \
   -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=OFF \
   -DBUILD_TESTING=OFF

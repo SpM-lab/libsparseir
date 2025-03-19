@@ -67,6 +67,9 @@ add_subdirectory(${xprec_SOURCE_DIR} ${xprec_BINARY_DIR} EXCLUDE_FROM_ALL)
 # ---------------------------------
 # Building
 
+# Enable debug logging
+add_definitions(-DDEBUG_CINTERFACE)
+
 # Set the default component name for installations
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 

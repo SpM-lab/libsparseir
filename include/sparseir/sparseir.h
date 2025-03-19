@@ -28,7 +28,13 @@ typedef enum {
     typedef struct _spir_##name spir_##name;                                  \
                                                                               \
     /* Destroy function */                                                     \
-    void spir_destroy_##name(spir_##name *obj); \
+    void spir_destroy_##name(spir_##name *obj);                               \
+                                                                              \
+    /* Clone function */                                                       \
+    spir_##name *spir_clone_##name(const spir_##name *src);                   \
+                                                                              \
+    /* Check if the shared_ptr is assigned to a valid object */                \
+    int spir_is_assigned_##name(const spir_##name *obj);
 
 /* Declare opaque types */
 struct _spir_kernel;
