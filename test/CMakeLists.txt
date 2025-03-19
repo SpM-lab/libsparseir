@@ -8,7 +8,7 @@ if(NOT TARGET Catch2::Catch2WithMain)
     FetchContent_Declare(
         Catch2
         GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v3.4.0
+        GIT_TAG v3.8.0
         )
 
     # Goes through find_package first
