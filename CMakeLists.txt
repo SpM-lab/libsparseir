@@ -5,7 +5,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
 
-set(CMAKE_CXX_STANDARD 11) # TODO: back port to 11
+set(CMAKE_CXX_STANDARD 11)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
@@ -69,7 +69,7 @@ add_subdirectory(${xprec_SOURCE_DIR} ${xprec_BINARY_DIR} EXCLUDE_FROM_ALL)
 # Building
 
 # Enable debug logging
-add_definitions(-DDEBUG_CINTERFACE)
+#add_definitions(-DDEBUG_CINTERFACE)
 
 # Set the default component name for installations
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
@@ -176,19 +176,6 @@ option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." ${BUILD_TESTI
 
 if (SPARSEIR_BUILD_TESTING)
     enable_testing()
-    
-    # Make Eigen and XPrec available to test code
-    if(TARGET Catch2::Catch2WithMain)
-        # Catch2 already available
-    else()
-        # Fetch Catch2 for testing if needed
-        FetchContent_Declare(
-            Catch2
-            GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-            GIT_TAG v3.0.1 # or a later release
-        )
-        FetchContent_MakeAvailable(Catch2)
-    endif()
     
     # Set include paths for tests
     set(TEST_INCLUDE_DIRS
