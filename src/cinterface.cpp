@@ -342,6 +342,24 @@ spir_fermionic_finite_temp_basis_new(double beta, double omega_max,
     }
 }
 
+spir_fermionic_finite_temp_basis *
+spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
+                                             const spir_kernel *k,
+                                             const spir_sve_result *sve)
+{
+    try {
+        auto sve_impl = get_impl_sve_result(sve);
+        auto kernel_impl = get_impl_kernel(k);
+        if (!sve_impl || !kernel_impl)
+            return nullptr;
+        return create_fermionic_finite_temp_basis(
+            std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+                beta, omega_max, kernel_impl, *sve_impl));
+    } catch (...) {
+        return nullptr;
+    }
+}
+
 spir_sampling *
 spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b)
 {
