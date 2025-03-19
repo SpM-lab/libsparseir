@@ -663,7 +663,7 @@ public:
             Eigen::MatrixXd data2d(data.dimension(0), data.dimension(1));
             for (int j = 0; j < data.dimension(0); ++j) {
                 for (int k = 0; k < data.dimension(1); ++k) {
-                    data2d(j, k) = data(j, k, i);
+                    data2d(j, k) = data(static_cast<Eigen::Index>(j), static_cast<Eigen::Index>(k), static_cast<Eigen::Index>(i));
                 }
             }
             auto p = PiecewiseLegendrePoly(data2d, polys[i]);
@@ -725,17 +725,17 @@ public:
     // Function to retrieve data as Eigen Tensor
     Eigen::Tensor<double, 3> get_data() const
     {
-        if (polyvec.empty()) {
-            return Eigen::Tensor<double, 3>();
-        }
+        if (polyvec.empty()) return Eigen::Tensor<double, 3>();
+
+        int npolys = polyvec.size();
         int nrows = polyvec[0].data.rows();
         int ncols = polyvec[0].data.cols();
-        int npolys = polyvec.size();
+
         Eigen::Tensor<double, 3> data(nrows, ncols, npolys);
         for (int i = 0; i < npolys; ++i) {
             for (int r = 0; r < nrows; ++r) {
                 for (int c = 0; c < ncols; ++c) {
-                    data(r, c, i) = polyvec[i].data(r, c);
+                    data(static_cast<Eigen::Index>(r), static_cast<Eigen::Index>(c), static_cast<Eigen::Index>(i)) = polyvec[i].data(r, c);
                 }
             }
         }
