@@ -860,7 +860,7 @@ public:
         if (std::abs(n) < n_asymp) {
             return compute_unl_inner(poly, n);
         } else {
-            return giw(*this, n);
+            return giw(n);
         }
     }
 
@@ -896,7 +896,7 @@ private:
                                            int wn) const;
 
     // Function to compute the asymptotic model for high frequencies
-    std::complex<double> giw(const PiecewiseLegendreFT &polyFT, int wn) const;
+    std::complex<double> giw(int wn) const;
 
     // Function to evaluate a polynomial at a complex point
     std::complex<double> evalpoly(const std::complex<double> &x,
@@ -927,8 +927,7 @@ std::complex<double> PiecewiseLegendreFT<StatisticsType>::compute_unl_inner(
 
 template <typename StatisticsType>
 std::complex<double>
-PiecewiseLegendreFT<StatisticsType>::giw(const PiecewiseLegendreFT &polyFT,
-                                        int wn) const
+PiecewiseLegendreFT<StatisticsType>::giw(int wn) const
 {
     std::complex<double> iw(0.0, M_PI / 2.0 * wn);
     if (wn == 0)
