@@ -318,49 +318,49 @@ public:
 
     // Evaluate the basis functions at the sampling points with double input and double output
     virtual int evaluate_inplace_dd(
-        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
-        int dim,
-        Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const {
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &/*input*/,
+        int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> &/*output*/) const {
             return -3;
         }
 
     // Evaluate the basis functions at the sampling points with complex input and complex output
     virtual int evaluate_inplace_cc(
-        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
-        int dim,
-        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const {
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
+        int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
             return -3;
         }
 
     // Evaluate the basis functions at the sampling points with double input and complex output
     virtual int evaluate_inplace_dc(
-        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
-        int dim,
-        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const {
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &/*input*/,
+        int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
             return -3;
         }
 
     // Fit basis coefficients from the sparse sampling points with double input and double output
     virtual int fit_inplace_dd(
-        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
-        int dim,
-        Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const {
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &/*input*/,
+        int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> &/*output*/) const {
             return -3;
         }
 
     // Fit basis coefficients from the sparse sampling points with complex input and complex output
     virtual int fit_inplace_cc(
-        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
-        int dim,
-        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const {
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
+        int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
             return -3;
         }
 
     // Fit basis coefficients from the sparse sampling points with complex input and double output
     virtual int fit_inplace_cd(
-        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
-        int dim,
-        Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const {
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
+        int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> &/*output*/) const {
             return -3;
         }
 };

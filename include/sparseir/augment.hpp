@@ -47,7 +47,7 @@ public:
         return is_zero(n) ? std::sqrt(beta) : 0.0;
     }
 
-    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> /*n*/) const override {
         throw std::invalid_argument("TauConst is not a Fermionic basis.");
         return std::numeric_limits<std::complex<double>>::quiet_NaN();
     }
@@ -96,7 +96,7 @@ public:
         return norm * 2.0 / std::complex<double>(0, 1) * inv_w;
     }
 
-    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> /*n*/) const override {
         throw std::invalid_argument("TauConst is not a Fermionic basis.");
         return std::numeric_limits<std::complex<double>>::quiet_NaN();
     }
@@ -137,11 +137,11 @@ public:
         return std::numeric_limits<double>::quiet_NaN();
     }
 
-    std::complex<double> operator()(MatsubaraFreq<Bosonic> n) const override {
+    std::complex<double> operator()(MatsubaraFreq<Bosonic> /*n*/) const override {
         return 1.0;
     }
 
-    std::complex<double> operator()(MatsubaraFreq<Fermionic> n) const override {
+    std::complex<double> operator()(MatsubaraFreq<Fermionic> /*n*/) const override {
         return 1.0;
     }
 
