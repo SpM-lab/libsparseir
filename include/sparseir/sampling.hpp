@@ -488,7 +488,7 @@ public:
 
     // Implement the pure virtual method from AbstractSampling
     std::size_t basis_size() const override {
-        return this->matrix_.cols();
+        return static_cast<std::size_t>(this->matrix_.cols());
     }
 
     // Implement evaluate_inplace_dd method using the common implementation
@@ -676,7 +676,7 @@ public:
     }
 
     std::size_t basis_size() const override {
-        return matrix_.cols();
+        return static_cast<std::size_t>(matrix_.cols());
     }
 
     // Implement evaluate_inplace_dc method using the common implementation
