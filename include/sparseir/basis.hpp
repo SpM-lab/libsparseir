@@ -158,11 +158,12 @@ public:
     {}
 
     // Delegating constructor 2
-    FiniteTempBasis(double beta, double omega_max,
-                    double epsilon, const LogisticKernel& kernel) :
-            FiniteTempBasis(beta, omega_max, epsilon,
-                            std::make_shared<LogisticKernel>(beta * omega_max),
-                            compute_sve(LogisticKernel(beta * omega_max), epsilon), -1)    {}
+    FiniteTempBasis(double beta, double omega_max, double epsilon,
+                    std::shared_ptr<AbstractKernel> kernel_ptr)
+        : FiniteTempBasis(beta, omega_max, epsilon, kernel_ptr,
+                          compute_sve(kernel_ptr, epsilon), -1)
+    {
+    }
 
     // Delegating constructor 3
     FiniteTempBasis(double beta, double omega_max, std::shared_ptr<AbstractKernel> kernel_ptr, SVEResult sve_result)

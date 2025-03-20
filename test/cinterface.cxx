@@ -78,8 +78,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -162,8 +161,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -248,8 +246,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -383,8 +380,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -512,8 +508,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -609,8 +604,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -704,8 +698,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -820,8 +813,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -915,8 +907,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -1011,8 +1002,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
@@ -1130,8 +1120,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(
             cpp_basis);
 
@@ -1245,8 +1234,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
         REQUIRE(sampling != nullptr);
 
         // Create equivalent C++ objects for comparison
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(
-            beta, wmax, 1e-10, sparseir::LogisticKernel(beta * wmax));
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
         sparseir::MatsubaraSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
         int basis_size = cpp_basis.size();
