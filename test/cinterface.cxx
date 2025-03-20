@@ -65,8 +65,8 @@ TEST_CASE("FiniteTempBasis", "[cinterface]") {
         double Lambda = 10.0;
         double epsilon = 1e-6;
 
-        auto cpp_basis = sparseir::FiniteTempBasis<sparseir::Fermionic>(beta, wmax, epsilon);
-        auto basis = spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, epsilon);
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
         REQUIRE(basis != nullptr);
     }
 
@@ -76,13 +76,13 @@ TEST_CASE("FiniteTempBasis", "[cinterface]") {
         double Lambda = 10.0;
         double epsilon = 1e-6;
 
-        auto kernel = spir_logistic_kernel_new(Lambda);
+        spir_kernel* kernel = spir_logistic_kernel_new(Lambda);
         REQUIRE(kernel != nullptr);
 
-        auto sve_result = spir_sve_result_new(kernel, epsilon);
+        spir_sve_result* sve_result = spir_sve_result_new(kernel, epsilon);
         REQUIRE(sve_result != nullptr);
 
-        auto basis = spir_fermionic_finite_temp_basis_new_with_sve(beta, wmax, kernel, sve_result);
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new_with_sve(beta, wmax, kernel, sve_result);
         REQUIRE(basis != nullptr);
 
         // Clean up
@@ -98,13 +98,13 @@ TEST_CASE("FiniteTempBasis", "[cinterface]") {
         double Lambda = 10.0;
         double epsilon = 1e-6;
 
-        auto kernel = spir_regularized_bose_kernel_new(Lambda);
+        spir_kernel* kernel = spir_regularized_bose_kernel_new(Lambda);
         REQUIRE(kernel != nullptr);
 
-        auto sve_result = spir_sve_result_new(kernel, epsilon);
+        spir_sve_result* sve_result = spir_sve_result_new(kernel, epsilon);
         REQUIRE(sve_result != nullptr);
 
-        auto basis = spir_bosonic_finite_temp_basis_new_with_sve(
+        spir_bosonic_finite_temp_basis* basis = spir_bosonic_finite_temp_basis_new_with_sve(
             beta, wmax, kernel, sve_result);
         REQUIRE(basis != nullptr);
 
