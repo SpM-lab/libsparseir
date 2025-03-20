@@ -117,6 +117,8 @@ IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Bosonic>);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
 IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
+IMPLEMENT_OPAQUE_TYPE(fermionic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>);
+IMPLEMENT_OPAQUE_TYPE(bosonic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>);
 
 // Helper function to convert N-dimensional array to 3D array by collapsing dimensions
 static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t* dims, int32_t target_dim) {
@@ -431,6 +433,26 @@ spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b)
         return nullptr;
     auto smpl = std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(*impl);
     return create_sampling(smpl);
+}
+
+spir_fermionic_dlr *
+spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
+{
+    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
+    return create_fermionic_dlr(dlr);
+}
+
+spir_bosonic_dlr *
+spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
+{
+    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
+    return create_bosonic_dlr(dlr);
 }
 
 int spir_sampling_evaluate_dd(

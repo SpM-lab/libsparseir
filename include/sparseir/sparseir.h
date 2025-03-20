@@ -47,6 +47,8 @@ DECLARE_OPAQUE_TYPE(fermionic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(bosonic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
+DECLARE_OPAQUE_TYPE(fermionic_dlr);
+DECLARE_OPAQUE_TYPE(bosonic_dlr);
 
 /**
  * Kernel
@@ -108,6 +110,17 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
  * Create a new matsubara sampling object
  */
 spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
+
+/**
+ * Create a new fermionic DLR object
+ */
+spir_fermionic_dlr *spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b);
+
+/**
+ * Create a new bosonic DLR object
+ */
+spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
+
 
 int spir_sampling_evaluate_dd(
     const spir_sampling *s,        // Sampling object
