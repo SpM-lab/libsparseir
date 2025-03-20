@@ -77,6 +77,10 @@ public:
             throw std::domain_error(
                 "Frequency cutoff omega_max must be non-negative");
         }
+        if (std::fabs(beta * omega_max - kernel->lambda_) > 1e-10) {
+            throw std::runtime_error(
+                "Product of beta and omega_max must be equal to lambda in kernel");
+        }
         this->beta = beta;
         this->lambda = kernel->lambda_;
         this->sve_result = std::make_shared<SVEResult>(sve_result);
