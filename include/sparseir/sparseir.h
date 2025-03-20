@@ -41,6 +41,7 @@ struct _spir_kernel;
 
 DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
+DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
 DECLARE_OPAQUE_TYPE(polyvector);
 DECLARE_OPAQUE_TYPE(fermionic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(bosonic_finite_temp_basis);
@@ -71,6 +72,11 @@ typedef struct _spir_function spir_function;
  * Create new logistic kernel
  */
 spir_kernel *spir_logistic_kernel_new(double lambda);
+
+/**
+ * Create new regularized bose kernel
+ */
+spir_kernel *spir_regularized_bose_kernel_new(double lambda);
 
 /**
  * Create new SVE result
@@ -206,6 +212,17 @@ int spir_sampling_fit_cc(
 
 // Create new basis
 spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
+spir_bosonic_finite_temp_basis* spir_bosonic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
+
+spir_fermionic_finite_temp_basis *
+spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
+                                             const spir_kernel *k,
+                                             const spir_sve_result *sve);
+
+spir_bosonic_finite_temp_basis *
+spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
+                                             const spir_kernel *k,
+                                             const spir_sve_result *sve);
 
 // Destroy basis instance
 //void spir_destroy_fermionic_basis(spir_fermionic_finite_temp_basis* b);
