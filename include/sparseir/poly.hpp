@@ -235,7 +235,7 @@ public:
     Eigen::VectorXd refine_grid(const Eigen::VectorXd& grid, int alpha) const {
         Eigen::VectorXd refined((grid.size() - 1) * alpha + 1);
 
-        for (size_t i = 0; i < grid.size() - 1; ++i) {
+        for (size_t i = 0; i < static_cast<size_t>(grid.size() - 1); ++i) {
             double start = grid[i];
             double step = (grid[i + 1] - grid[i]) / alpha;
             for (int j = 0; j < alpha; ++j) {
@@ -379,17 +379,6 @@ private:
         }
         integral *= c1;
         return integral;
-    }
-
-    // Placeholder for finding roots in an interval
-    std::vector<double> find_roots_in_interval(std::function<double(double)> f,
-                                               double a, double b,
-                                               double tol) const
-    {
-        // Implement a root-finding algorithm like bisection or Brent's method
-        std::vector<double> roots;
-        // Placeholder: actual implementation needed
-        return roots;
     }
 };
 
@@ -659,7 +648,7 @@ public:
         if (data.dimension(2) != polys.size()) {
             throw std::invalid_argument("Sizes of data and polys don't match");
         }
-        for (size_t i = 0; i < data.dimension(2); ++i) {
+        for (size_t i = 0; i < static_cast<size_t>(data.dimension(2)); ++i) {
             Eigen::MatrixXd data2d(data.dimension(0), data.dimension(1));
             for (int j = 0; j < data.dimension(0); ++j) {
                 for (int k = 0; k < data.dimension(1); ++k) {
