@@ -157,6 +157,14 @@ public:
             max_size)
     {}
 
+    // Delegating constructor 2
+    FiniteTempBasis(double beta, double omega_max, double epsilon,
+                    std::shared_ptr<AbstractKernel> kernel_ptr)
+        : FiniteTempBasis(beta, omega_max, epsilon, kernel_ptr,
+                          compute_sve(kernel_ptr, epsilon), -1)
+    {
+    }
+
     // Delegating constructor 3
     FiniteTempBasis(double beta, double omega_max, std::shared_ptr<AbstractKernel> kernel_ptr, SVEResult sve_result)
     : FiniteTempBasis(beta, omega_max, sve_result.epsilon, kernel_ptr, sve_result, -1){}
