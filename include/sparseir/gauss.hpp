@@ -157,12 +157,6 @@ public:
         return join(rules);
     }
 
-    Rule<T> astype(const std::string &dtype) const
-    {
-        // Assuming dtype is either "float" or "double"
-        return *this;
-    }
-
     static Rule<T> join(const std::vector<Rule<T>> &gauss_list)
     {
         if (gauss_list.empty()) {

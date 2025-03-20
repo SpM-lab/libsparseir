@@ -380,17 +380,6 @@ private:
         integral *= c1;
         return integral;
     }
-
-    // Placeholder for finding roots in an interval
-    std::vector<double> find_roots_in_interval(std::function<double(double)> f,
-                                               double a, double b,
-                                               double tol) const
-    {
-        // Implement a root-finding algorithm like bisection or Brent's method
-        std::vector<double> roots;
-        // Placeholder: actual implementation needed
-        return roots;
-    }
 };
 
 /*
