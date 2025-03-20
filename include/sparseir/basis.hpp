@@ -234,7 +234,7 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
     if (u.xmin() != -1.0 || u.xmax() != 1.0)
         throw std::runtime_error("Expecting unscaled functions here.");
 
-    if (L < u.size()) {
+    if (static_cast<std::size_t>(L) < u.size()) {
         return u.polyvec[L].roots();
     } else {
         // Approximate roots by extrema

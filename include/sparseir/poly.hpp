@@ -168,8 +168,6 @@ public:
 
     // Overlap function
     double overlap(std::function<double(double)> f,
-                   double rtol = std::numeric_limits<double>::epsilon(),
-                   bool return_error = false, int maxevals = 10000,
                    const std::vector<double> &points = {}) const
     {
         // Implement numerical integration over the intervals
@@ -196,13 +194,7 @@ public:
             double integral = gauss_legendre_quadrature(a, b, integrand);
             result += integral;
         }
-
-        if (return_error) {
-            // Since we haven't computed the error estimate, we return zero
-            return 0.0; // Placeholder for error estimate
-        } else {
-            return result;
-        }
+        return result;
     }
 
     // Derivative function
@@ -264,7 +256,7 @@ public:
     }
 
     // Roots function
-    Eigen::VectorXd roots(double tol = 1e-10) const
+    Eigen::VectorXd roots() const
     {
         Eigen::VectorXd grid = this->knots;
 
@@ -585,7 +577,7 @@ public:
                                 const std::vector<int> &symm = {})
         : polyvec(data3d.size())
     {
-        if (!symm.empty() && symm.size() != data3d.size()) {
+        if (!symm.empty() && symm.size() != static_cast<size_t>(data3d.size())) {
             throw std::invalid_argument("Sizes of data and symm don't match");
         }
         for (auto i = 0; i < data3d.size(); ++i) {
@@ -620,7 +612,7 @@ public:
                                 const Eigen::VectorXi &symm = Eigen::VectorXi())
         : polyvec(polys.size())
     {
-        if (polys.size() != symm.size()) {
+        if (polys.size() != static_cast<size_t>(symm.size())) {
             throw std::invalid_argument(
                 "Sizes of polys and symm don't match " + std::to_string(polys.size()) + " " + std::to_string(symm.size()));
         }
@@ -645,7 +637,7 @@ public:
                                 const PiecewiseLegendrePolyVector &polys)
     {
         std::vector<PiecewiseLegendrePoly> polyvec;
-        if (data.dimension(2) != polys.size()) {
+        if (static_cast<size_t>(data.dimension(2)) != polys.size()) {
             throw std::invalid_argument("Sizes of data and polys don't match");
         }
         for (size_t i = 0; i < static_cast<size_t>(data.dimension(2)); ++i) {
