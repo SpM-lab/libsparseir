@@ -965,3 +965,29 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
     }
 }
 
+TEST_CASE("FiniteTempBasis error handling", "[basis]"){
+
+    double beta = 2.0;
+    double omega_max = 5.0;
+    double epsilon = 1e-10;
+    auto rbk = sparseir::RegularizedBoseKernel(10.0);
+    auto sve_result = SVECache::get_sve_result(rbk, epsilon);
+    auto rbk_ptr = std::make_shared<sparseir::RegularizedBoseKernel>(rbk);
+
+    double wrong_beta = 120.0;
+    REQUIRE_THROWS_AS(sparseir::FiniteTempBasis<sparseir::Bosonic>(
+        wrong_beta, omega_max, rbk_ptr, sve_result), std::runtime_error);
+
+    double wrong_omega_max = 1000.;
+    REQUIRE_THROWS_AS(sparseir::FiniteTempBasis<sparseir::Bosonic>(
+        beta, wrong_omega_max, rbk_ptr, sve_result), std::runtime_error);
+
+    double negative_beta = -10.0;
+    REQUIRE_THROWS_AS(sparseir::FiniteTempBasis<sparseir::Bosonic>(
+        negative_beta, omega_max, rbk_ptr, sve_result), std::domain_error);
+
+    double negative_wmax = -10.0;
+    REQUIRE_THROWS_AS(sparseir::FiniteTempBasis<sparseir::Bosonic>(
+        beta, negative_wmax, rbk_ptr, sve_result), std::domain_error);
+}
+
