@@ -50,8 +50,8 @@ inline Eigen::VectorXi invperm(const Eigen::VectorXi &a)
 
     for (int i = 0; i < n; i++) {
         int j = a(i);
-        if ((0 <= j < n) && b(j) == -1) {
-            std::invalid_argument("invalid permutation");
+        if (!(0 <= j && j < n) || b(j) != -1) {
+            throw std::invalid_argument("invalid permutation");
         }
         b(j) = i;
     }
