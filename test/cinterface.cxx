@@ -115,6 +115,43 @@ TEST_CASE("FiniteTempBasis", "[cinterface]") {
     }
 }
 
+TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
+    SECTION("DiscreteLehmannRepresentation Constructor Fermionic") {
+        double beta = 2.0;
+        double wmax = 5.0;
+        double epsilon = 1e-6;
+
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
+        REQUIRE(basis != nullptr);
+
+        spir_fermionic_dlr* dlr = spir_fermionic_dlr_new(basis);
+        REQUIRE(dlr != nullptr);
+
+        // Clean up
+        spir_destroy_fermionic_finite_temp_basis(basis);
+        spir_destroy_fermionic_dlr(dlr);
+    }
+
+    SECTION("DiscreteLehmannRepresentation Constructor Bosonic") {
+        double beta = 2.0;
+        double wmax = 5.0;
+        double epsilon = 1e-6;
+
+        spir_bosonic_finite_temp_basis* basis = spir_bosonic_finite_temp_basis_new(beta, wmax, epsilon);
+        REQUIRE(basis != nullptr);
+
+        spir_bosonic_dlr* dlr = spir_bosonic_dlr_new(basis);
+        REQUIRE(dlr != nullptr);
+
+        // Clean up
+        spir_destroy_bosonic_finite_temp_basis(basis);
+        spir_destroy_bosonic_dlr(dlr);
+    }
+}
+
+
+
+
 TEST_CASE("TauSampling", "[cinterface]") {
     SECTION("TauSampling Constructor") {
         double beta = 1.0;
