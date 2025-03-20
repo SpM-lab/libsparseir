@@ -637,7 +637,7 @@ public:
                                 const PiecewiseLegendrePolyVector &polys)
     {
         std::vector<PiecewiseLegendrePoly> polyvec;
-        if (data.dimension(2) != polys.size()) {
+        if (static_cast<size_t>(data.dimension(2)) != polys.size()) {
             throw std::invalid_argument("Sizes of data and polys don't match");
         }
         for (size_t i = 0; i < static_cast<size_t>(data.dimension(2)); ++i) {

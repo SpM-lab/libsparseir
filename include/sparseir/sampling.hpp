@@ -389,7 +389,7 @@ int evaluate_inplace_impl(
         return -1;
     }
 
-    if (sampler.basis_size() != input.dimension(dim)) {
+    if (sampler.basis_size() != static_cast<std::size_t>(input.dimension(dim))) {
         // Dimension mismatch
         return -2;
     }
@@ -422,7 +422,7 @@ int fit_inplace_impl(
         return -1;
     }
 
-    if (sampler.basis_size() != input.dimension(dim)) {
+    if (sampler.basis_size() != static_cast<std::size_t>(input.dimension(dim))) {
         // Dimension mismatch
         return -2;
     }
@@ -545,7 +545,7 @@ public:
         matrix_ = eval_matrix(basis, sampling_points_);
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis->size()) {
+            matrix_.cols() != static_cast<std::size_t>(basis->size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
@@ -768,7 +768,7 @@ public:
 
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis->size()) {
+            matrix_.cols() != static_cast<std::size_t>(basis->size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
