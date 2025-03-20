@@ -17,7 +17,15 @@ using xprec::DDouble;
 TEST_CASE("Kernel Accuracy Tests", "[cinterface]") {
     // Test individual kernels
     SECTION("LogisticKernel(9)") {
-        auto kernel = sparseir::LogisticKernel(9);
+        auto cpp_kernel = sparseir::LogisticKernel(9);
+        spir_kernel* kernel = spir_logistic_kernel_new(9);
+        REQUIRE(kernel != nullptr);
+    }
+
+    SECTION("RegularizedBoseKernel(10)") {
+        auto cpp_kernel = sparseir::RegularizedBoseKernel(10);
+        spir_kernel* kernel = spir_regularized_bose_kernel_new(10);
+        REQUIRE(kernel != nullptr);
     }
 
     SECTION("Kernel Domain") {
@@ -47,6 +55,63 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]") {
 
         // Clean up
         spir_destroy_kernel(kernel);
+    }
+}
+
+TEST_CASE("FiniteTempBasis", "[cinterface]") {
+    SECTION("FiniteTempBasis Constructor Fermionic") {
+        double beta = 2.0;
+        double wmax = 5.0;
+        double Lambda = 10.0;
+        double epsilon = 1e-6;
+
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, epsilon);
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
+        REQUIRE(basis != nullptr);
+    }
+
+    SECTION("FiniteTempBasis Constructor with SVE Fermionic/LogisticKernel") {
+        double beta = 2.0;
+        double wmax = 5.0;
+        double Lambda = 10.0;
+        double epsilon = 1e-6;
+
+        spir_kernel* kernel = spir_logistic_kernel_new(Lambda);
+        REQUIRE(kernel != nullptr);
+
+        spir_sve_result* sve_result = spir_sve_result_new(kernel, epsilon);
+        REQUIRE(sve_result != nullptr);
+
+        spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new_with_sve(beta, wmax, kernel, sve_result);
+        REQUIRE(basis != nullptr);
+
+        // Clean up
+        spir_destroy_kernel(kernel);
+        spir_destroy_sve_result(sve_result);
+        spir_destroy_fermionic_finite_temp_basis(basis);
+    }
+
+    SECTION("FiniteTempBasis Constructor with SVE Bosonic/RegularizedBoseKernel")
+    {
+        double beta = 2.0;
+        double wmax = 5.0;
+        double Lambda = 10.0;
+        double epsilon = 1e-6;
+
+        spir_kernel* kernel = spir_regularized_bose_kernel_new(Lambda);
+        REQUIRE(kernel != nullptr);
+
+        spir_sve_result* sve_result = spir_sve_result_new(kernel, epsilon);
+        REQUIRE(sve_result != nullptr);
+
+        spir_bosonic_finite_temp_basis* basis = spir_bosonic_finite_temp_basis_new_with_sve(
+            beta, wmax, kernel, sve_result);
+        REQUIRE(basis != nullptr);
+
+        // Clean up
+        spir_destroy_kernel(kernel);
+        spir_destroy_sve_result(sve_result);
+        spir_destroy_bosonic_finite_temp_basis(basis);
     }
 }
 

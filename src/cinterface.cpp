@@ -108,10 +108,13 @@
 // Implementation of the opaque types
 IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
 IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
+IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
 IMPLEMENT_OPAQUE_TYPE(polyvector, sparseir::PiecewiseLegendrePolyVector);
 IMPLEMENT_OPAQUE_TYPE(basis, sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Fermionic>);
+IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
+                      sparseir::FiniteTempBasis<sparseir::Bosonic>);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
 IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
 
@@ -244,6 +247,25 @@ spir_kernel *spir_logistic_kernel_new(double lambda)
     }
 }
 
+// Create new regularized bose kernel
+spir_kernel *spir_regularized_bose_kernel_new(double lambda)
+{
+    DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
+    try {
+        auto kernel = std::make_shared<sparseir::RegularizedBoseKernel>(lambda);
+        auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel);
+        auto result = create_kernel(abstract_kernel);
+        DEBUG_LOG("Created RegularizedBoseKernel at " << result << ", ptr=" << result->ptr.get());
+        return result;
+    } catch (const std::exception& e) {
+        DEBUG_LOG("Exception in spir_regularized_bose_kernel_new: " << e.what());
+        return nullptr;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_regularized_bose_kernel_new");
+        return nullptr;
+    }
+}
+
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax)
 {
@@ -342,6 +364,19 @@ spir_fermionic_finite_temp_basis_new(double beta, double omega_max,
     }
 }
 
+spir_bosonic_finite_temp_basis *
+spir_bosonic_finite_temp_basis_new(double beta, double omega_max,
+                                     double epsilon)
+{
+    try {
+        return create_bosonic_finite_temp_basis(
+            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+                beta, omega_max, epsilon));
+    } catch (...) {
+        return nullptr;
+    }
+}
+
 spir_fermionic_finite_temp_basis *
 spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
                                              const spir_kernel *k,
@@ -354,6 +389,24 @@ spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
             return nullptr;
         return create_fermionic_finite_temp_basis(
             std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+                beta, omega_max, kernel_impl, *sve_impl));
+    } catch (...) {
+        return nullptr;
+    }
+}
+
+spir_bosonic_finite_temp_basis *
+spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
+                                              const spir_kernel *k,
+                                              const spir_sve_result *sve)
+{
+    try {
+        auto sve_impl = get_impl_sve_result(sve);
+        auto kernel_impl = get_impl_kernel(k);
+        if (!sve_impl || !kernel_impl)
+            return nullptr;
+        return create_bosonic_finite_temp_basis(
+            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
                 beta, omega_max, kernel_impl, *sve_impl));
     } catch (...) {
         return nullptr;
