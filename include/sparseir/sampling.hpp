@@ -124,8 +124,6 @@ _matop_along_dim(
          const Eigen::Tensor<T2, N2> &tensor2,
          int dim = 0)
 {
-    using ResultType = decltype(T1() * T2());
-
     if (dim < 0 || dim >= N2) {
         throw std::runtime_error(
             "evaluate: dimension must be in [0..N2). Got dim=" +
@@ -165,8 +163,6 @@ _matop_along_dim(
          const Eigen::TensorMap<const Eigen::Tensor<T2, N2>> &tensor2,
          int dim = 0)
 {
-    using ResultType = decltype(T1() * T2());
-
     if (dim < 0 || dim >= N2) {
         throw std::runtime_error(
             "evaluate: dimension must be in [0..N2). Got dim=" +
