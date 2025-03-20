@@ -920,5 +920,48 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]") {
         REQUIRE(pts_100.size() == 24);
         */
     }
+
+    SECTION("RegularizedBoseKernel epsilon = 1e-6")
+    {
+        double beta = 2.0;
+        double omega_max = 5.0;
+        double epsilon = 1e-6;
+        auto rbk = sparseir::RegularizedBoseKernel(10.0);
+        auto sve_result = SVECache::get_sve_result(rbk, epsilon);
+        auto rbk_ptr = std::make_shared<sparseir::RegularizedBoseKernel>(rbk);
+        auto basis = sparseir::FiniteTempBasis<sparseir::Bosonic>(beta, omega_max, rbk_ptr, sve_result);
+        Eigen::VectorXd s = basis.s;
+        std::vector<double> s_ref = {
+            0.10510068935158154, 0.09586154039284563, 0.030202857804989477,
+            0.012403239133253094, 0.003620231925658172, 0.0008751907696266496,
+            0.0001785603501618872, 3.146583475667217e-5, 4.873570749209003e-6,
+            6.728252233050357e-7
+        };
+        Eigen::VectorXd s_ref_eigen = Eigen::Map<Eigen::VectorXd>(s_ref.data(), s_ref.size());
+        REQUIRE(s.isApprox(s_ref_eigen));
+    }
+
+    SECTION("RegularizedBoseKernel epsilon = 1e-10")
+    {
+        double beta = 2.0;
+        double omega_max = 5.0;
+        double epsilon = 1e-10;
+        auto rbk = sparseir::RegularizedBoseKernel(10.0);
+        auto sve_result = SVECache::get_sve_result(rbk, epsilon);
+        auto rbk_ptr = std::make_shared<sparseir::RegularizedBoseKernel>(rbk);
+        auto basis = sparseir::FiniteTempBasis<sparseir::Bosonic>(
+            beta, omega_max, rbk_ptr, sve_result);
+        Eigen::VectorXd s = basis.s;
+        std::vector<double> s_ref = {
+            0.10510068935158154, 0.09586154039284558, 0.030202857804989457,
+            0.012403239133253087, 0.0036202319256581714, 0.0008751907696266496,
+            0.00017856035016188457, 3.146583475667272e-5, 4.873570749208084e-6,
+            6.72825223304962e-7, 8.374707823163109e-8, 9.48760053912297e-9,
+            9.86065074062678e-10, 9.465414711499528e-11
+        };
+        Eigen::VectorXd s_ref_eigen =
+            Eigen::Map<Eigen::VectorXd>(s_ref.data(), s_ref.size());
+        REQUIRE(s.isApprox(s_ref_eigen));
+    }
 }
 
