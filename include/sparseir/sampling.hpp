@@ -32,7 +32,7 @@ Eigen::array<int, N> getperm(int src, int dst)
         if (i == dst) {
             perm[i] = src;
         } else {
-            // src の位置をスキップ
+            // Skip src position
             if (pos == src)
                 ++pos;
             perm[i] = pos;
@@ -42,8 +42,8 @@ Eigen::array<int, N> getperm(int src, int dst)
     return perm;
 }
 
-// movedim: テンソル arr の次元 src を次元 dst
-// に移動する（他の次元の順序はそのまま）
+// movedim: Move dimension src of tensor arr to dimension dst
+// (keeping the order of other dimensions unchanged)
 template <typename T, int N>
 Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N> &arr, int src, int dst)
 {

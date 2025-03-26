@@ -34,7 +34,7 @@ module sparseir
     procedure :: is_initialized => kernel_is_initialized
     procedure :: clone => kernel_clone
     procedure :: assign => kernel_assign
-    generic :: assignment(=) => assign  ! 代入演算子をオーバーロード
+    generic :: assignment(=) => assign  ! Overload assignment operator
     final :: kernel_finalize
   end type
 
@@ -121,4 +121,4 @@ module sparseir
     end function
   end interface
 
-end module sparseir 
+end module sparseir
