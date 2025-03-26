@@ -85,12 +85,12 @@
             return;                                                            \
         }                                                                      \
         DEBUG_LOG("Destroying " << #name << " object at " << obj);             \
-        /* Check before resetting */
-        if (obj->ptr) {
+        /* Check before resetting */                                           \
+        if (obj->ptr) {                                                        \
             DEBUG_LOG("Resetting shared_ptr in " << #name << " at " << obj->ptr.get()); \
             obj->ptr.reset();                                                  \
         }                                                                      \
-        /* Safely delete the object */
+        /* Safely delete the object */                                         \
         delete obj;                                                            \
     }                                                                          \
                                                                                \
