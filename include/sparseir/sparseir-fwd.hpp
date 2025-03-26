@@ -10,8 +10,8 @@ namespace sparseir {
 
 // Forward declarations for classes
 class Statistics;
-class Fermionic;  // クラスとして前方宣言
-class Bosonic;    // クラスとして前方宣言
+class Fermionic;  // Forward declaration as class
+class Bosonic;    // Forward declaration as class
 
 template <typename K> class ReducedKernel;
 template<typename T> class SVEHintsLogistic;
