@@ -32,14 +32,7 @@ struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 
 // julia> sort = sortperm(s; rev=true)
 // Implement sortperm in C++
-inline std::vector<size_t> sortperm_rev(const Eigen::VectorXd &vec)
-{
-    std::vector<size_t> indices(vec.size());
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(),
-              [&vec](size_t i1, size_t i2) { return vec[i1] > vec[i2]; });
-    return indices;
-}
+std::vector<size_t> sortperm_rev(const Eigen::VectorXd &vec);
 
 template <typename Container>
 bool issorted(const Container &c)
