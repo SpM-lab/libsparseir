@@ -11,20 +11,10 @@ module sparseir
   public :: spir_kernel_domain
   public :: is_assigned
 
-  ! Version constants
-  integer, parameter, public :: SPIR_VERSION_MAJOR = 0
-  integer, parameter, public :: SPIR_VERSION_MINOR = 1
-  integer, parameter, public :: SPIR_VERSION_PATCH = 0
-
   ! Enumeration types
   enum, bind(c)
     enumerator :: SPIR_STATISTICS_FERMIONIC = 1
     enumerator :: SPIR_STATISTICS_BOSONIC = 0
-  end enum
-
-  enum, bind(c)
-    enumerator :: SPIR_ORDER_COLUMN_MAJOR = 1
-    enumerator :: SPIR_ORDER_ROW_MAJOR = 0
   end enum
 
   ! Opaque handle for kernel object
