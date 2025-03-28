@@ -67,11 +67,13 @@ public:
 inline std::tuple<double, std::string, std::string>
 choose_accuracy(double epsilon, const std::string &Twork)
 {
+    using std::sqrt;
+
     if (Twork != "Float64" && Twork != "Float64x2") {
         throw std::invalid_argument("Twork must be either 'Float64' or 'Float64x2'");
     }
     if (Twork == "Float64") {
-        if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
+        if (epsilon >= sqrt(std::numeric_limits<double>::epsilon())) {
             return std::make_tuple(epsilon, Twork, "default");
         } else {
             std::cerr << "Warning: Basis cutoff is " << epsilon
@@ -83,7 +85,7 @@ choose_accuracy(double epsilon, const std::string &Twork)
         }
     } else {
         // Handle the case for xprec::DDouble
-        if (epsilon >= sqrt_impl(std::numeric_limits<xprec::DDouble>::epsilon())) {
+        if (epsilon >= sqrt(std::numeric_limits<xprec::DDouble>::epsilon())) {
             return std::make_tuple(epsilon, Twork, "default");
         } else {
             std::cerr << "Warning: Basis cutoff is " << epsilon
