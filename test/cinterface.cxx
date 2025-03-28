@@ -540,7 +540,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 }
             }
             // Evaluate using C API
-            int evaluate_status = spir_sampling_evaluate_cc(
+            int evaluate_status = spir_sampling_evaluate_zz(
                 sampling,
                 SPIR_ORDER_ROW_MAJOR,
                 ndim,
@@ -552,7 +552,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
 
             REQUIRE(evaluate_status == 0);
 
-            int fit_status = spir_sampling_fit_cc(
+            int fit_status = spir_sampling_fit_zz(
                 sampling,
                 SPIR_ORDER_ROW_MAJOR,
                 ndim,
@@ -749,7 +749,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
             int target_dim = dim;
 
             // Evaluate using C API
-            int evaluate_status = spir_sampling_evaluate_cc(
+            int evaluate_status = spir_sampling_evaluate_zz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -760,7 +760,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
             );
             REQUIRE(evaluate_status == 0);
 
-            int fit_status = spir_sampling_fit_cc(
+            int fit_status = spir_sampling_fit_zz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -840,7 +840,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
             int target_dim = dim;
 
             // Evaluate using C API that is not supported
-            int status_not_supported = spir_sampling_evaluate_dc(
+            int status_not_supported = spir_sampling_evaluate_dz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -958,7 +958,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             int target_dim = dim;
 
             // Evaluate using C API
-            int evaluate_status = spir_sampling_evaluate_dc(
+            int evaluate_status = spir_sampling_evaluate_dz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -969,7 +969,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             );
             REQUIRE(evaluate_status == 0);
 
-            int fit_status = spir_sampling_fit_cc(
+            int fit_status = spir_sampling_fit_zz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -1052,7 +1052,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             int target_dim = dim;
 
             // Evaluate using C API
-            int evaluate_status = spir_sampling_evaluate_cc(
+            int evaluate_status = spir_sampling_evaluate_zz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -1063,7 +1063,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             );
             REQUIRE(evaluate_status == 0);
 
-            int fit_status = spir_sampling_fit_cc(
+            int fit_status = spir_sampling_fit_zz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -1163,12 +1163,12 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 }
             }
             // Evaluate using C API
-            int evaluate_status = spir_sampling_evaluate_dc(
+            int evaluate_status = spir_sampling_evaluate_dz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 gl_cpp_rowmajor.data(), evaluate_output);
             REQUIRE(evaluate_status == 0);
 
-            int fit_status = spir_sampling_fit_cc(
+            int fit_status = spir_sampling_fit_zz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 evaluate_output, fit_output);
             REQUIRE(fit_status == 0);
@@ -1279,12 +1279,12 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 }
             }
             // Evaluate using C API
-            int evaluate_status = spir_sampling_evaluate_cc(
+            int evaluate_status = spir_sampling_evaluate_zz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 gl_cpp_rowmajor.data(), evaluate_output);
             REQUIRE(evaluate_status == 0);
 
-            int fit_status = spir_sampling_fit_cc(
+            int fit_status = spir_sampling_fit_zz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 evaluate_output, fit_output);
             REQUIRE(fit_status == 0);
@@ -1405,7 +1405,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             }
 
             // Evaluate using C API that has dimension mismatch
-            int status_dimension_mismatch = spir_sampling_evaluate_dc(
+            int status_dimension_mismatch = spir_sampling_evaluate_dz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
@@ -1416,7 +1416,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             );
             REQUIRE(status_dimension_mismatch == -2);
 
-            int fit_status_dimension_mismatch = spir_sampling_fit_cc(
+            int fit_status_dimension_mismatch = spir_sampling_fit_zz(
                 sampling,
                 SPIR_ORDER_COLUMN_MAJOR,
                 ndim,

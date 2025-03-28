@@ -325,7 +325,7 @@ public:
         }
 
     // Evaluate the basis functions at the sampling points with complex input and complex output
-    virtual int evaluate_inplace_cc(
+    virtual int evaluate_inplace_zz(
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
@@ -333,7 +333,7 @@ public:
         }
 
     // Evaluate the basis functions at the sampling points with double input and complex output
-    virtual int evaluate_inplace_dc(
+    virtual int evaluate_inplace_dz(
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
@@ -349,7 +349,7 @@ public:
         }
 
     // Fit basis coefficients from the sparse sampling points with complex input and complex output
-    virtual int fit_inplace_cc(
+    virtual int fit_inplace_zz(
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
@@ -357,7 +357,7 @@ public:
         }
 
     // Fit basis coefficients from the sparse sampling points with complex input and double output
-    virtual int fit_inplace_cd(
+    virtual int fit_inplace_dz(
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &/*output*/) const {
@@ -511,17 +511,17 @@ public:
     // Implement evaluate_inplace_dd method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
     // supported
-    int evaluate_inplace_cc(
+    int evaluate_inplace_zz(
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
         int dim,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override{
         return evaluate_inplace_impl<TauSampling<S>, std::complex<double>, std::complex<double>, 3>(
             *this, input, dim, output);
     }
-    // Implement fit_inplace_cc method using the common implementation
+    // Implement fit_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
     // supported
-    int fit_inplace_cc(
+    int fit_inplace_zz(
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
         int dim,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override{
@@ -679,27 +679,27 @@ public:
         return static_cast<std::size_t>(matrix_.cols());
     }
 
-    // Implement evaluate_inplace_dc method using the common implementation
+    // Implement evaluate_inplace_dz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
-    int evaluate_inplace_dc(
+    int evaluate_inplace_dz(
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input,
         int dim,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override {
         return evaluate_inplace_impl<MatsubaraSampling<S>, double, std::complex<double>, 3>(*this, input, dim, output);
     }
 
-    // Implement evaluate_inplace_cc method using the common implementation
+    // Implement evaluate_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
-    int evaluate_inplace_cc (
+    int evaluate_inplace_zz (
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
         int dim,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override {
         return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>, std::complex<double>, 3>(*this, input, dim, output);
     }
 
-    // Implement fit_inplace_cc method using the common implementation
+    // Implement fit_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not supported
-    int fit_inplace_cc (
+    int fit_inplace_zz (
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &input,
         int dim,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output) const override {

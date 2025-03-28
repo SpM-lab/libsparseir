@@ -132,7 +132,7 @@ int spir_sampling_evaluate_dd(
     double *out                    // Output array
     );
 
-int spir_sampling_evaluate_dc(
+int spir_sampling_evaluate_dz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -142,7 +142,7 @@ int spir_sampling_evaluate_dc(
     std::complex<double> *out                    // Output array
     );
 
-int spir_sampling_evaluate_cc(
+int spir_sampling_evaluate_zz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -163,7 +163,7 @@ int spir_sampling_fit_dd(
     double *out                    // Output array
     );
 
-int spir_sampling_fit_cc(
+int spir_sampling_fit_zz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
