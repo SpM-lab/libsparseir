@@ -40,7 +40,7 @@ template <typename K, typename T>
 std::vector<Eigen::MatrixX<T>> SamplingSVE<K, T>::matrices() const
 {
     std::vector<Eigen::MatrixX<T>> mats;
-    Eigen::MatrixX<T> A = matrix_from_gauss(kernel, gauss_x, gauss_y);
+    Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
     for (int i = 0; i < gauss_x.w.size(); ++i) {
         A.row(i) *= sqrt_impl(gauss_x.w[i]);
     }

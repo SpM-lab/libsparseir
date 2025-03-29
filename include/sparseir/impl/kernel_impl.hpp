@@ -5,8 +5,8 @@
 namespace sparseir {
 
 // Function to compute matrix from Gauss rules
-template <typename K, typename T>
-Eigen::MatrixX<T> matrix_from_gauss(const K &kernel, const Rule<T> &gauss_x,
+template <typename T>
+Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel, const Rule<T> &gauss_x,
                                     const Rule<T> &gauss_y)
 {
 
@@ -34,6 +34,7 @@ Eigen::MatrixX<T> matrix_from_gauss(const K &kernel, const Rule<T> &gauss_x,
 }
 
 // Specialization of matrix_from_gauss for std::shared_ptr<AbstractKernel>
+/*
 template <typename T>
 Eigen::MatrixX<T>
 matrix_from_gauss(const std::shared_ptr<AbstractKernel> &kernel,
@@ -48,15 +49,9 @@ matrix_from_gauss(const std::shared_ptr<AbstractKernel> &kernel,
     for (size_t i = 0; i < n; ++i) {
         threads.emplace_back([&, i]() {
             for (size_t j = 0; j < m; ++j) {
-                if (std::is_same<T, double>::value) {
-                    res(i, j) = kernel->compute(gauss_x.x[i], gauss_y.x[j],
-                                                gauss_x.x_forward[i],
-                                                gauss_x.x_backward[i]);
-                } else {
-                    res(i, j) = kernel->compute(gauss_x.x[i], gauss_y.x[j],
-                                                gauss_x.x_forward[i],
-                                                gauss_x.x_backward[i]);
-                }
+                res(i, j) = kernel->compute(gauss_x.x[i], gauss_y.x[j],
+                                            gauss_x.x_forward[i],
+                                            gauss_x.x_backward[i]);
             }
         });
     }
@@ -67,6 +62,7 @@ matrix_from_gauss(const std::shared_ptr<AbstractKernel> &kernel,
 
     return res;
 }
+*/
 
 // Function to validate symmetry and extract the right-hand side of the segments
 template <typename T>

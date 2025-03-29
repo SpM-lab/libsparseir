@@ -1092,13 +1092,8 @@ get_symmetrized(const RegularizedBoseKernel &kernel, std::integral_constant<int,
     return ReducedKernel<RegularizedBoseKernel>(kernel, 1);
 }
 
-template <typename K, typename T>
-Eigen::MatrixX<T> matrix_from_gauss(const K &kernel,
-                                    const Rule<T> &gauss_x,
-                                    const Rule<T> &gauss_y);
-// Specialization of matrix_from_gauss for std::shared_ptr<AbstractKernel>
 template <typename T>
-Eigen::MatrixX<T> matrix_from_gauss(const std::shared_ptr<AbstractKernel> &kernel,
+Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel,
                                     const Rule<T> &gauss_x,
                                     const Rule<T> &gauss_y);
 
@@ -1178,38 +1173,5 @@ sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon) {
     throw std::runtime_error("Unsupported kernel type");
 }
 
-/*
-function ngauss end
-ngauss(hints::SVEHintsLogistic)        = hints.ε ≥ sqrt(eps()) ? 10 : 16
-ngauss(hints::SVEHintsRegularizedBose) = hints.ε ≥ sqrt(eps()) ? 10 : 16
-ngauss(hints::SVEHintsReduced)         = ngauss(hints.inner_hints)
-*/
-
-/*
-std::shared_ptr<AbstractSVEHints> sve_hints(const AbstractReducedKernel& kernel,
-double epsilon) {
-    // Assume kernel.inner is a method that returns the inner kernel
-    auto innerHints = sve_hints(kernel.inner(), epsilon);
-    return std::make_shared<SVEHintsReduced>(innerHints);
-}
-*/
-
-//template <typename K>
-//struct EvenKernelType
-//{
-    //using type = ReducedKernel<K>;
-//};
-//
-//template <typename K, typename T>
-//struct OddKernelType
-//{
-    //using type = K;
-//};
-//
-//template <typename T>
-//struct OddKernelType<LogisticKernel<T>, T>
-//{
-    ////using type = LogisticKernelOdd<T>;
-//};
 
 } // namespace sparseir
