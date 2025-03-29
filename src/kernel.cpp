@@ -15,10 +15,10 @@ template Eigen::MatrixX<DDouble> matrix_from_gauss(const AbstractKernel &kernel,
                                                 const Rule<DDouble> &gauss_x,
                                                 const Rule<DDouble> &gauss_y);
 
-// Explicit instantiation for T = double
 template std::vector<double> symm_segments(const std::vector<double> &x);
-
-// Explicit instantiation for T = DDouble  
 template std::vector<DDouble> symm_segments(const std::vector<DDouble> &x);
+
+template std::shared_ptr<AbstractSVEHints<double>> sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon);
+template std::shared_ptr<AbstractSVEHints<DDouble>> sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon);
 
 }
