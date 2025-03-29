@@ -6,7 +6,6 @@
 #include "./specfuncs.hpp"
 #include "./freq.hpp"
 #include "./svd.hpp"
-
 #include "./gauss.hpp"
 #include "./poly.hpp"
 #include "./kernel.hpp"

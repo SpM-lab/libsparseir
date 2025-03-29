@@ -11,7 +11,13 @@
 #include <type_traits>
 #include <iostream>
 
+#include <Eigen/Dense>
+
+#include "xprec/ddouble.hpp"
 #include "sparseir/sparseir-fwd.hpp"
+
+#include "sparseir/gauss.hpp"
+#include "sparseir/freq.hpp"
 
 namespace sparseir {
 
@@ -64,46 +70,6 @@ public:
         xprec::DDouble x, xprec::DDouble y,
         xprec::DDouble x_plus = std::numeric_limits<double>::quiet_NaN(),
         xprec::DDouble x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
-
-    /**
-     * @brief Evaluate kernel at point (x, y).
-     *
-     * For given x, y, return the value of K(x, y). The parameters x_plus and
-     * x_minus, if given, shall contain the values of x - xmin and xmax - x,
-     * respectively. This is useful if either difference is to be formed and
-     * cancellation is expected.
-     *
-     * @param x The x value.
-     * @param y The y value.
-     * @param x_plus Optional. x - xmin.
-     * @param x_minus Optional. xmax - x.
-     * @return The value of K(x, y).
-     */
-    //virtual T operator()(
-        //T x, T y,
-        //T x_plus = std::numeric_limits<double>::quiet_NaN(),
-        //T x_minus = std::numeric_limits<double>::quiet_NaN()) const = 0;
-
-    /*
-    sve_hints(double epsilon) const
-    {
-        return std::make_shared<AbstractSVEHints>(*this, epsilon);
-    }
-    */
-
-    /**
-     * @brief Return symmetrized kernel K(x, y) + sign * K(x, -y).
-     *
-     * Should be overridden by derived classes if they support symmetrization.
-     *
-     * @param sign The sign (+1 or -1).
-     * @return A shared pointer to the symmetrized kernel.
-     */
-    // virtual std::shared_ptr<AbstractKernel> get_symmetrized(int sign) const
-    //{
-    //     throw std::runtime_error("get_symmetrized not implemented in base
-    //     class");
-    // }
 
     /**
      * @brief Return tuple (xmin, xmax) delimiting the range of allowed x
@@ -159,21 +125,6 @@ public:
     {
         return std::numeric_limits<double>::infinity();
     }
-
-    /**
-     * @brief Return the weight function for given statistics.
-     *
-     * @param statistics 'F' for fermions or 'B' for bosons.
-     * @return A function representing the weight function w(y).
-     */
-    //virtual std::function<T(T)> weight_func(char statistics) const
-    //{
-        //if (statistics != 'F' && statistics != 'B') {
-            //throw std::invalid_argument(
-                //"statistics must be 'F' for fermions or 'B' for bosons");
-        //}
-        //return [](T /*x*/) { return T(1); };
-    //}
 
     virtual ~AbstractKernel() = default;
 };
@@ -740,17 +691,7 @@ public:
     }
 
 private:
-    /**
-     * @brief Evaluate the reduced kernel.
-     *
-     * @param x The x value.
-     * @param y The y value.
-     * @param x_plus x - xmin.
-     * @param x_minus xmax - x.
-     * @return The value of K_red(x, y).
-     */
-    /*
-    */
+
 };
 
 /*
@@ -1151,89 +1092,19 @@ get_symmetrized(const RegularizedBoseKernel &kernel, std::integral_constant<int,
     return ReducedKernel<RegularizedBoseKernel>(kernel, 1);
 }
 
-
-// Function to compute matrix from Gauss rules
 template <typename K, typename T>
 Eigen::MatrixX<T> matrix_from_gauss(const K &kernel,
                                     const Rule<T> &gauss_x,
-                                    const Rule<T> &gauss_y)
-{
-
-    size_t n = gauss_x.x.size();
-    size_t m = gauss_y.x.size();
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> res(n, m);
-
-    // Parallelize using threads
-    std::vector<std::thread> threads;
-    for (size_t i = 0; i < n; ++i) {
-        threads.emplace_back([&, i]() {
-            for (size_t j = 0; j < m; ++j) {
-                res(i, j) = kernel.compute(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
-            }
-        });
-    }
-
-    for (auto &thread : threads) {
-        thread.join();
-    }
-
-    return res;
-}
-
+                                    const Rule<T> &gauss_y);
 // Specialization of matrix_from_gauss for std::shared_ptr<AbstractKernel>
 template <typename T>
 Eigen::MatrixX<T> matrix_from_gauss(const std::shared_ptr<AbstractKernel> &kernel,
                                     const Rule<T> &gauss_x,
-                                    const Rule<T> &gauss_y)
-{
-    size_t n = gauss_x.x.size();
-    size_t m = gauss_y.x.size();
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> res(n, m);
-
-    // Parallelize using threads
-    std::vector<std::thread> threads;
-    for (size_t i = 0; i < n; ++i) {
-        threads.emplace_back([&, i]() {
-            for (size_t j = 0; j < m; ++j) {
-                if (std::is_same<T, double>::value) {
-                    res(i, j) = kernel->compute(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
-                } else {
-                    res(i, j) = kernel->compute(gauss_x.x[i], gauss_y.x[j], gauss_x.x_forward[i], gauss_x.x_backward[i]);
-                }
-            }
-        });
-    }
-
-    for (auto &thread : threads) {
-        thread.join();
-    }
-
-    return res;
-}
+                                    const Rule<T> &gauss_y);
 
 // Function to validate symmetry and extract the right-hand side of the segments
 template <typename T>
-std::vector<T> symm_segments(const std::vector<T> &x)
-{
-    using std::abs;
-    // Check if the vector x is symmetric
-    for (size_t i = 0, n = x.size(); i < n / 2; ++i) {
-        if (abs(x[i] + x[n - i - 1]) > std::numeric_limits<T>::epsilon()) {
-            throw std::runtime_error("segments must be symmetric");
-        }
-    }
-
-    // Extract the second half of the vector starting from the middle
-    size_t mid = x.size() / 2;
-    std::vector<T> xpos(x.begin() + mid, x.end());
-
-    // Ensure the first element of xpos is zero; if not, prepend zero
-    if (xpos.empty() || abs(xpos[0]) > std::numeric_limits<T>::epsilon()) {
-        xpos.insert(xpos.begin(), T(0));
-    }
-
-    return xpos;
-}
+std::vector<T> symm_segments(const std::vector<T> &x);
 
 template<typename T>
 class SVEHintsReduced : public AbstractSVEHints<T> {
