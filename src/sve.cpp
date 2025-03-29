@@ -3,6 +3,8 @@
 
 namespace sparseir {
 
+using xprec::DDouble;
+
 SVEResult::SVEResult() {}
 
 SVEResult::SVEResult(const PiecewiseLegendrePolyVector &u_, const Eigen::VectorXd &s_,
@@ -167,10 +169,37 @@ SVEResult compute_sve(const std::shared_ptr<AbstractKernel> &kernel,
 template SVEResult compute_sve(const LogisticKernel&, double, double, int, int, std::string);
 template SVEResult compute_sve(const RegularizedBoseKernel&, double, double, int, int, std::string);
 
+template class SamplingSVE<LogisticKernel, double>;
+template class SamplingSVE<LogisticKernel, DDouble>;
+template class SamplingSVE<RegularizedBoseKernel, double>;
+template class SamplingSVE<RegularizedBoseKernel, DDouble>;
+template class SamplingSVE<ReducedKernel<LogisticKernel>, double>;
+template class SamplingSVE<ReducedKernel<LogisticKernel>, DDouble>;
+template class SamplingSVE<LogisticKernelOdd, double>;
+template class SamplingSVE<LogisticKernelOdd, DDouble>;
+
 // Explicit template instantiations for CentrosymmSVE
 template class CentrosymmSVE<LogisticKernel, double>;
-template class CentrosymmSVE<LogisticKernel, xprec::DDouble>;
+template class CentrosymmSVE<LogisticKernel, DDouble>;
 template class CentrosymmSVE<RegularizedBoseKernel, double>;
-template class CentrosymmSVE<RegularizedBoseKernel, xprec::DDouble>;
+template class CentrosymmSVE<RegularizedBoseKernel, DDouble>;
+
+template std::tuple<std::vector<Eigen::MatrixXd>,
+                   std::vector<Eigen::VectorXd>,
+                   std::vector<Eigen::MatrixXd>>
+truncate(const std::vector<Eigen::MatrixXd> &u,
+         const std::vector<Eigen::VectorXd> &s,
+         const std::vector<Eigen::MatrixXd> &v,
+         double rtol,
+         int lmax);
+
+template std::tuple<std::vector<Eigen::Matrix<DDouble, Eigen::Dynamic, Eigen::Dynamic>>,
+                   std::vector<Eigen::Vector<DDouble, Eigen::Dynamic>>,
+                   std::vector<Eigen::Matrix<DDouble, Eigen::Dynamic, Eigen::Dynamic>>>
+truncate(const std::vector<Eigen::Matrix<DDouble, Eigen::Dynamic, Eigen::Dynamic>> &u,
+         const std::vector<Eigen::Vector<DDouble, Eigen::Dynamic>> &s,
+         const std::vector<Eigen::Matrix<DDouble, Eigen::Dynamic, Eigen::Dynamic>> &v,
+         DDouble rtol,
+         int lmax);
 
 } // namespace sparseir 

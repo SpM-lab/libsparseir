@@ -45,11 +45,4 @@ template double bisect(const std::function<double(double)>&, double, double, dou
 template std::vector<MatsubaraFreq<Fermionic>> sign_changes(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
 template std::vector<MatsubaraFreq<Bosonic>> sign_changes(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
 
-//template std::vector<MatsubaraFreq<Fermionic>> find_extrema(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
-//template std::vector<MatsubaraFreq<Bosonic>> find_extrema(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
-
-// Explicit instantiations for func_for_part
-//template std::function<double(int)> func_for_part(const PiecewiseLegendreFT<Fermionic> &u_hat);
-//template std::function<double(int)> func_for_part(const PiecewiseLegendreFT<Bosonic> &u_hat);
-
 } // namespace sparseir 
