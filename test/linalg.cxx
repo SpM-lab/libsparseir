@@ -1,4 +1,4 @@
-#include "sparseir/_linalg.hpp"
+#include "sparseir/linalg.hpp"
 #include "xprec/ddouble.hpp"
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>

@@ -1,7 +1,7 @@
 #include "sparseir-fwd.hpp"
 
 #include "./utils.hpp"
-#include "./_linalg.hpp"
+#include "./linalg.hpp"
 #include "./_root.hpp"
 #include "./_specfuncs.hpp"
 #include "./freq.hpp"
