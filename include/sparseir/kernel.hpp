@@ -15,12 +15,6 @@
 
 namespace sparseir {
 
-// Forward declaration
-//template <typename K> class ReducedKernel;
-//template<typename T> class SVEHintsLogistic;
-//template<typename T> class SVEHintsRegularizedBose;
-//template<typename T> class SVEHintsReduced;
-
 /**
  * @brief Abstract base class for an integral kernel K(x, y).
  *

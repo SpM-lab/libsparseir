@@ -8,6 +8,8 @@
 #include <vector>
 #include "xprec/ddouble.hpp"
 
+#include "sparseir/specfuncs.hpp"
+
 namespace sparseir {
 
 using xprec::DDouble;

@@ -14,6 +14,10 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
+#include "sparseir/utils.hpp"
+#include "sparseir/root.hpp"
+#include "sparseir/specfuncs.hpp"
+#include "sparseir/freq.hpp"
 namespace sparseir {
 
 class PiecewiseLegendrePoly {
