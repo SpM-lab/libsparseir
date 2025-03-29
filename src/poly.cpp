@@ -419,5 +419,12 @@ void symmetrize_matsubara_inplace(std::vector<int> &xs)
     }
     xs.insert(xs.begin(), neg.begin(), neg.end());
 }
+template std::function<double(int)>
+func_for_part(const PiecewiseLegendreFT<Fermionic> &polyFT,
+              std::function<double(std::complex<double>)> part);
+
+template std::function<double(int)>
+func_for_part(const PiecewiseLegendreFT<Bosonic> &polyFT,
+              std::function<double(std::complex<double>)> part);
 
 } // namespace sparseir 
