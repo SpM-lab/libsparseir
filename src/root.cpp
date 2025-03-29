@@ -1,26 +1,8 @@
+#include <Eigen/Dense>
 #include "sparseir/root.hpp"
 #include "sparseir/impl/root_impl.hpp"
+#include "sparseir/impl/poly_impl.hpp"
 #include <functional>
-
-// Forward declarations needed for specific template instantiations
-namespace sparseir {
-    struct Fermionic;
-    struct Bosonic;
-    template <typename StatType> struct MatsubaraFreq;
-    template <typename StatType> class PiecewiseLegendreFT;
-    class PiecewiseLegendrePoly;
-    
-    // Used in the implementation of sign_changes and find_extrema
-    template <typename S>
-    std::function<double(int)> func_for_part(const PiecewiseLegendreFT<S> &u_hat);
-    
-    // Forward declarations of sign_changes and find_extrema
-    template <typename S>
-    std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only);
-    
-    template <typename S>
-    std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, bool positive_only);
-}
 
 // Explicit template instantiations for commonly used types
 namespace sparseir {
@@ -59,5 +41,15 @@ template std::vector<double> discrete_extrema(std::function<double(double)>, con
 // Explicit instantiations for bisect
 template double bisect(const std::function<double(double)>&, double, double, double, double);
 
+// Explicit instantiations for sign_changes and find_extrema
+template std::vector<MatsubaraFreq<Fermionic>> sign_changes(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
+template std::vector<MatsubaraFreq<Bosonic>> sign_changes(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
+
+//template std::vector<MatsubaraFreq<Fermionic>> find_extrema(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
+//template std::vector<MatsubaraFreq<Bosonic>> find_extrema(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
+
+// Explicit instantiations for func_for_part
+//template std::function<double(int)> func_for_part(const PiecewiseLegendreFT<Fermionic> &u_hat);
+//template std::function<double(int)> func_for_part(const PiecewiseLegendreFT<Bosonic> &u_hat);
 
 } // namespace sparseir 

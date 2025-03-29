@@ -81,6 +81,7 @@ add_library(sparseir SHARED
     src/specfuncs.cpp
     src/svd.cpp
     src/sve.cpp
+    src/poly.cpp
     src/cinterface.cpp
     )
 if(NOT MSVC)

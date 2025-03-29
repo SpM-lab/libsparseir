@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "sparseir/utils.hpp"
+
 namespace sparseir {
 
 // Base abstract class for Statistics
