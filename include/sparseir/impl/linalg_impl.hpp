@@ -8,7 +8,6 @@
 
 #include "xprec/ddouble.hpp"
 
-#include "sparseir/linalg.hpp"
 
 namespace sparseir {
 

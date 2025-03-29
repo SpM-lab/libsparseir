@@ -38,8 +38,8 @@ enable_testing()
 set(TEST_FILES
     utils.cxx
     linalg.cxx
-    _specfuncs.cxx
-    _root.cxx
+    specfuncs.cxx
+    root.cxx
     gauss.cxx
     freq.cxx
     poly.cxx

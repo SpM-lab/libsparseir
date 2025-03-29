@@ -261,7 +261,7 @@ public:
         Eigen::VectorXd grid = this->knots;
 
         Eigen::VectorXd refined_grid = refine_grid(grid, 2);
-        auto f = [this](double x) { return this->operator()(x); };
+        std::function<double(double)> f = [this](double x) { return this->operator()(x); };
         // convert to std::vector<double>
         std::vector<double> refined_grid_vec(refined_grid.data(),
                                              refined_grid.data() +
