@@ -16,4 +16,20 @@ std::vector<size_t> sortperm_rev(const Eigen::VectorXd &vec)
     return indices;
 }
 
+Eigen::VectorXi invperm(const Eigen::VectorXi &a)
+{
+    int n = a.size();
+    Eigen::VectorXi b(n);
+    b.setConstant(-1);
+
+    for (int i = 0; i < n; i++) {
+        int j = a(i);
+        if (!(0 <= j && j < n) || b(j) != -1) {
+            throw std::invalid_argument("invalid permutation");
+        }
+        b(j) = i;
+    }
+    return b;
+}
+
 } // namespace sparseir
