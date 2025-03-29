@@ -7,6 +7,7 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
 #include <memory>
+#include "xprec/ddouble.hpp"
 
 namespace sparseir {
 
@@ -32,14 +33,15 @@ struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 
 // julia> sort = sortperm(s; rev=true)
 // Implement sortperm in C++
-inline std::vector<size_t> sortperm_rev(const Eigen::VectorXd &vec)
-{
-    std::vector<size_t> indices(vec.size());
-    std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(),
-              [&vec](size_t i1, size_t i2) { return vec[i1] > vec[i2]; });
-    return indices;
-}
+std::vector<size_t> sortperm_rev(const Eigen::VectorXd &vec);
+
+
+/*
+This function ports Julia's implementation of the `invperm` function to C++.
+*/
+Eigen::VectorXi invperm(const Eigen::VectorXi &a);
+
+
 
 template <typename Container>
 bool issorted(const Container &c)
@@ -103,6 +105,56 @@ inline Eigen::VectorX<T> diff(const Eigen::VectorX<T> &xs)
         diff[i] = xs[i + 1] - xs[i];
     }
     return diff;
+}
+
+
+template <typename T>
+inline T sqrt_impl(const T &x)
+{
+    return std::sqrt(x);
+}
+
+// Specialization for DDouble
+template <>
+inline xprec::DDouble sqrt_impl(const xprec::DDouble &x)
+{
+    return xprec::sqrt(x);
+}
+
+template <typename T>
+inline T cosh_impl(const T &x)
+{
+    return std::cosh(x);
+}
+
+template <>
+inline xprec::DDouble cosh_impl(const xprec::DDouble &x)
+{
+    return xprec::cosh(x);
+}
+
+template <typename T>
+inline T sinh_impl(const T &x)
+{
+    return std::sinh(x);
+}
+
+template <>
+inline xprec::DDouble sinh_impl(const xprec::DDouble &x)
+{
+    return xprec::sinh(x);
+}
+
+template <typename T>
+inline T exp_impl(const T &x)
+{
+    return std::exp(x);
+}
+
+template <>
+inline xprec::DDouble exp_impl(const xprec::DDouble &x)
+{
+    return xprec::exp(x);
 }
 
 } // namespace sparseir

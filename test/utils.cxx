@@ -1,3 +1,4 @@
+#include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
 #include <catch2/catch_test_macros.hpp>
@@ -29,6 +30,16 @@ TEST_CASE("sortperm_rev", "[utils]")
     REQUIRE(sorted_indices3.size() == vec3.size());
     std::vector<size_t> sorted_indices_expected3 = {4, 2, 0, 1, 3};
     REQUIRE(sorted_indices3 == sorted_indices_expected3);
+}
+
+TEST_CASE("invperm", "[linalg]")
+{
+    Eigen::VectorXi a(3);
+    a << 1, 2, 0;
+    Eigen::VectorXi b = sparseir::invperm(a);
+    Eigen::VectorX<int> refb(3);
+    refb << 2, 0, 1;
+    REQUIRE(b.isApprox(refb));
 }
 
 TEST_CASE("issorted", "[utils]")

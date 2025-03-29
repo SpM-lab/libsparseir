@@ -6,7 +6,9 @@
 #include <numeric>
 #include <stdexcept>
 #include <vector>
-#include <xprec/ddouble-header-only.hpp>
+#include "xprec/ddouble.hpp"
+
+#include "sparseir/specfuncs.hpp"
 
 namespace sparseir {
 
@@ -77,29 +79,12 @@ public:
          T b = 1)
         : x(x), w(w), a(a), b(b)
     {
-        //this->x_forward = x_forward.size() == 0
-                              //? Eigen::VectorX<T>::Zero(x.size())
-                              //: x_forward;
-        //this->x_backward = x_backward.size() == 0
-                               //? Eigen::VectorX<T>::Zero(x.size())
-                               //: x_backward;
         this->x_forward = Eigen::VectorX<T>::Zero(x.size());
         this->x_backward = Eigen::VectorX<T>::Zero(x.size());
         std::transform(this->x.data(), this->x.data() + this->x.size(),
                        this->x_forward.data(), [a](T xi) { return xi - a; });
         std::transform(this->x.data(), this->x.data() + this->x.size(),
                        this->x_backward.data(), [b](T xi) { return b - xi; });
-//
-        //if (x_forward.size() == 0) {
-            //std::transform(x.data(), x.data() + x.size(),
-                           //this->x_forward.data(),
-                           //[a](T xi) { return xi - a; });
-        //}
-        //if (x_backward.size() == 0) {
-            //std::transform(x.data(), x.data() + x.size(),
-                           //this->x_backward.data(),
-                           //[b](T xi) { return b - xi; });
-        //}
     }
 
     template <typename U>
@@ -198,41 +183,6 @@ public:
         return Rule<T>(x, w, x_forward, x_backward, a, b);
     }
 };
-
-/*
-template <typename T>
-class NestedRule : public Rule<T> {
-public:
-    std::vector<T> v;
-    slice vsel;
-
-    NestedRule(const std::vector<T>& x, const std::vector<T>& w, const
-std::vector<T>& v, const std::vector<T>& x_forward = {}, const std::vector<T>&
-x_backward = {}, T a = -1, T b = 1) : Rule<T>(x, w, x_forward, x_backward, a,
-b), v(v), vsel(1, v.size(), 2) {}
-
-    NestedRule<T> reseat(T a, T b) const {
-        Rule<T> res = Rule<T>::reseat(a, b);
-        std::vector<T> new_v(v.size());
-        transform(v.begin(), v.end(), new_v.begin(), [this, a, b](T vi) { return
-(b - a) / (this->b - this->a) * vi; }); return NestedRule<T>(res.x, res.w,
-new_v, res.x_forward, res.x_backward, res.a, res.b);
-    }
-
-    NestedRule<T> scale(T factor) const {
-        Rule<T> res = Rule<T>::scale(factor);
-        std::vector<T> new_v(v.size());
-        transform(v.begin(), v.end(), new_v.begin(), [factor](T vi) { return vi
-* factor; }); return NestedRule<T>(res.x, res.w, new_v, res.x_forward,
-res.x_backward, res.a, res.b);
-    }
-
-    NestedRule<T> astype(const string& dtype) const {
-        // Assuming dtype is either "float" or "double"
-        return *this;
-    }
-};
-*/
 
 /*
     legendre(n[, T])

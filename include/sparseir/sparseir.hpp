@@ -1,10 +1,9 @@
 #include "sparseir-fwd.hpp"
 
 #include "./utils.hpp"
-#include "./_impl.hpp"
-#include "./_linalg.hpp"
-#include "./_root.hpp"
-#include "./_specfuncs.hpp"
+#include "./linalg.hpp"
+#include "./root.hpp"
+#include "./specfuncs.hpp"
 #include "./freq.hpp"
 #include "./svd.hpp"
 #include "./gauss.hpp"

@@ -1,15 +1,13 @@
 #pragma once
 
+#include "sparseir/root.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <functional>
 #include <limits>
 #include <type_traits>
 #include <vector>
-
-#include <iostream>
-
-#include <Eigen/Dense>
 
 namespace sparseir {
 
@@ -34,7 +32,7 @@ inline midpoint(T a, T b) {
 }
 
 // For floating point types, returns true if absolute difference is within
-// epsilon For integer types, performs exact equality comparison
+// epsilon. For integer types, performs exact equality comparison
 template <typename T>
 typename std::enable_if<std::is_floating_point<T>::value, bool>::type
 closeenough(T a, T b, T eps)
@@ -135,7 +133,7 @@ std::vector<T> find_all(F f, const std::vector<T> &xgrid)
     for (size_t i = 1; i < xgrid.size(); ++i) {
         max_elm = std::max(max_elm, std::abs(xgrid[i]));
     }
-    T epsilon_x =std::numeric_limits<T>::epsilon() * max_elm;
+    T epsilon_x = std::numeric_limits<T>::epsilon() * max_elm;
 
     std::vector<T> x_bisect;
     for (size_t i = 0; i < a.size(); ++i) {
@@ -268,4 +266,4 @@ std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
     return res;
 }
 
-} // namespace sparseir
+} // namespace sparseir 

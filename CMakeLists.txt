@@ -75,6 +75,14 @@ add_subdirectory(${xprec_SOURCE_DIR} ${xprec_BINARY_DIR} EXCLUDE_FROM_ALL)
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
 add_library(sparseir SHARED
+    src/utils.cpp
+    src/linalg.cpp
+    src/root.cpp
+    src/specfuncs.cpp
+    src/svd.cpp
+    src/sve.cpp
+    src/poly.cpp
+    src/kernel.cpp
     src/cinterface.cpp
     )
 if(NOT MSVC)

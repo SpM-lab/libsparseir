@@ -37,10 +37,9 @@ enable_testing()
 # List of all test files
 set(TEST_FILES
     utils.cxx
-    example.cxx
-    _linalg.cxx
-    _specfuncs.cxx
-    _root.cxx
+    linalg.cxx
+    specfuncs.cxx
+    root.cxx
     gauss.cxx
     freq.cxx
     poly.cxx
