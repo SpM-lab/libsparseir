@@ -3,7 +3,7 @@
 #include "./utils.hpp"
 #include "./linalg.hpp"
 #include "./_root.hpp"
-#include "./_specfuncs.hpp"
+#include "./specfuncs.hpp"
 #include "./freq.hpp"
 #include "./svd.hpp"
 #include "./gauss.hpp"
