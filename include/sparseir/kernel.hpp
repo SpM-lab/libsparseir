@@ -1151,36 +1151,6 @@ get_symmetrized(const RegularizedBoseKernel &kernel, std::integral_constant<int,
     return ReducedKernel<RegularizedBoseKernel>(kernel, 1);
 }
 
-/*
-template<typename T>
-std::shared_ptr<AbstractKernel<T>>
-get_symmetrized(std::shared_ptr<AbstractKernel<T>> kernel, int sign)
-{
-    if (auto logisticKernel =
-            std::dynamic_pointer_cast<LogisticKernel<T>>(kernel)) {
-        if (sign == -1) {
-            return std::make_shared<LogisticKernelOdd<T>>(logisticKernel, sign);
-        } else {
-            return std::make_shared<ReducedKernel<LogisticKernel<T>,T>>(
-                logisticKernel, sign);
-        }
-    }
-    else if (auto regularizedbosonickernel =
-            std::dynamic_pointer_cast<RegularizedBoseKernel<T>>(kernel)) {
-                    if (sign == -1) {
-        return std::make_shared<RegularizedBoseKernelOdd<T>>(regularizedbosonickernel, sign);
-    } else {
-        return std::make_shared<ReducedKernel<RegularizedBoseKernel<T>,T>>(regularizedbosonickernel,
-                                                                      sign);
-    }
-        }
-    return std::make_shared<ReducedKernel<AbstractKernel<T>,T>>(kernel, sign);
-}
-*/
-
-} // namespace sparseir
-
-namespace sparseir {
 
 // Function to compute matrix from Gauss rules
 template <typename K, typename T>

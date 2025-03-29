@@ -399,4 +399,25 @@ std::complex<double> evalpoly(std::complex<double> x,
     return result;
 }
 
+void symmetrize_matsubara_inplace(std::vector<int> &xs)
+{
+    // is sorted
+    if (!std::is_sorted(xs.begin(), xs.end())) {
+        throw std::runtime_error("points must be sorted");
+    }
+    if (xs.empty())
+        return;
+    if (xs.front() < 0)
+        throw std::runtime_error("points must be non-negative");
+
+    std::vector<int> neg(xs.rbegin(), xs.rend());
+    for (auto &x : neg) {
+        x = -x;
+    }
+    if (std::abs(xs.front()) < 1e-12 && !xs.empty()) {
+        xs.erase(xs.begin());
+    }
+    xs.insert(xs.begin(), neg.begin(), neg.end());
+}
+
 } // namespace sparseir 

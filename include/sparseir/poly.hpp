@@ -174,24 +174,6 @@ private:
                                      std::function<double(double)> f) const;
 };
 
-/*
-Eigen::VectorXd derivs(PiecewiseLegendrePoly ppoly, double x){
-    std::vector<double> res;
-    res.push_back(ppoly(x));
-
-    PiecewiseLegendrePoly ppnew = ppoly;
-    for (int i = 2; i <= ppoly.polyorder; i++){
-        ppnew = ppnew.deriv();
-        res.push_back(ppnew(x));
-    }
-    return Eigen::Map<Eigen::VectorXd>(res.data(), res.size());
-}
-*/
-
-} // namespace sparseir
-
-namespace sparseir {
-
 std::complex<double> get_tnl(int l, double w);
 
 std::pair<std::vector<double>, std::vector<int>>
@@ -199,10 +181,6 @@ shift_xmid(const std::vector<double> &knots,
            const std::vector<double> &delta_x);
 
 Eigen::VectorXcd phase_stable(const PiecewiseLegendrePoly &poly, int wn);
-
-} // namespace sparseir
-
-namespace sparseir {
 
 class PiecewiseLegendrePolyVector {
 public:
@@ -399,30 +377,7 @@ public:
         }
         return results;
     }
-    /*
-
-    // Overlap function
-    std::vector<double> overlap(std::function<double(double)> f, double rtol =
-    std::numeric_limits<double>::epsilon(), bool return_error = false) const {
-        std::vector<double> results;
-        for (const auto& poly : polyvec) {
-            double integral = poly.overlap(f, rtol, return_error);
-            results.push_back(integral);
-        }
-        return results;
-    }
-
-    // Output function
-    friend std::ostream& operator<<(std::ostream& os, const
-    PiecewiseLegendrePolyVector& polys) { os << polys.size() << "-element
-    PiecewiseLegendrePolyVector "; os << "on [" << polys.xmin() << ", " <<
-    polys.xmax() << "]"; return os;
-    }
-    */
 };
-} // namespace sparseir
-
-namespace sparseir {
 
 // Forward declarations
 class PiecewiseLegendrePoly;
@@ -528,7 +483,8 @@ public:
         return res;
     }
 
-    inline PowerModel<double> power_model(const S &stat, const PiecewiseLegendrePoly &poly)
+    inline PowerModel<double> power_model(const S &stat,
+                                          const PiecewiseLegendrePoly &poly)
     {
         Eigen::VectorXd deriv_x1 = poly.derivs(1.0);
         Eigen::VectorXd moments = power_moments(stat, deriv_x1, poly.l);
@@ -660,26 +616,7 @@ const std::vector<int> DEFAULT_GRID = {
 
 // If the set of Matsubara points is not symmetric, modify the vector by
 // removing zero (if present) and prepending the negatives of the reversed list.
-inline void symmetrize_matsubara_inplace(std::vector<int> &xs)
-{
-    // is sorted
-    if (!std::is_sorted(xs.begin(), xs.end())) {
-        throw std::runtime_error("points must be sorted");
-    }
-    if (xs.empty())
-        return;
-    if (xs.front() < 0)
-        throw std::runtime_error("points must be non-negative");
-
-    std::vector<int> neg(xs.rbegin(), xs.rend());
-    for (auto &x : neg) {
-        x = -x;
-    }
-    if (std::abs(xs.front()) < 1e-12 && !xs.empty()) {
-        xs.erase(xs.begin());
-    }
-    xs.insert(xs.begin(), neg.begin(), neg.end());
-}
+void symmetrize_matsubara_inplace(std::vector<int> &xs);
 
 template <typename S>
 std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat,
@@ -693,10 +630,6 @@ std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat,
 // Horner's method).
 std::complex<double> evalpoly(std::complex<double> x,
                               const std::vector<double> &coeffs);
-
-} // namespace sparseir
-
-namespace sparseir {
 
 // PiecewiseLegendreFTVector class in C++
 
