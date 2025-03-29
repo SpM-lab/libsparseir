@@ -1171,15 +1171,14 @@ public:
     PiecewiseLegendreFTVector() = default;
 
     // Constructor from vector of PiecewiseLegendreFT<S>
-    PiecewiseLegendreFTVector<S>(
+    PiecewiseLegendreFTVector(
         const std::vector<PiecewiseLegendreFT<S>> &polyvec_)
         : polyvec(polyvec_)
     {
     }
 
-
     // Constructor from PiecewiseLegendrePolyVector and Statistics
-    PiecewiseLegendreFTVector<S>(PiecewiseLegendrePolyVector &polys,
+    PiecewiseLegendreFTVector(PiecewiseLegendrePolyVector &polys,
                               S &stat,
                               double n_asymp = std::numeric_limits<double>::infinity())
     {
@@ -1191,7 +1190,6 @@ public:
         }
         polyvec = polyvec_;
     }
-
 
     // Get the size of the vector
     size_t size() const { return polyvec.size(); }
@@ -1206,7 +1204,7 @@ public:
     }
 
     // Indexing with a vector of indices
-    PiecewiseLegendreFTVector<S>
+    PiecewiseLegendreFTVector
     operator[](const std::vector<size_t> &indices) const
     {
         std::vector<PiecewiseLegendreFT<S>> new_polyvec;
@@ -1214,7 +1212,7 @@ public:
         for (size_t idx : indices) {
             new_polyvec.push_back(polyvec[idx]);
         }
-        return PiecewiseLegendreFTVector<S>{std::move(new_polyvec)};
+        return PiecewiseLegendreFTVector{std::move(new_polyvec)};
     }
 
     // Set element at index i
@@ -1226,9 +1224,9 @@ public:
     }
 
     // Create a similar PiecewiseLegendreFTVector
-    PiecewiseLegendreFTVector<S> similar() const
+    PiecewiseLegendreFTVector similar() const
     {
-        return PiecewiseLegendreFTVector<S>();
+        return PiecewiseLegendreFTVector();
     }
 
     // Get n_asymp from the first element

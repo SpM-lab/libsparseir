@@ -26,21 +26,6 @@ TEST_CASE("svd.cpp", "[svd]")
     using namespace Eigen;
     using namespace xprec;
 
-    // Create a matrix of Float64x2 equivalent (here just Eigen::MatrixXd for
-    // simplicity)
-    /**
-    Eigen::MatrixXd mat64x2 = Eigen::MatrixXd::Random(4, 6);
-    REQUIRE_NOTHROW(sparseir::compute_svd(mat64x2, "accurate", 2));
-    std::cout << "n_sv_hint is set but will not be used in the current
-    implementation!" << std::endl;
-
-    REQUIRE_NOTHROW({
-        compute_svd(mat64x2, "accurate");
-        std::cout << "strategy is set but will not be used in the current
-    implementation!" << std::endl;
-    });
-    */
-
     // Create a standard matrix
     Eigen::MatrixX<xprec::DDouble> mat = Eigen::MatrixX<xprec::DDouble>::Random(5, 6);
     auto svd_result = sparseir::compute_svd(mat, 0, "default");

@@ -79,6 +79,7 @@ add_library(sparseir SHARED
     src/linalg.cpp
     src/root.cpp
     src/specfuncs.cpp
+    src/svd.cpp
     src/cinterface.cpp
     )
 if(NOT MSVC)
