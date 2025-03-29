@@ -76,6 +76,7 @@ set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
 add_library(sparseir SHARED
     src/utils.cpp
+    src/linalg.cpp
     src/cinterface.cpp
     )
 if(NOT MSVC)

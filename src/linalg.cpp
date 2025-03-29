@@ -1,8 +1,11 @@
 #include <Eigen/Dense>
 
+#include "sparseir/_linalg.hpp"
+#include "sparseir/impl/linalg_impl.hpp"
+
 namespace sparseir {
 
-Eigen::MatrixXd pinv(const Eigen::MatrixXd &A, double tolerance = 1e-6)
+Eigen::MatrixXd pinv(const Eigen::MatrixXd &A, double tolerance)
 {
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU |
                                                  Eigen::ComputeThinV);
@@ -15,5 +18,12 @@ Eigen::MatrixXd pinv(const Eigen::MatrixXd &A, double tolerance = 1e-6)
     }
     return svd.matrixV() * singularValuesInv * svd.matrixU().transpose();
 }
+
+// Explicit template instantiations
+template void lmul<double>(const QRPackedQ<double>, Eigen::MatrixX<double>&);
+template void lmul<xprec::DDouble>(const QRPackedQ<xprec::DDouble>, Eigen::MatrixX<xprec::DDouble>&);
+
+template void mul<double>(Eigen::MatrixX<double>&, const QRPackedQ<double>&, const Eigen::MatrixX<double>&);
+template void mul<xprec::DDouble>(Eigen::MatrixX<xprec::DDouble>&, const QRPackedQ<xprec::DDouble>&, const Eigen::MatrixX<xprec::DDouble>&);
 
 } // namespace sparseir

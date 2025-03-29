@@ -35,6 +35,14 @@ struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 // Implement sortperm in C++
 std::vector<size_t> sortperm_rev(const Eigen::VectorXd &vec);
 
+
+/*
+This function ports Julia's implementation of the `invperm` function to C++.
+*/
+Eigen::VectorXi invperm(const Eigen::VectorXi &a);
+
+
+
 template <typename Container>
 bool issorted(const Container &c)
 {
