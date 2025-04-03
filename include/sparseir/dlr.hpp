@@ -154,9 +154,13 @@ public:
     }
 
     // Convert from DLR to IR
-    template <typename Derived>
-    Eigen::MatrixXd to_IR(const Eigen::MatrixBase<Derived>& g_dlr) const {
-        return fitmat * g_dlr;
+    template <typename T, int N>
+    Eigen::Tensor<T, N> to_IR(const Eigen::Tensor<T, N> &g_dlr) const
+    {
+        // fitmat is a matrix, so we need to convert it to a tensor
+        Eigen::TensorMap<Eigen::Tensor<const double, 2>> fitmat_as_tensor(fitmat.data(), fitmat.rows(), fitmat.cols());
+        std::array<Eigen::IndexPair<int>, 1> contraction_pairs = {Eigen::IndexPair<int>(1, 0)};
+        return fitmat_as_tensor.contract(g_dlr, contraction_pairs);
     }
 
     double beta() const { return basis.beta; }

@@ -46,7 +46,13 @@ TEST_CASE("DLR Tests", "[dlr]") {
             auto dlr_poles =
                 sparseir::DiscreteLehmannRepresentation<Statistics>(*basis,
                                                                     poles);
-            auto Gl = dlr_poles.to_IR(coeffs);
+
+            Eigen::Tensor<double, 1> coeffs_as_tensor(coeffs.size());
+            for (int i = 0; i < coeffs.size(); ++i) {
+                coeffs_as_tensor(i) = coeffs(i);
+            }
+            Eigen::Tensor<double, 1> Gl_as_tensor = dlr_poles.to_IR(coeffs_as_tensor);
+            Eigen::Map<const Eigen::MatrixXd> Gl(Gl_as_tensor.data(), Gl_as_tensor.dimension(0), 1);
             auto g_dlr = dlr.from_IR(Gl);
 
             // Convert Matrix to Tensor
@@ -95,7 +101,13 @@ TEST_CASE("DLR Tests", "[dlr]") {
         Eigen::MatrixXd gl_pole = (-rho_l_pole_array * s_array.replicate(1, rho_l_pole.cols())).matrix();
 
         auto sp = sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>(*basis_b, omega_p);
-        auto gl_pole2 = sp.to_IR(coeff);
+        Eigen::Tensor<double, 1> coeff_as_tensor(coeff.size());
+        for (int i = 0; i < coeff.size(); ++i) {
+            coeff_as_tensor(i) = coeff(i);
+        }
+        Eigen::Tensor<double, 1> gl_pole2_as_tensor = sp.to_IR(coeff_as_tensor);
+        // convert to matrix
+        Eigen::Map<const Eigen::MatrixXd> gl_pole2(gl_pole2_as_tensor.data(), gl_pole2_as_tensor.dimension(0), 1);
 
         REQUIRE((gl_pole.array() - gl_pole2.array()).abs().maxCoeff() <= 300 * epsilon);
     }
