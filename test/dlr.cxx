@@ -51,18 +51,8 @@ TEST_CASE("DLR Tests", "[dlr]") {
             for (int i = 0; i < coeffs.size(); ++i) {
                 coeffs_as_tensor(i) = coeffs(i);
             }
-            Eigen::Tensor<double, 1> Gl_as_tensor = dlr_poles.to_IR(coeffs_as_tensor);
-            Eigen::Map<const Eigen::MatrixXd> Gl(Gl_as_tensor.data(), Gl_as_tensor.dimension(0), 1);
-            auto g_dlr = dlr.from_IR(Gl);
-
-            // Convert Matrix to Tensor
-            Eigen::Tensor<double, 1> Gl_tensor(Gl.size());
-            Eigen::Tensor<double, 1> g_dlr_tensor(g_dlr.size());
-
-            for (Eigen::Index i = 0; i < Gl.size(); ++i) {
-                Gl_tensor(i) = Gl(i);
-                g_dlr_tensor(i) = g_dlr(i);
-            }
+            Eigen::Tensor<double, 1> Gl_tensor = dlr_poles.to_IR(coeffs_as_tensor);
+            auto g_dlr_tensor = dlr.from_IR(Gl_tensor);
 
             auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
             auto smpl_points = smpl.sampling_points();

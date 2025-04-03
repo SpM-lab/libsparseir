@@ -147,11 +147,61 @@ public:
         return basis.default_matsubara_sampling_points(L, fence, positive_only);
     }
 
-    // Convert from IR to DLR
-    template <typename Derived>
-    Eigen::MatrixXd from_IR(const Eigen::MatrixBase<Derived>& gl) const {
-        return matrix.solve(gl);
+    template <typename T, int N>
+    Eigen::Tensor<T, N> from_IR(const Eigen::Tensor<T, N> &ir)
+    {
+        // Let fitmat have shape (r, c)
+        const int r = fitmat.rows();
+        const int c = fitmat.cols();
+
+        // Get dimensions of input tensor 'ir' (should be (r, d2, d3, ...))
+        std::array<Eigen::Index, N> ir_dims;
+        for (int i = 0; i < N; ++i) {
+            ir_dims[i] = ir.dimension(i);
+        }
+        // Ensure that the first dimension of ir matches the rows of fitmat
+        assert(ir_dims[0] == r && "Mismatch between fitmat.rows() and first "
+                                  "dimension of input tensor ir");
+
+        // Compute total number of slices = product of dimensions from index 1
+        // to N-1
+        Eigen::Index numSlices = 1;
+        for (int i = 1; i < N; ++i) {
+            numSlices *= ir_dims[i];
+        }
+
+        // Map 'ir' to a matrix of shape (r, numSlices).
+        // This works if the tensor's data is stored contiguously.
+        Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
+            ir_mat(ir.data(), r, numSlices);
+
+        // Prepare a matrix to hold the solution X, which will have shape (c,
+        // numSlices)
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> X(c, numSlices);
+
+        // Solve the linear systems: fitmat * X = ir_mat.
+        // Here we use ColPivHouseholderQR (you could also use another solver if
+        // desired).
+        Eigen::ColPivHouseholderQR<
+            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
+            solver(fitmat);
+        X = solver.solve(ir_mat);
+
+        // Define output tensor dimensions: first dimension becomes c, and the
+        // remaining dimensions are unchanged.
+        std::array<Eigen::Index, N> out_dims;
+        out_dims[0] = c;
+        for (int i = 1; i < N; ++i) {
+            out_dims[i] = ir_dims[i];
+        }
+
+        // Create an output tensor and copy the data from X into it.
+        Eigen::Tensor<T, N> result(out_dims);
+        std::copy(X.data(), X.data() + X.size(), result.data());
+
+        return result;
     }
+
 
     // Convert from DLR to IR
     template <typename T, int N>
