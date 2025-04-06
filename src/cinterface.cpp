@@ -520,6 +520,54 @@ int spir_sampling_fit_zz(
                         &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
+int spir_bosonic_dlr_from_IR(
+    const spir_bosonic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_bosonic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, 0);
+
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
+    }
+
+    Eigen::Tensor<double, 3> input_tensor;
+    std::size_t total_size = input_dims_3d[0] * input_dims_3d[1] * input_dims_3d[2];
+    std::copy(input, input + total_size, input_tensor.data());
+    Eigen::Tensor<double, 3> out_tensor = impl->from_IR(input_tensor);
+    out = out_tensor.data();
+    return 0;
+}
+
+int spir_bosonic_dlr_to_IR(
+    const spir_bosonic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_bosonic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, 0);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
+    }
+    Eigen::Tensor<double, 3> input_tensor;
+    std::size_t total_size = input_dims_3d[0] * input_dims_3d[1] * input_dims_3d[2];
+    std::copy(input, input + total_size, input_tensor.data());
+    Eigen::Tensor<double, 3> out_tensor = impl->to_IR(input_tensor);
+    out = out_tensor.data();
+    return 0;
+}
+
 
 // Get basis functions (returns the PiecewiseLegendrePolyVector)
 spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)
