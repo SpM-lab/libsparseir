@@ -117,9 +117,9 @@ TEST_CASE("FiniteTempBasis", "[cinterface]") {
 
 TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
     SECTION("DiscreteLehmannRepresentation Constructor Fermionic") {
-        double beta = 2.0;
-        double wmax = 5.0;
-        double epsilon = 1e-6;
+        const double beta = 10000.0;
+        const double wmax = 1.0;
+        const double epsilon = 1e-12;
 
         spir_fermionic_finite_temp_basis* basis = spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
         REQUIRE(basis != nullptr);
@@ -130,7 +130,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
         const int npoles = 10;
         Eigen::VectorXd poles(npoles);
         Eigen::VectorXd coeffs(npoles);
-        std::mt19937 gen(42);
+        std::mt19937 gen(982743);
         std::uniform_real_distribution<> dis(0.0, 1.0);
         for (int i = 0; i < npoles; i++) {
             poles(i) = wmax * (2.0 * dis(gen) - 1.0);
@@ -140,8 +140,39 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
 
         spir_fermionic_dlr* dlr_with_poles = spir_fermionic_dlr_new_with_poles(basis, npoles, poles.data());
         REQUIRE(dlr_with_poles != nullptr);
+        size_t fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
+        size_t fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
+        REQUIRE(fitmat_rows >= 0);
+        REQUIRE(fitmat_cols == npoles);
+        double* Gl = (double*)malloc(fitmat_rows * sizeof(double));
+        int32_t to_ir_input_dims[1] = {npoles};
+        int status_to_IR = spir_fermionic_dlr_to_IR(
+            dlr_with_poles,
+            SPIR_ORDER_COLUMN_MAJOR,
+            1,
+            to_ir_input_dims,
+            coeffs.data(),
+            Gl
+        );
+
+        REQUIRE(status_to_IR == 0);
+        double* g_dlr = (double*)malloc(fitmat_rows * sizeof(double));
+        int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
+        int status_from_IR = spir_fermionic_dlr_from_IR(
+            dlr,
+            SPIR_ORDER_COLUMN_MAJOR,
+            1,
+            from_ir_input_dims,
+            Gl,
+            g_dlr
+        );
+        REQUIRE(status_from_IR == 0);
 
         // Clean up
+        // free allocated memory
+        free(Gl);
+        free(g_dlr);
+
         spir_destroy_fermionic_finite_temp_basis(basis);
         spir_destroy_fermionic_dlr(dlr);
         spir_destroy_fermionic_dlr(dlr_with_poles);

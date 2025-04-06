@@ -582,6 +582,22 @@ size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
     return impl->fitmat.cols();
 }
 
+size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return 0;
+    return impl->fitmat.rows();
+}
+
+size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return 0;
+    return impl->fitmat.cols();
+}
+
 int spir_bosonic_dlr_to_IR(
     const spir_bosonic_dlr *dlr,
     spir_order_type order,
@@ -636,6 +652,59 @@ int spir_bosonic_dlr_from_IR(
     return 0;
 }
 
+int spir_fermionic_dlr_to_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
+    }
+    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
+    size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
+    for (size_t i = 0; i < total_input_size; i++) {
+        input_tensor.data()[i] = input[i];
+    }
+    Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
+    size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    for (std::size_t i = 0; i < total_output_size; i++) {
+        out[i] = out_tensor.data()[i];
+    }
+    return 0;
+}
+
+int spir_fermionic_dlr_from_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
+    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
+    for (std::size_t i = 0; i < total_input_size; i++) {
+        input_tensor.data()[i] = input[i];
+    }
+    Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
+    // pass data to out
+    std::size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    for (std::size_t i = 0; i < total_output_size; i++) {
+        out[i] = out_tensor.data()[i];
+    }
+    return 0;
+}
 
 // Get basis functions (returns the PiecewiseLegendrePolyVector)
 spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)

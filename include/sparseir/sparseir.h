@@ -182,6 +182,12 @@ int spir_sampling_fit_zz(
     std::complex<double> *out                    // Output array
     );
 
+size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
+size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
+
+size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
+size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
+
 int spir_bosonic_dlr_from_IR(
     const spir_bosonic_dlr *dlr,
     spir_order_type order,
@@ -190,8 +196,13 @@ int spir_bosonic_dlr_from_IR(
     const double *input,
     double *out);
 
-size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
-size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
+int spir_fermionic_dlr_from_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out);
 
 int spir_bosonic_dlr_to_IR(
     const spir_bosonic_dlr *dlr,
@@ -200,6 +211,15 @@ int spir_bosonic_dlr_to_IR(
     int32_t *input_dims,
     const double *input,
     double *out);
+
+int spir_fermionic_dlr_to_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out);
+
 /** Destroy instance of kernel */
 //void spir_destroy_kernel(spir_kernel *k);
 
