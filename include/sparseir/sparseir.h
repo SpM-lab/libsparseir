@@ -117,10 +117,19 @@ spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite
 spir_fermionic_dlr *spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b);
 
 /**
+ * Create a new fermionic DLR object with given poles
+ */
+spir_fermionic_dlr *spir_fermionic_dlr_new_with_poles(const spir_fermionic_finite_temp_basis *b, const int npoles, const double *poles);
+
+/**
  * Create a new bosonic DLR object
  */
 spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
 
+/**
+ * Create a new bosonic DLR object with given poles
+ */
+spir_bosonic_dlr *spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp_basis *b, const int npoles, const double *poles);
 
 int spir_sampling_evaluate_dd(
     const spir_sampling *s,        // Sampling object
@@ -172,6 +181,45 @@ int spir_sampling_fit_zz(
     const std::complex<double> *input,          // Input coefficients array
     std::complex<double> *out                    // Output array
     );
+
+size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
+size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
+
+size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
+size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
+
+int spir_bosonic_dlr_from_IR(
+    const spir_bosonic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out);
+
+int spir_fermionic_dlr_from_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out);
+
+int spir_bosonic_dlr_to_IR(
+    const spir_bosonic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out);
+
+int spir_fermionic_dlr_to_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out);
+
 /** Destroy instance of kernel */
 //void spir_destroy_kernel(spir_kernel *k);
 

@@ -134,6 +134,20 @@ static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t* dims, 
     return dims_3d;
 }
 
+// Helper function to convert N-dimensional array to 2D array by collapsing dimensions
+static std::array<int32_t, 2> collapse_to_2d(int32_t ndim, const int32_t* dims, int32_t target_dim) {
+    std::array<int32_t, 2> dims_2d = {dims[target_dim], 1};
+    // Multiply all dimensions before target_dim into first dimension
+    for (int32_t i = 0; i < target_dim; ++i) {
+        dims_2d[0] *= dims[i];
+    }
+    // Multiply all dimensions after target_dim into last dimension
+    for (int32_t i = target_dim + 1; i < ndim; ++i) {
+        dims_2d[1] *= dims[i];
+    }
+    return dims_2d;
+}
+
 // Template function to handle all evaluation cases - moved outside extern "C" block
 template<typename InputScalar, typename OutputScalar>
 static int evaluate_impl(
@@ -445,6 +459,22 @@ spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
     return create_fermionic_dlr(dlr);
 }
 
+spir_fermionic_dlr *
+spir_fermionic_dlr_new_with_poles(
+    const spir_fermionic_finite_temp_basis *b, const int npoles, const double *poles
+) {
+    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    Eigen::VectorXd poles_vec(npoles);
+    for (int i = 0; i < npoles; i++) {
+        poles_vec(i) = poles[i];
+    }
+    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl, poles_vec);
+    return create_fermionic_dlr(dlr);
+}
+
 spir_bosonic_dlr *
 spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
 {
@@ -452,6 +482,22 @@ spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
     if (!impl)
         return nullptr;
     auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
+    return create_bosonic_dlr(dlr);
+}
+
+spir_bosonic_dlr *
+spir_bosonic_dlr_new_with_poles(
+    const spir_bosonic_finite_temp_basis *b, const int npoles, const double *poles
+) {
+    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    Eigen::VectorXd poles_vec(npoles);
+    for (int i = 0; i < npoles; i++) {
+        poles_vec(i) = poles[i];
+    }
+    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl, poles_vec);
     return create_bosonic_dlr(dlr);
 }
 
@@ -520,6 +566,145 @@ int spir_sampling_fit_zz(
                         &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
+size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
+{
+    auto impl = get_impl_bosonic_dlr(dlr);
+    if (!impl)
+        return 0;
+    return impl->fitmat.rows();
+}
+
+size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
+{
+    auto impl = get_impl_bosonic_dlr(dlr);
+    if (!impl)
+        return 0;
+    return impl->fitmat.cols();
+}
+
+size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return 0;
+    return impl->fitmat.rows();
+}
+
+size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return 0;
+    return impl->fitmat.cols();
+}
+
+int spir_bosonic_dlr_to_IR(
+    const spir_bosonic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_bosonic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
+    }
+    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
+    size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
+    for (size_t i = 0; i < total_input_size; i++) {
+        input_tensor.data()[i] = input[i];
+    }
+    Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
+    size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    for (std::size_t i = 0; i < total_output_size; i++) {
+        out[i] = out_tensor.data()[i];
+    }
+    return 0;
+}
+
+int spir_bosonic_dlr_from_IR(
+    const spir_bosonic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_bosonic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
+    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
+    for (std::size_t i = 0; i < total_input_size; i++) {
+        input_tensor.data()[i] = input[i];
+    }
+    Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
+    // pass data to out
+    std::size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    for (std::size_t i = 0; i < total_output_size; i++) {
+        out[i] = out_tensor.data()[i];
+    }
+    return 0;
+}
+
+int spir_fermionic_dlr_to_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
+    }
+    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
+    size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
+    for (size_t i = 0; i < total_input_size; i++) {
+        input_tensor.data()[i] = input[i];
+    }
+    Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
+    size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    for (std::size_t i = 0; i < total_output_size; i++) {
+        out[i] = out_tensor.data()[i];
+    }
+    return 0;
+}
+
+int spir_fermionic_dlr_from_IR(
+    const spir_fermionic_dlr *dlr,
+    spir_order_type order,
+    int32_t ndim,
+    int32_t *input_dims,
+    const double *input,
+    double *out)
+{
+    auto impl = get_impl_fermionic_dlr(dlr);
+    if (!impl)
+        return -1;
+    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
+    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
+    for (std::size_t i = 0; i < total_input_size; i++) {
+        input_tensor.data()[i] = input[i];
+    }
+    Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
+    // pass data to out
+    std::size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    for (std::size_t i = 0; i < total_output_size; i++) {
+        out[i] = out_tensor.data()[i];
+    }
+    return 0;
+}
 
 // Get basis functions (returns the PiecewiseLegendrePolyVector)
 spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)
