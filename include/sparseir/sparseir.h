@@ -190,7 +190,8 @@ int spir_bosonic_dlr_from_IR(
     const double *input,
     double *out);
 
-size_t spir_bosonic_dlr_size(const spir_bosonic_dlr *dlr);
+size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
+size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
 
 int spir_bosonic_dlr_to_IR(
     const spir_bosonic_dlr *dlr,

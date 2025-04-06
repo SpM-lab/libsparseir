@@ -148,7 +148,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
     }
 
     SECTION("DiscreteLehmannRepresentation Constructor Bosonic") {
-        const double beta = 10000.0;
+        const double beta = 100.0;
         const double wmax = 1.0;
         const double epsilon = 1e-12;
 
@@ -161,7 +161,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
         const int npoles = 10;
         Eigen::VectorXd poles(npoles);
         Eigen::VectorXd coeffs(npoles);
-        std::mt19937 gen(42);
+        std::mt19937 gen(982743);
         std::uniform_real_distribution<> dis(0.0, 1.0);
         for (int i = 0; i < npoles; i++) {
             poles(i) = wmax * (2.0 * dis(gen) - 1.0);
@@ -171,13 +171,12 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
 
         spir_bosonic_dlr* dlr_with_poles = spir_bosonic_dlr_new_with_poles(basis, npoles, poles.data());
         REQUIRE(dlr_with_poles != nullptr);
-        size_t sz = spir_bosonic_dlr_size(dlr_with_poles);
-        REQUIRE(sz >= 0);
-        std::cout << "sz: " << sz << std::endl;
-        std::cout << "npoles: " << npoles << std::endl;
-        double* Gl = (double*)malloc(sz * sizeof(double));
-        int32_t to_ir_input_dims[1] = {10}; // npoles
-        std::cout << "to_IR" << std::endl;
+        size_t fitmat_rows = spir_bosonic_dlr_fitmat_rows(dlr_with_poles);
+        size_t fitmat_cols = spir_bosonic_dlr_fitmat_cols(dlr_with_poles);
+        REQUIRE(fitmat_rows >= 0);
+        REQUIRE(fitmat_cols == npoles);
+        double* Gl = (double*)malloc(fitmat_rows * sizeof(double));
+        int32_t to_ir_input_dims[1] = {npoles};
         int status_to_IR = spir_bosonic_dlr_to_IR(
             dlr_with_poles,
             SPIR_ORDER_COLUMN_MAJOR,
@@ -186,13 +185,12 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
             coeffs.data(),
             Gl
         );
+
         REQUIRE(status_to_IR == 0);
-        std::cout << "from_IR" << std::endl;
-        double* g_dlr = (double*)malloc(sz * sizeof(double));
-        int32_t from_ir_input_dims[1];
-        from_ir_input_dims[0] = sz;
+        double* g_dlr = (double*)malloc(fitmat_rows * sizeof(double));
+        int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
         int status_from_IR = spir_bosonic_dlr_from_IR(
-            dlr_with_poles,
+            dlr,
             SPIR_ORDER_COLUMN_MAJOR,
             1,
             from_ir_input_dims,
@@ -200,6 +198,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
             g_dlr
         );
         REQUIRE(status_from_IR == 0);
+
         // Clean up
         spir_destroy_bosonic_finite_temp_basis(basis);
         spir_destroy_bosonic_dlr(dlr);

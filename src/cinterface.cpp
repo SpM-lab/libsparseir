@@ -566,12 +566,20 @@ int spir_sampling_fit_zz(
                         &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-size_t spir_bosonic_dlr_size(const spir_bosonic_dlr *dlr)
+size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
         return 0;
-    return impl->size();
+    return impl->fitmat.rows();
+}
+
+size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
+{
+    auto impl = get_impl_bosonic_dlr(dlr);
+    if (!impl)
+        return 0;
+    return impl->fitmat.cols();
 }
 
 int spir_bosonic_dlr_to_IR(
@@ -610,22 +618,16 @@ int spir_bosonic_dlr_from_IR(
     const double *input,
     double *out)
 {
-    std::cout << "spir_bosonic_dlr_from_IR" << std::endl;
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
         return -1;
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    std::cout << "input_dims_2d: " << input_dims_2d[0] << " " << input_dims_2d[1] << std::endl;
     Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
     std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
     for (std::size_t i = 0; i < total_input_size; i++) {
         input_tensor.data()[i] = input[i];
     }
-    std::cout << "input_tensor.rows(): " << input_tensor.dimension(0) << std::endl;
-    std::cout << "input_tensor.cols(): " << input_tensor.dimension(1) << std::endl;
     Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
-    std::cout << "out_tensor.rows(): " << out_tensor.dimension(0) << std::endl;
-    std::cout << "out_tensor.cols(): " << out_tensor.dimension(1) << std::endl;
     // pass data to out
     std::size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
     for (std::size_t i = 0; i < total_output_size; i++) {
