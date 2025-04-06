@@ -148,7 +148,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
     }
 
     SECTION("DiscreteLehmannRepresentation Constructor Bosonic") {
-        const double beta = 100.0;
+        const double beta = 10000.0;
         const double wmax = 1.0;
         const double epsilon = 1e-12;
 
@@ -200,6 +200,10 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
         REQUIRE(status_from_IR == 0);
 
         // Clean up
+        // free allocated memory
+        free(Gl);
+        free(g_dlr);
+
         spir_destroy_bosonic_finite_temp_basis(basis);
         spir_destroy_bosonic_dlr(dlr);
         spir_destroy_bosonic_dlr(dlr_with_poles);
