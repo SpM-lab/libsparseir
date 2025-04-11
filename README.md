@@ -93,3 +93,13 @@ After building with Fortran bindings enabled, you can run the Fortran test:
 cd build
 ./test_kernel
 ```
+
+## Generating documentation with Doxygen
+
+Install `doxygen` and `graphviz`. Then, run the following command:
+
+```bash
+doxygen Doxyfile
+```
+
+This will create the `html` directory. Open `html/index.html` with your browser to see it.
