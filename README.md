@@ -99,7 +99,7 @@ cd build
 Install `doxygen` and `graphviz`. Then, run the following command:
 
 ```bash
-doxygen Doxyfile
+bash generate_docs.sh
 ```
 
-This will create the `html` directory. Open `html/index.html` with your browser to see it.
+This will create the `docs/html` directory. Open `docs/html/index.html` with your browser to see it.
