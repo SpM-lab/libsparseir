@@ -6,7 +6,7 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "libsparseir"
 PROJECT_NUMBER         =
-PROJECT_BRIEF          = "Sparse Intermediate Representation library"
+PROJECT_BRIEF          = "On-the-fly computation of IR basis functions"
 PROJECT_LOGO           =
 OUTPUT_DIRECTORY       = docs
 CREATE_SUBDIRS         = NO
