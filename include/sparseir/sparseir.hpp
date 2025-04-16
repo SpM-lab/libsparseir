@@ -1,5 +1,6 @@
 #include "sparseir-fwd.hpp"
 
+#include "./spir_status.h"
 #include "./utils.hpp"
 #include "./linalg.hpp"
 #include "./root.hpp"

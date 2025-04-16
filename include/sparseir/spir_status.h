@@ -1,0 +1,10 @@
+#pragma once
+
+typedef enum {
+SPIR_COMPUTATION_SUCCESS = 0,
+    SPIR_GET_IMPL_FAILED = -1,
+    SPIR_INVALID_DIMENSION = -2,
+    SPIR_INPUT_DIMENSION_MISMATCH = -3,
+    SPIR_OUTPUT_DIMENSION_MISMATCH = -4,
+    SPIR_NOT_SUPPORTED = -5,
+} spir_status_type;
