@@ -52,18 +52,16 @@ FetchContent_Declare(XPrec
 # Extract the content but don't process it through add_subdirectory yet
 FetchContent_GetProperties(XPrec)
 if(NOT xprec_POPULATED)
-    FetchContent_Populate(XPrec)
+    # Set options before making XPrec available
+    set(XPREC_INSTALL OFF CACHE BOOL "Disable XPrec installation" FORCE)
+    set(XPREC_INSTALL_CONFIG OFF CACHE BOOL "Disable XPrec config installation" FORCE)
+    set(XPREC_BUILD_SHARED_LIBS OFF CACHE BOOL "Build XPrec as static libraries" FORCE)
+    set(XPREC_INSTALL_COMPONENT_NAME "xprec_component" CACHE STRING "Custom component name for XPrec" FORCE)
+    set(XPREC_BUILD_TESTING OFF CACHE BOOL "Disable XPrec tests" FORCE)
+
+    # Use the recommended FetchContent_MakeAvailable instead of FetchContent_Populate
+    FetchContent_MakeAvailable(XPrec)
 endif()
-
-# Set options before adding the subdirectory
-set(XPREC_INSTALL OFF CACHE BOOL "Disable XPrec installation" FORCE)
-set(XPREC_INSTALL_CONFIG OFF CACHE BOOL "Disable XPrec config installation" FORCE)
-set(XPREC_BUILD_SHARED_LIBS OFF CACHE BOOL "Build XPrec as static libraries" FORCE)
-set(XPREC_INSTALL_COMPONENT_NAME "xprec_component" CACHE STRING "Custom component name for XPrec" FORCE)
-set(XPREC_BUILD_TESTING OFF CACHE BOOL "Disable XPrec tests" FORCE)
-
-# Now add the subdirectory with our settings
-add_subdirectory(${xprec_SOURCE_DIR} ${xprec_BINARY_DIR} EXCLUDE_FROM_ALL)
 
 # ---------------------------------
 # Building
@@ -127,7 +125,7 @@ install(TARGETS sparseir
 )
 
 # Install only necessary header files (C API)
-install(FILES 
+install(FILES
     include/sparseir/sparseir.h
     include/sparseir/version.h
     DESTINATION "${SPARSEIR_INSTALL_INCLUDEDIR}/sparseir"
@@ -141,7 +139,7 @@ option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." ${BUILD_TESTI
 
 if (SPARSEIR_BUILD_TESTING)
     enable_testing()
-    
+
     # Pass include paths to test subdirectory
     add_subdirectory("test")
 endif()
