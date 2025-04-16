@@ -166,7 +166,7 @@ static int evaluate_impl(
 {
     auto impl = get_impl_sampling(s);
     if (!impl)
-        return -1;
+        return SPIR_;
 
     // Convert dimensions
     std::array<int32_t, 3> dims_3d =
@@ -211,7 +211,7 @@ static int fit_impl(
 {
     auto impl = get_impl_sampling(s);
     if (!impl)
-        return -1;
+        return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
     std::array<int32_t, 3> dims_3d =
