@@ -321,7 +321,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &/*output*/) const {
-            return -3;
+            return SPIR_NOT_SUPPORTED;
         }
 
     // Evaluate the basis functions at the sampling points with complex input and complex output
@@ -329,7 +329,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
-            return -3;
+            return SPIR_NOT_SUPPORTED;
         }
 
     // Evaluate the basis functions at the sampling points with double input and complex output
@@ -337,7 +337,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
-            return -3;
+            return SPIR_NOT_SUPPORTED;
         }
 
     // Fit basis coefficients from the sparse sampling points with double input and double output
@@ -345,7 +345,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &/*output*/) const {
-            return -3;
+            return SPIR_NOT_SUPPORTED;
         }
 
     // Fit basis coefficients from the sparse sampling points with complex input and complex output
@@ -353,7 +353,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &/*output*/) const {
-            return -3;
+            return SPIR_NOT_SUPPORTED;
         }
 
     // Fit basis coefficients from the sparse sampling points with complex input and double output
@@ -361,7 +361,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> &/*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &/*output*/) const {
-            return -3;
+            return SPIR_NOT_SUPPORTED;
         }
 };
 
@@ -386,12 +386,12 @@ int evaluate_inplace_impl(
 
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension
-        return -1;
+        return SPIR_INVALID_DIMENSION;
     }
 
     if (sampler.basis_size() != static_cast<std::size_t>(input.dimension(dim))) {
         // Dimension mismatch
-        return -2;
+        return SPIR_INPUT_DIMENSION_MISMATCH;
     }
 
     // Calculate result using the existing evaluate method
@@ -400,13 +400,13 @@ int evaluate_inplace_impl(
     // Check if output dimensions match result dimensions
     if (output.dimensions() != result.dimensions()) {
         // Output tensor has wrong dimensions
-        return -3;
+        return SPIR_OUTPUT_DIMENSION_MISMATCH;
     }
 
     // Copy the result to the output tensor
     std::copy(result.data(), result.data() + result.size(), output.data());
 
-    return 0; // Success
+    return SPIR_COMPUTATION_SUCCESS; // Success
 }
 
 // Common implementation for evaluate_inplace
@@ -419,12 +419,12 @@ int fit_inplace_impl(
 
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension
-        return -1;
+        return SPIR_INVALID_DIMENSION;
     }
 
     if (sampler.basis_size() != static_cast<std::size_t>(input.dimension(dim))) {
         // Dimension mismatch
-        return -2;
+        return SPIR_INPUT_DIMENSION_MISMATCH;
     }
 
     // Calculate result using the existing evaluate method
@@ -433,13 +433,13 @@ int fit_inplace_impl(
     // Check if output dimensions match result dimensions
     if (output.dimensions() != result.dimensions()) {
         // Output tensor has wrong dimensions
-        return -3;
+        return SPIR_OUTPUT_DIMENSION_MISMATCH;
     }
 
     // Copy the result to the output tensor
     std::copy(result.data(), result.data() + result.size(), output.data());
 
-    return 0; // Success
+    return SPIR_COMPUTATION_SUCCESS; // Success
 }
 
 template <typename Basis>

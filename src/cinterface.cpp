@@ -974,7 +974,7 @@ size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
-        return 0;
+        return SPIR_GET_IMPL_FAILED;
     return impl->fitmat.rows();
 }
 
@@ -992,7 +992,7 @@ size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
-        return 0;
+        return SPIR_GET_IMPL_FAILED;
     return impl->fitmat.cols();
 }
 
@@ -1040,7 +1040,7 @@ int spir_bosonic_dlr_to_IR(
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
-        return -1;
+        return SPIR_GET_IMPL_FAILED;
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_2d.begin(), input_dims_2d.end());
@@ -1055,7 +1055,7 @@ int spir_bosonic_dlr_to_IR(
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
-    return 0;
+    return SPIR_COMPUTATION_SUCCESS;
 }
 
 /**
@@ -1105,7 +1105,7 @@ int spir_bosonic_dlr_from_IR(
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
-        return -1;
+        return SPIR_GET_IMPL_FAILED;
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
     Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
     std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
@@ -1118,7 +1118,7 @@ int spir_bosonic_dlr_from_IR(
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
-    return 0;
+    return SPIR_COMPUTATION_SUCCESS;
 }
 
 /**
@@ -1165,7 +1165,7 @@ int spir_fermionic_dlr_to_IR(
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
-        return -1;
+        return SPIR_GET_IMPL_FAILED;
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_2d.begin(), input_dims_2d.end());
@@ -1180,7 +1180,7 @@ int spir_fermionic_dlr_to_IR(
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
-    return 0;
+    return SPIR_COMPUTATION_SUCCESS;
 }
 
 /**
@@ -1230,7 +1230,7 @@ int spir_fermionic_dlr_from_IR(
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
-        return -1;
+        return SPIR_GET_IMPL_FAILED;
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
     Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
     std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
@@ -1243,7 +1243,7 @@ int spir_fermionic_dlr_from_IR(
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
-    return 0;
+    return SPIR_COMPUTATION_SUCCESS;
 }
 
 // Get basis functions (returns the PiecewiseLegendrePolyVector)
