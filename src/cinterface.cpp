@@ -166,7 +166,7 @@ static int evaluate_impl(
 {
     auto impl = get_impl_sampling(s);
     if (!impl)
-        return SPIR_;
+        return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
     std::array<int32_t, 3> dims_3d =
@@ -342,7 +342,7 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
     auto impl = get_impl_kernel(k);
     if (!impl) {
         DEBUG_LOG("Failed to get kernel implementation");
-        return -1;
+        return SPIR_GET_IMPL_FAILED;
     }
 
     try {
@@ -938,7 +938,7 @@ size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
-        return 0;
+        return SPIR_GET_IMPL_FAILED;
     return impl->fitmat.rows();
 }
 
