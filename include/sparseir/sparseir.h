@@ -4,6 +4,7 @@
 #include <complex.h>
 #include <stdint.h>
 
+#include "spir_status.h"
 #include "version.h"
 
 #ifdef __cplusplus
@@ -20,7 +21,6 @@ typedef enum {
     SPIR_ORDER_COLUMN_MAJOR = 1,
     SPIR_ORDER_ROW_MAJOR = 0
 } spir_order_type;
-
 
 /* Macro for declaring opaque types and their functions */
 #define DECLARE_OPAQUE_TYPE(name)                                              \

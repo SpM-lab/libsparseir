@@ -37,7 +37,7 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]") {
         // Get domain bounds
         double xmin, xmax, ymin, ymax;
         int status = spir_kernel_domain(kernel, &xmin, &xmax, &ymin, &ymax);
-        REQUIRE(status == 0);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare with C++ implementation
         auto cpp_kernel = sparseir::LogisticKernel(9);
@@ -155,7 +155,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
             Gl
         );
 
-        REQUIRE(status_to_IR == 0);
+        REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
         double* g_dlr = (double*)malloc(fitmat_rows * sizeof(double));
         int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
         int status_from_IR = spir_fermionic_dlr_from_IR(
@@ -166,7 +166,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
             Gl,
             g_dlr
         );
-        REQUIRE(status_from_IR == 0);
+        REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
 
         // Clean up
         // free allocated memory
@@ -217,7 +217,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
             Gl
         );
 
-        REQUIRE(status_to_IR == 0);
+        REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
         double* g_dlr = (double*)malloc(fitmat_rows * sizeof(double));
         int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
         int status_from_IR = spir_bosonic_dlr_from_IR(
@@ -228,7 +228,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]") {
             Gl,
             g_dlr
         );
-        REQUIRE(status_from_IR == 0);
+        REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
 
         // Clean up
         // free allocated memory
@@ -941,7 +941,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 gl_cpp.data(),
                 output_complex
             );
-            REQUIRE(status_not_supported == -3);
+            REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
 
             if (dim == 0) {
                 continue;
@@ -957,7 +957,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 gl_cpp.data(),
                 output_double
             );
-            REQUIRE(evaluate_status_dimension_mismatch == -2);
+            REQUIRE(evaluate_status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
 
             int fit_status_dimension_mismatch = spir_sampling_fit_dd(
                 sampling,
@@ -968,7 +968,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 output_double,
                 output_double
             );
-            REQUIRE(fit_status_dimension_mismatch == -2);
+            REQUIRE(fit_status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
         }
 
         // Clean up
@@ -1059,7 +1059,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 gl_cpp.data(),
                 evaluate_output
             );
-            REQUIRE(evaluate_status == 0);
+            REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
             int fit_status = spir_sampling_fit_zz(
                 sampling,
@@ -1070,7 +1070,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 evaluate_output,
                 fit_output
             );
-            REQUIRE(fit_status == 0);
+            REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
             // Compare with C++ implementation
             for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
@@ -1153,7 +1153,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 gl_cpp.data(),
                 evaluate_output
             );
-            REQUIRE(evaluate_status == 0);
+            REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
             int fit_status = spir_sampling_fit_zz(
                 sampling,
@@ -1163,7 +1163,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 target_dim,
                 evaluate_output,
                 fit_output);
-            REQUIRE(fit_status == 0);
+            REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
             // Compare with C++ implementation
             for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
@@ -1258,12 +1258,12 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             int evaluate_status = spir_sampling_evaluate_dz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 gl_cpp_rowmajor.data(), evaluate_output);
-            REQUIRE(evaluate_status == 0);
+            REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
             int fit_status = spir_sampling_fit_zz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 evaluate_output, fit_output);
-            REQUIRE(fit_status == 0);
+            REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
             // Compare results
             // Note that we need to specify Eigen::RowMajor here
@@ -1374,12 +1374,12 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
             int evaluate_status = spir_sampling_evaluate_zz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 gl_cpp_rowmajor.data(), evaluate_output);
-            REQUIRE(evaluate_status == 0);
+            REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
             int fit_status = spir_sampling_fit_zz(
                 sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
                 evaluate_output, fit_output);
-            REQUIRE(fit_status == 0);
+            REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
             // Compare results
             // Note that we need to specify Eigen::RowMajor here
@@ -1479,7 +1479,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 gl_cpp.data(),
                 output_double
             );
-            REQUIRE(status_not_supported == -3);
+            REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
 
             int fit_status_not_supported = spir_sampling_fit_dd(
                 sampling,
@@ -1490,7 +1490,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 output_double,
                 fit_output_double
             );
-            REQUIRE(fit_status_not_supported == -3);
+            REQUIRE(fit_status_not_supported == SPIR_NOT_SUPPORTED);
 
             if (dim == 0) {
                 continue;
@@ -1506,7 +1506,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 gl_cpp.data(),
                 output_complex
             );
-            REQUIRE(status_dimension_mismatch == -2);
+            REQUIRE(status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
 
             int fit_status_dimension_mismatch = spir_sampling_fit_zz(
                 sampling,
@@ -1517,7 +1517,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                 output_complex,
                 fit_output_complex
             );
-            REQUIRE(fit_status_dimension_mismatch == -2);
+            REQUIRE(fit_status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
         }
 
         // Clean up
