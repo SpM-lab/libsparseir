@@ -199,15 +199,21 @@ spir_destroy_sampling(tau_sampling);
 
 ### Discrete Lehmann Representation (DLR)
 
-```
+```c
 #include <sparseir/sparseir.h>
 
-// Create basis
+// First, create a kernel and compute its SVE
+double lambda = 10.0;
+spir_kernel* kernel = spir_logistic_kernel_new(lambda);
+
+double epsilon = 1e-8;
+spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
+
+// Create basis with pre-computed SVE
 double beta = 10.0;
 double omega_max = 10.0;
-double epsilon = 1e-8;
 spir_fermionic_finite_temp_basis* basis =
-    spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
+    spir_fermionic_finite_temp_basis_new_with_sve(beta, omega_max, kernel, sve);
 
 // Create a DLR object
 spir_fermionic_dlr* dlr = spir_fermionic_dlr_new(basis);
@@ -215,15 +221,23 @@ spir_fermionic_dlr* dlr = spir_fermionic_dlr_new(basis);
 // Get fitting matrix dimensions
 size_t rows = spir_fermionic_dlr_fitmat_rows(dlr);
 size_t cols = spir_fermionic_dlr_fitmat_cols(dlr);
+// Prepare data for transformation
+int32_t ndim = 1;
+int32_t input_dims[] = {(int32_t)cols};  // Size must match the number of IR basis functions
 
-// Transform between IR and DLR representations
-int32_t ndim = 2;
-int32_t input_dims[] = {3, 4};
-double ir_coeffs[12] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
-double dlr_coeffs[12];
+// Allocate arrays with proper sizes
+double* ir_coeffs = (double*)malloc(cols * sizeof(double));
+double* dlr_coeffs = (double*)malloc(rows * sizeof(double));
+double* recovered_ir = (double*)malloc(cols * sizeof(double));
 
-// Transform from IR to DLR
-spir_fermionic_dlr_from_IR(
+// Initialize IR coefficients with some values
+for (size_t i = 0; i < cols; i++) {
+    ir_coeffs[i] = 1.0 / (1.0 + i);
+}
+
+// Transform from IR to DLR representation
+// This line causes an error
+int status = spir_fermionic_dlr_from_IR(
     dlr,
     SPIR_ORDER_COLUMN_MAJOR,
     ndim,
@@ -231,10 +245,10 @@ spir_fermionic_dlr_from_IR(
     ir_coeffs,
     dlr_coeffs
 );
+/*
 
-// Transform back to IR
-double recovered_ir[12];
-spir_fermionic_dlr_to_IR(
+// Transform back to IR representation
+status = spir_fermionic_dlr_to_IR(
     dlr,
     SPIR_ORDER_COLUMN_MAJOR,
     ndim,
@@ -244,8 +258,14 @@ spir_fermionic_dlr_to_IR(
 );
 
 // Clean up
+delete[] ir_coeffs;
+delete[] dlr_coeffs;
+delete[] recovered_ir;
 spir_destroy_fermionic_dlr(dlr);
 spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_sve_result(sve);
+spir_destroy_kernel(kernel);
+*/
 ```
 
 ### Complex Number Operations
