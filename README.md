@@ -110,6 +110,8 @@ This document describes how to use the C-API of libsparseir. The C-API provides 
 
 ## Basic Usage
 
+Please refer [`test/cinterface.cxx`](test/cinterface.cxx) to learn more.
+
 ### Kernel Creation and Domain
 
 ```c
