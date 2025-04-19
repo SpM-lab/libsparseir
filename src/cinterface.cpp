@@ -1284,8 +1284,3 @@ spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)
 //}
 
 } // extern "C"
-
-// Implementation of the LogisticKernel
-namespace sparseir {
-
-} // namespace sparseir
