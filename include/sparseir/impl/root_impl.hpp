@@ -12,22 +12,22 @@
 namespace sparseir {
 
 // Midpoint function for floating-point types
-template<typename T1, typename T2>
+template <typename T1, typename T2>
 typename std::enable_if<
     std::is_floating_point<T1>::value && std::is_floating_point<T2>::value,
-    typename std::common_type<T1, T2>::type
->::type
-inline midpoint(T1 a, T2 b) {
+    typename std::common_type<T1, T2>::type>::type inline midpoint(T1 a, T2 b)
+{
     typedef typename std::common_type<T1, T2>::type CommonType;
     return static_cast<CommonType>(a) +
            (static_cast<CommonType>(b) - static_cast<CommonType>(a)) *
-           static_cast<CommonType>(0.5);
+               static_cast<CommonType>(0.5);
 }
 
 // Midpoint function for integral types
-template<typename T>
-typename std::enable_if<std::is_integral<T>::value, T>::type
-inline midpoint(T a, T b) {
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value, T>::type inline midpoint(
+    T a, T b)
+{
     return a + ((b - a) / 2);
 }
 
@@ -48,8 +48,9 @@ closeenough(T a, T b, T /*eps*/)
 }
 
 // Signbit function (handles both floating-point and integral types)
-template<typename T>
-inline bool signbit(T x) {
+template <typename T>
+inline bool signbit(T x)
+{
     return x < static_cast<T>(0);
 }
 
@@ -167,7 +168,8 @@ std::vector<T> refine_grid(const std::vector<T> &grid, int alpha)
 }
 
 template <typename F>
-double bisect_discr_extremum(F absf, double a, double b, double absf_a, double absf_b)
+double bisect_discr_extremum(F absf, double a, double b, double absf_a,
+                             double absf_b)
 {
     double d = b - a;
 
@@ -220,11 +222,9 @@ std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
     derivativesignchange_b.reserve(derivativesignchange.size() + 2);
     derivativesignchange_b.push_back(false);
     derivativesignchange_b.push_back(false);
-    derivativesignchange_b.insert(
-        derivativesignchange_b.end(),
-        derivativesignchange.begin(),
-        derivativesignchange.end()
-    );
+    derivativesignchange_b.insert(derivativesignchange_b.end(),
+                                  derivativesignchange.begin(),
+                                  derivativesignchange.end());
 
     std::vector<double> a, b;
     std::vector<double> absf_a, absf_b;
@@ -266,4 +266,4 @@ std::vector<T> discrete_extrema(F f, const std::vector<T> &xgrid)
     return res;
 }
 
-} // namespace sparseir 
+} // namespace sparseir

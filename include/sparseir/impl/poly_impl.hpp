@@ -6,8 +6,9 @@ namespace sparseir {
 
 // Template implementations for PiecewiseLegendreFT
 template <typename S>
-std::complex<double> PiecewiseLegendreFT<S>::compute_unl_inner(
-    const PiecewiseLegendrePoly &poly, int wn) const
+std::complex<double>
+PiecewiseLegendreFT<S>::compute_unl_inner(const PiecewiseLegendrePoly &poly,
+                                          int wn) const
 {
     double wred = M_PI / 4.0 * wn;
     Eigen::VectorXcd phase_wi = phase_stable(poly, wn);
@@ -32,15 +33,16 @@ std::complex<double> PiecewiseLegendreFT<S>::giw(int wn) const
     if (wn == 0)
         return std::complex<double>(0.0, 0.0);
     std::complex<double> inv_iw = 1.0 / iw;
-    std::vector<double> moments_vec(model.moments.data(),
-                                  model.moments.data() + model.moments.size());
+    std::vector<double> moments_vec(
+        model.moments.data(), model.moments.data() + model.moments.size());
     std::complex<double> result = inv_iw * evalpoly(inv_iw, moments_vec);
     return result;
 }
 
 template <typename S>
-std::complex<double> PiecewiseLegendreFT<S>::evalpoly(
-    const std::complex<double> &x, const std::vector<double> &coeffs) const
+std::complex<double>
+PiecewiseLegendreFT<S>::evalpoly(const std::complex<double> &x,
+                                 const std::vector<double> &coeffs) const
 {
     std::complex<double> result(0, 0);
     for (int i = coeffs.size() - 1; i >= 0; --i) {
@@ -50,21 +52,21 @@ std::complex<double> PiecewiseLegendreFT<S>::evalpoly(
 }
 
 template <typename S>
-std::function<double(int)> func_for_part(const PiecewiseLegendreFT<S> &polyFT, std::function<double(std::complex<double>)> part)
+std::function<double(int)>
+func_for_part(const PiecewiseLegendreFT<S> &polyFT,
+              std::function<double(std::complex<double>)> part)
 {
     if (part == nullptr) {
         int parity = polyFT.poly.get_symm();
         if (parity == 1) {
-            part = std::is_same<S, Bosonic>::value ?
-                    [](std::complex<double> x) { return x.real(); } :
-                    [](std::complex<double> x) { return x.imag(); };
-        }
-        else if (parity == -1) {
-            part = std::is_same<S, Bosonic>::value ?
-                    [](std::complex<double> x) { return x.imag(); } :
-                    [](std::complex<double> x) { return x.real(); };
-        }
-        else {
+            part = std::is_same<S, Bosonic>::value
+                       ? [](std::complex<double> x) { return x.real(); }
+                       : [](std::complex<double> x) { return x.imag(); };
+        } else if (parity == -1) {
+            part = std::is_same<S, Bosonic>::value
+                       ? [](std::complex<double> x) { return x.imag(); }
+                       : [](std::complex<double> x) { return x.real(); };
+        } else {
             throw std::runtime_error("Cannot detect parity");
         }
     }
@@ -76,7 +78,8 @@ std::function<double(int)> func_for_part(const PiecewiseLegendreFT<S> &polyFT, s
 }
 
 template <typename S>
-std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, bool positive_only)
+std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat,
+                                           bool positive_only)
 {
     auto grid = DEFAULT_GRID;
     auto f = func_for_part(u_hat);
@@ -97,7 +100,8 @@ std::vector<MatsubaraFreq<S>> sign_changes(const PiecewiseLegendreFT<S> &u_hat, 
 }
 
 template <typename S>
-std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, bool positive_only)
+std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat,
+                                           bool positive_only)
 {
     auto f = func_for_part(u_hat);
     auto x0 = discrete_extrema(f, DEFAULT_GRID);
@@ -114,4 +118,4 @@ std::vector<MatsubaraFreq<S>> find_extrema(const PiecewiseLegendreFT<S> &u_hat, 
     return results;
 }
 
-} // namespace sparseir 
+} // namespace sparseir

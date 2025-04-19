@@ -3,46 +3,48 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "sve_cache.hpp"
 #include <catch2/catch_approx.hpp> // for Approx
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
-#include "sve_cache.hpp"
 
-#include <random>
 #include <complex>
-#include <memory>
-#include <vector>
-#include <string>
 #include <map>
+#include <memory>
+#include <random>
+#include <string>
+#include <vector>
 
 using namespace std;
 using Catch::Approx;
 
 using ComplexF64 = std::complex<double>;
 
-TEST_CASE("TauSampling Constructor Test", "[sampling]") {
+TEST_CASE("TauSampling Constructor Test", "[sampling]")
+{
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
     auto sve_result = SVECache::get_sve_result(*kernel, 1e-15);
-    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
-                                                           std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-15,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
     sparseir::TauSampling<sparseir::Bosonic> tau_sampling(basis);
 
     // Initialize x vector properly
     Eigen::VectorXd x(1);
     x(0) = 0.3;
-    std::vector<double> mat_ref_vec =
-        {
-            0.8209004724107448,   -0.449271448243545,    -0.8421791851408207,
-            1.0907208389572702,   -0.011760907495966977, -1.088150369622618,
-            0.9158018684127142,   0.32302607984184495,   -1.181401559255913,
-            0.6561675000550108,   0.6371046638581639,    -1.1785150288689699,
-            0.32988851105229844,  0.9070585672694699,    -1.0690576391215845,
-            -0.03607541047225425, 1.0973174269744128,    -0.8540342088018821,
-            -0.4046629597879494,
-        };
-    Eigen::MatrixXd mat_ref = Eigen::Map<Eigen::MatrixXd>(mat_ref_vec.data(), 1, 19);
+    std::vector<double> mat_ref_vec = {
+        0.8209004724107448,   -0.449271448243545,    -0.8421791851408207,
+        1.0907208389572702,   -0.011760907495966977, -1.088150369622618,
+        0.9158018684127142,   0.32302607984184495,   -1.181401559255913,
+        0.6561675000550108,   0.6371046638581639,    -1.1785150288689699,
+        0.32988851105229844,  0.9070585672694699,    -1.0690576391215845,
+        -0.03607541047225425, 1.0973174269744128,    -0.8540342088018821,
+        -0.4046629597879494,
+    };
+    Eigen::MatrixXd mat_ref =
+        Eigen::Map<Eigen::MatrixXd>(mat_ref_vec.data(), 1, 19);
     Eigen::MatrixXd mat = eval_matrix(basis, x);
 
     REQUIRE((*basis->u)[0](0.3) == Approx(0.8209004724107448));
@@ -51,32 +53,22 @@ TEST_CASE("TauSampling Constructor Test", "[sampling]") {
     REQUIRE((*basis->u)(x).transpose().isApprox(mat_ref));
 
     std::vector<double> sampling_points_ref_vec = {
-        0.0036884193900212914,
-        0.019354981745749233,
-        0.04721451082761008,
-        0.08670296984028258,
-        0.13697417948305657,
-        0.19688831490761904,
-        0.2650041152730527,
-        0.3395880303712605,
-        0.4186486136790497,
-        0.4999999999999999,
-        0.5813513863209503,
-        0.6604119696287395,
-        0.7349958847269473,
-        0.803111685092381,
-        0.8630258205169434,
-        0.9132970301597174,
-        0.9527854891723898,
-        0.9806450182542508,
+        0.0036884193900212914, 0.019354981745749233, 0.04721451082761008,
+        0.08670296984028258,   0.13697417948305657,  0.19688831490761904,
+        0.2650041152730527,    0.3395880303712605,   0.4186486136790497,
+        0.4999999999999999,    0.5813513863209503,   0.6604119696287395,
+        0.7349958847269473,    0.803111685092381,    0.8630258205169434,
+        0.9132970301597174,    0.9527854891723898,   0.9806450182542508,
         0.9963115806099787,
     };
-    Eigen::VectorXd sampling_points_ref = Eigen::Map<Eigen::VectorXd>(sampling_points_ref_vec.data(), 19);
+    Eigen::VectorXd sampling_points_ref =
+        Eigen::Map<Eigen::VectorXd>(sampling_points_ref_vec.data(), 19);
     Eigen::VectorXd sampling_points = tau_sampling.sampling_points();
     REQUIRE(sampling_points.isApprox(sampling_points_ref));
 }
 
-TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
+TEST_CASE("Two-dimensional TauSampling test", "[sampling]")
+{
     /*
     begin
         Λ = 10.0
@@ -97,108 +89,60 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
     end
     */
 
-	std::vector<double> realpart = {
-		0.3673381180364523,
-		-1.1848713677287497,
-		-0.48391946525406376,
-		0.06522097090711336,
-		-1.0267922189469185,
-		-0.6223777767550012,
-		-0.10283087463623661,
-		0.3778715311165532,
-		0.29768602322833465,
-		-0.04283291561082807,
-		-0.32023762887739543,
-		-0.6725592268833712,
-		0.30960687841311585,
-		0.6918672439487823,
-		-0.2388920072830823,
-		-0.07085756020012013,
-		0.12394467504744563,
-		0.06391770716516226,
-		-0.21605470690182405,
-		0.07042077084531267,
-		0.346103005235077,
-		-0.8477952574715448,
-		0.41009784183386416,
-		-0.4498709965313266,
-		0.5571298873810305,
-		-0.8493729815671984,
-		0.28980968852603595,
-		-1.4307948463146032,
-		-0.10912464313287795,
-		-0.8673379720040123,
-		-0.7154068328086284,
-		0.8283531180967313,
-		1.1361739656981185,
-		1.5057013085833661,
-		-1.1224964468847343,
-		-0.08537848365211542,
-		-0.39945097032202637,
-		-0.7575395088688694,
-	};
+    std::vector<double> realpart = {
+        0.3673381180364523,   -1.1848713677287497,  -0.48391946525406376,
+        0.06522097090711336,  -1.0267922189469185,  -0.6223777767550012,
+        -0.10283087463623661, 0.3778715311165532,   0.29768602322833465,
+        -0.04283291561082807, -0.32023762887739543, -0.6725592268833712,
+        0.30960687841311585,  0.6918672439487823,   -0.2388920072830823,
+        -0.07085756020012013, 0.12394467504744563,  0.06391770716516226,
+        -0.21605470690182405, 0.07042077084531267,  0.346103005235077,
+        -0.8477952574715448,  0.41009784183386416,  -0.4498709965313266,
+        0.5571298873810305,   -0.8493729815671984,  0.28980968852603595,
+        -1.4307948463146032,  -0.10912464313287795, -0.8673379720040123,
+        -0.7154068328086284,  0.8283531180967313,   1.1361739656981185,
+        1.5057013085833661,   -1.1224964468847343,  -0.08537848365211542,
+        -0.39945097032202637, -0.7575395088688694,
+    };
 
-	std::vector<double> imagpart = {
-		0.6400304387848424,
-		-0.9155147983732648,
-		-0.4851817102131511,
-		-0.06338297024020532,
-		-1.3488815728765613,
-		1.1822088047359214,
-		-0.288242258176703,
-		-0.570468796120823,
-		0.4763084746038559,
-		0.03736517002507163,
-		-0.056876682732794726,
-		-0.07795390274119411,
-		0.2633149818135351,
-		-0.8815048387138952,
-		-0.020330775052176554,
-		-0.7661526262003154,
-		0.750959163544027,
-		0.41540477565392087,
-		-0.020689571322099413,
-		-0.5441660523605145,
-		-0.38846669281165874,
-		-0.40987741222234014,
-		-0.6741059225323395,
-		0.33722179006610414,
-		-0.685362676824395,
-		0.3093643766704389,
-		-1.0494934462703636,
-		0.6246635430374898,
-		-0.7579801809448388,
-		0.33721713831039174,
-		0.7085145371621182,
-		0.06796430834778598,
-		0.02923245777176449,
-		1.496840869584957,
-		0.24400346936417383,
-		0.548982897088907,
-		-0.2555793942960095,
-		0.5433346850470123,
-	};
+    std::vector<double> imagpart = {
+        0.6400304387848424,    -0.9155147983732648,   -0.4851817102131511,
+        -0.06338297024020532,  -1.3488815728765613,   1.1822088047359214,
+        -0.288242258176703,    -0.570468796120823,    0.4763084746038559,
+        0.03736517002507163,   -0.056876682732794726, -0.07795390274119411,
+        0.2633149818135351,    -0.8815048387138952,   -0.020330775052176554,
+        -0.7661526262003154,   0.750959163544027,     0.41540477565392087,
+        -0.020689571322099413, -0.5441660523605145,   -0.38846669281165874,
+        -0.40987741222234014,  -0.6741059225323395,   0.33722179006610414,
+        -0.685362676824395,    0.3093643766704389,    -1.0494934462703636,
+        0.6246635430374898,    -0.7579801809448388,   0.33721713831039174,
+        0.7085145371621182,    0.06796430834778598,   0.02923245777176449,
+        1.496840869584957,     0.24400346936417383,   0.548982897088907,
+        -0.2555793942960095,   0.5433346850470123,
+    };
 
-	// Calculate the proper dimensions
-	const int rows = 19;
-	const int cols = 2;
+    // Calculate the proper dimensions
+    const int rows = 19;
+    const int cols = 2;
 
-	// Create complex vector with proper size
-	Eigen::VectorXcd rhol_vec(rows * cols);
-	for(int i = 0; i < rhol_vec.size(); i++) {
-		rhol_vec(i) = std::complex<double>(realpart[i], imagpart[i]);
-	}
+    // Create complex vector with proper size
+    Eigen::VectorXcd rhol_vec(rows * cols);
+    for (int i = 0; i < rhol_vec.size(); i++) {
+        rhol_vec(i) = std::complex<double>(realpart[i], imagpart[i]);
+    }
 
     double beta = 1.0;
     double wmax = 10.0;
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
     auto sve_result = SVECache::get_sve_result(*kernel, 1e-15);
 
-    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-15,
-                                                           std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-15,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     // Reshape into matrix with explicit dimensions
-    Eigen::MatrixXcd rhol = Eigen::Map<Eigen::MatrixXcd>(rhol_vec.data(), rows, cols);
+    Eigen::MatrixXcd rhol =
+        Eigen::Map<Eigen::MatrixXcd>(rhol_vec.data(), rows, cols);
     Eigen::VectorXd s_vector = basis->s;
 
     Eigen::Tensor<ComplexF64, 2> originalgl(rows, cols);
@@ -264,7 +208,6 @@ TEST_CASE("Two-dimensional TauSampling test", "[sampling]") {
     }
 }
 
-
 // A helper function template to test both Bosonic and Fermionic in one place
 template <typename Stat>
 void test_fit_from_tau_for_stat()
@@ -273,8 +216,9 @@ void test_fit_from_tau_for_stat()
     vector<double> lambdas = {10.0, 42.0};
 
     for (auto Lambda : lambdas) {
-        SECTION("Testing with Λ=" + std::to_string(Lambda) + " for "
-                + (std::is_same<Stat, sparseir::Bosonic>::value ? "Bosonic" : "Fermionic"))
+        SECTION("Testing with Λ=" + std::to_string(Lambda) + " for " +
+                (std::is_same<Stat, sparseir::Bosonic>::value ? "Bosonic"
+                                                              : "Fermionic"))
         {
             double wmax = Lambda / beta;
             auto kernel = std::make_shared<sparseir::LogisticKernel>(Lambda);
@@ -282,9 +226,11 @@ void test_fit_from_tau_for_stat()
 
             // Create a basis matching the template statistic
             auto basis = std::make_shared<sparseir::FiniteTempBasis<Stat>>(
-                beta, wmax, 1e-15, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+                beta, wmax, 1e-15,
+                std::static_pointer_cast<sparseir::AbstractKernel>(kernel),
+                sve_result);
 
-            REQUIRE(basis->size() > 0);  // Check basis size
+            REQUIRE(basis->size() > 0); // Check basis size
 
             // Create TauSampling with the same statistic
             auto tau_sampling = make_shared<sparseir::TauSampling<Stat>>(basis);
@@ -320,12 +266,13 @@ void test_fit_from_tau_for_stat()
 
             // Reshape and broadcast s_tensor to match rhol_tensor dimensions
             Eigen::array<Eigen::Index, 4> new_shape = {s_size, 1, 1, 1};
-            Eigen::Tensor<ComplexF64, 4> s_reshaped = s_tensor.reshape(new_shape);
+            Eigen::Tensor<ComplexF64, 4> s_reshaped =
+                s_tensor.reshape(new_shape);
             Eigen::array<Eigen::Index, 4> bcast = {1, d1, d2, d3};
 
-            //julia> shape = (2, 3, 4)
-            //julia> rhol = randn(ComplexF64, (length(basis), shape...))
-            //julia> originalgl = -basis.s .* rhol
+            // julia> shape = (2, 3, 4)
+            // julia> rhol = randn(ComplexF64, (length(basis), shape...))
+            // julia> originalgl = -basis.s .* rhol
 
             Eigen::Tensor<ComplexF64, 4> originalgl =
                 (-s_reshaped.broadcast(bcast)) * rhol_tensor;
@@ -334,10 +281,12 @@ void test_fit_from_tau_for_stat()
             for (int dim = 0; dim < 4; ++dim) {
                 // Move the "frequency" dimension around
                 // julia> gl = SparseIR.movedim(originalgl, 1 => dim)
-                Eigen::Tensor<ComplexF64, 4> gl = sparseir::movedim(originalgl, 0, dim);
+                Eigen::Tensor<ComplexF64, 4> gl =
+                    sparseir::movedim(originalgl, 0, dim);
 
                 // Evaluate from real-time/tau to imaginary-time/tau
-                Eigen::Tensor<ComplexF64, 4> gtau = tau_sampling->evaluate(gl, dim);
+                Eigen::Tensor<ComplexF64, 4> gtau =
+                    tau_sampling->evaluate(gl, dim);
 
                 // Check shapes
                 REQUIRE(gtau.dimension(0) == gl.dimension(0));
@@ -346,7 +295,8 @@ void test_fit_from_tau_for_stat()
                 REQUIRE(gtau.dimension(3) == gl.dimension(3));
 
                 // Fit back to original
-                Eigen::Tensor<ComplexF64, 4> gl_from_tau = tau_sampling->fit(gtau, dim);
+                Eigen::Tensor<ComplexF64, 4> gl_from_tau =
+                    tau_sampling->fit(gtau, dim);
 
                 // Check shapes again
                 REQUIRE(gl_from_tau.dimension(0) == gl.dimension(0));
@@ -368,8 +318,8 @@ TEST_CASE("fit from tau for both statistics, Λ in {10, 42}", "[sampling]")
     test_fit_from_tau_for_stat<sparseir::Fermionic>();
 }
 
-
-TEST_CASE("Conditioning Tests", "[sampling]") {
+TEST_CASE("Conditioning Tests", "[sampling]")
+{
     double beta = 3.0;
     double wmax = 3.0;
     double epsilon = 1e-6;
@@ -377,26 +327,33 @@ TEST_CASE("Conditioning Tests", "[sampling]") {
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
     auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-        beta, wmax, epsilon, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+        beta, wmax, epsilon,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
-    auto tau_sampling = make_shared<sparseir::TauSampling<sparseir::Bosonic>>(basis);
-    auto matsu_sampling = make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis);
+    auto tau_sampling =
+        make_shared<sparseir::TauSampling<sparseir::Bosonic>>(basis);
+    auto matsu_sampling =
+        make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis);
 
-    // Calculate condition number as the ratio of largest to smallest singular value
+    // Calculate condition number as the ratio of largest to smallest singular
+    // value
     auto tau_svd = tau_sampling->get_matrix_svd();
     auto matsu_svd = matsu_sampling->get_matrix_svd();
 
-    double cond_tau = tau_svd.singularValues()(0) /
-                     tau_svd.singularValues()(tau_svd.singularValues().size()-1);
-    double cond_matsu = matsu_svd.singularValues()(0) /
-                       matsu_svd.singularValues()(matsu_svd.singularValues().size()-1);
+    double cond_tau =
+        tau_svd.singularValues()(0) /
+        tau_svd.singularValues()(tau_svd.singularValues().size() - 1);
+    double cond_matsu =
+        matsu_svd.singularValues()(0) /
+        matsu_svd.singularValues()(matsu_svd.singularValues().size() - 1);
 
     // These thresholds might need adjustment based on actual values
     REQUIRE(cond_tau < 10.0);
     REQUIRE(cond_matsu < 20.0);
 }
 
-TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
+TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]")
+{
     // Test parameters
     double beta = 10.0;
     double wmax = 5.0;
@@ -409,27 +366,32 @@ TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
     auto sve_result = SVECache::get_sve_result(*kernel, eps);
 
     // Create basis
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, eps,
-                                                                               std::static_pointer_cast<sparseir::AbstractKernel>(kernel),
-                                                                               sve_result);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, eps,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     // Create sampling objects
     sparseir::TauSampling<sparseir::Bosonic> tau_sampling(basis);
     sparseir::MatsubaraSampling<sparseir::Bosonic> matsubara_sampling(basis);
 
-    SECTION("TauSampling dimensions") {
+    SECTION("TauSampling dimensions")
+    {
         // Check that the sampling matrix has correct dimensions
-        REQUIRE(tau_sampling.get_matrix().rows() == tau_sampling.sampling_points().size());
+        REQUIRE(tau_sampling.get_matrix().rows() ==
+                tau_sampling.sampling_points().size());
         REQUIRE(tau_sampling.get_matrix().cols() == basis->size());
     }
 
-    SECTION("MatsubaraSampling dimensions") {
+    SECTION("MatsubaraSampling dimensions")
+    {
         // Check that the sampling matrix has correct dimensions
-        REQUIRE(matsubara_sampling.get_matrix().rows() == matsubara_sampling.sampling_points().size());
+        REQUIRE(matsubara_sampling.get_matrix().rows() ==
+                matsubara_sampling.sampling_points().size());
         REQUIRE(matsubara_sampling.get_matrix().cols() == basis->size());
     }
 
-    SECTION("Evaluate and fit consistency") {
+    SECTION("Evaluate and fit consistency")
+    {
         // Create random coefficients
         std::mt19937 rng(42);
         std::uniform_real_distribution<double> dist(-1.0, 1.0);
@@ -463,7 +425,8 @@ TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
         }
     }
 
-    SECTION("Tensor operations") {
+    SECTION("Tensor operations")
+    {
         // Create a 2D tensor (matrix) of coefficients
         int extra_dim = 3;
         Eigen::Tensor<double, 2> coeffs_tensor(basis->size(), extra_dim);
@@ -478,14 +441,17 @@ TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
         }
 
         // Evaluate tensor along dimension 0
-        Eigen::Tensor<double, 2> values_tensor = tau_sampling.evaluate(coeffs_tensor, 0);
+        Eigen::Tensor<double, 2> values_tensor =
+            tau_sampling.evaluate(coeffs_tensor, 0);
 
         // Check dimensions
-        REQUIRE(values_tensor.dimension(0) == tau_sampling.sampling_points().size());
+        REQUIRE(values_tensor.dimension(0) ==
+                tau_sampling.sampling_points().size());
         REQUIRE(values_tensor.dimension(1) == extra_dim);
 
         // Fit back to coefficients
-        Eigen::Tensor<double, 2> coeffs_fit_tensor = tau_sampling.fit(values_tensor, 0);
+        Eigen::Tensor<double, 2> coeffs_fit_tensor =
+            tau_sampling.fit(values_tensor, 0);
 
         // Check dimensions
         REQUIRE(coeffs_fit_tensor.dimension(0) == basis->size());
@@ -494,7 +460,8 @@ TEST_CASE("Sampling Dimensions and Consistency Tests", "[sampling]") {
         // Check values
         for (int i = 0; i < basis->size(); ++i) {
             for (int j = 0; j < extra_dim; ++j) {
-                REQUIRE(coeffs_fit_tensor(i, j) == Approx(coeffs_tensor(i, j)).margin(1e-8));
+                REQUIRE(coeffs_fit_tensor(i, j) ==
+                        Approx(coeffs_tensor(i, j)).margin(1e-8));
             }
         }
     }
@@ -517,7 +484,9 @@ TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
         // Create finite-temperature basis and TauSampling for the given
         // statistic
         auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(
-            beta, wmax, 1e-15, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+            beta, wmax, 1e-15,
+            std::static_pointer_cast<sparseir::AbstractKernel>(kernel),
+            sve_result);
         auto tau_sampling = std::make_shared<sparseir::TauSampling<S>>(basis);
 
         // Prepare test data
@@ -574,7 +543,9 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         auto kernel = std::make_shared<sparseir::LogisticKernel>(Lambda);
         auto sve_result = SVECache::get_sve_result(*kernel, 1e-15);
         auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(
-            beta, wmax, 1e-15, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+            beta, wmax, 1e-15,
+            std::static_pointer_cast<sparseir::AbstractKernel>(kernel),
+            sve_result);
 
         auto matsu_sampling = std::make_shared<sparseir::MatsubaraSampling<S>>(
             basis, positive_only);
@@ -618,13 +589,15 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
                                              noise * Gl_magn));
     };
 
-    SECTION("Bosonic") {
+    SECTION("Bosonic")
+    {
         for (bool positive_only : {true, false}) {
             run_noise_test(sparseir::Bosonic{}, positive_only);
         }
     }
 
-    SECTION("Fermionic") {
+    SECTION("Fermionic")
+    {
         for (bool positive_only : {true, false}) {
             run_noise_test(sparseir::Fermionic{}, positive_only);
         }

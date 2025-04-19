@@ -13,12 +13,6 @@
 
 namespace sparseir {
 
-using Eigen::Dynamic;
-using Eigen::Matrix;
-using Eigen::MatrixX;
-using Eigen::Vector;
-using Eigen::VectorX;
-
 template <typename Derived>
 int argmax(const Eigen::MatrixBase<Derived> &vec)
 {
@@ -39,20 +33,19 @@ int argmax(const Eigen::MatrixBase<Derived> &vec)
     return maxIndex;
 }
 
-
 template <typename T>
 struct QRPivoted
 {
-    Matrix<T, Dynamic, Dynamic> factors;
-    Vector<T, Dynamic> taus;
-    Vector<int, Dynamic> jpvt;
+    Eigen::MatrixX<T> factors;
+    Eigen::VectorX<T> taus;
+    Eigen::VectorX<int> jpvt;
 };
 
 template <typename T>
 struct QRPackedQ
 {
     Eigen::MatrixX<T> factors;
-    Eigen::Matrix<T, Eigen::Dynamic, 1> taus;
+    Eigen::VectorX<T> taus;
 };
 
 template <typename T>
@@ -62,13 +55,12 @@ template <typename T>
 void mul(Eigen::MatrixX<T> &C, const QRPackedQ<T> &Q,
          const Eigen::MatrixX<T> &B);
 
-
 // TODO: FIX THIS
 template <typename T>
-MatrixX<T> getPropertyP(const QRPivoted<T> &F)
+Eigen::MatrixX<T> getPropertyP(const QRPivoted<T> &F)
 {
     int n = F.factors.cols();
-    MatrixX<T> P = MatrixX<T>::Zero(n, n);
+    Eigen::MatrixX<T> P = Eigen::MatrixX<T>::Zero(n, n);
     for (int i = 0; i < n; ++i) {
         P(F.jpvt[i], i) = 1;
     }
@@ -82,12 +74,12 @@ QRPackedQ<T> getPropertyQ(const QRPivoted<T> &F)
 }
 
 template <typename T>
-MatrixX<T> getPropertyR(const QRPivoted<T> &F)
+Eigen::MatrixX<T> getPropertyR(const QRPivoted<T> &F)
 {
     int m = F.factors.rows();
     int n = F.factors.cols();
 
-    MatrixX<T> upper = MatrixX<T>::Zero(std::min(m, n), n);
+    Eigen::MatrixX<T> upper = Eigen::MatrixX<T>::Zero(std::min(m, n), n);
 
     for (int i = 0; i < upper.rows(); ++i) {
         for (int j = i; j < upper.cols(); ++j) {
@@ -133,11 +125,11 @@ void reflectorApply(
 A will be modified in-place.
 */
 template <typename T>
-std::pair<QRPivoted<T>, int> rrqr(MatrixX<T> &A,
+std::pair<QRPivoted<T>, int> rrqr(Eigen::MatrixX<T> &A,
                                   T rtol = std::numeric_limits<T>::epsilon());
 
 template <typename T>
-std::pair<MatrixX<T>, MatrixX<T>> truncate_qr_result(QRPivoted<T> &qr, int k);
+std::pair<Eigen::MatrixX<T>, Eigen::MatrixX<T>> truncate_qr_result(QRPivoted<T> &qr, int k);
 
 // Swap columns of a matrix A
 template <typename T>
@@ -155,6 +147,4 @@ tsvd(const Eigen::MatrixX<T> &A, T rtol = std::numeric_limits<T>::epsilon());
 
 Eigen::MatrixXd pinv(const Eigen::MatrixXd &A, double tolerance = 1e-6);
 
-
 } // namespace sparseir
-

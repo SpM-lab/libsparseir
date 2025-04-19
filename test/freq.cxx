@@ -18,7 +18,8 @@ TEST_CASE("Integer value of FermionicFreq and BosonicFreq", "[freq]")
     REQUIRE(b.get_n() == -2);
 }
 
-TEST_CASE("Exceptions for invalid FermionicFreq and BosonicFreq values", "[freq]")
+TEST_CASE("Exceptions for invalid FermionicFreq and BosonicFreq values",
+          "[freq]")
 {
     REQUIRE_THROWS_AS(sparseir::FermionicFreq(4), std::domain_error);
     REQUIRE_THROWS_AS(sparseir::BosonicFreq(-7), std::domain_error);

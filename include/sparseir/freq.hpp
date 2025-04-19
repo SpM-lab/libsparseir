@@ -53,8 +53,10 @@ public:
     int n;
 
     // Constructor
-    inline MatsubaraFreq(int n) : n(n) {
-        static_assert(std::is_same<S, Fermionic>::value || std::is_same<S, Bosonic>::value,
+    inline MatsubaraFreq(int n) : n(n)
+    {
+        static_assert(std::is_same<S, Fermionic>::value ||
+                          std::is_same<S, Bosonic>::value,
                       "S must be Fermionic or Bosonic");
         S stat;
         if (!stat.allowed(n)) {
@@ -65,32 +67,31 @@ public:
     }
 
     // Compute the real value
-    inline double value(double beta) const {
-        return n * M_PI / beta;
-    }
+    inline double value(double beta) const { return n * M_PI / beta; }
 
     // Compute the imaginary value
-    inline std::complex<double> valueim(double beta) const {
+    inline std::complex<double> valueim(double beta) const
+    {
         std::complex<double> im(0, 1);
         return im * value(beta);
     }
 
     // Get the statistics instance
-    inline S statistics() const { return *std::static_pointer_cast<S>(instance_); }
+    inline S statistics() const
+    {
+        return *std::static_pointer_cast<S>(instance_);
+    }
 
     // Get n
     inline int get_n() const { return n; }
 
     // Add comparison operators
-    bool operator<(const MatsubaraFreq& other) const {
-        return n < other.n;
-    }
+    bool operator<(const MatsubaraFreq &other) const { return n < other.n; }
 
-    bool operator==(const MatsubaraFreq& other) const {
-        return n == other.n;
-    }
+    bool operator==(const MatsubaraFreq &other) const { return n == other.n; }
 
-    bool operator!=(const MatsubaraFreq& other) const {
+    bool operator!=(const MatsubaraFreq &other) const
+    {
         return !(*this == other);
     }
 
@@ -104,14 +105,16 @@ using FermionicFreq = MatsubaraFreq<Fermionic>;
 
 // Overload operators for MatsubaraFreq
 template <typename S1, typename S2>
-inline MatsubaraFreq<decltype(std::declval<S1>() + std::declval<S2>())> operator+(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
+inline MatsubaraFreq<decltype(std::declval<S1>() + std::declval<S2>())>
+operator+(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
 {
     return MatsubaraFreq<decltype(a.statistics() + b.statistics())>(a.get_n() +
                                                                     b.get_n());
 }
 
 template <typename S1, typename S2>
-inline MatsubaraFreq<decltype(std::declval<S1>() + std::declval<S2>())> operator-(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
+inline MatsubaraFreq<decltype(std::declval<S1>() + std::declval<S2>())>
+operator-(const MatsubaraFreq<S1> &a, const MatsubaraFreq<S2> &b)
 {
     return MatsubaraFreq<decltype(a.statistics() + b.statistics())>(a.get_n() -
                                                                     b.get_n());

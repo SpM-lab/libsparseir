@@ -13,20 +13,22 @@ public:
     double beta;
     Eigen::VectorXd poles;
 
-    MatsubaraPoles(double beta, const Eigen::VectorXd& poles)
-        : beta(beta), poles(poles) { }
+    MatsubaraPoles(double beta, const Eigen::VectorXd &poles)
+        : beta(beta), poles(poles)
+    {
+    }
 
     // Return the size of the poles vector
-    std::size_t size() const {
-        return poles.size();
-    }
+    std::size_t size() const { return poles.size(); }
 
     // For Fermionic case
     template <typename T = Statistics>
-    typename std::enable_if<std::is_same<T, Fermionic>::value, Eigen::VectorXcd>::type
-    operator()(const MatsubaraFreq<Fermionic>& n) const {
+    typename std::enable_if<std::is_same<T, Fermionic>::value,
+                            Eigen::VectorXcd>::type
+    operator()(const MatsubaraFreq<Fermionic> &n) const
+    {
         Eigen::VectorXcd result(poles.size());
-        for(Eigen::Index i = 0; i < poles.size(); ++i) {
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
             result(i) = 1.0 / (n.valueim(beta) - poles(i));
         }
         return result;
@@ -34,21 +36,24 @@ public:
 
     // For Bosonic case
     template <typename T = Statistics>
-    typename std::enable_if<std::is_same<T, Bosonic>::value, Eigen::VectorXcd>::type
-    operator()(const MatsubaraFreq<Bosonic>& n) const {
+    typename std::enable_if<std::is_same<T, Bosonic>::value,
+                            Eigen::VectorXcd>::type
+    operator()(const MatsubaraFreq<Bosonic> &n) const
+    {
         Eigen::VectorXcd result(poles.size());
-        for(Eigen::Index i = 0; i < poles.size(); ++i) {
-            result(i) = std::tanh(beta * poles(i) / 2.0) /
-                       (n.valueim(beta) - poles(i));
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            result(i) =
+                std::tanh(beta * poles(i) / 2.0) / (n.valueim(beta) - poles(i));
         }
         return result;
     }
 
     // For vector of frequencies
     template <typename FreqType>
-    Eigen::MatrixXcd operator()(const std::vector<FreqType>& n) const {
+    Eigen::MatrixXcd operator()(const std::vector<FreqType> &n) const
+    {
         Eigen::MatrixXcd result(poles.size(), n.size());
-        for(size_t i = 0; i < n.size(); ++i) {
+        for (size_t i = 0; i < n.size(); ++i) {
             result.col(i) = (*this)(MatsubaraFreq<Statistics>(n[i]));
         }
         return result;
@@ -62,18 +67,19 @@ public:
     Eigen::VectorXd poles;
     double omega_max;
 
-    TauPoles(double beta, const Eigen::VectorXd& poles)
-        : beta(beta), poles(poles), omega_max(poles.array().abs().maxCoeff()) { }
-
-    // Return the size of the poles vector
-    std::size_t size() const {
-        return poles.size();
+    TauPoles(double beta, const Eigen::VectorXd &poles)
+        : beta(beta), poles(poles), omega_max(poles.array().abs().maxCoeff())
+    {
     }
 
+    // Return the size of the poles vector
+    std::size_t size() const { return poles.size(); }
+
     // Evaluate at tau points
-    Eigen::VectorXd operator()(double tau) const {
+    Eigen::VectorXd operator()(double tau) const
+    {
         Eigen::VectorXd result(poles.size());
-        for(Eigen::Index i = 0; i < poles.size(); ++i) {
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
             double x = poles(i);
             double xtau = x * tau;
             if (std::is_same<S, Fermionic>::value) {
@@ -86,9 +92,10 @@ public:
     }
 
     // For vector of tau points
-    Eigen::MatrixXd operator()(const Eigen::VectorXd& tau) const {
+    Eigen::MatrixXd operator()(const Eigen::VectorXd &tau) const
+    {
         Eigen::MatrixXd result(poles.size(), tau.size());
-        for(Eigen::Index i = 0; i < tau.size(); ++i) {
+        for (Eigen::Index i = 0; i < tau.size(); ++i) {
             result.col(i) = (*this)(tau(i));
         }
         return result;
@@ -96,8 +103,10 @@ public:
 };
 
 template <typename S>
-Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S>& basis) {
-    Eigen::VectorXd y = default_sampling_points(*(basis.sve_result->v), basis.size());
+Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
+{
+    Eigen::VectorXd y =
+        default_sampling_points(*(basis.sve_result->v), basis.size());
     return basis.get_wmax() * y;
 }
 
@@ -112,8 +121,10 @@ public:
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
 
     // Constructor with basis and poles
-    DiscreteLehmannRepresentation(const FiniteTempBasis<S>& b, const Eigen::VectorXd& poles)
-        : basis(b), poles(poles),
+    DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b,
+                                  const Eigen::VectorXd &poles)
+        : basis(b),
+          poles(poles),
           u(std::make_shared<TauPoles<S>>(b.get_beta(), poles)),
           uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles))
     {
@@ -129,21 +140,28 @@ public:
     }
 
     // Constructor with just basis
-    explicit DiscreteLehmannRepresentation(const FiniteTempBasis<S>& b)
-        : DiscreteLehmannRepresentation(b, default_omega_sampling_points(b)) {}
+    explicit DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b)
+        : DiscreteLehmannRepresentation(b, default_omega_sampling_points(b))
+    {
+    }
 
     // Required virtual function implementations
     size_t size() const override { return poles.size(); }
-    const Eigen::VectorXd significance() const override {
+    const Eigen::VectorXd significance() const override
+    {
         return Eigen::VectorXd::Ones(size());
     }
     double get_accuracy() const override { return basis.get_accuracy(); }
     double get_wmax() const override { return basis.get_wmax(); }
-    const Eigen::VectorXd default_tau_sampling_points() const override {
+    const Eigen::VectorXd default_tau_sampling_points() const override
+    {
         return basis.default_tau_sampling_points();
     }
 
-    std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const override {
+    std::vector<MatsubaraFreq<S>>
+    default_matsubara_sampling_points(int L, bool fence = false,
+                                      bool positive_only = false) const override
+    {
         return basis.default_matsubara_sampling_points(L, fence, positive_only);
     }
 
@@ -202,14 +220,15 @@ public:
         return result;
     }
 
-
     // Convert from DLR to IR
     template <typename T, int N>
     Eigen::Tensor<T, N> to_IR(const Eigen::Tensor<T, N> &g_dlr) const
     {
         // fitmat is a matrix, so we need to convert it to a tensor
-        Eigen::TensorMap<Eigen::Tensor<const double, 2>> fitmat_as_tensor(fitmat.data(), fitmat.rows(), fitmat.cols());
-        std::array<Eigen::IndexPair<int>, 1> contraction_pairs = {Eigen::IndexPair<int>(1, 0)};
+        Eigen::TensorMap<Eigen::Tensor<const double, 2>> fitmat_as_tensor(
+            fitmat.data(), fitmat.rows(), fitmat.cols());
+        std::array<Eigen::IndexPair<int>, 1> contraction_pairs = {
+            Eigen::IndexPair<int>(1, 0)};
         return fitmat_as_tensor.contract(g_dlr, contraction_pairs);
     }
 
