@@ -189,7 +189,7 @@ spir_sampling_fit_dd(
     input_dims,
     target_dim,
     output,
-    input  // Original coefficients should be recovered
+    input
 );
 
 // Clean up
@@ -201,71 +201,49 @@ spir_destroy_sampling(tau_sampling);
 
 ```c
 #include <sparseir/sparseir.h>
+#include <stdlib.h> // rand
 
-// First, create a kernel and compute its SVE
-double lambda = 10.0;
-spir_kernel* kernel = spir_logistic_kernel_new(lambda);
+double beta = 100.0;
+double wmax = 1.0;
+double epsilon = 1e-12;
 
-double epsilon = 1e-8;
-spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
+spir_fermionic_finite_temp_basis *basis =
+    spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
 
-// Create basis with pre-computed SVE
-double beta = 10.0;
-double omega_max = 10.0;
-spir_fermionic_finite_temp_basis* basis =
-    spir_fermionic_finite_temp_basis_new_with_sve(beta, omega_max, kernel, sve);
+spir_fermionic_dlr *dlr = spir_fermionic_dlr_new(basis);
 
-// Create a DLR object
-spir_fermionic_dlr* dlr = spir_fermionic_dlr_new(basis);
-
-// Get fitting matrix dimensions
-size_t rows = spir_fermionic_dlr_fitmat_rows(dlr);
-size_t cols = spir_fermionic_dlr_fitmat_cols(dlr);
-// Prepare data for transformation
-int32_t ndim = 1;
-int32_t input_dims[] = {(int32_t)cols};  // Size must match the number of IR basis functions
-
-// Allocate arrays with proper sizes
-double* ir_coeffs = (double*)malloc(cols * sizeof(double));
-double* dlr_coeffs = (double*)malloc(rows * sizeof(double));
-double* recovered_ir = (double*)malloc(cols * sizeof(double));
-
-// Initialize IR coefficients with some values
-for (size_t i = 0; i < cols; i++) {
-    ir_coeffs[i] = 1.0 / (1.0 + i);
+int npoles = 10;
+double poles[npoles];
+double coeffs[npoles];
+for (int i = 0; i < npoles; i++) {
+    double r = (double)rand() / (double)RAND_MAX;
+    poles[i] = wmax * (2.0 * r - 1.0);
+    r = (double)rand() / (double)RAND_MAX;
+    coeffs[i] = 2.0 * r - 1.0;
 }
 
-// Transform from IR to DLR representation
-// This line causes an error
-int status = spir_fermionic_dlr_from_IR(
-    dlr,
-    SPIR_ORDER_COLUMN_MAJOR,
-    ndim,
-    input_dims,
-    ir_coeffs,
-    dlr_coeffs
-);
-/*
+spir_fermionic_dlr *dlr_with_poles =
+    spir_fermionic_dlr_new_with_poles(basis, npoles, poles);
+size_t fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
+size_t fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
 
-// Transform back to IR representation
-status = spir_fermionic_dlr_to_IR(
-    dlr,
-    SPIR_ORDER_COLUMN_MAJOR,
-    ndim,
-    input_dims,
-    dlr_coeffs,
-    recovered_ir
-);
+double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
+int32_t to_ir_input_dims[1] = {npoles};
+int status_to_IR =
+    spir_fermionic_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR, 1,
+                                to_ir_input_dims, coeffs, Gl);
+
+double *g_dlr = (double *)malloc(fitmat_rows * sizeof(double));
+int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
+int status_from_IR = spir_fermionic_dlr_from_IR(
+    dlr, SPIR_ORDER_COLUMN_MAJOR, 1, from_ir_input_dims, Gl, g_dlr);
 
 // Clean up
-delete[] ir_coeffs;
-delete[] dlr_coeffs;
-delete[] recovered_ir;
-spir_destroy_fermionic_dlr(dlr);
+free(Gl);
+free(g_dlr);
 spir_destroy_fermionic_finite_temp_basis(basis);
-spir_destroy_sve_result(sve);
-spir_destroy_kernel(kernel);
-*/
+spir_destroy_fermionic_dlr(dlr);
+spir_destroy_fermionic_dlr(dlr_with_poles);
 ```
 
 ### Complex Number Operations
