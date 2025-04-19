@@ -684,15 +684,24 @@ int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
                                int32_t *input_dims, const double *input,
                                double *out)
 {
+    std::cout << "spir_fermionic_dlr_from_IR" << std::endl;
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
+    std::cout << "impl: " << std::endl;
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
+    }
+    std::cout << "input_dims_2d: " << input_dims_2d[0] << " "
+              << input_dims_2d[1] << std::endl;
     Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
     std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
     for (std::size_t i = 0; i < total_input_size; i++) {
         input_tensor.data()[i] = input[i];
     }
+    std::cout << "input_tensor: " << input_tensor.dimension(0) << " "
+              << input_tensor.dimension(1) << std::endl;
     Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
     // pass data to out
     std::size_t total_output_size =
