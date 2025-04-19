@@ -24,8 +24,7 @@
     typedef struct _spir_##name spir_##name;                                   \
                                                                                \
     /* Helper function for creating objects */                                 \
-    static inline spir_##name *create_##name(                                  \
-        std::shared_ptr<impl_type> p)                                          \
+    static inline spir_##name *create_##name(std::shared_ptr<impl_type> p)     \
     {                                                                          \
         auto *obj = new spir_##name;                                           \
         obj->ptr = p;                                                          \
@@ -40,12 +39,13 @@
             return 0;                                                          \
         }                                                                      \
         bool is_assigned = static_cast<bool>(obj->ptr);                        \
-        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get() << ", is_assigned=" << is_assigned); \
+        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get()  \
+                        << ", is_assigned=" << is_assigned);                   \
         return is_assigned ? 1 : 0;                                            \
     }                                                                          \
                                                                                \
     /* Clone function */                                                       \
-    spir_##name *spir_clone_##name(const spir_##name *src)                   \
+    spir_##name *spir_clone_##name(const spir_##name *src)                     \
     {                                                                          \
         DEBUG_LOG("Cloning " << #name << " at " << src);                       \
         if (!src) {                                                            \
@@ -61,14 +61,16 @@
             if (src->ptr) {                                                    \
                 /* Create a new shared_ptr instance that shares ownership */   \
                 result->ptr = src->ptr;                                        \
-                DEBUG_LOG("Cloned " << #name << " to " << result << ", shared_ptr points to " << result->ptr.get()); \
+                DEBUG_LOG("Cloned " << #name << " to " << result               \
+                                    << ", shared_ptr points to "               \
+                                    << result->ptr.get());                     \
             } else {                                                           \
                 DEBUG_LOG("Source " << #name << " has null shared_ptr");       \
                 result->ptr = nullptr;                                         \
             }                                                                  \
                                                                                \
             return result;                                                     \
-        } catch (const std::exception& e) {                                    \
+        } catch (const std::exception &e) {                                    \
             DEBUG_LOG("Exception in " << #name << "_clone: " << e.what());     \
             return nullptr;                                                    \
         } catch (...) {                                                        \
@@ -87,7 +89,8 @@
         DEBUG_LOG("Destroying " << #name << " object at " << obj);             \
         /* Check before resetting */                                           \
         if (obj->ptr) {                                                        \
-            DEBUG_LOG("Resetting shared_ptr in " << #name << " at " << obj->ptr.get()); \
+            DEBUG_LOG("Resetting shared_ptr in " << #name << " at "            \
+                                                 << obj->ptr.get());           \
             obj->ptr.reset();                                                  \
         }                                                                      \
         /* Safely delete the object */                                         \
@@ -95,13 +98,15 @@
     }                                                                          \
                                                                                \
     /* Helper to get the implementation shared_ptr */                          \
-    static inline std::shared_ptr<impl_type> get_impl_##name(const spir_##name *obj) \
+    static inline std::shared_ptr<impl_type> get_impl_##name(                  \
+        const spir_##name *obj)                                                \
     {                                                                          \
         if (!obj) {                                                            \
             DEBUG_LOG(#name << " object is null");                             \
             return nullptr;                                                    \
         }                                                                      \
-        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get());\
+        DEBUG_LOG(#name << " object at " << obj                                \
+                        << ", ptr=" << obj->ptr.get());                        \
         return obj->ptr;                                                       \
     }
 
@@ -118,11 +123,17 @@ IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Bosonic>);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
 IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
-IMPLEMENT_OPAQUE_TYPE(fermionic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>);
-IMPLEMENT_OPAQUE_TYPE(bosonic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>);
+IMPLEMENT_OPAQUE_TYPE(
+    fermionic_dlr,
+    sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>);
+IMPLEMENT_OPAQUE_TYPE(
+    bosonic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>);
 
-// Helper function to convert N-dimensional array to 3D array by collapsing dimensions
-static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t* dims, int32_t target_dim) {
+// Helper function to convert N-dimensional array to 3D array by collapsing
+// dimensions
+static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
+                                             int32_t target_dim)
+{
     std::array<int32_t, 3> dims_3d = {1, dims[target_dim], 1};
     // Multiply all dimensions before target_dim into first dimension
     for (int32_t i = 0; i < target_dim; ++i) {
@@ -135,8 +146,11 @@ static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t* dims, 
     return dims_3d;
 }
 
-// Helper function to convert N-dimensional array to 2D array by collapsing dimensions
-static std::array<int32_t, 2> collapse_to_2d(int32_t ndim, const int32_t* dims, int32_t target_dim) {
+// Helper function to convert N-dimensional array to 2D array by collapsing
+// dimensions
+static std::array<int32_t, 2> collapse_to_2d(int32_t ndim, const int32_t *dims,
+                                             int32_t target_dim)
+{
     std::array<int32_t, 2> dims_2d = {dims[target_dim], 1};
     // Multiply all dimensions before target_dim into first dimension
     for (int32_t i = 0; i < target_dim; ++i) {
@@ -149,20 +163,17 @@ static std::array<int32_t, 2> collapse_to_2d(int32_t ndim, const int32_t* dims, 
     return dims_2d;
 }
 
-// Template function to handle all evaluation cases - moved outside extern "C" block
-template<typename InputScalar, typename OutputScalar>
-static int evaluate_impl(
-    const spir_sampling *s,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    int32_t target_dim,
-    const InputScalar *input,
-    OutputScalar *out,
-    int (sparseir::AbstractSampling::*eval_func)(
-        const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
-        int,
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &) const)
+// Template function to handle all evaluation cases - moved outside extern "C"
+// block
+template <typename InputScalar, typename OutputScalar>
+static int
+evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
+              int32_t *input_dims, int32_t target_dim, const InputScalar *input,
+              OutputScalar *out,
+              int (sparseir::AbstractSampling::*eval_func)(
+                  const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
+                  int, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &)
+                  const)
 {
     auto impl = get_impl_sampling(s);
     if (!impl)
@@ -178,36 +189,33 @@ static int evaluate_impl(
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
 
         // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out, output_dims_3d);
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
+            input, input_dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
+            out, output_dims_3d);
         // Convert to column-major order for Eigen
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    } else{
+    } else {
         std::array<int32_t, 3> input_dims_3d = dims_3d;
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
         // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input,
-                                                                       input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out,
-                                                                   output_dims_3d);
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
+            input, input_dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
+            out, output_dims_3d);
 
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     }
 }
 
-template<typename InputScalar, typename OutputScalar>
-static int fit_impl(
-    const spir_sampling *s,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    int32_t target_dim,
-    const InputScalar *input,
-    OutputScalar *out,
-    int (sparseir::AbstractSampling::*eval_func)(
-        const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
-        int,
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &) const)
+template <typename InputScalar, typename OutputScalar>
+static int
+fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
+         int32_t *input_dims, int32_t target_dim, const InputScalar *input,
+         OutputScalar *out,
+         int (sparseir::AbstractSampling::*eval_func)(
+             const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &, int,
+             Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &) const)
 {
     auto impl = get_impl_sampling(s);
     if (!impl)
@@ -224,19 +232,21 @@ static int fit_impl(
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
 
         // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out, output_dims_3d);
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
+            input, input_dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
+            out, output_dims_3d);
         // Convert to column-major order for Eigen
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    } else{
+    } else {
         std::array<int32_t, 3> input_dims_3d = dims_3d;
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
 
         // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(input,
-                                                                       input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(out,
-                                                                   output_dims_3d);
+        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
+            input, input_dims_3d);
+        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
+            out, output_dims_3d);
 
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     }
@@ -270,11 +280,13 @@ spir_kernel *spir_logistic_kernel_new(double lambda)
     DEBUG_LOG("Creating LogisticKernel with lambda=" << lambda);
     try {
         auto kernel = std::make_shared<sparseir::LogisticKernel>(lambda);
-        auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel);
+        auto abstract_kernel =
+            std::shared_ptr<sparseir::AbstractKernel>(kernel);
         auto result = create_kernel(abstract_kernel);
-        DEBUG_LOG("Created LogisticKernel at " << result << ", ptr=" << result->ptr.get());
+        DEBUG_LOG("Created LogisticKernel at "
+                  << result << ", ptr=" << result->ptr.get());
         return result;
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_logistic_kernel_new: " << e.what());
         return nullptr;
     } catch (...) {
@@ -307,12 +319,15 @@ spir_kernel *spir_regularized_bose_kernel_new(double lambda)
     DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
     try {
         auto kernel = std::make_shared<sparseir::RegularizedBoseKernel>(lambda);
-        auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel);
+        auto abstract_kernel =
+            std::shared_ptr<sparseir::AbstractKernel>(kernel);
         auto result = create_kernel(abstract_kernel);
-        DEBUG_LOG("Created RegularizedBoseKernel at " << result << ", ptr=" << result->ptr.get());
+        DEBUG_LOG("Created RegularizedBoseKernel at "
+                  << result << ", ptr=" << result->ptr.get());
         return result;
-    } catch (const std::exception& e) {
-        DEBUG_LOG("Exception in spir_regularized_bose_kernel_new: " << e.what());
+    } catch (const std::exception &e) {
+        DEBUG_LOG(
+            "Exception in spir_regularized_bose_kernel_new: " << e.what());
         return nullptr;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_regularized_bose_kernel_new");
@@ -333,7 +348,8 @@ spir_kernel *spir_regularized_bose_kernel_new(double lambda)
  * @param ymin Pointer to store the minimum value of the y-range
  * @param ymax Pointer to store the maximum value of the y-range
  *
- * @return 0 on success, -1 on failure (if the kernel is invalid or an exception occurs)
+ * @return 0 on success, -1 on failure (if the kernel is invalid or an exception
+ * occurs)
  */
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax)
@@ -350,14 +366,16 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
         auto xrange = impl->xrange();
         auto yrange = impl->yrange();
 
-        DEBUG_LOG("Setting output values: xrange=(" << xrange.first << ", " << xrange.second << "), yrange=(" << yrange.first << ", " << yrange.second << ")");
+        DEBUG_LOG("Setting output values: xrange=("
+                  << xrange.first << ", " << xrange.second << "), yrange=("
+                  << yrange.first << ", " << yrange.second << ")");
         *xmin = xrange.first;
         *xmax = xrange.second;
         *ymin = yrange.first;
         *ymax = yrange.second;
 
         return 0;
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_kernel_domain: " << e.what());
         return -1;
     } catch (...) {
@@ -415,8 +433,10 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
  *
  * where:
  * - s[l] are singular values in non-increasing order
- * - u[l](x) are left singular functions, forming an orthonormal system on [xmin, xmax]
- * - v[l](y) are right singular functions, forming an orthonormal system on [ymin, ymax]
+ * - u[l](x) are left singular functions, forming an orthonormal system on
+ * [xmin, xmax]
+ * - v[l](y) are right singular functions, forming an orthonormal system on
+ * [ymin, ymax]
  *
  * The SVE is computed by mapping it onto a singular value decomposition (SVD)
  * of a matrix using piecewise Legendre polynomial expansion.
@@ -426,17 +446,18 @@ int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
  *               - The relative magnitude of included singular values
  *               - The accuracy of computed singular values and vectors
  *
- * @return A pointer to the newly created SVE result object containing the truncated
- *         singular value expansion, or NULL if creation fails
+ * @return A pointer to the newly created SVE result object containing the
+ * truncated singular value expansion, or NULL if creation fails
  *
  * @note The computation automatically uses optimized strategies:
  *       - For centrosymmetric kernels, specialized algorithms are employed
  *       - The working precision is adjusted to meet accuracy requirements
  *
- * @note The returned object must be freed using spir_destroy_sve_result when no longer needed
+ * @note The returned object must be freed using spir_destroy_sve_result when no
+ * longer needed
  * @see spir_destroy_sve_result
  */
-spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon)
+spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon)
 {
     try {
         auto impl = get_impl_kernel(k);
@@ -453,25 +474,29 @@ spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon)
  * @brief Creates a new fermionic finite temperature IR basis.
  *
  * For a continuation kernel K from real frequencies, ω ∈ [-ωmax, ωmax], to
- * imaginary time, τ ∈ [0, β], this function creates an intermediate representation (IR)
- * basis that stores the truncated singular value expansion:
+ * imaginary time, τ ∈ [0, β], this function creates an intermediate
+ * representation (IR) basis that stores the truncated singular value expansion:
  *
  * K(τ, ω) ≈ ∑ u[l](τ) * s[l] * v[l](ω) for l = 1, 2, 3, ...
  *
  * where:
- * - u[l](τ) are IR basis functions on the imaginary time axis (stored as piecewise Legendre polynomials)
+ * - u[l](τ) are IR basis functions on the imaginary time axis (stored as
+ * piecewise Legendre polynomials)
  * - s[l] are singular values of the continuation kernel
- * - v[l](ω) are IR basis functions on the real frequency axis (stored as piecewise Legendre polynomials)
+ * - v[l](ω) are IR basis functions on the real frequency axis (stored as
+ * piecewise Legendre polynomials)
  *
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param epsilon Accuracy target for the basis
  *
- * @return A pointer to the newly created fermionic finite temperature basis object,
- *         or NULL if creation fails
+ * @return A pointer to the newly created fermionic finite temperature basis
+ * object, or NULL if creation fails
  *
- * @note The basis includes both imaginary time and Matsubara frequency representations
- * @note The returned object must be freed using spir_destroy_fermionic_finite_temp_basis when no longer needed
+ * @note The basis includes both imaginary time and Matsubara frequency
+ * representations
+ * @note The returned object must be freed using
+ * spir_destroy_fermionic_finite_temp_basis when no longer needed
  * @see spir_destroy_fermionic_finite_temp_basis
  */
 spir_fermionic_finite_temp_basis *
@@ -491,31 +516,35 @@ spir_fermionic_finite_temp_basis_new(double beta, double omega_max,
  * @brief Creates a new bosonic finite temperature IR basis.
  *
  * For a continuation kernel K from real frequencies, ω ∈ [-ωmax, ωmax], to
- * imaginary time, τ ∈ [0, β], this function creates an intermediate representation (IR)
- * basis that stores the truncated singular value expansion:
+ * imaginary time, τ ∈ [0, β], this function creates an intermediate
+ * representation (IR) basis that stores the truncated singular value expansion:
  *
  * K(τ, ω) ≈ ∑ u[l](τ) * s[l] * v[l](ω) for l = 1, 2, 3, ...
  *
  * where:
- * - u[l](τ) are IR basis functions on the imaginary time axis (stored as piecewise Legendre polynomials)
+ * - u[l](τ) are IR basis functions on the imaginary time axis (stored as
+ * piecewise Legendre polynomials)
  * - s[l] are singular values of the continuation kernel
- * - v[l](ω) are IR basis functions on the real frequency axis (stored as piecewise Legendre polynomials)
+ * - v[l](ω) are IR basis functions on the real frequency axis (stored as
+ * piecewise Legendre polynomials)
  *
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param epsilon Accuracy target for the basis
  *
- * @return A pointer to the newly created bosonic finite temperature basis object,
- *         or NULL if creation fails
+ * @return A pointer to the newly created bosonic finite temperature basis
+ * object, or NULL if creation fails
  *
- * @note The basis includes both imaginary time and Matsubara frequency representations
+ * @note The basis includes both imaginary time and Matsubara frequency
+ * representations
  * @note For Matsubara frequencies, bosonic basis uses even numbers (2n)
- * @note The returned object must be freed using spir_destroy_bosonic_finite_temp_basis when no longer needed
+ * @note The returned object must be freed using
+ * spir_destroy_bosonic_finite_temp_basis when no longer needed
  * @see spir_destroy_bosonic_finite_temp_basis
  */
 spir_bosonic_finite_temp_basis *
 spir_bosonic_finite_temp_basis_new(double beta, double omega_max,
-                                     double epsilon)
+                                   double epsilon)
 {
     try {
         return create_bosonic_finite_temp_basis(
@@ -527,29 +556,31 @@ spir_bosonic_finite_temp_basis_new(double beta, double omega_max,
 }
 
 /**
- * @brief Creates a new fermionic finite temperature IR basis using a pre-computed SVE result.
+ * @brief Creates a new fermionic finite temperature IR basis using a
+ * pre-computed SVE result.
  *
- * This function creates a fermionic intermediate representation (IR) basis using
- * a pre-computed singular value expansion (SVE) result. This allows for reusing
- * an existing SVE computation, which can be more efficient than recomputing it.
+ * This function creates a fermionic intermediate representation (IR) basis
+ * using a pre-computed singular value expansion (SVE) result. This allows for
+ * reusing an existing SVE computation, which can be more efficient than
+ * recomputing it.
  *
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param k Pointer to the kernel object used for the basis construction
  * @param sve Pointer to a pre-computed SVE result for the kernel
  *
- * @return A pointer to the newly created fermionic finite temperature basis object,
- *         or NULL if creation fails (invalid inputs or exception occurs)
+ * @return A pointer to the newly created fermionic finite temperature basis
+ * object, or NULL if creation fails (invalid inputs or exception occurs)
  *
- * @note Using a pre-computed SVE can significantly improve performance when creating
- *       multiple basis objects with the same kernel
+ * @note Using a pre-computed SVE can significantly improve performance when
+ * creating multiple basis objects with the same kernel
  * @see spir_sve_result_new
  * @see spir_destroy_fermionic_finite_temp_basis
  */
 spir_fermionic_finite_temp_basis *
 spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
-                                             const spir_kernel *k,
-                                             const spir_sve_result *sve)
+                                              const spir_kernel *k,
+                                              const spir_sve_result *sve)
 {
     try {
         auto sve_impl = get_impl_sve_result(sve);
@@ -565,7 +596,8 @@ spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
 }
 
 /**
- * @brief Creates a new bosonic finite temperature IR basis using a pre-computed SVE result.
+ * @brief Creates a new bosonic finite temperature IR basis using a pre-computed
+ * SVE result.
  *
  * This function creates a bosonic intermediate representation (IR) basis using
  * a pre-computed singular value expansion (SVE) result. This allows for reusing
@@ -576,18 +608,18 @@ spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
  * @param k Pointer to the kernel object used for the basis construction
  * @param sve Pointer to a pre-computed SVE result for the kernel
  *
- * @return A pointer to the newly created bosonic finite temperature basis object,
- *         or NULL if creation fails (invalid inputs or exception occurs)
+ * @return A pointer to the newly created bosonic finite temperature basis
+ * object, or NULL if creation fails (invalid inputs or exception occurs)
  *
- * @note Using a pre-computed SVE can significantly improve performance when creating
- *       multiple basis objects with the same kernel
+ * @note Using a pre-computed SVE can significantly improve performance when
+ * creating multiple basis objects with the same kernel
  * @see spir_sve_result_new
  * @see spir_destroy_bosonic_finite_temp_basis
  */
 spir_bosonic_finite_temp_basis *
 spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
-                                              const spir_kernel *k,
-                                              const spir_sve_result *sve)
+                                            const spir_kernel *k,
+                                            const spir_sve_result *sve)
 {
     try {
         auto sve_impl = get_impl_sve_result(sve);
@@ -603,19 +635,25 @@ spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
 }
 
 /**
- * @brief Creates a new fermionic tau sampling object for sparse sampling in imaginary time.
+ * @brief Creates a new fermionic tau sampling object for sparse sampling in
+ * imaginary time.
  *
- * Constructs a sampling object that allows transformation between the IR basis and
- * a set of sampling points in imaginary time (τ). The sampling points are automatically
- * chosen as the extrema of the highest-order basis function in imaginary time, which
- * provides near-optimal conditioning for the given basis size.
+ * Constructs a sampling object that allows transformation between the IR basis
+ * and a set of sampling points in imaginary time (τ). The sampling points are
+ * automatically chosen as the extrema of the highest-order basis function in
+ * imaginary time, which provides near-optimal conditioning for the given basis
+ * size.
  *
  * @param b Pointer to a fermionic finite temperature basis object
- * @return A pointer to the newly created sampling object, or NULL if creation fails
+ * @return A pointer to the newly created sampling object, or NULL if creation
+ * fails
  *
- * @note The sampling points are chosen to optimize numerical stability and accuracy
- * @note The sampling matrix is automatically factorized using SVD for efficient transformations
- * @note The returned object must be freed using spir_destroy_sampling when no longer needed
+ * @note The sampling points are chosen to optimize numerical stability and
+ * accuracy
+ * @note The sampling matrix is automatically factorized using SVD for efficient
+ * transformations
+ * @note The returned object must be freed using spir_destroy_sampling when no
+ * longer needed
  * @see spir_destroy_sampling
  */
 spir_sampling *
@@ -624,28 +662,36 @@ spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b)
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto smpl = std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
+    auto smpl =
+        std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
     return create_sampling(smpl);
 }
 
 /**
- * @brief Creates a new fermionic Matsubara sampling object for sparse sampling in Matsubara frequencies.
+ * @brief Creates a new fermionic Matsubara sampling object for sparse sampling
+ * in Matsubara frequencies.
  *
- * Constructs a sampling object that allows transformation between the IR basis and
- * a set of sampling points in Matsubara frequencies (iωn). The sampling points are
- * automatically chosen as the (discrete) extrema of the highest-order basis function
- * in Matsubara frequencies, which provides near-optimal conditioning for the given basis size.
+ * Constructs a sampling object that allows transformation between the IR basis
+ * and a set of sampling points in Matsubara frequencies (iωn). The sampling
+ * points are automatically chosen as the (discrete) extrema of the
+ * highest-order basis function in Matsubara frequencies, which provides
+ * near-optimal conditioning for the given basis size.
  *
  * For fermionic Matsubara frequencies, the sampling points are odd integers:
  * iωn = (2n + 1)π/β, where n is an integer.
  *
  * @param b Pointer to a fermionic finite temperature basis object
- * @return A pointer to the newly created sampling object, or NULL if creation fails
+ * @return A pointer to the newly created sampling object, or NULL if creation
+ * fails
  *
- * @note The sampling points are chosen to optimize numerical stability and accuracy
- * @note The sampling matrix is automatically factorized using SVD for efficient transformations
- * @note For fermionic functions, the Matsubara frequencies are odd multiples of π/β
- * @note The returned object must be freed using spir_destroy_sampling when no longer needed
+ * @note The sampling points are chosen to optimize numerical stability and
+ * accuracy
+ * @note The sampling matrix is automatically factorized using SVD for efficient
+ * transformations
+ * @note For fermionic functions, the Matsubara frequencies are odd multiples of
+ * π/β
+ * @note The returned object must be freed using spir_destroy_sampling when no
+ * longer needed
  * @see spir_destroy_sampling
  */
 spir_sampling *
@@ -654,18 +700,20 @@ spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b)
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto smpl = std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(*impl);
+    auto smpl =
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(
+            *impl);
     return create_sampling(smpl);
 }
 
 /**
  * @brief Creates a new fermionic Discrete Lehmann Representation (DLR).
  *
- * This function implements a variant of the discrete Lehmann representation (DLR).
- * Unlike the IR which uses truncated singular value expansion of the analytic
- * continuation kernel K, the DLR is based on a "sketching" of K. The resulting basis
- * is a linear combination of discrete set of poles on the real-frequency axis,
- * continued to the imaginary-frequency axis:
+ * This function implements a variant of the discrete Lehmann representation
+ * (DLR). Unlike the IR which uses truncated singular value expansion of the
+ * analytic continuation kernel K, the DLR is based on a "sketching" of K. The
+ * resulting basis is a linear combination of discrete set of poles on the
+ * real-frequency axis, continued to the imaginary-frequency axis:
  *
  * G(iν) = ∑ a[i] / (iν - w[i]) for i = 1, 2, ..., L
  *
@@ -679,12 +727,14 @@ spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b)
  *
  * @note The poles on the real-frequency axis are selected based on the zeros of
  *       the IR basis functions on the real axis
- * @note The returned object must be freed using spir_destroy_fermionic_dlr when no longer needed
+ * @note The returned object must be freed using spir_destroy_fermionic_dlr when
+ * no longer needed
  * @see spir_destroy_fermionic_dlr
  * @see spir_fermionic_dlr_new_with_poles
  *
- * @warning This implementation uses a heuristic approach for pole selection, which
- *          differs from the original DLR method that uses rank-revealing decomposition
+ * @warning This implementation uses a heuristic approach for pole selection,
+ * which differs from the original DLR method that uses rank-revealing
+ * decomposition
  */
 spir_fermionic_dlr *
 spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
@@ -692,15 +742,18 @@ spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
+    auto dlr = std::make_shared<
+        sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
     return create_fermionic_dlr(dlr);
 }
 
 /**
- * @brief Creates a new fermionic Discrete Lehmann Representation (DLR) with custom poles.
+ * @brief Creates a new fermionic Discrete Lehmann Representation (DLR) with
+ * custom poles.
  *
- * This function creates a fermionic DLR using a set of user-specified poles on the
- * real-frequency axis. The DLR represents Green's functions as a sum of poles:
+ * This function creates a fermionic DLR using a set of user-specified poles on
+ * the real-frequency axis. The DLR represents Green's functions as a sum of
+ * poles:
  *
  * G(iν) = ∑ a[i] / (iν - w[i]) for i = 1, 2, ..., npoles
  *
@@ -710,17 +763,18 @@ spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
  * @param npoles Number of poles to use in the representation
  * @param poles Array of pole locations on the real-frequency axis
  *
- * @return A pointer to the newly created DLR object with custom poles, or NULL if creation fails
+ * @return A pointer to the newly created DLR object with custom poles, or NULL
+ * if creation fails
  *
- * @note This function allows for more control over the pole selection compared to the
- *       automatic pole selection in spir_fermionic_dlr_new
+ * @note This function allows for more control over the pole selection compared
+ * to the automatic pole selection in spir_fermionic_dlr_new
  * @see spir_fermionic_dlr_new
  * @see spir_destroy_fermionic_dlr
  */
 spir_fermionic_dlr *
-spir_fermionic_dlr_new_with_poles(
-    const spir_fermionic_finite_temp_basis *b, const int npoles, const double *poles
-) {
+spir_fermionic_dlr_new_with_poles(const spir_fermionic_finite_temp_basis *b,
+                                  const int npoles, const double *poles)
+{
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
@@ -729,18 +783,20 @@ spir_fermionic_dlr_new_with_poles(
     for (int i = 0; i < npoles; i++) {
         poles_vec(i) = poles[i];
     }
-    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl, poles_vec);
+    auto dlr = std::make_shared<
+        sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(
+        *impl, poles_vec);
     return create_fermionic_dlr(dlr);
 }
 
 /**
  * @brief Creates a new bosonic Discrete Lehmann Representation (DLR).
  *
- * This function implements a variant of the discrete Lehmann representation (DLR).
- * Unlike the IR which uses truncated singular value expansion of the analytic
- * continuation kernel K, the DLR is based on a "sketching" of K. The resulting basis
- * is a linear combination of discrete set of poles on the real-frequency axis,
- * continued to the imaginary-frequency axis:
+ * This function implements a variant of the discrete Lehmann representation
+ * (DLR). Unlike the IR which uses truncated singular value expansion of the
+ * analytic continuation kernel K, the DLR is based on a "sketching" of K. The
+ * resulting basis is a linear combination of discrete set of poles on the
+ * real-frequency axis, continued to the imaginary-frequency axis:
  *
  * G(iωn) = ∑ a[i] / (iωn - w[i]) for i = 1, 2, ..., L
  *
@@ -754,28 +810,32 @@ spir_fermionic_dlr_new_with_poles(
  *
  * @note The poles on the real-frequency axis are selected based on the zeros of
  *       the IR basis functions on the real axis
- * @note The returned object must be freed using spir_destroy_bosonic_dlr when no longer needed
+ * @note The returned object must be freed using spir_destroy_bosonic_dlr when
+ * no longer needed
  * @see spir_destroy_bosonic_dlr
  * @see spir_bosonic_dlr_new_with_poles
  *
- * @warning This implementation uses a heuristic approach for pole selection, which
- *          differs from the original DLR method that uses rank-revealing decomposition
+ * @warning This implementation uses a heuristic approach for pole selection,
+ * which differs from the original DLR method that uses rank-revealing
+ * decomposition
  */
-spir_bosonic_dlr *
-spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
+spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
+    auto dlr = std::make_shared<
+        sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
     return create_bosonic_dlr(dlr);
 }
 
 /**
- * @brief Creates a new bosonic Discrete Lehmann Representation (DLR) with custom poles.
+ * @brief Creates a new bosonic Discrete Lehmann Representation (DLR) with
+ * custom poles.
  *
- * This function creates a bosonic DLR using a set of user-specified poles on the
- * real-frequency axis. The DLR represents correlation functions as a sum of poles:
+ * This function creates a bosonic DLR using a set of user-specified poles on
+ * the real-frequency axis. The DLR represents correlation functions as a sum of
+ * poles:
  *
  * G(iωn) = ∑ a[i] / (iωn - w[i]) for i = 1, 2, ..., npoles
  *
@@ -785,17 +845,18 @@ spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
  * @param npoles Number of poles to use in the representation
  * @param poles Array of pole locations on the real-frequency axis
  *
- * @return A pointer to the newly created DLR object with custom poles, or NULL if creation fails
+ * @return A pointer to the newly created DLR object with custom poles, or NULL
+ * if creation fails
  *
- * @note This function allows for more control over the pole selection compared to the
- *       automatic pole selection in spir_bosonic_dlr_new
+ * @note This function allows for more control over the pole selection compared
+ * to the automatic pole selection in spir_bosonic_dlr_new
  * @see spir_bosonic_dlr_new
  * @see spir_destroy_bosonic_dlr
  */
 spir_bosonic_dlr *
-spir_bosonic_dlr_new_with_poles(
-    const spir_bosonic_finite_temp_basis *b, const int npoles, const double *poles
-) {
+spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp_basis *b,
+                                const int npoles, const double *poles)
+{
     auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
@@ -804,19 +865,23 @@ spir_bosonic_dlr_new_with_poles(
     for (int i = 0; i < npoles; i++) {
         poles_vec(i) = poles[i];
     }
-    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl, poles_vec);
+    auto dlr = std::make_shared<
+        sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl,
+                                                                    poles_vec);
     return create_bosonic_dlr(dlr);
 }
 
 /**
- * @brief Evaluates basis coefficients at sampling points (double to double version).
+ * @brief Evaluates basis coefficients at sampling points (double to double
+ * version).
  *
- * Transforms basis coefficients to values at sampling points, where both input and
- * output are real (double precision) values. The operation can be performed along
- * any dimension of a multidimensional array.
+ * Transforms basis coefficients to values at sampling points, where both input
+ * and output are real (double precision) values. The operation can be performed
+ * along any dimension of a multidimensional array.
  *
  * @param s Pointer to the sampling object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
  * @param ndim Number of dimensions in the input/output arrays
  * @param input_dims Array of dimension sizes
  * @param target_dim Target dimension for the transformation (0-based)
@@ -825,36 +890,35 @@ spir_bosonic_dlr_new_with_poles(
  *
  * @return 0 on success, non-zero on failure
  *
- * @note For optimal performance, the target dimension should be either the first (0)
- *       or the last (ndim-1) dimension to avoid large temporary array allocations
+ * @note For optimal performance, the target dimension should be either the
+ * first (0) or the last (ndim-1) dimension to avoid large temporary array
+ * allocations
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
  *
  * @see spir_sampling_evaluate_dz
  * @see spir_sampling_evaluate_zz
  */
-int spir_sampling_evaluate_dd(
-    const spir_sampling *s,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    int32_t target_dim,
-    const double *input,
-    double *out)
+int spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
+                              int32_t ndim, int32_t *input_dims,
+                              int32_t target_dim, const double *input,
+                              double *out)
 {
     return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
-                        &sparseir::AbstractSampling::evaluate_inplace_dd);
+                         &sparseir::AbstractSampling::evaluate_inplace_dd);
 }
 
 /**
- * @brief Evaluates basis coefficients at sampling points (double to complex version).
+ * @brief Evaluates basis coefficients at sampling points (double to complex
+ * version).
  *
- * Transforms basis coefficients to values at sampling points, where input is real
- * (double precision) and output is complex (double precision) values. The operation
- * can be performed along any dimension of a multidimensional array.
+ * Transforms basis coefficients to values at sampling points, where input is
+ * real (double precision) and output is complex (double precision) values. The
+ * operation can be performed along any dimension of a multidimensional array.
  *
  * @param s Pointer to the sampling object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
  * @param ndim Number of dimensions in the input/output arrays
  * @param input_dims Array of dimension sizes
  * @param target_dim Target dimension for the transformation (0-based)
@@ -863,81 +927,68 @@ int spir_sampling_evaluate_dd(
  *
  * @return 0 on success, non-zero on failure
  *
- * @note For optimal performance, the target dimension should be either the first (0)
- *       or the last (ndim-1) dimension to avoid large temporary array allocations
+ * @note For optimal performance, the target dimension should be either the
+ * first (0) or the last (ndim-1) dimension to avoid large temporary array
+ * allocations
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
- * @note Complex numbers are stored as pairs of consecutive double values (real, imag)
+ * @note Complex numbers are stored as pairs of consecutive double values (real,
+ * imag)
  *
  * @see spir_sampling_evaluate_dd
  * @see spir_sampling_evaluate_zz
  */
-int spir_sampling_evaluate_dz(
-    const spir_sampling *s,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    int32_t target_dim,
-    const double *input,
-    c_complex *out)
+int spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
+                              int32_t ndim, int32_t *input_dims,
+                              int32_t target_dim, const double *input,
+                              c_complex *out)
 {
-    std::complex<double> *cpp_out = (std::complex<double>*)(out);
+    std::complex<double> *cpp_out = (std::complex<double> *)(out);
     return evaluate_impl(s, order, ndim, input_dims, target_dim, input, cpp_out,
-                        &sparseir::AbstractSampling::evaluate_inplace_dz);
+                         &sparseir::AbstractSampling::evaluate_inplace_dz);
 }
 
-int spir_sampling_evaluate_zz(
-    const spir_sampling *s,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    int32_t target_dim,
-    const c_complex *input,
-    c_complex *out)
+int spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
+                              int32_t ndim, int32_t *input_dims,
+                              int32_t target_dim, const c_complex *input,
+                              c_complex *out)
 {
-    std::complex<double> *cpp_input = (std::complex<double>*)(input);
-    std::complex<double> *cpp_out = (std::complex<double>*)(out);
-    return evaluate_impl(s, order, ndim, input_dims, target_dim, cpp_input, cpp_out,
-                        &sparseir::AbstractSampling::evaluate_inplace_zz);
+    std::complex<double> *cpp_input = (std::complex<double> *)(input);
+    std::complex<double> *cpp_out = (std::complex<double> *)(out);
+    return evaluate_impl(s, order, ndim, input_dims, target_dim, cpp_input,
+                         cpp_out,
+                         &sparseir::AbstractSampling::evaluate_inplace_zz);
 }
 
-int spir_sampling_fit_dd(
-    const spir_sampling *s,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    int32_t target_dim,
-    const double *input,
-    double *out)
+int spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
+                         int32_t ndim, int32_t *input_dims, int32_t target_dim,
+                         const double *input, double *out)
 {
     return fit_impl(s, order, ndim, input_dims, target_dim, input, out,
-                        &sparseir::AbstractSampling::fit_inplace_dd);
+                    &sparseir::AbstractSampling::fit_inplace_dd);
 }
 
-int spir_sampling_fit_zz(
-    const spir_sampling *s,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    int32_t target_dim,
-    const c_complex *input,
-    c_complex *out)
+int spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
+                         int32_t ndim, int32_t *input_dims, int32_t target_dim,
+                         const c_complex *input, c_complex *out)
 {
-    std::complex<double> *cpp_input = (std::complex<double>*)(input);
-    std::complex<double> *cpp_out = (std::complex<double>*)(out);
+    std::complex<double> *cpp_input = (std::complex<double> *)(input);
+    std::complex<double> *cpp_out = (std::complex<double> *)(out);
     return fit_impl(s, order, ndim, input_dims, target_dim, cpp_input, cpp_out,
-                        &sparseir::AbstractSampling::fit_inplace_zz);
+                    &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
 /**
  * @brief Gets the number of rows in the fitting matrix of a bosonic DLR.
  *
- * This function returns the number of rows in the fitting matrix of the specified
- * bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
+ * This function returns the number of rows in the fitting matrix of the
+ * specified bosonic Discrete Lehmann Representation (DLR). The fitting matrix
+ * is used to transform between the DLR representation and values at sampling
+ * points.
  *
  * @param dlr Pointer to the bosonic DLR object
- * @return The number of rows in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
+ * @return The number of rows in the fitting matrix, or SPIR_GET_IMPL_FAILED if
+ * the DLR object is invalid
  */
 size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
 {
@@ -950,12 +1001,14 @@ size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
 /**
  * @brief Gets the number of columns in the fitting matrix of a bosonic DLR.
  *
- * This function returns the number of columns in the fitting matrix of the specified
- * bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
+ * This function returns the number of columns in the fitting matrix of the
+ * specified bosonic Discrete Lehmann Representation (DLR). The fitting matrix
+ * is used to transform between the DLR representation and values at sampling
+ * points.
  *
  * @param dlr Pointer to the bosonic DLR object
- * @return The number of columns in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
+ * @return The number of columns in the fitting matrix, or SPIR_GET_IMPL_FAILED
+ * if the DLR object is invalid
  */
 size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
 {
@@ -968,12 +1021,14 @@ size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
 /**
  * @brief Gets the number of rows in the fitting matrix of a fermionic DLR.
  *
- * This function returns the number of rows in the fitting matrix of the specified
- * fermionic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
+ * This function returns the number of rows in the fitting matrix of the
+ * specified fermionic Discrete Lehmann Representation (DLR). The fitting matrix
+ * is used to transform between the DLR representation and values at sampling
+ * points.
  *
  * @param dlr Pointer to the fermionic DLR object
- * @return The number of rows in the fitting matrix, or 0 if the DLR object is invalid
+ * @return The number of rows in the fitting matrix, or 0 if the DLR object is
+ * invalid
  */
 size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
 {
@@ -986,12 +1041,14 @@ size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
 /**
  * @brief Gets the number of columns in the fitting matrix of a fermionic DLR.
  *
- * This function returns the number of columns in the fitting matrix of the specified
- * fermionic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
+ * This function returns the number of columns in the fitting matrix of the
+ * specified fermionic Discrete Lehmann Representation (DLR). The fitting matrix
+ * is used to transform between the DLR representation and values at sampling
+ * points.
  *
  * @param dlr Pointer to the fermionic DLR object
- * @return The number of columns in the fitting matrix, or 0 if the DLR object is invalid
+ * @return The number of columns in the fitting matrix, or 0 if the DLR object
+ * is invalid
  */
 size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
 {
@@ -1017,31 +1074,30 @@ size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
  * - fitmat is the transformation matrix
  *
  * @param dlr Pointer to the bosonic DLR object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
  * @param ndim Number of dimensions in the input/output arrays
  * @param input_dims Array of dimension sizes
  * @param input Input array of IR coefficients (double precision)
  * @param out Output array for the DLR coefficients (double precision)
  *
- * @return 0 on success, SPIR_GET_IMPL_FAILED on failure (if the DLR object is invalid or an error occurs)
+ * @return 0 on success, SPIR_GET_IMPL_FAILED on failure (if the DLR object is
+ * invalid or an error occurs)
  *
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
  * @note This function is specifically for bosonic (symmetric) Green's functions
- * @note The transformation preserves the numerical properties of the representation
+ * @note The transformation preserves the numerical properties of the
+ * representation
  * @note The transformation involves solving a linear system, which may be
  *       computationally more intensive than the forward transformation
  *
  * @see spir_bosonic_dlr_to_IR
  * @see spir_fermionic_dlr_from_IR
  */
-int spir_bosonic_dlr_to_IR(
-    const spir_bosonic_dlr *dlr,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    const double *input,
-    double *out)
+int spir_bosonic_dlr_to_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
+                           int32_t ndim, int32_t *input_dims,
+                           const double *input, double *out)
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
@@ -1056,7 +1112,8 @@ int spir_bosonic_dlr_to_IR(
         input_tensor.data()[i] = input[i];
     }
     Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
-    size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    size_t total_output_size =
+        out_tensor.dimension(0) * out_tensor.dimension(1);
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
@@ -1086,8 +1143,8 @@ int spir_bosonic_dlr_to_IR(
  * @param input Input array of IR coefficients (double precision)
  * @param out Output array for the DLR coefficients (double precision)
  *
- * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure (if the DLR object is invalid or an error
- * occurs)
+ * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
+ * (if the DLR object is invalid or an error occurs)
  *
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
@@ -1100,13 +1157,9 @@ int spir_bosonic_dlr_to_IR(
  * @see spir_bosonic_dlr_to_IR
  * @see spir_fermionic_dlr_from_IR
  */
-int spir_bosonic_dlr_from_IR(
-    const spir_bosonic_dlr *dlr,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    const double *input,
-    double *out)
+int spir_bosonic_dlr_from_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
+                             int32_t ndim, int32_t *input_dims,
+                             const double *input, double *out)
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
@@ -1119,7 +1172,8 @@ int spir_bosonic_dlr_from_IR(
     }
     Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
     // pass data to out
-    std::size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    std::size_t total_output_size =
+        out_tensor.dimension(0) * out_tensor.dimension(1);
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
@@ -1160,13 +1214,10 @@ int spir_bosonic_dlr_from_IR(
  * @see spir_fermionic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_fermionic_dlr_to_IR(
-    const spir_fermionic_dlr *dlr,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    const double *input,
-    double *out)
+int spir_fermionic_dlr_to_IR(const spir_fermionic_dlr *dlr,
+                             spir_order_type order, int32_t ndim,
+                             int32_t *input_dims, const double *input,
+                             double *out)
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
@@ -1181,7 +1232,8 @@ int spir_fermionic_dlr_to_IR(
         input_tensor.data()[i] = input[i];
     }
     Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
-    size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    size_t total_output_size =
+        out_tensor.dimension(0) * out_tensor.dimension(1);
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
@@ -1225,13 +1277,10 @@ int spir_fermionic_dlr_to_IR(
  * @see spir_fermionic_dlr_to_IR
  * @see spir_bosonic_dlr_from_IR
  */
-int spir_fermionic_dlr_from_IR(
-    const spir_fermionic_dlr *dlr,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    const double *input,
-    double *out)
+int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
+                               spir_order_type order, int32_t ndim,
+                               int32_t *input_dims, const double *input,
+                               double *out)
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
@@ -1244,7 +1293,8 @@ int spir_fermionic_dlr_from_IR(
     }
     Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
     // pass data to out
-    std::size_t total_output_size = out_tensor.dimension(0) * out_tensor.dimension(1);
+    std::size_t total_output_size =
+        out_tensor.dimension(0) * out_tensor.dimension(1);
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
     }
@@ -1253,17 +1303,20 @@ int spir_fermionic_dlr_from_IR(
 
 // Get basis functions (returns the PiecewiseLegendrePolyVector)
 /**
- * @brief Retrieves the basis functions in imaginary time from a fermionic finite temperature basis.
+ * @brief Retrieves the basis functions in imaginary time from a fermionic
+ * finite temperature basis.
  *
  * This function returns the piecewise Legendre polynomial representation of the
  * basis functions u_l(τ) in imaginary time from the specified fermionic finite
- * temperature basis. These basis functions form an orthonormal system on [0, β].
+ * temperature basis. These basis functions form an orthonormal system on [0,
+ * β].
  *
  * @param b Pointer to the fermionic finite temperature basis object
  * @return A pointer to a polyvector object containing the basis functions,
  *         or NULL if the basis object is invalid
  *
- * @note The returned object must be freed using spir_destroy_polyvector when no longer needed
+ * @note The returned object must be freed using spir_destroy_polyvector when no
+ * longer needed
  * @see spir_destroy_polyvector
  */
 spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)

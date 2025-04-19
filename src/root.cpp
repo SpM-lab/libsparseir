@@ -25,24 +25,35 @@ template bool signbit(double x);
 template bool signbit(int x);
 
 // Explicit instantiation for refine_grid
-template std::vector<float> refine_grid(const std::vector<float> &grid, int alpha);
-template std::vector<double> refine_grid(const std::vector<double> &grid, int alpha);
+template std::vector<float> refine_grid(const std::vector<float> &grid,
+                                        int alpha);
+template std::vector<double> refine_grid(const std::vector<double> &grid,
+                                         int alpha);
 
 // Explicit instantiations for find_all
-template std::vector<int> find_all(std::function<double(int)>, const std::vector<int> &xgrid);
-template std::vector<float> find_all(std::function<double(float)>, const std::vector<float> &xgrid);
-template std::vector<double> find_all(std::function<double(double)>, const std::vector<double> &xgrid);
+template std::vector<int> find_all(std::function<double(int)>,
+                                   const std::vector<int> &xgrid);
+template std::vector<float> find_all(std::function<double(float)>,
+                                     const std::vector<float> &xgrid);
+template std::vector<double> find_all(std::function<double(double)>,
+                                      const std::vector<double> &xgrid);
 
 // Explicit instantiations for discrete_extrema
-template std::vector<int> discrete_extrema(std::function<double(int)>, const std::vector<int> &xgrid);
-template std::vector<float> discrete_extrema(std::function<double(float)>, const std::vector<float> &xgrid);
-template std::vector<double> discrete_extrema(std::function<double(double)>, const std::vector<double> &xgrid);
+template std::vector<int> discrete_extrema(std::function<double(int)>,
+                                           const std::vector<int> &xgrid);
+template std::vector<float> discrete_extrema(std::function<double(float)>,
+                                             const std::vector<float> &xgrid);
+template std::vector<double> discrete_extrema(std::function<double(double)>,
+                                              const std::vector<double> &xgrid);
 
 // Explicit instantiations for bisect
-template double bisect(const std::function<double(double)>&, double, double, double, double);
+template double bisect(const std::function<double(double)> &, double, double,
+                       double, double);
 
 // Explicit instantiations for sign_changes and find_extrema
-template std::vector<MatsubaraFreq<Fermionic>> sign_changes(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
-template std::vector<MatsubaraFreq<Bosonic>> sign_changes(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
+template std::vector<MatsubaraFreq<Fermionic>>
+sign_changes(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
+template std::vector<MatsubaraFreq<Bosonic>>
+sign_changes(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
 
-} // namespace sparseir 
+} // namespace sparseir

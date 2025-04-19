@@ -4,17 +4,11 @@
 namespace sparseir {
 
 // PiecewiseLegendrePoly implementations
-PiecewiseLegendrePoly::PiecewiseLegendrePoly(int polyorder,
-                                            double xmin,
-                                            double xmax,
-                                            const Eigen::VectorXd& knots,
-                                            const Eigen::VectorXd& delta_x,
-                                            const Eigen::MatrixXd& data,
-                                            int symm,
-                                            int l,
-                                            const Eigen::VectorXd& xm,
-                                            const Eigen::VectorXd& inv_xs,
-                                            const Eigen::VectorXd& norms)
+PiecewiseLegendrePoly::PiecewiseLegendrePoly(
+    int polyorder, double xmin, double xmax, const Eigen::VectorXd &knots,
+    const Eigen::VectorXd &delta_x, const Eigen::MatrixXd &data, int symm,
+    int l, const Eigen::VectorXd &xm, const Eigen::VectorXd &inv_xs,
+    const Eigen::VectorXd &norms)
     : polyorder(polyorder),
       xmin(xmin),
       xmax(xmax),
@@ -25,7 +19,8 @@ PiecewiseLegendrePoly::PiecewiseLegendrePoly(int polyorder,
       l(l),
       xm(xm),
       inv_xs(inv_xs),
-      norms(norms) {
+      norms(norms)
+{
 
     if (!data.allFinite()) {
         throw std::invalid_argument("data contains NaN or Inf");
@@ -42,15 +37,13 @@ PiecewiseLegendrePoly::PiecewiseLegendrePoly(int polyorder,
     }
 }
 
-PiecewiseLegendrePoly::PiecewiseLegendrePoly(const Eigen::MatrixXd& data,
-                                            const Eigen::VectorXd& knots,
-                                            int l,
-                                            const Eigen::VectorXd& delta_x_,
-                                            int symm)
-    : knots(knots),
-      data(data),
-      symm(symm),
-      l(l) {
+PiecewiseLegendrePoly::PiecewiseLegendrePoly(const Eigen::MatrixXd &data,
+                                             const Eigen::VectorXd &knots,
+                                             int l,
+                                             const Eigen::VectorXd &delta_x_,
+                                             int symm)
+    : knots(knots), data(data), symm(symm), l(l)
+{
     this->polyorder = data.rows();
     int nsegments = data.cols();
 
@@ -76,12 +69,14 @@ double PiecewiseLegendrePoly::operator()(double x) const
     double x_tilde;
     std::tie(i, x_tilde) = split(x);
     Eigen::VectorXd coeffs = data.col(i);
-    std::vector<double> coeffs_vec(coeffs.data(), coeffs.data() + coeffs.size());
+    std::vector<double> coeffs_vec(coeffs.data(),
+                                   coeffs.data() + coeffs.size());
     double value = legval<double>(x_tilde, coeffs_vec) * norms(i);
     return value;
 }
 
-Eigen::VectorXd PiecewiseLegendrePoly::operator()(const Eigen::VectorXd &xs) const
+Eigen::VectorXd
+PiecewiseLegendrePoly::operator()(const Eigen::VectorXd &xs) const
 {
     Eigen::VectorXd results(xs.size());
     for (int idx = 0; idx < xs.size(); ++idx) {
@@ -91,14 +86,14 @@ Eigen::VectorXd PiecewiseLegendrePoly::operator()(const Eigen::VectorXd &xs) con
 }
 
 double PiecewiseLegendrePoly::overlap(std::function<double(double)> f,
-                                     const std::vector<double> &points) const
+                                      const std::vector<double> &points) const
 {
     double result = 0.0;
 
     std::vector<double> integration_points(knots.data(),
-                                         knots.data() + knots.size());
+                                           knots.data() + knots.size());
     integration_points.insert(integration_points.end(), points.begin(),
-                            points.end());
+                              points.end());
     std::sort(integration_points.begin(), integration_points.end());
     integration_points.erase(
         std::unique(integration_points.begin(), integration_points.end()),
@@ -127,7 +122,8 @@ PiecewiseLegendrePoly PiecewiseLegendrePoly::deriv(int n) const
     return PiecewiseLegendrePoly(ddata, *this, new_symm);
 }
 
-Eigen::VectorXd PiecewiseLegendrePoly::derivs(double x) const {
+Eigen::VectorXd PiecewiseLegendrePoly::derivs(double x) const
+{
     std::vector<double> res;
     res.push_back((*this)(x));
     PiecewiseLegendrePoly newppoly = *this;
@@ -138,7 +134,9 @@ Eigen::VectorXd PiecewiseLegendrePoly::derivs(double x) const {
     return Eigen::Map<Eigen::VectorXd>(res.data(), res.size());
 }
 
-Eigen::VectorXd PiecewiseLegendrePoly::refine_grid(const Eigen::VectorXd& grid, int alpha) const {
+Eigen::VectorXd PiecewiseLegendrePoly::refine_grid(const Eigen::VectorXd &grid,
+                                                   int alpha) const
+{
     Eigen::VectorXd refined((grid.size() - 1) * alpha + 1);
 
     for (size_t i = 0; i < static_cast<size_t>(grid.size() - 1); ++i) {
@@ -152,7 +150,9 @@ Eigen::VectorXd PiecewiseLegendrePoly::refine_grid(const Eigen::VectorXd& grid, 
     return refined;
 }
 
-double PiecewiseLegendrePoly::bisect(double a, double b, double fa, double eps_x) const {
+double PiecewiseLegendrePoly::bisect(double a, double b, double fa,
+                                     double eps_x) const
+{
     while (true) {
         double mid = static_cast<double>(midpoint(a, b));
         if (closeenough(a, mid, eps_x)) {
@@ -174,9 +174,11 @@ Eigen::VectorXd PiecewiseLegendrePoly::roots() const
     Eigen::VectorXd grid = this->knots;
 
     Eigen::VectorXd refined_grid = refine_grid(grid, 2);
-    std::function<double(double)> f = [this](double x) { return this->operator()(x); };
-    std::vector<double> refined_grid_vec(refined_grid.data(),
-                                       refined_grid.data() + refined_grid.size());
+    std::function<double(double)> f = [this](double x) {
+        return this->operator()(x);
+    };
+    std::vector<double> refined_grid_vec(
+        refined_grid.data(), refined_grid.data() + refined_grid.size());
     std::vector<double> roots = find_all(f, refined_grid_vec);
     return Eigen::Map<Eigen::VectorXd>(roots.data(), roots.size());
 }
@@ -199,10 +201,10 @@ double PiecewiseLegendrePoly::gauss_legendre_quadrature(
     double a, double b, std::function<double(double)> f) const
 {
     static const double xg[] = {-0.906179845938664, -0.538469310105683, 0.0,
-                               0.538469310105683, 0.906179845938664};
+                                0.538469310105683, 0.906179845938664};
     static const double wg[] = {0.236926885056189, 0.478628670499366,
-                               0.568888888888889, 0.478628670499366,
-                               0.236926885056189};
+                                0.568888888888889, 0.478628670499366,
+                                0.236926885056189};
     double c1 = (b - a) / 2.0;
     double c2 = (b + a) / 2.0;
     double integral = 0.0;
@@ -214,7 +216,8 @@ double PiecewiseLegendrePoly::gauss_legendre_quadrature(
     return integral;
 }
 
-std::complex<double> compute_unl_inner(const PiecewiseLegendrePoly &poly, int wn)
+std::complex<double> compute_unl_inner(const PiecewiseLegendrePoly &poly,
+                                       int wn)
 {
     double wred = M_PI / 4.0 * wn;
     Eigen::VectorXcd phase_wi = phase_stable(poly, wn);
@@ -380,15 +383,19 @@ template class PiecewiseLegendreFTVector<Bosonic>;
 template class PiecewiseLegendreFTVector<Fermionic>;
 
 // Explicit instantiations for find_extrema and related templates
-template std::vector<MatsubaraFreq<Fermionic>> find_extrema(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
-template std::vector<MatsubaraFreq<Bosonic>> find_extrema(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
+template std::vector<MatsubaraFreq<Fermionic>>
+find_extrema(const PiecewiseLegendreFT<Fermionic> &u_hat, bool positive_only);
+template std::vector<MatsubaraFreq<Bosonic>>
+find_extrema(const PiecewiseLegendreFT<Bosonic> &u_hat, bool positive_only);
 
 // Explicit instantiations for power_model
-//template PowerModel<double> PiecewiseLegendreFT<Bosonic>::power_model(const Bosonic& stat, const PiecewiseLegendrePoly& poly);
-//template PowerModel<double> PiecewiseLegendreFT<Fermionic>::power_model(const Fermionic& stat, const PiecewiseLegendrePoly& poly);
+// template PowerModel<double> PiecewiseLegendreFT<Bosonic>::power_model(const
+// Bosonic& stat, const PiecewiseLegendrePoly& poly); template
+// PowerModel<double> PiecewiseLegendreFT<Fermionic>::power_model(const
+// Fermionic& stat, const PiecewiseLegendrePoly& poly);
 
 std::complex<double> evalpoly(std::complex<double> x,
-                             const std::vector<double> &coeffs)
+                              const std::vector<double> &coeffs)
 {
     std::complex<double> result(0, 0);
     std::complex<double> xn(1, 0);
@@ -427,4 +434,4 @@ template std::function<double(int)>
 func_for_part(const PiecewiseLegendreFT<Bosonic> &polyFT,
               std::function<double(std::complex<double>)> part);
 
-} // namespace sparseir 
+} // namespace sparseir
