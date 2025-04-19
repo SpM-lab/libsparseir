@@ -51,7 +51,7 @@ public:
     Eigen::VectorX<T> x, w, x_forward, x_backward;
     T a, b;
     // Default constructor
-    Rule() {};
+    Rule() { };
 
     Rule(const std::vector<T> &x, const std::vector<T> &w, T a = -1, T b = 1)
         : x(Eigen::Map<const Eigen::VectorX<T>>(x.data(), x.size())),
@@ -241,16 +241,18 @@ legendre_collocation(const Rule<T> &rule, int n = -1)
 }
 
 template <typename TargetType, typename SourceType>
-inline sparseir::Rule<TargetType> convert_rule(const sparseir::Rule<SourceType>
-&rule)
+inline sparseir::Rule<TargetType>
+convert_rule(const sparseir::Rule<SourceType> &rule)
 {
     // Convert vectors using Eigen::Map to handle the conversion properly
     Eigen::VectorX<TargetType> x = rule.x.template cast<TargetType>();
     Eigen::VectorX<TargetType> w = rule.w.template cast<TargetType>();
-    Eigen::VectorX<TargetType> x_forward = rule.x_forward.template
-cast<TargetType>(); Eigen::VectorX<TargetType> x_backward =
-rule.x_backward.template cast<TargetType>(); TargetType a =
-static_cast<TargetType>(rule.a); TargetType b = static_cast<TargetType>(rule.b);
+    Eigen::VectorX<TargetType> x_forward =
+        rule.x_forward.template cast<TargetType>();
+    Eigen::VectorX<TargetType> x_backward =
+        rule.x_backward.template cast<TargetType>();
+    TargetType a = static_cast<TargetType>(rule.a);
+    TargetType b = static_cast<TargetType>(rule.b);
 
     return sparseir::Rule<TargetType>(x, w, x_forward, x_backward, a, b);
 }

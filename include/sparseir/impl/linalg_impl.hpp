@@ -9,7 +9,6 @@
 
 #include "xprec/ddouble.hpp"
 
-
 namespace sparseir {
 
 template <typename T>

@@ -39,7 +39,6 @@ int argmax(const Eigen::MatrixBase<Derived> &vec)
     return maxIndex;
 }
 
-
 template <typename T>
 struct QRPivoted
 {
@@ -61,7 +60,6 @@ void lmul(const QRPackedQ<T> Q, Eigen::MatrixX<T> &B);
 template <typename T>
 void mul(Eigen::MatrixX<T> &C, const QRPackedQ<T> &Q,
          const Eigen::MatrixX<T> &B);
-
 
 // TODO: FIX THIS
 template <typename T>
@@ -155,6 +153,4 @@ tsvd(const Eigen::MatrixX<T> &A, T rtol = std::numeric_limits<T>::epsilon());
 
 Eigen::MatrixXd pinv(const Eigen::MatrixXd &A, double tolerance = 1e-6);
 
-
 } // namespace sparseir
-

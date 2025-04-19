@@ -32,7 +32,7 @@ const double PI = 3.14159265358979323846;
 double SQPIO2(double /*x*/);
 
 // Helper: evaluate polynomial using Horner's method.
-double evalpoly(double x, const std::vector<double>& coeffs);
+double evalpoly(double x, const std::vector<double> &coeffs);
 
 // Helper: compute sin(pi*x)
 double sinpi(double x);
@@ -68,13 +68,13 @@ double besselj_ratio_jnu_jnum1(double n, double x);
 std::pair<double, double> sphericalbessely_forward_recurrence(int nu, double x);
 
 // sphericalbesselj_recurrence:
-// Uses forward recurrence if stable; otherwise uses spherical Bessel y recurrence.
+// Uses forward recurrence if stable; otherwise uses spherical Bessel y
+// recurrence.
 double sphericalbesselj_recurrence(int nu, double x);
 
 // sphericalbesselj_positive_args:
 // Selects the proper method for computing j_n(x) for positive arguments.
 double sphericalbesselj_positive_args(int nu, double x);
-
 
 // Main function to calculate spherical Bessel function of the first kind
 double sphericalbesselj(int n, double x);

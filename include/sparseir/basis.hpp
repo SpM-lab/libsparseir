@@ -11,7 +11,8 @@
 
 namespace sparseir {
 
-Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector &u, int L);
+Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector &u,
+                                        int L);
 
 // Abstract class with S = Fermionic or Bosonic
 template <typename S>
@@ -43,7 +44,9 @@ public:
     virtual double get_wmax() const = 0;
     virtual size_t size() const = 0;
     virtual const Eigen::VectorXd default_tau_sampling_points() const = 0;
-    virtual std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const = 0;
+    virtual std::vector<MatsubaraFreq<S>>
+    default_matsubara_sampling_points(int L, bool fence = false,
+                                      bool positive_only = false) const = 0;
 };
 
 } // namespace sparseir
@@ -56,7 +59,7 @@ public:
     double lambda;
     std::shared_ptr<SVEResult> sve_result;
     double accuracy;
-    //double beta;
+    // double beta;
     std::shared_ptr<PiecewiseLegendrePolyVector> u;
     std::shared_ptr<PiecewiseLegendrePolyVector> v;
     Eigen::VectorXd s;
@@ -64,7 +67,8 @@ public:
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat_full;
 
     FiniteTempBasis(double beta, double omega_max, double epsilon,
-               const std::shared_ptr<AbstractKernel> &kernel, SVEResult sve_result, int max_size = -1)
+                    const std::shared_ptr<AbstractKernel> &kernel,
+                    SVEResult sve_result, int max_size = -1)
     {
         if (sve_result.s.size() == 0) {
             throw std::runtime_error("SVE result sve_result.s is empty");
@@ -78,8 +82,8 @@ public:
                 "Frequency cutoff omega_max must be non-negative");
         }
         if (std::fabs(beta * omega_max - kernel->lambda_) > 1e-10) {
-            throw std::runtime_error(
-                "Product of beta and omega_max must be equal to lambda in kernel");
+            throw std::runtime_error("Product of beta and omega_max must be "
+                                     "equal to lambda in kernel");
         }
         this->beta = beta;
         this->lambda = kernel->lambda_;
@@ -102,13 +106,12 @@ public:
         /*
         Port the following Julia code to C++:
         # The polynomials are scaled to the new variables by transforming
-        the # knots according to: tau = β/2 * (x + 1), w = ωmax * y. Scaling # the
-        data is not necessary as the normalization is inferred. ωmax = Λ(kernel) / β
-        u_knots = (β / 2) .* (knots(u_) .+ 1)
-        v_knots = ωmax .* knots(v_)
-        u = PiecewiseLegendrePolyVector(u_, u_knots; Δx=(β / 2) .* Δx(u_),
-        symm=symm(u_)) v = PiecewiseLegendrePolyVector(v_, v_knots; Δx=ωmax .*
-        Δx(v_), symm=symm(v_))
+        the # knots according to: tau = β/2 * (x + 1), w = ωmax * y. Scaling #
+        the data is not necessary as the normalization is inferred. ωmax =
+        Λ(kernel) / β u_knots = (β / 2) .* (knots(u_) .+ 1) v_knots = ωmax .*
+        knots(v_) u = PiecewiseLegendrePolyVector(u_, u_knots; Δx=(β / 2) .*
+        Δx(u_), symm=symm(u_)) v = PiecewiseLegendrePolyVector(v_, v_knots;
+        Δx=ωmax .* Δx(v_), symm=symm(v_))
         */
 
         auto u_knots_ = u_.polyvec[0].knots;
@@ -128,12 +131,18 @@ public:
             v_symm_vec.push_back(v_.polyvec[i].get_symm());
         }
 
-        Eigen::VectorXi u_symm = Eigen::Map<Eigen::VectorXi>(u_symm_vec.data(), u_symm_vec.size());
-        Eigen::VectorXi v_symm = Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
+        Eigen::VectorXi u_symm =
+            Eigen::Map<Eigen::VectorXi>(u_symm_vec.data(), u_symm_vec.size());
+        Eigen::VectorXi v_symm =
+            Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
 
-        this->u = std::make_shared<PiecewiseLegendrePolyVector>(u_, u_knots, deltax4u, u_symm);
-        this->v = std::make_shared<PiecewiseLegendrePolyVector>(v_, v_knots, deltax4v, v_symm);
-        this->s = (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel->ypower()))) * s_;
+        this->u = std::make_shared<PiecewiseLegendrePolyVector>(
+            u_, u_knots, deltax4u, u_symm);
+        this->v = std::make_shared<PiecewiseLegendrePolyVector>(
+            v_, v_knots, deltax4v, v_symm);
+        this->s =
+            (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel->ypower()))) *
+            s_;
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u->get_data();
         PiecewiseLegendrePolyVector uhat_base_full =
@@ -147,19 +156,19 @@ public:
         for (int i = 0; i < this->s.size(); ++i) {
             uhat_polyvec.push_back(this->uhat_full->operator[](i));
         }
-        this->uhat = std::make_shared<PiecewiseLegendreFTVector<S>>(uhat_polyvec);
+        this->uhat =
+            std::make_shared<PiecewiseLegendreFTVector<S>>(uhat_polyvec);
     }
 
     // Delegating constructor 1
     FiniteTempBasis(double beta, double omega_max, double epsilon,
                     int max_size = -1)
-    : FiniteTempBasis(
-            beta, omega_max, epsilon,
-            std::make_shared<LogisticKernel>(beta * omega_max),
-            compute_sve(LogisticKernel(beta * omega_max),
-                        epsilon),
-            max_size)
-    {}
+        : FiniteTempBasis(
+              beta, omega_max, epsilon,
+              std::make_shared<LogisticKernel>(beta * omega_max),
+              compute_sve(LogisticKernel(beta * omega_max), epsilon), max_size)
+    {
+    }
 
     // Delegating constructor 2
     FiniteTempBasis(double beta, double omega_max, double epsilon,
@@ -170,15 +179,20 @@ public:
     }
 
     // Delegating constructor 3
-    FiniteTempBasis(double beta, double omega_max, std::shared_ptr<AbstractKernel> kernel_ptr, SVEResult sve_result)
-    : FiniteTempBasis(beta, omega_max, sve_result.epsilon, kernel_ptr, sve_result, -1){}
+    FiniteTempBasis(double beta, double omega_max,
+                    std::shared_ptr<AbstractKernel> kernel_ptr,
+                    SVEResult sve_result)
+        : FiniteTempBasis(beta, omega_max, sve_result.epsilon, kernel_ptr,
+                          sve_result, -1)
+    {
+    }
 
     // Overload operator[] for indexing (get a subset of the basis)
     FiniteTempBasis<S> operator[](const std::pair<int, int> &range) const
     {
         int new_size = range.second - range.first + 1;
-        return FiniteTempBasis<S>(statistics(), this->get_beta(), get_wmax(), 0.0,
-                                     new_size, lambda, sve_result);
+        return FiniteTempBasis<S>(statistics(), this->get_beta(), get_wmax(),
+                                  0.0, new_size, lambda, sve_result);
     }
 
     // Calculate significance
@@ -194,16 +208,16 @@ public:
     std::shared_ptr<const SVEResult> getSVEResult() const { return sve_result; }
 
     // Getter for kernel
-    //std::shared_ptr<const K> getKernel() const { return kernel; }
+    // std::shared_ptr<const K> getKernel() const { return kernel; }
 
     // Getter for Λ
-    //double Lambda() const { return lambda; }
+    // double Lambda() const { return lambda; }
 
     // Default ω sampling points
     Eigen::VectorXd default_omega_sampling_points() const
     {
-        Eigen::VectorXd y =
-            default_sampling_points(*(sve_result->v), static_cast<int>(s.size()));
+        Eigen::VectorXd y = default_sampling_points(*(sve_result->v),
+                                                    static_cast<int>(s.size()));
         return this->get_wmax() * y.array();
     }
 
@@ -214,18 +228,24 @@ public:
         auto kernel = std::make_shared<LogisticKernel>(lambda);
         return FiniteTempBasis<S>(
             new_beta, new_omega_max, std::numeric_limits<double>::quiet_NaN(),
-            std::static_pointer_cast<AbstractKernel>(kernel), *sve_result, static_cast<int>(s.size()));
+            std::static_pointer_cast<AbstractKernel>(kernel), *sve_result,
+            static_cast<int>(s.size()));
     }
 
     // FIXME: remove `const` from the return type
-    const Eigen::VectorXd default_tau_sampling_points() const override {
+    const Eigen::VectorXd default_tau_sampling_points() const override
+    {
         int sz = size();
         auto x = default_sampling_points(*(this->sve_result->u), sz);
         return (this->beta / 2.0) * (x.array() + 1.0);
     }
 
-    std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points(int L, bool fence = false, bool positive_only = false) const override {
-        return default_matsubara_sampling_points_impl(*this->uhat_full, L, fence, positive_only);
+    std::vector<MatsubaraFreq<S>>
+    default_matsubara_sampling_points(int L, bool fence = false,
+                                      bool positive_only = false) const override
+    {
+        return default_matsubara_sampling_points_impl(*this->uhat_full, L,
+                                                      fence, positive_only);
     }
 
 private:
@@ -233,8 +253,10 @@ private:
     std::shared_ptr<S> statistics() const { return std::make_shared<S>(); }
 };
 
-    // Default sampling points function
-inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector &u, int L) {
+// Default sampling points function
+inline Eigen::VectorXd
+default_sampling_points(const PiecewiseLegendrePolyVector &u, int L)
+{
     if (u.xmin() != -1.0 || u.xmax() != 1.0)
         throw std::runtime_error("Expecting unscaled functions here.");
 
@@ -254,8 +276,8 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
         x0[x0.size() - 1] = right;
 
         if (x0.size() != L) {
-            std::cerr << "Warning: Expected " << L
-                        << " sampling points, got " << x0.size() << ".\n";
+            std::cerr << "Warning: Expected " << L << " sampling points, got "
+                      << x0.size() << ".\n";
         }
 
         return x0;
@@ -263,7 +285,9 @@ inline Eigen::VectorXd default_sampling_points(const PiecewiseLegendrePolyVector
 }
 
 template <typename S>
-inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool positive_only) {
+inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>> &wn,
+                                     bool positive_only)
+{
     // Original implementation remains unchanged
     if (wn.empty()) {
         return;
@@ -277,16 +301,18 @@ inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool pos
         outer_frequencies.push_back(wn.back());
     }
 
-    for (const auto& wn_outer : outer_frequencies) {
+    for (const auto &wn_outer : outer_frequencies) {
         int outer_val = wn_outer.n;
         int diff_val = 2 * static_cast<int>(std::round(0.025 * outer_val));
         int wn_diff = MatsubaraFreq<S>(diff_val).n;
 
         if (wn.size() >= 20) {
-            wn.push_back(MatsubaraFreq<S>(wn_outer.n - sign(wn_outer) * wn_diff));
+            wn.push_back(
+                MatsubaraFreq<S>(wn_outer.n - sign(wn_outer) * wn_diff));
         }
         if (wn.size() >= 42) {
-            wn.push_back(MatsubaraFreq<S>(wn_outer.n + sign(wn_outer) * wn_diff));
+            wn.push_back(
+                MatsubaraFreq<S>(wn_outer.n + sign(wn_outer) * wn_diff));
         }
     }
 
@@ -295,10 +321,9 @@ inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>>& wn, bool pos
 }
 
 template <typename S>
-std::vector<MatsubaraFreq<S>>
-default_matsubara_sampling_points_impl(const PiecewiseLegendreFTVector<S> &u_hat,
-                                  int L, bool fence = false,
-                                  bool positive_only = false)
+std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points_impl(
+    const PiecewiseLegendreFTVector<S> &u_hat, int L, bool fence = false,
+    bool positive_only = false)
 {
     std::size_t l_requested = L;
 
@@ -326,41 +351,34 @@ default_matsubara_sampling_points_impl(const PiecewiseLegendreFTVector<S> &u_hat
                   << ", but got " << omega_n.size() << ".\n";
     }
 
-    if (fence){
+    if (fence) {
         fence_matsubara_sampling(omega_n, positive_only);
     }
     return omega_n;
 }
 
-inline std::pair<FiniteTempBasis<Fermionic>,
-                 FiniteTempBasis<Bosonic>>
-    finite_temp_bases(
-        double beta, double omega_max,
-        double epsilon,
-        SVEResult sve_result
-    )
+inline std::pair<FiniteTempBasis<Fermionic>, FiniteTempBasis<Bosonic>>
+finite_temp_bases(double beta, double omega_max, double epsilon,
+                  SVEResult sve_result)
 {
     auto kernel = std::make_shared<LogisticKernel>(beta * omega_max);
-    auto basis_f = FiniteTempBasis<Fermionic>(
-        beta, omega_max, epsilon, kernel, sve_result);
-    auto basis_b = FiniteTempBasis<Bosonic>(
-        beta, omega_max, epsilon, kernel, sve_result);
+    auto basis_f = FiniteTempBasis<Fermionic>(beta, omega_max, epsilon, kernel,
+                                              sve_result);
+    auto basis_b =
+        FiniteTempBasis<Bosonic>(beta, omega_max, epsilon, kernel, sve_result);
     return std::make_pair(basis_f, basis_b);
 }
 
-inline std::pair<FiniteTempBasis<Fermionic>,
-                 FiniteTempBasis<Bosonic>>
-    finite_temp_bases(
-        double beta, double omega_max,
-        double epsilon = std::numeric_limits<double>::quiet_NaN()
-    )
+inline std::pair<FiniteTempBasis<Fermionic>, FiniteTempBasis<Bosonic>>
+finite_temp_bases(double beta, double omega_max,
+                  double epsilon = std::numeric_limits<double>::quiet_NaN())
 {
     auto kernel = std::make_shared<LogisticKernel>(beta * omega_max);
     SVEResult sve_result = compute_sve(*kernel, epsilon);
-    auto basis_f = FiniteTempBasis<Fermionic>(
-        beta, omega_max, epsilon, kernel, sve_result);
-    auto basis_b = FiniteTempBasis<Bosonic>(
-        beta, omega_max, epsilon, kernel, sve_result);
+    auto basis_f = FiniteTempBasis<Fermionic>(beta, omega_max, epsilon, kernel,
+                                              sve_result);
+    auto basis_b =
+        FiniteTempBasis<Bosonic>(beta, omega_max, epsilon, kernel, sve_result);
     return std::make_pair(basis_f, basis_b);
 }
 

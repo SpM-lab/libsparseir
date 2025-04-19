@@ -6,7 +6,8 @@ namespace sparseir {
 
 // Function to compute matrix from Gauss rules
 template <typename T>
-Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel, const Rule<T> &gauss_x,
+Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel,
+                                    const Rule<T> &gauss_x,
                                     const Rule<T> &gauss_y)
 {
 
@@ -33,7 +34,6 @@ Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel, const Rule<T> 
     return res;
 }
 
-
 // Function to validate symmetry and extract the right-hand side of the segments
 template <typename T>
 std::vector<T> symm_segments(const std::vector<T> &x)
@@ -58,32 +58,38 @@ std::vector<T> symm_segments(const std::vector<T> &x)
     return xpos;
 }
 
-
 // Function to provide SVE hints
-template<typename T>
+template <typename T>
 std::shared_ptr<AbstractSVEHints<T>>
-sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon) {
+sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon)
+{
     // First check if the kernel itself is one of the supported types
-    if (auto logistic = std::dynamic_pointer_cast<const LogisticKernel>(kernel)) {
+    if (auto logistic =
+            std::dynamic_pointer_cast<const LogisticKernel>(kernel)) {
         return std::make_shared<SVEHintsLogistic<T>>(*logistic, epsilon);
     }
-    if (auto bose = std::dynamic_pointer_cast<const RegularizedBoseKernel>(kernel)) {
+    if (auto bose =
+            std::dynamic_pointer_cast<const RegularizedBoseKernel>(kernel)) {
         return std::make_shared<SVEHintsRegularizedBose<T>>(*bose, epsilon);
     }
 
     // Then check derived kernels
     auto derived_kernels = kernel->get_derived_kernels();
     for (const auto &derived_kernel : derived_kernels) {
-        if (auto logistic = std::dynamic_pointer_cast<const LogisticKernel>(derived_kernel)) {
+        if (auto logistic = std::dynamic_pointer_cast<const LogisticKernel>(
+                derived_kernel)) {
             return std::make_shared<SVEHintsLogistic<T>>(*logistic, epsilon);
         }
-        if (auto bose = std::dynamic_pointer_cast<const RegularizedBoseKernel>(derived_kernel)) {
+        if (auto bose = std::dynamic_pointer_cast<const RegularizedBoseKernel>(
+                derived_kernel)) {
             return std::make_shared<SVEHintsRegularizedBose<T>>(*bose, epsilon);
         }
     }
 
     // Special handling for ReducedKernel types
-    if (auto reduced = std::dynamic_pointer_cast<const AbstractReducedKernelBase>(kernel)) {
+    if (auto reduced =
+            std::dynamic_pointer_cast<const AbstractReducedKernelBase>(
+                kernel)) {
         auto inner_kernel = reduced->get_inner_kernel();
         if (inner_kernel) {
             auto inner_hints = sve_hints<T>(inner_kernel, epsilon);
@@ -93,6 +99,5 @@ sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon) {
 
     throw std::runtime_error("Unsupported kernel type");
 }
-
 
 } // namespace sparseir

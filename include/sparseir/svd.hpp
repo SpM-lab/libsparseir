@@ -17,4 +17,3 @@ compute_svd(const MatrixX<T> &A, int n_sv_hint = 0,
             std::string strategy = "default");
 
 } // namespace sparseir
-
