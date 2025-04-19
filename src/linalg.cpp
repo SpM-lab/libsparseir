@@ -58,9 +58,9 @@ template void reflectorApply<DDouble>(
     DDouble tau, Eigen::Block<Eigen::MatrixX<DDouble>> &A);
 
 // rrqr
-template std::pair<QRPivoted<double>, int> rrqr(MatrixX<double> &A,
+template std::pair<QRPivoted<double>, int> rrqr(Eigen::MatrixX<double> &A,
                                                 double rtol);
-template std::pair<QRPivoted<DDouble>, int> rrqr(MatrixX<DDouble> &A,
+template std::pair<QRPivoted<DDouble>, int> rrqr(Eigen::MatrixX<DDouble> &A,
                                                  DDouble rtol);
 
 // triu
@@ -68,9 +68,9 @@ template std::pair<QRPivoted<DDouble>, int> rrqr(MatrixX<DDouble> &A,
 // Eigen::MatrixBase<Derived> triu(Eigen::MatrixBase<Derived> &M);
 
 // truncate_qr_result
-template std::pair<MatrixX<double>, MatrixX<double>>
+template std::pair<Eigen::MatrixX<double>, Eigen::MatrixX<double>>
 truncate_qr_result<double>(QRPivoted<double> &qr, int k);
-template std::pair<MatrixX<DDouble>, MatrixX<DDouble>>
+template std::pair<Eigen::MatrixX<DDouble>, Eigen::MatrixX<DDouble>>
 truncate_qr_result<DDouble>(QRPivoted<DDouble> &qr, int k);
 
 // swapCols

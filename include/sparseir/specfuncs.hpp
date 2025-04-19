@@ -10,21 +10,18 @@
 
 namespace sparseir {
 
-using Eigen::Dynamic;
-using Eigen::Matrix;
-
 template <typename T>
 T legval(T x, const std::vector<T> &c);
 
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T> &x, int deg);
+Eigen::MatrixX<T> legvander(const Eigen::VectorX<T> &x, int deg);
 
 // Add legder for accepting std::vector<T>
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T> &x, int deg);
+Eigen::MatrixX<T> legvander(const std::vector<T> &x, int deg);
 
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt = 1);
+Eigen::MatrixX<T> legder(Eigen::MatrixX<T> c, int cnt = 1);
 
 // Constants
 const double PI = 3.14159265358979323846;

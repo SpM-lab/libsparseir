@@ -10,27 +10,25 @@
 
 namespace sparseir {
 
-using Eigen::Dynamic;
-using Eigen::Matrix;
 using xprec::DDouble;
 
 template double legval<double>(double x, const std::vector<double> &c);
 template DDouble legval<DDouble>(DDouble x, const std::vector<DDouble> &c);
 
-template Matrix<double, Dynamic, Dynamic>
+template Eigen::MatrixX<double>
 legvander<double>(const Eigen::VectorX<double> &x, int deg);
-template Matrix<DDouble, Dynamic, Dynamic>
+template Eigen::MatrixX<DDouble>
 legvander<DDouble>(const Eigen::VectorX<DDouble> &x, int deg);
 
-template Matrix<double, Dynamic, Dynamic>
+template Eigen::MatrixX<double>
 legvander<double>(const std::vector<double> &x, int deg);
-template Matrix<DDouble, Dynamic, Dynamic>
+template Eigen::MatrixX<DDouble>
 legvander<DDouble>(const std::vector<DDouble> &x, int deg);
 
-template Matrix<double, Dynamic, Dynamic>
-legder<double>(Matrix<double, Dynamic, Dynamic> c, int cnt);
-template Matrix<DDouble, Dynamic, Dynamic>
-legder<DDouble>(Matrix<DDouble, Dynamic, Dynamic> c, int cnt);
+template Eigen::MatrixX<double>
+legder<double>(Eigen::MatrixX<double> c, int cnt);
+template Eigen::MatrixX<DDouble>
+legder<DDouble>(Eigen::MatrixX<DDouble> c, int cnt);
 
 double SQPIO2(double /*x*/)
 {

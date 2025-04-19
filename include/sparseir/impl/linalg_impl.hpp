@@ -146,7 +146,7 @@ void reflectorApply(
 A will be modified in-place.
 */
 template <typename T>
-std::pair<QRPivoted<T>, int> rrqr(MatrixX<T> &A, T rtol)
+std::pair<QRPivoted<T>, int> rrqr(Eigen::MatrixX<T> &A, T rtol)
 {
     using std::abs;
     using std::sqrt;
@@ -155,11 +155,11 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T> &A, T rtol)
     int n = A.cols();
     int k = std::min(m, n);
     int rk = k;
-    Vector<int, Dynamic> jpvt = Vector<int, Dynamic>::LinSpaced(n, 0, n - 1);
-    Vector<T, Dynamic> taus(k);
+    Eigen::VectorX<int> jpvt = Eigen::VectorX<int>::LinSpaced(n, 0, n - 1);
+    Eigen::VectorX<T> taus(k);
 
-    Vector<T, Dynamic> xnorms = A.colwise().norm();
-    Vector<T, Dynamic> pnorms = xnorms;
+    Eigen::VectorX<T> xnorms = A.colwise().norm();
+    Eigen::VectorX<T> pnorms = xnorms;
     T sqrteps = sqrt(std::numeric_limits<T>::epsilon());
 
     for (int i = 0; i < k; ++i) {
@@ -206,7 +206,7 @@ std::pair<QRPivoted<T>, int> rrqr(MatrixX<T> &A, T rtol)
 }
 
 template <typename T>
-std::pair<MatrixX<T>, MatrixX<T>> truncate_qr_result(QRPivoted<T> &qr, int k)
+std::pair<Eigen::MatrixX<T>, Eigen::MatrixX<T>> truncate_qr_result(QRPivoted<T> &qr, int k)
 {
     int m = qr.factors.rows();
     int n = qr.factors.cols();
@@ -217,11 +217,11 @@ std::pair<MatrixX<T>, MatrixX<T>> truncate_qr_result(QRPivoted<T> &qr, int k)
 
     // Extract Q matrix
 
-    MatrixX<T> k_factors = qr.factors.topLeftCorner(qr.factors.rows(), k);
-    MatrixX<T> k_taus = qr.taus.head(k);
+    Eigen::MatrixX<T> k_factors = qr.factors.topLeftCorner(qr.factors.rows(), k);
+    Eigen::VectorX<T> k_taus = qr.taus.head(k);
     auto Qfull = QRPackedQ<T>{k_factors, k_taus};
 
-    MatrixX<T> Q = Eigen::MatrixX<T>::Identity(m, k);
+    Eigen::MatrixX<T> Q = Eigen::MatrixX<T>::Identity(m, k);
     lmul<T>(Qfull, Q);
     // Extract R matrix
     auto R = qr.factors.topRows(k);
@@ -292,7 +292,7 @@ tsvd(const Eigen::MatrixX<T> &A, T rtol)
     svd.compute(R_trunc.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
     // Reconstruct A from QR factorization
-    Eigen::PermutationMatrix<Dynamic, Dynamic> perm(p.size());
+    Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(p.size());
     perm.indices() = p;
 
     Eigen::MatrixX<T> U = Q_trunc * svd.matrixV();

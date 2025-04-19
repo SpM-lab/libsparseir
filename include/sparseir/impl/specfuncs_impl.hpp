@@ -9,9 +9,6 @@
 
 namespace sparseir {
 
-using Eigen::Dynamic;
-using Eigen::Matrix;
-
 template <typename T>
 T legval(T x, const std::vector<T> &c)
 {
@@ -32,14 +29,14 @@ T legval(T x, const std::vector<T> &c)
 }
 
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T> &x, int deg)
+Eigen::MatrixX<T> legvander(const Eigen::VectorX<T> &x, int deg)
 {
     if (deg < 0) {
         throw std::domain_error("degree needs to be non-negative");
     }
 
     int n = x.size();
-    Matrix<T, Dynamic, Dynamic> v(n, deg + 1);
+    Eigen::MatrixX<T> v(n, deg + 1);
 
     // Use forward recursion to generate the entries
     for (int i = 0; i < n; ++i) {
@@ -63,7 +60,7 @@ Matrix<T, Dynamic, Dynamic> legvander(const Eigen::VectorX<T> &x, int deg)
 
 // Add legder for accepting std::vector<T>
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T> &x, int deg)
+Eigen::MatrixX<T> legvander(const std::vector<T> &x, int deg)
 {
     Eigen::VectorX<T> x_eigen =
         Eigen::Map<const Eigen::VectorX<T>>(x.data(), x.size());
@@ -71,7 +68,7 @@ Matrix<T, Dynamic, Dynamic> legvander(const std::vector<T> &x, int deg)
 }
 
 template <typename T>
-Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt)
+Eigen::MatrixX<T> legder(Eigen::MatrixX<T> c, int cnt)
 {
     if (cnt < 0) {
         throw std::domain_error(
@@ -84,12 +81,12 @@ Matrix<T, Dynamic, Dynamic> legder(Matrix<T, Dynamic, Dynamic> c, int cnt)
     int n = c.rows();
     int m = c.cols();
     if (cnt >= n) {
-        return Matrix<T, Dynamic, Dynamic>::Zero(1, m);
+        return Eigen::MatrixX<T>::Zero(1, m);
     }
 
     for (int k = 0; k < cnt; ++k) {
         n -= 1;
-        Matrix<T, Dynamic, Dynamic> der(n, m);
+        Eigen::MatrixX<T> der(n, m);
         for (int j = n; j >= 2; --j) {
             der.row(j - 1) = (2 * j - 1) * c.row(j);
             c.row(j - 2) += c.row(j);
