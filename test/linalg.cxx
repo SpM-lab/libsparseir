@@ -7,8 +7,6 @@
 using namespace Eigen;
 using namespace xprec;
 
-
-
 TEST_CASE("reflector", "[linalg]")
 {
     // double

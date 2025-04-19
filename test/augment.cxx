@@ -9,10 +9,10 @@
 
 #include <catch2/catch_approx.hpp> // for Approx
 
+#include "sve_cache.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
-#include "sve_cache.hpp"
 
 TEST_CASE("AbstractAugmentation", "[augment]")
 {
@@ -61,7 +61,9 @@ TEST_CASE("AbstractAugmentation", "[augment]")
         REQUIRE(tl(freq0) == 0.0);
         sparseir::MatsubaraFreq<sparseir::Bosonic> freq92(92);
         // Calculate the expected complex value
-        std::complex<double> expected_value = std::sqrt(3. / 123.) * 2. / std::complex<double>(0, 1) * 123. / (92. * M_PI);
+        std::complex<double> expected_value = std::sqrt(3. / 123.) * 2. /
+                                              std::complex<double>(0, 1) *
+                                              123. / (92. * M_PI);
         // Get the actual value from the function
         std::complex<double> actual_value = tl(freq92);
 
@@ -75,8 +77,7 @@ TEST_CASE("AbstractAugmentation", "[augment]")
         auto d0tl = tl.deriv(0);
         REQUIRE(d0tl(x) == tl(x));
         auto dtl = tl.deriv();
-        REQUIRE(dtl(4.2) ==
-                Approx(std::sqrt(3. / 123.) * 2. / 123.));
+        REQUIRE(dtl(4.2) == Approx(std::sqrt(3. / 123.) * 2. / 123.));
         auto ddtl = tl.deriv(2);
         REQUIRE(ddtl(4.2) == 0.0);
     }
@@ -119,7 +120,8 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
     auto kernel = std::make_shared<sparseir::LogisticKernel>(Lambda);
     auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
     auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-        beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+        beta, wmax, 1e-6,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
     // Create augmented basis with TauConst and TauLinear
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
@@ -173,14 +175,17 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
     REQUIRE(gtau_reconst.isApprox(gtau, 1e-14 * magn));
 }
 
-TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
+TEST_CASE("Vertex basis with stat = Bosonic", "[augment]")
+{
 
     double beta = 1000.0;
     double wmax = 2.0;
     // Create kernel and get SVE result from cache
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
     auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, wmax, 1e-6,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::MatsubaraConst>(beta));
@@ -189,13 +194,17 @@ TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
     double pole = 1.0;
     double c = 1.0;
     // Create a shared_ptr to AugmentedBasis
-    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    auto basis_aug =
+        std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(
+            basis, augmentations);
 
     auto matsu_sampling =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis_aug);
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+            basis_aug);
     Eigen::VectorXcd gi_n(matsu_sampling->sampling_points().size());
     for (std::size_t i = 0; i < matsu_sampling->sampling_points().size(); ++i) {
-        std::complex<double> iwn(0, matsu_sampling->sampling_points()[i].value(beta));
+        std::complex<double> iwn(
+            0, matsu_sampling->sampling_points()[i].value(beta));
         gi_n(i) = c + 1.0 / (iwn - pole);
     }
     // Convert VectorXcd to Tensor
@@ -205,20 +214,28 @@ TEST_CASE("Vertex basis with stat = Bosonic", "[augment]") {
     }
 
     // Fit the data
-    Eigen::Tensor<std::complex<double>, 1> gl = matsu_sampling->fit(gi_n_tensor);
-    Eigen::Tensor<std::complex<double>, 1> gi_n_reconst = matsu_sampling->evaluate(gl);
+    Eigen::Tensor<std::complex<double>, 1> gl =
+        matsu_sampling->fit(gi_n_tensor);
+    Eigen::Tensor<std::complex<double>, 1> gi_n_reconst =
+        matsu_sampling->evaluate(gl);
     // TODO: Check if this is correct
-    REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
+    REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor,
+                                     1e-7 * gi_n.array().abs().maxCoeff()));
 }
 
-TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
+TEST_CASE("Vertex basis with stat = Fermionic", "[augment]")
+{
 
     double beta = 1000.0;
     double wmax = 2.0;
     // Create kernel and get SVE result from cache
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
     auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto basis =
+        std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+            beta, wmax, 1e-6,
+            std::static_pointer_cast<sparseir::AbstractKernel>(kernel),
+            sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::MatsubaraConst>(beta));
@@ -227,13 +244,17 @@ TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
     double pole = 1.0;
     double c = 1.0;
     // Create a shared_ptr to AugmentedBasis
-    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Fermionic>>(basis, augmentations);
+    auto basis_aug =
+        std::make_shared<sparseir::AugmentedBasis<sparseir::Fermionic>>(
+            basis, augmentations);
 
     auto matsu_sampling =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(basis_aug);
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(
+            basis_aug);
     Eigen::VectorXcd gi_n(matsu_sampling->sampling_points().size());
     for (std::size_t i = 0; i < matsu_sampling->sampling_points().size(); ++i) {
-        std::complex<double> iwn(0, matsu_sampling->sampling_points()[i].value(beta));
+        std::complex<double> iwn(
+            0, matsu_sampling->sampling_points()[i].value(beta));
         gi_n(i) = c + 1.0 / (iwn - pole);
     }
     // Convert VectorXcd to Tensor
@@ -243,13 +264,17 @@ TEST_CASE("Vertex basis with stat = Fermionic", "[augment]") {
     }
 
     // Fit the data
-    Eigen::Tensor<std::complex<double>, 1> gl = matsu_sampling->fit(gi_n_tensor);
-    Eigen::Tensor<std::complex<double>, 1> gi_n_reconst = matsu_sampling->evaluate(gl);
+    Eigen::Tensor<std::complex<double>, 1> gl =
+        matsu_sampling->fit(gi_n_tensor);
+    Eigen::Tensor<std::complex<double>, 1> gi_n_reconst =
+        matsu_sampling->evaluate(gl);
     // TODO: Check if this is correct
-    REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor, 1e-7 * gi_n.array().abs().maxCoeff()));
+    REQUIRE(sparseir::tensorIsApprox(gi_n_reconst, gi_n_tensor,
+                                     1e-7 * gi_n.array().abs().maxCoeff()));
 }
 
-TEST_CASE("unit tests", "[augment]") {
+TEST_CASE("unit tests", "[augment]")
+{
     using T = double;
     T beta = 1000.0;
     T wmax = 2.0;
@@ -257,15 +282,18 @@ TEST_CASE("unit tests", "[augment]") {
     // Create kernel and get SVE result from cache
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * wmax);
     auto sve_result = SVECache::get_sve_result(*kernel, 1e-6);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(beta, wmax, 1e-6, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<S>>(
+        beta, wmax, 1e-6,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
     sparseir::AugmentedBasis<S> basis_aug(basis, augmentations);
-    SECTION("size and access") {
+    SECTION("size and access")
+    {
         REQUIRE(basis_aug.u->size() == basis_aug.size());
-        // The AugmentedTauFunction doesn't have operator[] so we can't test these
-        // REQUIRE(basis_aug.u[0]->operator()(0.0) == basis_aug[0](0.0));
+        // The AugmentedTauFunction doesn't have operator[] so we can't test
+        // these REQUIRE(basis_aug.u[0]->operator()(0.0) == basis_aug[0](0.0));
         // REQUIRE(basis_aug.u[1]->operator()(0.0) == basis_aug[1](0.0));
     }
 
@@ -274,8 +302,10 @@ TEST_CASE("unit tests", "[augment]") {
 
     REQUIRE(basis_aug.size() == len_aug);
     REQUIRE(basis_aug.get_accuracy() == basis->get_accuracy());
-    // AugmentedBasis doesn't have Lambda() method, but we can check the equivalent
-    REQUIRE(basis_aug.basis->get_beta() * basis_aug.basis->get_wmax() == beta * wmax);
+    // AugmentedBasis doesn't have Lambda() method, but we can check the
+    // equivalent
+    REQUIRE(basis_aug.basis->get_beta() * basis_aug.basis->get_wmax() ==
+            beta * wmax);
     REQUIRE(basis_aug.get_wmax() == wmax);
 
     REQUIRE(basis_aug.u->size() == len_aug);
@@ -290,7 +320,8 @@ TEST_CASE("unit tests", "[augment]") {
     // REQUIRE(basis_aug.u.maxCoeff() == beta);
 }
 
-TEST_CASE("AugmentBasis basis_aug->u", "[augment]") {
+TEST_CASE("AugmentBasis basis_aug->u", "[augment]")
+{
     double omega_max = 2.0;
     // double beta = 1000.0;
     double beta = 10.0;
@@ -299,12 +330,16 @@ TEST_CASE("AugmentBasis basis_aug->u", "[augment]") {
     // Create kernel and get SVE result from cache
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
     auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, omega_max, epsilon,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
-    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    auto basis_aug =
+        std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(
+            basis, augmentations);
 
     Eigen::VectorXd sampling_points = basis_aug->default_tau_sampling_points();
     sparseir::AugmentedTauFunction u = *(basis_aug->u);
@@ -315,7 +350,8 @@ TEST_CASE("AugmentBasis basis_aug->u", "[augment]") {
     REQUIRE(m.cols() == sampling_points.size());
 }
 
-TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
+TEST_CASE("AugmentBasis basis_aug->uha", "[augment]")
+{
     double omega_max = 2.0;
     // double beta = 1000.0;
     double beta = 10.0;
@@ -324,17 +360,20 @@ TEST_CASE("AugmentBasis basis_aug->uha", "[augment]") {
     // Create kernel and get SVE result from cache
     auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
     auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
-    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon, std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+        beta, omega_max, epsilon,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
 
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
-    auto basis_aug = std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(basis, augmentations);
+    auto basis_aug =
+        std::make_shared<sparseir::AugmentedBasis<sparseir::Bosonic>>(
+            basis, augmentations);
     bool fence = false;
     bool positive_only = true;
     auto sampling_points = basis_aug->default_matsubara_sampling_points(
-        basis_aug->size(), fence, positive_only
-    );
+        basis_aug->size(), fence, positive_only);
     Eigen::VectorXcd v = (*basis_aug->uhat)(sampling_points[0]);
     REQUIRE(v.size() == basis_aug->size());
 }

@@ -59,7 +59,8 @@ TEST_CASE("diff", "[utils]")
     SECTION("std::vector")
     {
         std::vector<double> xs = {1.0, 3.0, 9.0, 1.0, 2.0};
-        REQUIRE(sparseir::diff(xs) == std::vector<double>({2.0, 6.0, -8.0, 1.0}));
+        REQUIRE(sparseir::diff(xs) ==
+                std::vector<double>({2.0, 6.0, -8.0, 1.0}));
     }
 
     SECTION("Eigen::VectorXd")
@@ -83,7 +84,8 @@ TEST_CASE("diff", "[utils]")
 
 using ComplexF64 = std::complex<double>;
 
-TEST_CASE("movedim", "[utils]"){
+TEST_CASE("movedim", "[utils]")
+{
     const Eigen::Index s_size = 12;
     const Eigen::Index d1 = 2;
     const Eigen::Index d2 = 3;
@@ -105,14 +107,16 @@ TEST_CASE("movedim", "[utils]"){
     Eigen::array<Eigen::Index, 4> new_shape = {s_size, 1, 1, 1};
     Eigen::Tensor<ComplexF64, 4> s_reshaped = s.reshape(new_shape);
     Eigen::array<Eigen::Index, 4> bcast = {1, d1, d2, d3};
-    Eigen::Tensor<ComplexF64, 4> originalgl = (-s_reshaped.broadcast(bcast)) * rhol;
+    Eigen::Tensor<ComplexF64, 4> originalgl =
+        (-s_reshaped.broadcast(bcast)) * rhol;
 
     REQUIRE(originalgl.dimension(0) == s_size);
     REQUIRE(originalgl.dimension(1) == d1);
     REQUIRE(originalgl.dimension(2) == d2);
     REQUIRE(originalgl.dimension(3) == d3);
 
-    Eigen::Tensor<ComplexF64, 4> moved_tensor1 = sparseir::movedim(originalgl, 0, 0);
+    Eigen::Tensor<ComplexF64, 4> moved_tensor1 =
+        sparseir::movedim(originalgl, 0, 0);
     REQUIRE(sparseir::tensorIsApprox(moved_tensor1, originalgl));
 
     REQUIRE(moved_tensor1.dimension(0) == s_size);
@@ -120,21 +124,24 @@ TEST_CASE("movedim", "[utils]"){
     REQUIRE(moved_tensor1.dimension(2) == d2);
     REQUIRE(moved_tensor1.dimension(3) == d3);
 
-    Eigen::Tensor<ComplexF64, 4> moved_tensor2 = sparseir::movedim(originalgl, 0, 1);
+    Eigen::Tensor<ComplexF64, 4> moved_tensor2 =
+        sparseir::movedim(originalgl, 0, 1);
 
     REQUIRE(moved_tensor2.dimension(0) == d1);
     REQUIRE(moved_tensor2.dimension(1) == s_size);
     REQUIRE(moved_tensor2.dimension(2) == d2);
     REQUIRE(moved_tensor2.dimension(3) == d3);
 
-    Eigen::Tensor<ComplexF64, 4> moved_tensor3 = sparseir::movedim(originalgl, 0, 2);
+    Eigen::Tensor<ComplexF64, 4> moved_tensor3 =
+        sparseir::movedim(originalgl, 0, 2);
 
     REQUIRE(moved_tensor3.dimension(0) == d1);
     REQUIRE(moved_tensor3.dimension(1) == d2);
     REQUIRE(moved_tensor3.dimension(2) == s_size);
     REQUIRE(moved_tensor3.dimension(3) == d3);
 
-    Eigen::Tensor<ComplexF64, 4> moved_tensor4 = sparseir::movedim(originalgl, 0, 3);
+    Eigen::Tensor<ComplexF64, 4> moved_tensor4 =
+        sparseir::movedim(originalgl, 0, 3);
 
     REQUIRE(moved_tensor4.dimension(0) == d1);
     REQUIRE(moved_tensor4.dimension(1) == d2);

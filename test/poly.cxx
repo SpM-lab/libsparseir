@@ -9,9 +9,9 @@
 #include <catch2/catch_approx.hpp> // for Approx
 #include <catch2/catch_test_macros.hpp>
 
+#include "sve_cache.hpp"
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
-#include "sve_cache.hpp"
 
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
@@ -50,7 +50,8 @@ TEST_CASE("StableRNG", "[poly]")
 }
 
 TEST_CASE(
-    "sparseir::PiecewiseLegendrePoly(data::Matrix, knots::Vector, l::Int)", "[poly]")
+    "sparseir::PiecewiseLegendrePoly(data::Matrix, knots::Vector, l::Int)",
+    "[poly]")
 {
     // Initialize data and knots as per the test
     // julia> using StableRNGs
@@ -96,7 +97,8 @@ TEST_CASE(
     REQUIRE(ys[1] == Approx(2.696073744825952));
 }
 
-TEST_CASE("PiecewiseLegendrePoly(data, p::PiecewiseLegendrePoly; symm=symm(p))", "[poly]")
+TEST_CASE("PiecewiseLegendrePoly(data, p::PiecewiseLegendrePoly; symm=symm(p))",
+          "[poly]")
 {
     // Initialize data and knots as per the test
     Eigen::MatrixXd data(3, 3);
@@ -293,7 +295,8 @@ TEST_CASE("Deriv", "[poly]")
     REQUIRE(pwlp.inv_xs.isApprox(deriv_pwlp.inv_xs));
     REQUIRE(pwlp.norms.isApprox(deriv_pwlp.norms));
 
-    std::vector<double> ref{0.9409047338158947, 1.9876646271069893, 954.4275060248603};
+    std::vector<double> ref{0.9409047338158947, 1.9876646271069893,
+                            954.4275060248603};
     for (int i = 0; i < 3; i++) {
         REQUIRE(std::abs(pwlp.derivs(0.6)[i] - ref[i]) < 1e-10);
     }
@@ -355,13 +358,14 @@ TEST_CASE("Roots", "[poly]")
 
     // Expected roots from Julia
     Eigen::VectorXd expected_roots(3);
-    expected_roots << 0.1118633448586015, 0.4999999999999998, 0.8881366551413985;
+    expected_roots << 0.1118633448586015, 0.4999999999999998,
+        0.8881366551413985;
 
     REQUIRE(roots.size() == expected_roots.size());
-    for(Eigen::Index i = 0; i < roots.size(); ++i) {
+    for (Eigen::Index i = 0; i < roots.size(); ++i) {
         REQUIRE(std::fabs(roots[i] - expected_roots[i]) < 1e-10);
         // Verifying the polynomial evaluates to zero
-        //at the roots with tight tolerance
+        // at the roots with tight tolerance
         REQUIRE(std::fabs(pwlp(roots[i])) < 1e-10);
         // Verify roots are in domain
         REQUIRE(roots[i] >= knots[0]);
@@ -512,28 +516,28 @@ TEST_CASE("PiecewiseLegendreFT: find_extrema tests", "[poly]")
         auto d_extrema = sparseir::discrete_extrema(f, sparseir::DEFAULT_GRID);
         std::vector<int> d_extrema_expected = {0};
 
-        //REQUIRE(d_extrema.size() == d_extrema_expected.size());
-        //for (size_t i = 0; i < d_extrema.size(); ++i) {
-        //    REQUIRE(d_extrema[i] == d_extrema_expected[i]);
-        //}
+        // REQUIRE(d_extrema.size() == d_extrema_expected.size());
+        // for (size_t i = 0; i < d_extrema.size(); ++i) {
+        //     REQUIRE(d_extrema[i] == d_extrema_expected[i]);
+        // }
 
         auto results_default = sparseir::find_extrema(uhat_full);
         std::vector<int> results_expected = {0};
-        //REQUIRE(results_default.size() == results_expected.size());
-        //for (size_t i = 0; i < results_default.size(); ++i) {
-        //    REQUIRE(results_default[i].n == results_expected[i]);
-        //}
+        // REQUIRE(results_default.size() == results_expected.size());
+        // for (size_t i = 0; i < results_default.size(); ++i) {
+        //     REQUIRE(results_default[i].n == results_expected[i]);
+        // }
 
         bool positive_only = true;
         auto results_positive_only =
             sparseir::find_extrema(uhat_full, positive_only);
         std::vector<int> results_positive_only_expected = {0};
-        //REQUIRE(results_positive_only.size() ==
-        //        results_positive_only_expected.size());
-        //for (size_t i = 0; i < results_positive_only.size(); ++i) {
-        //    REQUIRE(results_positive_only[i].n ==
-        //            results_positive_only_expected[i]);
-        //}
+        // REQUIRE(results_positive_only.size() ==
+        //         results_positive_only_expected.size());
+        // for (size_t i = 0; i < results_positive_only.size(); ++i) {
+        //     REQUIRE(results_positive_only[i].n ==
+        //             results_positive_only_expected[i]);
+        // }
     }
 
     {
@@ -579,7 +583,8 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
 
     {
         int L = 5;
-        auto pts = sparseir::default_matsubara_sampling_points_impl(uhat_full, L);
+        auto pts =
+            sparseir::default_matsubara_sampling_points_impl(uhat_full, L);
         std::vector<int> omega_ns;
         for (auto &pt : pts) {
             omega_ns.push_back(pt.n);
@@ -596,7 +601,8 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
         int L = 5;
         bool fence = false;
         bool positive_only = true;
-        auto pts = sparseir::default_matsubara_sampling_points_impl(uhat_full, L, fence, positive_only);
+        auto pts = sparseir::default_matsubara_sampling_points_impl(
+            uhat_full, L, fence, positive_only);
         std::vector<int> omega_ns;
         for (auto &pt : pts) {
             omega_ns.push_back(pt.n);

@@ -1,4 +1,5 @@
 #include <Eigen/Core>
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cmath>
 #include <iostream>
@@ -6,7 +7,6 @@
 #include <memory>
 #include <random>
 #include <vector>
-#include <catch2/catch_approx.hpp>
 
 #include <sparseir/sparseir.hpp>
 
@@ -434,7 +434,8 @@ TEST_CASE("Kernel Singularity Test", "[kernel]")
 
     for (double lambda : lambdas) {
         // Generate random x values
-        std::vector<double> x_values(10); // Reduced from 1000 to 10 for faster tests
+        std::vector<double> x_values(
+            10); // Reduced from 1000 to 10 for faster tests
         for (double &x : x_values) {
             x = dist(rng);
         }
@@ -468,8 +469,8 @@ TEST_CASE("Kernel Unit Tests", "[kernel]")
         std::integral_constant<int, -1> minus_one{};
         std::integral_constant<int, +1> plus_one{};
 
-        // Only use symmetrization if it's supported for this kernel type
-        #ifdef SPARSEIR_SUPPORTS_BOSE_SYMMETRIZATION
+// Only use symmetrization if it's supported for this kernel type
+#ifdef SPARSEIR_SUPPORTS_BOSE_SYMMETRIZATION
         auto K_symm_minus = sparseir::get_symmetrized(K, minus_one);
         auto K_symm_plus = sparseir::get_symmetrized(K, plus_one);
 
@@ -480,17 +481,18 @@ TEST_CASE("Kernel Unit Tests", "[kernel]")
         REQUIRE(K.conv_radius() == 40 * 99);
         REQUIRE(K_symm_minus.conv_radius() == 40 * 99);
         REQUIRE(K_symm_plus.conv_radius() == 40 * 99);
-        #else
+#else
         // Skip symmetrization tests for RegularizedBoseKernel
         REQUIRE(K.ypower() == 1);
         REQUIRE(K.conv_radius() == 40 * 99);
-        #endif
+#endif
 
         // Test weight functions
         auto weight_func_bosonic = K.weight_func<double>(sparseir::Bosonic());
         REQUIRE(weight_func_bosonic(482) == 1.0 / 482);
 
-        // Test that trying to get Fermionic weight function for RegularizedBoseKernel throws an error
+        // Test that trying to get Fermionic weight function for
+        // RegularizedBoseKernel throws an error
         REQUIRE_THROWS(K.weight_func<double>(sparseir::Fermionic()));
     }
 
