@@ -103,3 +103,45 @@ bash generate_docs.sh
 ```
 
 This will create the `docs/html` directory. Open `docs/html/index.html` with your browser to see it.
+
+# libsparseir C-API Documentation
+
+This document describes how to use the C-API of libsparseir. The C-API provides a way to use the sparseir library from C or other languages that can interface with C. All objects are immutable.
+
+## Basic Usage
+
+```c
+#include <sparseir/sparseir.h>
+
+// Create a logistic kernel
+spir_kernel* kernel = spir_logistic_kernel_new(9.0);
+
+// Get kernel domain
+double xmin, xmax, ymin, ymax;
+spir_kernel_domain(kernel, &xmin, &xmax, &ymin, &ymax);
+
+// Clean up
+spir_destroy_kernel(kernel);
+```
+
+# libsparseir Fortran Bindings Documentation
+
+This document describes how to use the Fortran bindings of libsparseir. The Fortran bindings provide a way to use the sparseir library from Fortran. All objects are immutable.
+
+## Basic Usage
+
+```fortran
+use sparseir
+implicit none
+
+type(spir_kernel) :: kernel
+real(8) :: lambda, xmin, xmax, ymin, ymax
+integer :: stat
+
+! Create a logistic kernel
+lambda = 9.0d0
+kernel = spir_logistic_kernel_new(lambda)
+
+! Get kernel domain
+stat = spir_kernel_domain(kernel, xmin, xmax, ymin, ymax)
+```

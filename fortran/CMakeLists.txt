@@ -30,18 +30,6 @@ install(
     FILES_MATCHING PATTERN "*.mod"
 )
 
-# Build Fortran test program
-add_executable(test_kernel test_kernel.f90)
-target_link_libraries(test_kernel PRIVATE sparseir_fortran)
-set_target_properties(test_kernel PROPERTIES
-    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran
-)
-
-# Add Fortran test to CTest if testing is enabled
 if(SPARSEIR_BUILD_TESTING)
-    add_test(
-        NAME test_kernel
-        COMMAND test_kernel
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    )
-endif() 
+    add_subdirectory(test)
+endif()
