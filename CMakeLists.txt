@@ -140,6 +140,15 @@ option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." ${BUILD_TESTI
 if (SPARSEIR_BUILD_TESTING)
     enable_testing()
 
+    # Download and configure Catch2 for testing
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.4.0
+    )
+    FetchContent_MakeAvailable(Catch2)
+
     # Pass include paths to test subdirectory
     add_subdirectory("test")
+    add_subdirectory("testsample")
 endif()

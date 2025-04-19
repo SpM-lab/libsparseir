@@ -17,19 +17,6 @@ if(TARGET XPrec::xprec)
     endif()
 endif()
 
-# Use Catch2 from parent scope if available
-if(NOT TARGET Catch2::Catch2WithMain)
-    # Require Catch2 for tests
-    FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v3.4.0
-        )
-
-    # Goes through find_package first
-    FetchContent_MakeAvailable(Catch2)
-endif()
-
 # Enable parallel testing with CTest
 include(CTest)
 enable_testing()
