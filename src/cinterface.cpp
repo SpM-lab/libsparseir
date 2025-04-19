@@ -879,9 +879,10 @@ int spir_sampling_evaluate_dz(
     int32_t *input_dims,
     int32_t target_dim,
     const double *input,
-    std::complex<double> *out)
+    c_complex *out)
 {
-    return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
+    std::complex<double> *cpp_out = (std::complex<double>*)(out);
+    return evaluate_impl(s, order, ndim, input_dims, target_dim, input, cpp_out,
                         &sparseir::AbstractSampling::evaluate_inplace_dz);
 }
 
@@ -891,10 +892,12 @@ int spir_sampling_evaluate_zz(
     int32_t ndim,
     int32_t *input_dims,
     int32_t target_dim,
-    const std::complex<double> *input,
-    std::complex<double> *out)
+    const c_complex *input,
+    c_complex *out)
 {
-    return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
+    std::complex<double> *cpp_input = (std::complex<double>*)(input);
+    std::complex<double> *cpp_out = (std::complex<double>*)(out);
+    return evaluate_impl(s, order, ndim, input_dims, target_dim, cpp_input, cpp_out,
                         &sparseir::AbstractSampling::evaluate_inplace_zz);
 }
 
@@ -917,10 +920,12 @@ int spir_sampling_fit_zz(
     int32_t ndim,
     int32_t *input_dims,
     int32_t target_dim,
-    const std::complex<double> *input,
-    std::complex<double> *out)
+    const c_complex *input,
+    c_complex *out)
 {
-    return fit_impl(s, order, ndim, input_dims, target_dim, input, out,
+    std::complex<double> *cpp_input = (std::complex<double>*)(input);
+    std::complex<double> *cpp_out = (std::complex<double>*)(out);
+    return fit_impl(s, order, ndim, input_dims, target_dim, cpp_input, cpp_out,
                         &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
