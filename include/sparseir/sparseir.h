@@ -11,6 +11,9 @@
 extern "C" {
 #endif
 
+// Define a C-compatible type alias for the C99 complex number.
+typedef double _Complex c_complex;
+
 typedef enum {
     SPIR_STATISTICS_FERMIONIC = 1,
     SPIR_STATISTICS_BOSONIC = 0
@@ -148,7 +151,7 @@ int spir_sampling_evaluate_dz(
     int32_t *input_dims,                 // Array of dimensions
     int32_t target_dim,            // Target dimension for evaluation
     const double *input,          // Input coefficients array
-    std::complex<double> *out                    // Output array
+    c_complex *out                    // Output array
     );
 
 int spir_sampling_evaluate_zz(
@@ -157,8 +160,8 @@ int spir_sampling_evaluate_zz(
     int32_t ndim,                  // Number of dimensions
     int32_t *input_dims,                 // Array of dimensions
     int32_t target_dim,            // Target dimension for evaluation
-    const std::complex<double> *input,          // Input coefficients array
-    std::complex<double> *out                    // Output array
+    const c_complex *input,          // Input coefficients array
+    c_complex *out                    // Output array
     );
 
 
@@ -178,8 +181,8 @@ int spir_sampling_fit_zz(
     int32_t ndim,                  // Number of dimensions
     int32_t *input_dims,                 // Array of dimensions
     int32_t target_dim,            // Target dimension for evaluation
-    const std::complex<double> *input,          // Input coefficients array
-    std::complex<double> *out                    // Output array
+    const c_complex *input,          // Input coefficients array
+    c_complex *out                    // Output array
     );
 
 size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
