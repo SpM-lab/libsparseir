@@ -879,6 +879,7 @@ TEST_CASE("TauSampling", "[cinterface]") {
                 REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
                 REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
             }
+            free(evaluate_input);
         }
 
         // Clean up
@@ -1419,6 +1420,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]") {
                     }
                 }
             }
+            free(evaluate_input);
         }
 
         // Clean up
