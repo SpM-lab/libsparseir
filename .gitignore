@@ -42,3 +42,4 @@ latex
 
 # Generated test files
 testsample/readme_samples_test.cpp
+fortran/test/readme_samples_test.f90
