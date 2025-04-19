@@ -937,7 +937,7 @@ int spir_sampling_fit_zz(
  * transform between the DLR representation and values at sampling points.
  *
  * @param dlr Pointer to the bosonic DLR object
- * @return The number of rows in the fitting matrix, or 0 if the DLR object is invalid
+ * @return The number of rows in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
  */
 size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
 {
@@ -955,13 +955,13 @@ size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
  * transform between the DLR representation and values at sampling points.
  *
  * @param dlr Pointer to the bosonic DLR object
- * @return The number of columns in the fitting matrix, or 0 if the DLR object is invalid
+ * @return The number of columns in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
  */
 size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
-        return 0;
+        return SPIR_GET_IMPL_FAILED;
     return impl->fitmat.cols();
 }
 
@@ -1023,7 +1023,7 @@ size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
  * @param input Input array of IR coefficients (double precision)
  * @param out Output array for the DLR coefficients (double precision)
  *
- * @return 0 on success, -1 on failure (if the DLR object is invalid or an error occurs)
+ * @return 0 on success, SPIR_GET_IMPL_FAILED on failure (if the DLR object is invalid or an error occurs)
  *
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
@@ -1086,7 +1086,7 @@ int spir_bosonic_dlr_to_IR(
  * @param input Input array of IR coefficients (double precision)
  * @param out Output array for the DLR coefficients (double precision)
  *
- * @return 0 on success, -1 on failure (if the DLR object is invalid or an error
+ * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure (if the DLR object is invalid or an error
  * occurs)
  *
  * @note The output array must be pre-allocated with the correct size
