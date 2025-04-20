@@ -1,5 +1,5 @@
 #include "sparseir/linalg.hpp"
-#include "xprec/ddouble.hpp"
+#include "xprec/ddouble-header-only.hpp"
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>

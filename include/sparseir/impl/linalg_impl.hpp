@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "xprec/ddouble.hpp"
+#include "xprec/ddouble-header-only.hpp"
 
 namespace sparseir {
 

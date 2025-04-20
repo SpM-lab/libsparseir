@@ -1,3 +1,5 @@
+#include "xprec/ddouble-header-only.hpp"
+
 #include "sparseir-fwd.hpp"
 
 #include "./spir_status.h"
