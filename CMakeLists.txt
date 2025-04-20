@@ -98,7 +98,7 @@ set_target_properties(sparseir PROPERTIES
     CXX_STANDARD_REQUIRED ON
     )
 
-target_link_libraries(sparseir PRIVATE Eigen3::Eigen XPrec::xprec Threads::Threads)
+target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
