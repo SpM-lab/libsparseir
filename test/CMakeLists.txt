@@ -9,14 +9,6 @@ set(TEST_INCLUDE_DIRS
     ${xprec_SOURCE_DIR}/include
 )
 
-# Also make sure XPrec is available to tests
-if(TARGET XPrec::xprec)
-    get_target_property(XPREC_INCLUDE_DIRS XPrec::xprec INTERFACE_INCLUDE_DIRECTORIES)
-    if(XPREC_INCLUDE_DIRS)
-        list(APPEND TEST_INCLUDE_DIRS ${XPREC_INCLUDE_DIRS})
-    endif()
-endif()
-
 # Enable parallel testing with CTest
 include(CTest)
 enable_testing()
@@ -44,7 +36,6 @@ set(TEST_FILES
 add_executable(libsparseirtests ${TEST_FILES})
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(libsparseirtests PRIVATE SparseIR::sparseir)
-target_link_libraries(libsparseirtests PRIVATE XPrec::xprec)
 
 # Add include paths from parent scope if available
 if(DEFINED TEST_INCLUDE_DIRS)

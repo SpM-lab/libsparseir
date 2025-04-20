@@ -13,7 +13,7 @@
 
 #include <Eigen/Dense>
 
-#include "xprec/ddouble.hpp"
+#include "xprec/ddouble-header-only.hpp"
 #include "sparseir/sparseir-fwd.hpp"
 
 #include "sparseir/gauss.hpp"
