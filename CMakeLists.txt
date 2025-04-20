@@ -49,19 +49,15 @@ FetchContent_Declare(XPrec
     GIT_TAG mainline
 )
 
-# Extract the content but don't process it through add_subdirectory yet
+# Extract the content but don't process it through add_subdirectory
 FetchContent_GetProperties(XPrec)
 if(NOT xprec_POPULATED)
-    # Set options before making XPrec available
-    set(XPREC_INSTALL OFF CACHE BOOL "Disable XPrec installation" FORCE)
-    set(XPREC_INSTALL_CONFIG OFF CACHE BOOL "Disable XPrec config installation" FORCE)
-    set(XPREC_BUILD_SHARED_LIBS OFF CACHE BOOL "Build XPrec as static libraries" FORCE)
-    set(XPREC_INSTALL_COMPONENT_NAME "xprec_component" CACHE STRING "Custom component name for XPrec" FORCE)
-    set(XPREC_BUILD_TESTING OFF CACHE BOOL "Disable XPrec tests" FORCE)
-
-    # Use the recommended FetchContent_MakeAvailable instead of FetchContent_Populate
-    FetchContent_MakeAvailable(XPrec)
+    FetchContent_Populate(XPrec)
+    message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
 endif()
+
+# Add XPrec include directory
+include_directories(${xprec_SOURCE_DIR}/include)
 
 # ---------------------------------
 # Building
