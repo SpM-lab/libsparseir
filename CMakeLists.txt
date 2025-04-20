@@ -52,7 +52,7 @@ FetchContent_Declare(XPrec
 # Extract the content but don't process it through add_subdirectory
 FetchContent_GetProperties(XPrec)
 if(NOT xprec_POPULATED)
-    FetchContent_MakeAvailable(XPrec)
+    FetchContent_Populate(XPrec)
     message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
 endif()
 
