@@ -226,8 +226,8 @@ for (int i = 0; i < npoles; i++) {
 
 spir_fermionic_dlr *dlr_with_poles =
     spir_fermionic_dlr_new_with_poles(basis, npoles, poles);
-size_t fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
-size_t fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
+int fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
+int fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
 
 double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
 int32_t to_ir_input_dims[1] = {npoles};

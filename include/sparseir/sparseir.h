@@ -527,7 +527,7 @@ int spir_sampling_fit_zz(
  * @see spir_bosonic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
+int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
 
 /**
  * @brief Gets the number of columns in the fitting matrix of a bosonic DLR.
@@ -545,7 +545,7 @@ size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
  * @see spir_bosonic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
+int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
 
 /**
  * @brief Gets the number of rows in the fitting matrix of a fermionic DLR.
@@ -563,7 +563,7 @@ size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
  * @see spir_fermionic_dlr_from_IR
  * @see spir_fermionic_dlr_to_IR
  */
-size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
+int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
 /**
  * @brief Gets the number of columns in the fitting matrix of a fermionic DLR.
  *
@@ -580,7 +580,7 @@ size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
  * @see spir_fermionic_dlr_from_IR
  * @see spir_fermionic_dlr_to_IR
  */
-size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
+int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
 
 
 /**
