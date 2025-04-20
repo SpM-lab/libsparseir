@@ -39,7 +39,21 @@ if(SPARSEIR_BUILD_FORTRAN)
 endif()
 
 # Eigen3
-find_package (Eigen3 3.4 REQUIRED NO_MODULE)
+set(EIGEN3_REQUIRED_VERSION "3.4.0")
+find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
+if(NOT Eigen3_FOUND)
+    message(STATUS "Eigen3 not found in system, fetching from GitHub...")
+    include(FetchContent)
+    FetchContent_Declare(Eigen3
+        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+        GIT_TAG ${EIGEN3_REQUIRED_VERSION}
+    )
+    FetchContent_MakeAvailable(Eigen3)
+    message(STATUS "Eigen3 fetched from GitHub")
+else()
+    message(STATUS "Eigen3 found in system: ${Eigen3_VERSION}")
+endif()
+
 find_package(Threads REQUIRED)
 
 # libxprec - built only as a static dependency, not for installation
