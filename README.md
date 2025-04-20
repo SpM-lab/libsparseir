@@ -24,7 +24,6 @@ We use [tuwien-cms/libxprec](https://github.com/tuwien-cms/libxprec) as a double
 
 - **CMake** (>= 3.10)
 - **C++ compiler** with C++11 support
-- **Eigen3** (>= 3.4)
 - **Fortran compiler** (optional, for Fortran bindings)
 
 All other dependencies (including libxprec) are automatically downloaded and built during the build process using CMake's FetchContent feature. You do not need to install these manually.
