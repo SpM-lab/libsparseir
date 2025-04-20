@@ -42,7 +42,7 @@ endif()
 find_package (Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(Threads REQUIRED)
 
-# libxprec - built only as a static dependency, not for installation
+# libxprec configuration
 include(FetchContent)
 FetchContent_Declare(XPrec
     GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
@@ -53,10 +53,10 @@ FetchContent_Declare(XPrec
 FetchContent_GetProperties(XPrec)
 if(NOT xprec_POPULATED)
     # Set options before making XPrec available
-    set(XPREC_INSTALL OFF CACHE BOOL "Disable XPrec installation" FORCE)
-    set(XPREC_INSTALL_CONFIG OFF CACHE BOOL "Disable XPrec config installation" FORCE)
-    set(XPREC_BUILD_SHARED_LIBS OFF CACHE BOOL "Build XPrec as static libraries" FORCE)
-    set(XPREC_INSTALL_COMPONENT_NAME "xprec_component" CACHE STRING "Custom component name for XPrec" FORCE)
+    set(XPREC_INSTALL ON CACHE BOOL "Enable XPrec installation" FORCE)
+    set(XPREC_INSTALL_CONFIG ON CACHE BOOL "Enable XPrec config installation" FORCE)
+    set(XPREC_BUILD_SHARED_LIBS ON CACHE BOOL "Build XPrec as shared libraries" FORCE)
+    set(XPREC_INSTALL_COMPONENT_NAME "sparseir" CACHE STRING "Use same component name as sparseir" FORCE)
     set(XPREC_BUILD_TESTING OFF CACHE BOOL "Disable XPrec tests" FORCE)
 
     # Use the recommended FetchContent_MakeAvailable instead of FetchContent_Populate
@@ -96,7 +96,9 @@ set_target_properties(sparseir PROPERTIES
     SOVERSION ${PROJECT_VERSION_MAJOR}
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED ON
-    )
+    INSTALL_RPATH "@loader_path"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen XPrec::xprec Threads::Threads)
 
@@ -141,11 +143,42 @@ set(SPARSEIR_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}"
 set(SPARSEIR_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}"
     CACHE PATH "directory into which to install sparseir library files")
 
+# Add rpath settings for macOS
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+    set(CMAKE_MACOSX_RPATH TRUE)
+endif()
+
 # Install only the C API library and headers
 install(TARGETS sparseir
     DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
     COMPONENT sparseir
 )
+
+# Install runtime dependencies (this will include libxprec)
+if(APPLE)
+    install(FILES
+        "${CMAKE_BINARY_DIR}/_deps/xprec-build/libxprec.dylib"
+        "${CMAKE_BINARY_DIR}/_deps/xprec-build/libxprec.0.dylib"
+        DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+        COMPONENT sparseir
+    )
+elseif(UNIX AND NOT APPLE)
+    install(FILES
+        "${CMAKE_BINARY_DIR}/_deps/xprec-build/libxprec.so"
+        "${CMAKE_BINARY_DIR}/_deps/xprec-build/libxprec.so.0"
+        DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+        COMPONENT sparseir
+    )
+elseif(WIN32)
+    install(FILES
+        "${CMAKE_BINARY_DIR}/_deps/xprec-build/xprec.dll"
+        DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+        COMPONENT sparseir
+    )
+endif()
 
 # Install only necessary header files (C API)
 install(FILES
