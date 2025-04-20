@@ -573,7 +573,7 @@ int spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
+int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
@@ -581,7 +581,7 @@ size_t spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
     return impl->fitmat.rows();
 }
 
-size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
+int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
 {
     auto impl = get_impl_bosonic_dlr(dlr);
     if (!impl)
@@ -589,7 +589,7 @@ size_t spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
     return impl->fitmat.cols();
 }
 
-size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
+int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)
@@ -597,7 +597,7 @@ size_t spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
     return impl->fitmat.rows();
 }
 
-size_t spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
+int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
 {
     auto impl = get_impl_fermionic_dlr(dlr);
     if (!impl)

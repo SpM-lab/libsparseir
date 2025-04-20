@@ -157,8 +157,8 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
         spir_fermionic_dlr *dlr_with_poles =
             spir_fermionic_dlr_new_with_poles(basis, npoles, poles.data());
         REQUIRE(dlr_with_poles != nullptr);
-        size_t fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
-        size_t fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
+        int fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
+        int fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
         REQUIRE(fitmat_rows >= 0);
         REQUIRE(fitmat_cols == npoles);
         double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
@@ -211,8 +211,8 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
         spir_bosonic_dlr *dlr_with_poles =
             spir_bosonic_dlr_new_with_poles(basis, npoles, poles.data());
         REQUIRE(dlr_with_poles != nullptr);
-        size_t fitmat_rows = spir_bosonic_dlr_fitmat_rows(dlr_with_poles);
-        size_t fitmat_cols = spir_bosonic_dlr_fitmat_cols(dlr_with_poles);
+        int fitmat_rows = spir_bosonic_dlr_fitmat_rows(dlr_with_poles);
+        int fitmat_cols = spir_bosonic_dlr_fitmat_cols(dlr_with_poles);
         REQUIRE(fitmat_rows >= 0);
         REQUIRE(fitmat_cols == npoles);
         double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
