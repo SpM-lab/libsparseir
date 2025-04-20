@@ -90,6 +90,7 @@ endif()
 target_include_directories(sparseir PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${XPrec_SOURCE_DIR}/include>
     )
 set_target_properties(sparseir PROPERTIES
     VERSION ${PROJECT_VERSION}
