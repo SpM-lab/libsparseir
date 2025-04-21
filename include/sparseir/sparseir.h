@@ -233,6 +233,12 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
  */
 spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
 
+
+spir_sampling *spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b);
+
+spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b);
+
+
 /**
  * @brief Creates a new fermionic Discrete Lehmann Representation (DLR).
  *

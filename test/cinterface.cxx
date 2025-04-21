@@ -241,7 +241,7 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
 
 TEST_CASE("TauSampling", "[cinterface]")
 {
-    SECTION("TauSampling Constructor")
+    SECTION("TauSampling Constructor (fermionic)")
     {
         double beta = 1.0;
         double wmax = 10.0;
@@ -270,6 +270,37 @@ TEST_CASE("TauSampling", "[cinterface]")
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
+    }
+
+    SECTION("TauSampling Constructor (bosonic)")
+    {
+        double beta = 1.0;
+        double wmax = 10.0;
+
+        auto basis = spir_bosonic_finite_temp_basis_new(beta, wmax, 1e-15);
+        REQUIRE(basis != nullptr);
+
+        auto sampling = spir_bosonic_tau_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
+
+        // Test getting sampling points
+        double *tau_points = (double *)malloc(n_points * sizeof(double));
+        int status = spir_sampling_get_tau_points(sampling, tau_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        free(tau_points);
+
+        int *matsubara_points = (int *)malloc(n_points * sizeof(int));
+        status = spir_sampling_get_matsubara_points(sampling, matsubara_points);
+        REQUIRE(status == SPIR_NOT_SUPPORTED);
+        free(matsubara_points);
+
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_bosonic_finite_temp_basis(basis);
     }
 
     SECTION("TauSampling Evaluation 1-dimensional input ROW-MAJOR")
