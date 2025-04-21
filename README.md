@@ -113,9 +113,9 @@ Please refer [`test/cinterface.cxx`](test/cinterface.cxx) to learn more.
 
 
 ### Minimal Example
-The following example shows how to create a fermionic finite temperature basis using the logistic kernel, 
+The following example demonstrates how to create a fermionic finite-temperature basis using the logistic kernel,
 construct sampling objects for the imaginary-time and Matsubara domains,
-and perform transformations between the two domains.
+and perform transformations between these domains.
 
 ```c
 #include <sparseir/sparseir.h>
@@ -127,7 +127,7 @@ double epsilon = 1e-8;     // Accuracy target
 spir_fermionic_finite_temp_basis* basis =
     spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
 
-// Create sampling objects for different domains
+// Create sampling objects for imaginary-time and Matsubara domains
 spir_sampling* tau_sampling = spir_fermionic_tau_sampling_new(basis);
 spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis);
 

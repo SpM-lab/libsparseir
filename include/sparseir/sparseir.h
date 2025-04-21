@@ -226,7 +226,7 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
  * @note The sampling matrix is automatically factorized using SVD for efficient
  * transformations
  * @note For fermionic functions, the Matsubara frequencies are odd multiples of
- * π/β
+ * π/β, i.e. iωn = (2n + 1)π/β.
  * @note The returned object must be freed using spir_destroy_sampling when no
  * longer needed
  * @see spir_destroy_sampling
@@ -234,8 +234,57 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
 spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
 
 
+/**
+ * @brief Creates a new bosonic tau sampling object for sparse sampling in
+ * imaginary time.
+ *
+ * Constructs a sampling object that allows transformation between the IR basis
+ * and a set of sampling points in imaginary time (τ). The sampling points are
+ * automatically chosen as the extrema of the highest-order basis function in
+ * imaginary time, which provides near-optimal conditioning for the given basis
+ * size.
+ *
+ * @param b Pointer to a bosonic finite temperature basis object
+ * @return A pointer to the newly created sampling object, or NULL if creation
+ * fails
+ *
+ * @note The sampling points are chosen to optimize numerical stability and
+ * accuracy
+ * @note The sampling matrix is automatically factorized using SVD for efficient
+ * transformations
+ * @note The returned object must be freed using spir_destroy_sampling when no
+ * longer needed
+ * @see spir_destroy_sampling
+ */
 spir_sampling *spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b);
 
+/**
+ * @brief Creates a new bosonic Matsubara sampling object for sparse sampling
+ * in Matsubara frequencies.
+ *
+ * Constructs a sampling object that allows transformation between the IR basis
+ * and a set of sampling points in Matsubara frequencies (iωn). The sampling
+ * points are automatically chosen as the (discrete) extrema of the
+ * highest-order basis function in Matsubara frequencies, which provides
+ * near-optimal conditioning for the given basis size.
+ *
+ * For bosonic Matsubara frequencies, the sampling points are even integers:
+ * iωn = 2nπ/β, where n is an integer.
+ *
+ * @param b Pointer to a bosonic finite temperature basis object
+ * @return A pointer to the newly created sampling object, or NULL if creation
+ * fails
+ *
+ * @note The sampling points are chosen to optimize numerical stability and
+ * accuracy
+ * @note The sampling matrix is automatically factorized using SVD for efficient
+ * transformations
+ * @note For bosonic functions, the Matsubara frequencies are even multiples of
+ * π/β
+ * @note The returned object must be freed using spir_destroy_sampling when no
+ * longer needed
+ * @see spir_destroy_sampling
+ */
 spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b);
 
 
