@@ -251,6 +251,22 @@ TEST_CASE("TauSampling", "[cinterface]")
 
         auto sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
+
+        // Test getting sampling points
+        double *tau_points = (double *)malloc(n_points * sizeof(double));
+        int status = spir_sampling_get_tau_points(sampling, tau_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        free(tau_points);
+
+        int *matsubara_points = (int *)malloc(n_points * sizeof(int));
+        status = spir_sampling_get_matsubara_points(sampling, matsubara_points);
+        REQUIRE(status == SPIR_NOT_SUPPORTED);
+        free(matsubara_points);
+
         // Clean up
         spir_destroy_sampling(sampling);
         spir_destroy_fermionic_finite_temp_basis(basis);
@@ -269,6 +285,10 @@ TEST_CASE("TauSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -347,6 +367,10 @@ TEST_CASE("TauSampling", "[cinterface]")
         spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
 
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
+
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
                                                                  1e-10);
@@ -424,6 +448,10 @@ TEST_CASE("TauSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -549,6 +577,10 @@ TEST_CASE("TauSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -684,6 +716,10 @@ TEST_CASE("TauSampling", "[cinterface]")
         spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
 
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
+
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
                                                                  1e-10);
@@ -776,6 +812,10 @@ TEST_CASE("TauSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -875,6 +915,10 @@ TEST_CASE("TauSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_tau_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -983,6 +1027,10 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         spir_sampling *sampling = spir_fermionic_matsubara_sampling_new(basis);
         REQUIRE(sampling != nullptr);
 
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
+
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
                                                                  1e-10);
@@ -1076,6 +1124,10 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_matsubara_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -1176,6 +1228,10 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_matsubara_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -1300,6 +1356,10 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_matsubara_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
@@ -1431,6 +1491,10 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         // Create sampling
         spir_sampling *sampling = spir_fermionic_matsubara_sampling_new(basis);
         REQUIRE(sampling != nullptr);
+
+        // Test getting number of sampling points
+        int n_points = spir_sampling_get_num_points(sampling);
+        REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,

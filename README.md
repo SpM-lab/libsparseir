@@ -111,6 +111,35 @@ This document describes how to use the C-API of libsparseir. The C-API provides 
 
 Please refer [`test/cinterface.cxx`](test/cinterface.cxx) to learn more.
 
+
+### Minimal Example
+The following example shows how to create a fermionic finite temperature basis using the logistic kernel, 
+construct sampling objects for the imaginary-time and Matsubara domains,
+and perform transformations between the two domains.
+
+```c
+#include <sparseir/sparseir.h>
+
+// Create a fermionic finite temperature basis
+double beta = 10.0;        // Inverse temperature
+double omega_max = 10.0;   // Ultraviolet cutoff
+double epsilon = 1e-8;     // Accuracy target
+spir_fermionic_finite_temp_basis* basis =
+    spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
+
+// Create sampling objects for different domains
+spir_sampling* tau_sampling = spir_fermionic_tau_sampling_new(basis);
+spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis);
+
+// Clean up
+spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_sampling(tau_sampling);
+spir_destroy_sampling(matsubara_sampling);
+```
+
+
+
+
 ### Kernel Creation and Domain
 
 ```c

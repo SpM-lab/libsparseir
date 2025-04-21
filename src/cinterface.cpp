@@ -734,4 +734,69 @@ spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)
 //}
 //}
 
+int spir_sampling_get_num_points(const spir_sampling *s) {
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+    try {
+        return impl->n_sampling_points();
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+    try {
+        auto tau_sampling = std::dynamic_pointer_cast<sparseir::TauSampling<sparseir::Fermionic>>(impl);
+        if (!tau_sampling) {
+            return SPIR_NOT_SUPPORTED;
+        }
+        auto tau_points = tau_sampling->sampling_points();
+        std::copy(tau_points.begin(), tau_points.end(), points);
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points) {
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    // Try Fermionic case first
+    auto fermionic_sampling = std::dynamic_pointer_cast<sparseir::MatsubaraSampling<sparseir::Fermionic>>(impl);
+    if (fermionic_sampling) {
+        try {
+            auto matsubara_points = fermionic_sampling->sampling_points();
+            std::transform(matsubara_points.begin(), matsubara_points.end(), points,
+                [](const sparseir::MatsubaraFreq<sparseir::Fermionic> & freq) { return static_cast<int>(freq.get_n()); });
+            return SPIR_COMPUTATION_SUCCESS;
+        } catch (...) {
+            return SPIR_GET_IMPL_FAILED;
+        }
+    }
+
+    // Try Bosonic case
+    auto bosonic_sampling = std::dynamic_pointer_cast<sparseir::MatsubaraSampling<sparseir::Bosonic>>(impl);
+    if (bosonic_sampling) {
+        try {
+            auto matsubara_points = bosonic_sampling->sampling_points();
+            std::transform(matsubara_points.begin(), matsubara_points.end(), points,
+                [](const sparseir::MatsubaraFreq<sparseir::Bosonic> & freq) { return static_cast<int>(freq.get_n()); });
+            return SPIR_COMPUTATION_SUCCESS;
+        } catch (...) {
+            return SPIR_GET_IMPL_FAILED;
+        }
+    }
+
+    return SPIR_NOT_SUPPORTED;
+}
+
 } // extern "C"
