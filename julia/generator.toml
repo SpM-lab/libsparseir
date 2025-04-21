@@ -1,0 +1,8 @@
+[general]
+prologue_file_path = "./prologue.jl"
+library_name = "libsparseir"
+output_file_path = "./C_API.jl"
+module_name = "LibSparseIR"
+# jll_pkg_name = "LibSparseIR_jll"
+export_symbol_prefixes = ["spir_"]
+extract_c_comment_style = "doxygen"
