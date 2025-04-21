@@ -757,13 +757,17 @@ spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)
 //}
 //}
 
-int spir_sampling_get_num_points(const spir_sampling *s) {
+int spir_sampling_get_num_points(const spir_sampling *s, int *num_points) {
     auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
+    if (!num_points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
     try {
-        return impl->n_sampling_points();
+        *num_points = impl->n_sampling_points();
+        return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
         return SPIR_GET_IMPL_FAILED;
     }

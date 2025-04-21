@@ -1007,12 +1007,13 @@ spir_polyvector* spir_basis_u(const spir_fermionic_finite_temp_basis* b);
  * when retrieving the actual sampling points.
  *
  * @param s Pointer to the sampling object
- * @return The number of sampling points if successful, or -1 if the sampling object is invalid
+ * @param num_points Pointer to store the number of sampling points
+ * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED if the sampling object is invalid
  *
  * @see spir_sampling_get_tau_points
  * @see spir_sampling_get_matsubara_points
  */
-int spir_sampling_get_num_points(const spir_sampling *s);
+int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
 
 /**
  * @brief Gets the imaginary time sampling points.

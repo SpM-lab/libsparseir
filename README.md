@@ -131,7 +131,43 @@ spir_fermionic_finite_temp_basis* basis =
 spir_sampling* tau_sampling = spir_fermionic_tau_sampling_new(basis);
 spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis);
 
+// Create Green's function with a pole at 0.5*omega_max
+int n_matsubara;
+int status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
+if (status != 0) {
+    // Handle error
+    exit(-1);
+}
+
+c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+int* matsubara_indices = (int*)malloc(n_matsubara * sizeof(int));
+
+// Get Matsubara frequency indices
+status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indices);
+if (status != 0) {
+    // Handle error
+    free(matsubara_indices);
+    free(g_matsubara);
+    exit(-1);
+}
+
+// Set pole position
+const double pole_position = 0.5 * omega_max;
+
+// Initialize Green's function in Matsubara frequencies
+// G(iω_n) = 1/(iω_n - ε) = ε/(ω_n^2 + ε^2) - iω_n/(ω_n^2 + ε^2)
+for (int i = 0; i < n_matsubara; ++i) {
+    double i_n = (2 * matsubara_indices[i] + 1) * M_PI / beta;  // Fermionic Matsubara frequency
+    double denominator = i_n * i_n + pole_position * pole_position;
+    g_matsubara[i] = c_complex{
+        pole_position / denominator,  // Real part: ε/(ω_n^2 + ε^2)
+        -i_n / denominator           // Imaginary part: -ω_n/(ω_n^2 + ε^2)
+    };
+}
+
 // Clean up
+free(matsubara_indices);
+free(g_matsubara);
 spir_destroy_fermionic_finite_temp_basis(basis);
 spir_destroy_sampling(tau_sampling);
 spir_destroy_sampling(matsubara_sampling);
@@ -174,7 +210,43 @@ spir_fermionic_finite_temp_basis* basis =
 spir_sampling* tau_sampling = spir_fermionic_tau_sampling_new(basis);
 spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis);
 
+// Create Green's function with a pole at 0.5*omega_max
+int n_matsubara;
+int status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
+if (status != 0) {
+    // Handle error
+    exit(-1);
+}
+
+c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+int* matsubara_indices = (int*)malloc(n_matsubara * sizeof(int));
+
+// Get Matsubara frequency indices
+status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indices);
+if (status != 0) {
+    // Handle error
+    free(matsubara_indices);
+    free(g_matsubara);
+    exit(-1);
+}
+
+// Set pole position
+const double pole_position = 0.5 * omega_max;
+
+// Initialize Green's function in Matsubara frequencies
+// G(iω_n) = 1/(iω_n - ε) = ε/(ω_n^2 + ε^2) - iω_n/(ω_n^2 + ε^2)
+for (int i = 0; i < n_matsubara; ++i) {
+    double i_n = (2 * matsubara_indices[i] + 1) * M_PI / beta;  // Fermionic Matsubara frequency
+    double denominator = i_n * i_n + pole_position * pole_position;
+    g_matsubara[i] = c_complex{
+        pole_position / denominator,  // Real part: ε/(ω_n^2 + ε^2)
+        -i_n / denominator           // Imaginary part: -ω_n/(ω_n^2 + ε^2)
+    };
+}
+
 // Clean up
+free(matsubara_indices);
+free(g_matsubara);
 spir_destroy_fermionic_finite_temp_basis(basis);
 spir_destroy_sampling(tau_sampling);
 spir_destroy_sampling(matsubara_sampling);
