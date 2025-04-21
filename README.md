@@ -134,22 +134,14 @@ spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis)
 // Create Green's function with a pole at 0.5*omega_max
 int n_matsubara;
 int status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
-if (status != 0) {
-    // Handle error
-    exit(-1);
-}
+assert(status == SPIR_COMPUTATION_SUCCESS);
 
 c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
 int* matsubara_indices = (int*)malloc(n_matsubara * sizeof(int));
 
 // Get Matsubara frequency indices
 status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indices);
-if (status != 0) {
-    // Handle error
-    free(matsubara_indices);
-    free(g_matsubara);
-    exit(-1);
-}
+assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Set pole position
 const double pole_position = 0.5 * omega_max;
@@ -165,9 +157,59 @@ for (int i = 0; i < n_matsubara; ++i) {
     };
 }
 
+int target_dim = 0; // target dimension for evaluation and fit
+
+// Matsubara sampling points to basis coefficients
+int n_basis;
+status = spir_fermionic_finite_temp_basis_get_size(basis, &n_basis);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+c_complex* g_fit = (c_complex*)malloc(n_basis * sizeof(c_complex));
+int dims[1] = {n_matsubara};
+status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                             1, dims, target_dim, g_matsubara, g_fit);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+
+// Basis coefficients to imaginary-time sampling points
+int n_tau;
+status = spir_sampling_get_num_points(tau_sampling, &n_tau);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+c_complex* g_tau = (c_complex*)malloc(n_tau * sizeof(c_complex));
+status = spir_sampling_evaluate_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                  1, dims, target_dim, g_fit, g_tau);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+
+// Compare with analytical result
+double* tau_points = (double*)malloc(n_tau * sizeof(double));
+status = spir_sampling_get_tau_points(tau_sampling, tau_points);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+for (int i = 0; i < n_tau; ++i) {
+    double tau = tau_points[i];
+    // expected result: G(tau) = -exp(-tau * pole_position) / (1 + exp(-beta * pole_position))
+    double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
+    assert(fabs(g_tau[i].real - expected) < epsilon);
+    assert(fabs(g_tau[i].imag) < epsilon);
+}
+
+// Imaginary-time sampling points to basis coefficients
+c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                              1, dims, target_dim, g_tau, g_fit);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+status = spir_sampling_evaluate_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                  1, dims, target_dim, g_fit, g_matsubara_reconstructed);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+
+// Compare with original Matsubara Green's function
+for (int i = 0; i < n_matsubara; ++i) {
+    assert(fabs(g_matsubara_reconstructed[i].real - g_matsubara[i].real) < epsilon);
+    assert(fabs(g_matsubara_reconstructed[i].imag - g_matsubara[i].imag) < epsilon);
+}
+
 // Clean up
 free(matsubara_indices);
 free(g_matsubara);
+free(g_fit);
+free(g_tau);
 spir_destroy_fermionic_finite_temp_basis(basis);
 spir_destroy_sampling(tau_sampling);
 spir_destroy_sampling(matsubara_sampling);

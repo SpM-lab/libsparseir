@@ -180,6 +180,11 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
                        const double *y, int ny, double *out);
 
+int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_basis *b, int *size);
+
+int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis *b, int *size);
+
+
 /**
  * @brief Creates a new fermionic tau sampling object for sparse sampling in
  * imaginary time.

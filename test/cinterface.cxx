@@ -76,6 +76,30 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         spir_fermionic_finite_temp_basis *basis =
             spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
         REQUIRE(basis != nullptr);
+
+        int basis_size;
+        int status = spir_fermionic_finite_temp_basis_get_size(basis, &basis_size);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(basis_size == cpp_basis.size());
+    }
+
+    SECTION("FiniteTempBasis Constructor Bosonic")
+    {
+        double beta = 2.0;
+        double wmax = 5.0;
+        double Lambda = 10.0;
+        double epsilon = 1e-6;
+
+        sparseir::FiniteTempBasis<sparseir::Bosonic> cpp_basis(beta, wmax,
+                                                                 epsilon);
+        spir_bosonic_finite_temp_basis *basis =
+            spir_bosonic_finite_temp_basis_new(beta, wmax, epsilon);
+        REQUIRE(basis != nullptr);
+        
+        int basis_size;
+        int status = spir_bosonic_finite_temp_basis_get_size(basis, &basis_size);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(basis_size == cpp_basis.size());
     }
 
     SECTION("FiniteTempBasis Constructor with SVE Fermionic/LogisticKernel")
