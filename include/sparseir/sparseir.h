@@ -233,6 +233,12 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
  */
 spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
 
+
+spir_sampling *spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b);
+
+spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b);
+
+
 /**
  * @brief Creates a new fermionic Discrete Lehmann Representation (DLR).
  *
@@ -943,6 +949,61 @@ spir_polyvector* spir_basis_u(const spir_fermionic_finite_temp_basis* b);
  * Destroy a polynomial vector.
  */
 //void spir_destroy_polyvector(spir_polyvector* v);
+
+/**
+ * @brief Gets the number of sampling points in a sampling object.
+ *
+ * This function returns the number of sampling points used in the specified
+ * sampling object. This number is needed to allocate arrays of the correct size
+ * when retrieving the actual sampling points.
+ *
+ * @param s Pointer to the sampling object
+ * @return The number of sampling points if successful, or -1 if the sampling object is invalid
+ *
+ * @see spir_sampling_get_tau_points
+ * @see spir_sampling_get_matsubara_points
+ */
+int spir_sampling_get_num_points(const spir_sampling *s);
+
+/**
+ * @brief Gets the imaginary time sampling points.
+ *
+ * This function fills the provided array with the imaginary time (τ) sampling points
+ * used in the specified sampling object. The array must be pre-allocated with
+ * sufficient size (use spir_sampling_get_num_points to determine the required size).
+ *
+ * @param s Pointer to the sampling object
+ * @param points Pre-allocated array to store the τ sampling points
+ * @return SPIR_COMPUTATION_SUCCESS on success
+ *         SPIR_GET_IMPL_FAILED if s is invalid
+ *         SPIR_NOT_SUPPORTED if the sampling object is not for τ sampling
+ *
+ * @note The array must be pre-allocated with size >= spir_sampling_get_num_points(s)
+ * @see spir_sampling_get_num_points
+ */
+int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
+
+/**
+ * @brief Gets the Matsubara frequency sampling points.
+ *
+ * This function fills the provided array with the Matsubara frequency indices (n)
+ * used in the specified sampling object. The actual Matsubara frequencies are
+ * ωn = (2n + 1)π/β for fermionic case and ωn = 2nπ/β for bosonic case.
+ * The array must be pre-allocated with sufficient size
+ * (use spir_sampling_get_num_points to determine the required size).
+ *
+ * @param s Pointer to the sampling object
+ * @param points Pre-allocated array to store the Matsubara frequency indices
+ * @return SPIR_COMPUTATION_SUCCESS on success
+ *         SPIR_GET_IMPL_FAILED if s is invalid
+ *         SPIR_NOT_SUPPORTED if the sampling object is not for Matsubara sampling
+ *
+ * @note The array must be pre-allocated with size >= spir_sampling_get_num_points(s)
+ * @note For fermionic case, the indices n give frequencies ωn = (2n + 1)π/β
+ * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
+ * @see spir_sampling_get_num_points
+ */
+int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points);
 
 #ifdef __cplusplus
 }

@@ -467,6 +467,29 @@ spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b)
     return create_sampling(smpl);
 }
 
+spir_sampling *
+spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b)
+{
+    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+    auto smpl =
+        std::make_shared<sparseir::TauSampling<sparseir::Bosonic>>(*impl);
+    return create_sampling(smpl);
+}
+
+spir_sampling *
+spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b)
+{
+    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+    auto smpl =
+        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+            *impl);
+    return create_sampling(smpl);
+}
+
 spir_fermionic_dlr *
 spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
 {
@@ -733,5 +756,76 @@ spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)
 // return nullptr;
 //}
 //}
+
+int spir_sampling_get_num_points(const spir_sampling *s) {
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+    try {
+        return impl->n_sampling_points();
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+    try {
+        // Try Fermionic case first
+        auto fermionic_sampling = std::dynamic_pointer_cast<sparseir::TauSampling<sparseir::Fermionic>>(impl);
+        if (fermionic_sampling) {
+            auto tau_points = fermionic_sampling->sampling_points();
+            std::copy(tau_points.begin(), tau_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Try Bosonic case
+        auto bosonic_sampling = std::dynamic_pointer_cast<sparseir::TauSampling<sparseir::Bosonic>>(impl);
+        if (bosonic_sampling) {
+            auto tau_points = bosonic_sampling->sampling_points();
+            std::copy(tau_points.begin(), tau_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        return SPIR_NOT_SUPPORTED;
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points) {
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+    try {
+        // Try Fermionic case first
+        auto fermionic_sampling = std::dynamic_pointer_cast<sparseir::MatsubaraSampling<sparseir::Fermionic>>(impl);
+        if (fermionic_sampling) {
+            auto matsubara_points = fermionic_sampling->sampling_points();
+            std::transform(matsubara_points.begin(), matsubara_points.end(), points,
+                [](const sparseir::MatsubaraFreq<sparseir::Fermionic> &freq) { return static_cast<int>(freq.get_n()); });
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Try Bosonic case
+        auto bosonic_sampling = std::dynamic_pointer_cast<sparseir::MatsubaraSampling<sparseir::Bosonic>>(impl);
+        if (bosonic_sampling) {
+            auto matsubara_points = bosonic_sampling->sampling_points();
+            std::transform(matsubara_points.begin(), matsubara_points.end(), points,
+                [](const sparseir::MatsubaraFreq<sparseir::Bosonic> &freq) { return static_cast<int>(freq.get_n()); });
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        return SPIR_NOT_SUPPORTED;
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
 
 } // extern "C"
