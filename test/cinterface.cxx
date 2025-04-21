@@ -76,6 +76,30 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         spir_fermionic_finite_temp_basis *basis =
             spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
         REQUIRE(basis != nullptr);
+
+        int basis_size;
+        int status = spir_fermionic_finite_temp_basis_get_size(basis, &basis_size);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(basis_size == cpp_basis.size());
+    }
+
+    SECTION("FiniteTempBasis Constructor Bosonic")
+    {
+        double beta = 2.0;
+        double wmax = 5.0;
+        double Lambda = 10.0;
+        double epsilon = 1e-6;
+
+        sparseir::FiniteTempBasis<sparseir::Bosonic> cpp_basis(beta, wmax,
+                                                                 epsilon);
+        spir_bosonic_finite_temp_basis *basis =
+            spir_bosonic_finite_temp_basis_new(beta, wmax, epsilon);
+        REQUIRE(basis != nullptr);
+        
+        int basis_size;
+        int status = spir_bosonic_finite_temp_basis_get_size(basis, &basis_size);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(basis_size == cpp_basis.size());
     }
 
     SECTION("FiniteTempBasis Constructor with SVE Fermionic/LogisticKernel")
@@ -253,13 +277,15 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Test getting sampling points
         double *tau_points = (double *)malloc(n_points * sizeof(double));
-        int status = spir_sampling_get_tau_points(sampling, tau_points);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        int status_get_tau_points = spir_sampling_get_tau_points(sampling, tau_points);
+        REQUIRE(status_get_tau_points == SPIR_COMPUTATION_SUCCESS);
         free(tau_points);
 
         int *matsubara_points = (int *)malloc(n_points * sizeof(int));
@@ -284,13 +310,15 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Test getting sampling points
         double *tau_points = (double *)malloc(n_points * sizeof(double));
-        int status = spir_sampling_get_tau_points(sampling, tau_points);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        int status_get_tau_points = spir_sampling_get_tau_points(sampling, tau_points);
+        REQUIRE(status_get_tau_points == SPIR_COMPUTATION_SUCCESS);
         free(tau_points);
 
         int *matsubara_points = (int *)malloc(n_points * sizeof(int));
@@ -318,7 +346,9 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -399,7 +429,9 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -481,7 +513,9 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -610,7 +644,9 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -748,7 +784,9 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -845,7 +883,9 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -907,12 +947,12 @@ TEST_CASE("TauSampling", "[cinterface]")
             int evaluate_status = spir_sampling_evaluate_zz(
                 sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
                 evaluate_input, evaluate_output);
-            REQUIRE(evaluate_status == 0);
+            REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
             int fit_status = spir_sampling_fit_zz(
                 sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
                 evaluate_output, fit_output);
-            REQUIRE(fit_status == 0);
+            REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
             // Compare with C++ implementation
             for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
@@ -948,7 +988,9 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -1059,7 +1101,9 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -1157,7 +1201,9 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -1261,7 +1307,9 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -1389,7 +1437,9 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -1524,7 +1574,9 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
-        int n_points = spir_sampling_get_num_points(sampling);
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
