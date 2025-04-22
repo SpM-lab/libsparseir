@@ -112,10 +112,21 @@ This document describes how to use the C-API of libsparseir. The C-API provides 
 Please refer [`test/cinterface.cxx`](test/cinterface.cxx) to learn more.
 
 
-### Minimal Example
+### Basic Working Example
 The following example demonstrates how to create a fermionic finite-temperature basis using the logistic kernel,
-construct sampling objects for the imaginary-time and Matsubara domains,
-and perform transformations between these domains.
+and perform transformations of a single-variable Green's function between Matsubara frequency and imaginary-time domains.
+
+For fitting, we use the `spir_sampling_fit_XY`, where `X` is the element type of the input data, and `Y` is that of the output data:  `z` corresponds to `c_complex`, `d` to `double`.
+The same naming convention is used for evaluation: `spir_sampling_evaluate_XY`.
+
+The logistic kernel is defined as
+
+$
+K^\mathrm{L}(\tau, \omega) = \frac{e^{-\tau \omega}}{1 + e^{-\beta\omega}},
+$
+
+which corresponds to the normal Fermi-Dirac distribution at temperature $\beta^{-1}$.
+For more details, see [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
 
 ```c
 #include <sparseir/sparseir.h>
@@ -178,34 +189,35 @@ status = spir_sampling_evaluate_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit, g_tau);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
-// Compare with analytical result
+// Compare with expected result:
+//   G(tau) = -exp(-tau * pole_position) / (1 + exp(-beta * pole_position))
 double* tau_points = (double*)malloc(n_tau * sizeof(double));
 status = spir_sampling_get_tau_points(tau_sampling, tau_points);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_tau; ++i) {
     double tau = tau_points[i];
-    // expected result: G(tau) = -exp(-tau * pole_position) / (1 + exp(-beta * pole_position))
     double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
     assert(fabs(g_tau[i].real - expected) < epsilon);
     assert(fabs(g_tau[i].imag) < epsilon);
 }
 
 // Imaginary-time sampling points to basis coefficients
-c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+c_complex* g_fit2 = (c_complex*)malloc(n_basis * sizeof(c_complex));
 status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                              1, dims, target_dim, g_tau, g_fit);
-assert(status == SPIR_COMPUTATION_SUCCESS);
-status = spir_sampling_evaluate_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                                  1, dims, target_dim, g_fit, g_matsubara_reconstructed);
+                              1, dims, target_dim, g_tau, g_fit2);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
-// Compare with original Matsubara Green's function
+// Basis coefficients to Matsubara Green's function
+c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+status = spir_sampling_evaluate_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                  1, dims, target_dim, g_fit2, g_matsubara_reconstructed);
+assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_matsubara; ++i) {
     assert(fabs(g_matsubara_reconstructed[i].real - g_matsubara[i].real) < epsilon);
     assert(fabs(g_matsubara_reconstructed[i].imag - g_matsubara[i].imag) < epsilon);
 }
 
-// Clean up
+// Clean up (order is arbitrary)
 free(matsubara_indices);
 free(g_matsubara);
 free(g_fit);
@@ -216,6 +228,8 @@ spir_destroy_sampling(matsubara_sampling);
 ```
 
 
+We can create a bosonic basis using the logistic kernel as discussed in the [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
+This can be achived by replacing `fermionic` by `bosonic` in the above code.
 
 
 ### Kernel Creation and Domain
