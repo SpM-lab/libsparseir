@@ -165,11 +165,10 @@ const double pole_position = 0.0 * omega_max;
 // Initialize Green's function in Matsubara frequencies
 // G(iω_n) = 1/(iω_n - ε) = -ε/(ω_n^2 + ε^2) - iω_n/(ω_n^2 + ε^2)
 for (int i = 0; i < n_matsubara; ++i) {
-    double w_n = (2 * matsubara_indices[i] + 1) * M_PI / beta;  // Fermionic Matsubara frequency
+    assert(abs(matsubara_indices[i]) % 2 == 1); // fermionic Matsubara frequency
+    double w_n = matsubara_indices[i] * M_PI / beta;  // Matsubara frequency
     double denominator = w_n * w_n + pole_position * pole_position;
     g_matsubara[i] = -pole_position / denominator - I * w_n / denominator;
-    printf("g_matsubara[%d]: %f\n", i, creal(g_matsubara[i]));
-    printf("g_matsubara[%d]: %f\n", i, cimag(g_matsubara[i]));
 }
 
 int target_dim = 0; // target dimension for evaluation and fit
@@ -196,9 +195,6 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
     double actual = 0.0;
     for (int i = 0; i < n_basis; ++i) {
         actual += creal(g_fit[i]) * uval[i];
-        printf("uval[%d]: %f\n", i, uval[i]);
-        printf("g_fit[%d]: %f\n", i, creal(g_fit[i]));
-        printf("actual: %f\n", actual);
     }
     printf("actual: %f, expected: %f\n", actual, expected);
     assert(fabs(actual - expected) < epsilon);

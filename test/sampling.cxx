@@ -647,3 +647,78 @@ TEST_CASE("make_split_svd", "[sampling]")
                 Approx(svals_expected_has_zero[i]));
     }
 }
+
+TEST_CASE("Matsubara Green's function with zero pole position", "[sampling]") {
+    const double beta = 10.0;
+    const double omega_max = 10.0;
+    const double epsilon = 1e-8;
+    const double pole_position = 0.0;
+
+    // Create basis and sampling objects
+    auto kernel = std::make_shared<sparseir::LogisticKernel>(beta * omega_max);
+    auto sve_result = SVECache::get_sve_result(*kernel, epsilon);
+    auto basis = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+        beta, omega_max, epsilon,
+        std::static_pointer_cast<sparseir::AbstractKernel>(kernel), sve_result);
+    auto tau_sampling = std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(basis);
+    auto matsubara_sampling = std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(basis);
+
+    // Get Matsubara frequency indices
+    auto matsubara_indices = matsubara_sampling->sampling_points();
+    const int n_matsubara = matsubara_indices.size();
+
+    // Initialize Green's function in Matsubara frequencies
+    // G(iω_n) = 1/(iω_n - ε)
+    Eigen::Tensor<ComplexF64, 1> g_matsubara(n_matsubara);
+    for (int i = 0; i < n_matsubara; ++i) {
+        std::complex<double> iw_n = matsubara_indices[i].valueim(beta);  // iω_n
+        g_matsubara(i) = 1.0 / (iw_n - pole_position);
+        std::cout << "g_matsubara(" << i << "): " << g_matsubara(i) << std::endl;
+    }
+
+    // Matsubara sampling points to basis coefficients
+    const int n_basis = basis->size();
+    Eigen::Tensor<ComplexF64, 1> g_fit(n_basis);
+    g_fit = matsubara_sampling->fit(g_matsubara, 0);
+
+    // Evaluate the basis coefficients at imaginary times
+    {
+        double tau = 1e-9* beta;
+        double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
+        Eigen::VectorXd uval = (*basis->u)(tau);
+        double actual = 0.0;
+        for (int i = 0; i < n_basis; ++i) {
+            std::cout << "g_fit(" << i << "): " << std::real(g_fit(i)) << std::endl;
+            std::cout << "uval(" << i << "): " << uval(i) << std::endl;
+            actual += std::real(g_fit(i)) * uval(i);
+        }
+        std::cout << "actual: " << actual << std::endl;
+        std::cout << "expected: " << expected << std::endl;
+        REQUIRE(std::abs(actual - expected) < epsilon);
+    }
+
+    /*
+    // Basis coefficients to imaginary-time sampling points
+    Eigen::Tensor<ComplexF64, 1> g_tau = tau_sampling->evaluate(g_fit, 0);
+
+    // Compare with expected result
+    auto tau_points = tau_sampling->get_tau_points();
+    for (int i = 0; i < g_tau.size(); ++i) {
+        double tau = tau_points(i);
+        double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
+        REQUIRE(std::abs(std::real(g_tau(i)) - expected) < epsilon);
+        REQUIRE(std::abs(std::imag(g_tau(i))) < epsilon);
+    }
+
+    // Imaginary-time sampling points to basis coefficients
+    Eigen::Tensor<ComplexF64, 1> g_fit2 = tau_sampling->fit(g_tau, 0);
+
+    // Basis coefficients to Matsubara Green's function
+    Eigen::Tensor<ComplexF64, 1> g_matsubara_reconstructed = matsubara_sampling->evaluate(g_fit2, 0);
+
+    for (int i = 0; i < n_matsubara; ++i) {
+        REQUIRE(std::abs(std::real(g_matsubara_reconstructed(i)) - std::real(g_matsubara(i))) < epsilon);
+        REQUIRE(std::abs(std::imag(g_matsubara_reconstructed(i)) - std::imag(g_matsubara(i))) < epsilon);
+    }
+    */
+}
