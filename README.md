@@ -158,7 +158,7 @@ for (int i = 0; i < n_basis; ++i) {
     printf("v[%d] = %f\n", i, vval[i]);
 }
 
-// Clean up
+// Clean up (in arbitrary order)
 free(uval);
 free(vval);
 spir_destroy_polyvector(u);
@@ -166,22 +166,135 @@ spir_destroy_polyvector(v);
 spir_destroy_fermionic_finite_temp_basis(basis);
 ```
 
+### Bosonic basis with logistic kernel
 
-### Basic Working Example
-The following example demonstrates how to create a fermionic finite-temperature basis using the logistic kernel,
-and perform transformations of a single-variable Green's function between Matsubara frequency and imaginary-time domains.
+We can create a bosonic basis using the logistic kernel as discussed in the [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
+This can be achived by replacing `fermionic` by `bosonic` in the fermionic basis construction code.
 
-For fitting, we use the `spir_sampling_fit_XY`, where `X` is the element type of the input data, and `Y` is that of the output data:  `z` corresponds to `double _Complex`, `d` to `double`.
-The same naming convention is used for evaluation: `spir_sampling_evaluate_XY`.
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <complex.h>
+#include <assert.h>
+#include <sparseir/sparseir.h>
 
-The logistic kernel is defined as
+typedef double _Complex c_complex;
 
-$$
-K^\mathrm{L}(\tau, \omega) = \frac{e^{-\tau \omega}}{1 + e^{-\beta\omega}},
-$$
+int32_t status;
 
-which corresponds to the normal Fermi-Dirac distribution at temperature $\beta^{-1}$.
-For more details, see [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
+// Create a bosonic finite temperature basis
+double beta = 10.0;        // Inverse temperature
+double omega_max = 10.0;   // Ultraviolet cutoff
+double epsilon = 1e-8;     // Accuracy target
+spir_bosonic_finite_temp_basis* basis =
+    spir_bosonic_finite_temp_basis_new(beta, omega_max, epsilon);
+
+int n_basis;
+status = spir_bosonic_finite_temp_basis_get_size(basis, &n_basis);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+
+// Evaluate the basis functions at a given tau point
+spir_polyvector* u = spir_bosonic_finite_temp_basis_get_u(basis);
+double tau = 0.5 * beta;
+double* uval = (double*)malloc(n_basis * sizeof(double));
+status = spir_evaluate_basis_functions(u, tau, uval);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+for (int i = 0; i < n_basis; ++i) {
+    printf("u[%d] = %f\n", i, uval[i]);
+}
+
+// Evaluate the basis functions at a given omega point
+spir_polyvector* v = spir_bosonic_finite_temp_basis_get_v(basis);
+double omega = 0.5 * omega_max;
+double* vval = (double*)malloc(n_basis * sizeof(double));
+status = spir_evaluate_basis_functions(v, omega, vval);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+for (int i = 0; i < n_basis; ++i) {
+    printf("v[%d] = %f\n", i, vval[i]);
+}
+
+// Clean up (in arbitrary order)
+free(uval);
+free(vval);
+spir_destroy_polyvector(u);
+spir_destroy_polyvector(v);
+spir_destroy_bosonic_finite_temp_basis(basis);
+```
+
+### Constructing a basis with pre-computed SVE
+
+One can use the pre-computed SVE result to create the basis, which is more efficient when multiple bases with the same kernel are needed.
+Possible choices of kernels are `spir_logistic_kernel_new` (default choice in the basis constructor) and `spir_regularized_bose_kernel_new` (only for bosonic basis, not a default choice).
+The following example demonstrates how to create a bosonic basis using the regularized bosonic kernel and pre-computed SVE result.
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <complex.h>
+#include <assert.h>
+#include <sparseir/sparseir.h>
+
+typedef double _Complex c_complex;
+
+int32_t status;
+
+// Create a bosonic finite temperature basis
+double beta = 10.0;        // Inverse temperature
+double omega_max = 10.0;   // Ultraviolet cutoff
+double epsilon = 1e-8;     // Accuracy target
+
+spir_kernel* kernel = spir_regularized_bose_kernel_new(beta * omega_max);
+spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
+
+spir_bosonic_finite_temp_basis* basis = spir_bosonic_finite_temp_basis_new_with_sve(beta, omega_max, kernel, sve);
+
+int n_basis;
+status = spir_bosonic_finite_temp_basis_get_size(basis, &n_basis);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+
+// Evaluate the basis functions at a given tau point
+spir_polyvector* u = spir_bosonic_finite_temp_basis_get_u(basis);
+double tau = 0.5 * beta;
+double* uval = (double*)malloc(n_basis * sizeof(double));
+status = spir_evaluate_basis_functions(u, tau, uval);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+for (int i = 0; i < n_basis; ++i) {
+    printf("u[%d] = %f\n", i, uval[i]);
+}
+
+// Evaluate the basis functions at a given omega point
+spir_polyvector* v = spir_bosonic_finite_temp_basis_get_v(basis);
+double omega = 0.5 * omega_max;
+double* vval = (double*)malloc(n_basis * sizeof(double));
+status = spir_evaluate_basis_functions(v, omega, vval);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+for (int i = 0; i < n_basis; ++i) {
+    printf("v[%d] = %f\n", i, vval[i]);
+}
+
+// Clean up (in arbitrary order)
+free(uval);
+free(vval);
+spir_destroy_kernel(kernel);
+spir_destroy_sve_result(sve);
+spir_destroy_polyvector(u);
+spir_destroy_polyvector(v);
+spir_destroy_bosonic_finite_temp_basis(basis);
+```
+
+
+### Sparse Sampling
+The following example demonstrates how to transform a single-variable Green's function between Matsubara frequency and imaginary-time domains.
+
+For fitting, we use `spir_sampling_fit_XY`, where `X` and `Y` specify the data types of the input and output data respectively: `z` represents `double _Complex` and `d` represents `double`.
+The same naming convention applies to evaluation functions: `spir_sampling_evaluate_XY`.
+
+The fitting and evaluation functions support multi-dimensional input data, where one dimension represents the number of sampling points or basis functions, and additional dimensions can represent quantities like momentum, spin, or orbital indices.
+The dimension to transform is specified by the `target_dim` argument.
+The transformed dimension maintains its position in the output array.
+The memory layout of the input and output arrays is specified by the `order` argument, which can be either `SPIR_ORDER_COLUMN_MAJOR` or `SPIR_ORDER_ROW_MAJOR`.
 
 ```c
 #include <stdio.h>
