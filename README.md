@@ -121,9 +121,9 @@ The same naming convention is used for evaluation: `spir_sampling_evaluate_XY`.
 
 The logistic kernel is defined as
 
-$
+$$
 K^\mathrm{L}(\tau, \omega) = \frac{e^{-\tau \omega}}{1 + e^{-\beta\omega}},
-$
+$$
 
 which corresponds to the normal Fermi-Dirac distribution at temperature $\beta^{-1}$.
 For more details, see [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
@@ -244,6 +244,7 @@ for (int i = 0; i < n_matsubara; ++i) {
 free(matsubara_indices);
 free(g_matsubara);
 free(g_fit);
+free(g_fit2);
 free(g_tau);
 spir_destroy_fermionic_finite_temp_basis(basis);
 spir_destroy_sampling(tau_sampling);
