@@ -20,31 +20,7 @@
 
 namespace sparseir {
 
-class AbstractBasisFunction {
-public:
-    virtual ~AbstractBasisFunction() = default;
-
-    // Pure virtual functions that must be implemented by derived classes
-    virtual double operator()(double x) const = 0;
-    virtual Eigen::VectorXd operator()(const Eigen::VectorXd &xs) const = 0;
-    virtual double overlap(std::function<double(double)> f,
-                          const std::vector<double> &points = {}) const = 0;
-    virtual std::unique_ptr<AbstractBasisFunction> deriv(int n = 1) const = 0;
-    virtual Eigen::VectorXd derivs(double x) const = 0;
-    virtual Eigen::VectorXd roots() const = 0;
-
-    // Common getter methods
-    virtual double get_xmin() const = 0;
-    virtual double get_xmax() const = 0;
-    virtual const Eigen::VectorXd& get_knots() const = 0;
-    virtual const Eigen::VectorXd& get_delta_x() const = 0;
-    virtual int get_symm() const = 0;
-    virtual const Eigen::MatrixXd& get_data() const = 0;
-    virtual const Eigen::VectorXd& get_norms() const = 0;
-    virtual int get_polyorder() const = 0;
-};
-
-class PiecewiseLegendrePoly : public AbstractBasisFunction {
+class PiecewiseLegendrePoly {
 public:
     int polyorder;
     double xmin;
@@ -123,27 +99,27 @@ public:
     }
 
     // Function call operator: evaluate the polynomial at x
-    double operator()(double x) const override;
+    double operator()(double x) const;
 
     // Evaluate the polynomial at an array of x
-    Eigen::VectorXd operator()(const Eigen::VectorXd &xs) const override;
+    Eigen::VectorXd operator()(const Eigen::VectorXd &xs) const;
 
     // Overlap function
     double overlap(std::function<double(double)> f,
-                   const std::vector<double> &points = {}) const override;
+                   const std::vector<double> &points = {}) const;
 
     // Derivative function
-    PiecewiseLegendrePoly deriv(int n = 1) const override;
+    PiecewiseLegendrePoly deriv(int n = 1) const;
 
     // Function to compute derivatives at a point x
-    Eigen::VectorXd derivs(double x) const override;
+    Eigen::VectorXd derivs(double x) const;
 
     Eigen::VectorXd refine_grid(const Eigen::VectorXd &grid, int alpha) const;
 
     double bisect(double a, double b, double fa, double eps_x) const;
 
     // Roots function
-    Eigen::VectorXd roots() const override;
+    Eigen::VectorXd roots() const;
 
     // Overloaded operators
     PiecewiseLegendrePoly operator*(double factor) const
@@ -180,14 +156,14 @@ public:
     }
 
     // Accessor functions
-    double get_xmin() const override { return xmin; }
-    double get_xmax() const override { return xmax; }
-    const Eigen::VectorXd &get_knots() const override { return knots; }
-    const Eigen::VectorXd &get_delta_x() const override { return delta_x; }
-    int get_symm() const override { return symm; }
-    const Eigen::MatrixXd &get_data() const override { return data; }
-    const Eigen::VectorXd &get_norms() const override { return norms; }
-    int get_polyorder() const override { return polyorder; }
+    double get_xmin() const { return xmin; }
+    double get_xmax() const { return xmax; }
+    const Eigen::VectorXd &get_knots() const { return knots; }
+    const Eigen::VectorXd &get_delta_x() const { return delta_x; }
+    int get_symm() const { return symm; }
+    const Eigen::MatrixXd &get_data() const { return data; }
+    const Eigen::VectorXd &get_norms() const { return norms; }
+    int get_polyorder() const { return polyorder; }
 
     // Helper function to split x into segment index i and x_tilde
     std::pair<int, double> split(double x) const;
