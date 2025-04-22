@@ -60,7 +60,9 @@ def compile_and_run_test(test_file):
     # Compile
     compile_cmd = [
         compiler,
-        "-o", str(test_file.with_suffix('')),
+        "-o",
+        str(test_file.with_suffix('')),
+        "-g",
         str(test_file),
         f"-I{include_dir}",
         f"-L{build_dir}",

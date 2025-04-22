@@ -172,17 +172,36 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         int status = spir_fermionic_finite_temp_basis_get_size(basis, &basis_size);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-        double x = 0.5; // Test point
+        double x = 0.5; // Test point for u basis (imaginary time)
+        double y = 0.5 * wmax; // Test point for v basis (real frequency)
         double *out = (double *)malloc(basis_size * sizeof(double));
         status = spir_evaluate_basis_functions(u, x, out);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-        // Compare with C++ implementation
+        // Compare with C++ implementation for u basis
         sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, epsilon);
         Eigen::VectorXd cpp_result = (*cpp_basis.u)(x);
         for (int i = 0; i < basis_size; ++i) {
             REQUIRE(out[i] == Approx(cpp_result(i)));
         }
+
+        // Test v basis functions
+        spir_polyvector *v = spir_fermionic_finite_temp_basis_get_v(basis);
+        REQUIRE(v != nullptr);
+
+        // Test v basis function evaluation
+        status = spir_evaluate_basis_functions(v, y, out);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+        // Compare with C++ implementation for v basis
+        cpp_result = (*cpp_basis.v)(y);
+        for (int i = 0; i < basis_size; ++i) {
+            REQUIRE(out[i] == Approx(cpp_result(i)));
+        }
+
+        free(out);
+        spir_destroy_polyvector(u);
+        spir_destroy_polyvector(v);
 
         // Test error cases
         status = spir_evaluate_basis_functions(nullptr, x, out);
@@ -192,8 +211,6 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
         // Clean up
-        free(out);
-        spir_destroy_polyvector(u);
         spir_destroy_fermionic_finite_temp_basis(basis);
     }
 
@@ -215,17 +232,36 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         int status = spir_bosonic_finite_temp_basis_get_size(basis, &basis_size);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-        double x = 0.5; // Test point
+        double x = 0.5; // Test point for u basis (imaginary time)
+        double y = 0.5 * wmax; // Test point for v basis (real frequency)
         double *out = (double *)malloc(basis_size * sizeof(double));
         status = spir_evaluate_basis_functions(u, x, out);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-        // Compare with C++ implementation
+        // Compare with C++ implementation for u basis
         sparseir::FiniteTempBasis<sparseir::Bosonic> cpp_basis(beta, wmax, epsilon);
         Eigen::VectorXd cpp_result = (*cpp_basis.u)(x);
         for (int i = 0; i < basis_size; ++i) {
             REQUIRE(out[i] == Approx(cpp_result(i)));
         }
+
+        // Test v basis functions
+        spir_polyvector *v = spir_bosonic_finite_temp_basis_get_v(basis);
+        REQUIRE(v != nullptr);
+
+        // Test v basis function evaluation
+        status = spir_evaluate_basis_functions(v, y, out);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+        // Compare with C++ implementation for v basis
+        cpp_result = (*cpp_basis.v)(y);
+        for (int i = 0; i < basis_size; ++i) {
+            REQUIRE(out[i] == Approx(cpp_result(i)));
+        }
+
+        free(out);
+        spir_destroy_polyvector(u);
+        spir_destroy_polyvector(v);
 
         // Test error cases
         status = spir_evaluate_basis_functions(nullptr, x, out);
@@ -235,8 +271,6 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
         // Clean up
-        free(out);
-        spir_destroy_polyvector(u);
         spir_destroy_bosonic_finite_temp_basis(basis);
     }
 }

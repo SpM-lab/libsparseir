@@ -5,7 +5,6 @@
 #include <stdint.h>
 
 #include "spir_status.h"
-//#include "version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -1001,6 +1000,24 @@ spir_polyvector* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_fin
 
 
 /**
+ * @brief Gets the basis functions of a fermionic finite temperature basis.
+ *
+ * This function returns a polynomial vector containing the basis functions of the
+ * specified fermionic finite temperature basis. The basis functions are stored
+ * as piecewise Legendre polynomials.
+ *
+ * @param b Pointer to the fermionic finite temperature basis object
+ * @return A pointer to the polynomial vector containing the basis functions,
+ *         or NULL if the basis object is invalid
+ *
+ * @note The returned polynomial vector must be freed using spir_destroy_polyvector
+ *       when no longer needed
+ * @see spir_destroy_polyvector
+ */
+spir_polyvector* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis* b);
+
+
+/**
  * @brief Gets the basis functions of a bosonic finite temperature basis.
  *
  * This function returns a polynomial vector containing the basis functions of the
@@ -1016,6 +1033,23 @@ spir_polyvector* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_fin
  * @see spir_destroy_polyvector
  */
 spir_polyvector* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis* b);
+
+/**
+ * @brief Gets the basis functions of a bosonic finite temperature basis on the real frequency axis.
+ *
+ * This function returns a polynomial vector containing the basis functions of the
+ * specified bosonic finite temperature basis on the real frequency axis. The basis functions are stored
+ * as piecewise Legendre polynomials.
+ *
+ * @param b Pointer to the bosonic finite temperature basis object
+ * @return A pointer to the polynomial vector containing the basis functions,
+ *         or NULL if the basis object is invalid
+ *
+ * @note The returned polynomial vector must be freed using spir_destroy_polyvector
+ *       when no longer needed
+ * @see spir_destroy_polyvector
+ */
+spir_polyvector* spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis* b);
 
 /**
  * @brief Evaluates basis functions at a single point.
