@@ -111,7 +111,6 @@ This document describes how to use the C-API of libsparseir. The C-API provides 
 
 Please refer [`test/cinterface.cxx`](test/cinterface.cxx) to learn more.
 
-## Basis construction
 
 ### Fermionic basis with logistic kernel
 
@@ -423,3 +422,39 @@ spir_destroy_sampling(matsubara_sampling);
 
 We can create a bosonic basis using the logistic kernel as discussed in the [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
 This can be achived by replacing `fermionic` by `bosonic` in the above code.
+
+## Calling from C++
+We have to be careful about the interoperability between `double _Complex` and `std::complex<double>`.
+This library uses the C99 `_Complex` type. Although its memory layout is often similar to that of `std::complex<double>`,
+this compatibility is not guaranteed by the C++ standard.
+
+Therefore, when calling C functions from C++ or exchanging data between these types,
+it is _highly_ recommended to explicitly convert values using safe accessors rather than relying on type punning or `memcpy`.
+
+The following code demonstrates how to convert between `double _Complex` and `std::complex<double>` safely.
+
+```cpp
+#include <complex>
+#include <complex.h>
+#include <vector>
+
+// Convert from C99 double _Complex to std::complex<double>
+std::vector<std::complex<double>> convert_to_cpp(const std::vector<double _Complex>& c_array) {
+    std::vector<std::complex<double>> cpp_array(c_array.size());
+    for (std::size_t i = 0; i < c_array.size(); ++i) {
+        cpp_array[i] = std::complex<double>(creal(c_array[i]), cimag(c_array[i]));
+    }
+    return cpp_array;
+}
+
+// Convert from std::complex<double> to C99 double _Complex
+std::vector<double _Complex> convert_to_c(const std::vector<std::complex<double>>& cpp_array) {
+    std::vector<double _Complex> c_array(cpp_array.size());
+    for (std::size_t i = 0; i < cpp_array.size(); ++i) {
+        c_array[i] = cpp_array[i].real() + cpp_array[i].imag() * I;
+    }
+    return c_array;
+}
+```
+
+To pass a double _Complex array to a C function, use `c_array.data()` to obtain a pointer to the first element.
