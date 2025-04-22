@@ -139,7 +139,6 @@ if (SPARSEIR_BUILD_TESTING)
 
     # Pass include paths to test subdirectory
     add_subdirectory("test")
-    add_subdirectory("testsample")
 endif()
 
 # -------------------------------------

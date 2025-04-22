@@ -735,9 +735,19 @@ int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
     return SPIR_COMPUTATION_SUCCESS;
 }
 
-spir_polyvector *spir_basis_u(const spir_fermionic_finite_temp_basis *b)
+spir_polyvector *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis *b)
 {
     auto impl = get_impl_fermionic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    // Simply use the shared_ptr that already exists in the implementation
+    return create_polyvector(impl->u);
+}
+
+spir_polyvector *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
+{
+    auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
 
@@ -859,6 +869,21 @@ int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis
         *size = impl->size();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_evaluate_basis_functions(const spir_polyvector* u, double x, double* out) {
+    if (!u || !out) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        const auto& polyvec = *u->ptr;
+        Eigen::VectorXd result = polyvec(x);
+        std::memcpy(out, result.data(), result.size() * sizeof(double));
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception& e) {
         return SPIR_GET_IMPL_FAILED;
     }
 }
