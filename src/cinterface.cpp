@@ -745,6 +745,16 @@ spir_polyvector *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_fin
     return create_polyvector(impl->u);
 }
 
+spir_polyvector *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis *b)
+{
+    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    // Simply use the shared_ptr that already exists in the implementation
+    return create_polyvector(impl->v);
+}
+
 spir_polyvector *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
@@ -753,6 +763,16 @@ spir_polyvector *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_
 
     // Simply use the shared_ptr that already exists in the implementation
     return create_polyvector(impl->u);
+}
+
+spir_polyvector *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
+{
+    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    // Simply use the shared_ptr that already exists in the implementation
+    return create_polyvector(impl->v);
 }
 
 // Create new regularized bose kernel
