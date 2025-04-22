@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "spir_status.h"
-#include "version.h"
+//#include "version.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -983,26 +983,55 @@ spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
 //void spir_destroy_fermionic_basis(spir_fermionic_finite_temp_basis* b);
 
 /**
- * Get basis functions.
- * Returns a polynomial vector that must be freed using spir_destroy_polyvector.
+ * @brief Gets the basis functions of a fermionic finite temperature basis.
  *
- * @param b The basis
- * @return Polynomial vector, or NULL on error
+ * This function returns a polynomial vector containing the basis functions of the
+ * specified fermionic finite temperature basis. The basis functions are stored
+ * as piecewise Legendre polynomials.
+ *
+ * @param b Pointer to the fermionic finite temperature basis object
+ * @return A pointer to the polynomial vector containing the basis functions,
+ *         or NULL if the basis object is invalid
+ *
+ * @note The returned polynomial vector must be freed using spir_destroy_polyvector
+ *       when no longer needed
+ * @see spir_destroy_polyvector
  */
-spir_polyvector* spir_basis_u(const spir_fermionic_finite_temp_basis* b);
+spir_polyvector* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis* b);
+
 
 /**
- * Get the size of a polynomial vector.
+ * @brief Gets the basis functions of a bosonic finite temperature basis.
  *
- * @param v The polynomial vector
- * @return Size of the vector, or -1 on error
+ * This function returns a polynomial vector containing the basis functions of the
+ * specified bosonic finite temperature basis. The basis functions are stored
+ * as piecewise Legendre polynomials.
+ *
+ * @param b Pointer to the bosonic finite temperature basis object
+ * @return A pointer to the polynomial vector containing the basis functions,
+ *         or NULL if the basis object is invalid
+ *
+ * @note The returned polynomial vector must be freed using spir_destroy_polyvector
+ *       when no longer needed
+ * @see spir_destroy_polyvector
  */
-//int spir_polyvector_size(const spir_polyvector* v);
+spir_polyvector* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis* b);
 
 /**
- * Destroy a polynomial vector.
+ * @brief Evaluates basis functions at a single point.
+ *
+ * This function evaluates all basis functions contained in a polynomial vector at a specified point x.
+ * The values of each basis function at x are stored in the output array.
+ * The output array out[j] contains the value of the j-th basis function evaluated at x.
+ *
+ * @param u Pointer to the polynomial vector containing the basis functions
+ * @param x Point at which to evaluate the basis functions
+ * @param out Pre-allocated array to store the evaluation results. Must have size >= n_basis
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ *
+ * @note The output array must be pre-allocated with sufficient size to store all basis function values
  */
-//void spir_destroy_polyvector(spir_polyvector* v);
+int32_t spir_evaluate_basis_functions(const spir_polyvector* u, double x, double* out);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.

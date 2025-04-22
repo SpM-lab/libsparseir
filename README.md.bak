@@ -129,11 +129,7 @@ which corresponds to the normal Fermi-Dirac distribution at temperature $\beta^{
 For more details, see [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
 
 ```c
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include <complex.h>
-#include <assert.h>
 #include <sparseir/sparseir.h>
 
 // Create a fermionic finite temperature basis
@@ -160,15 +156,17 @@ status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indice
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Set pole position
-const double pole_position = 0.0 * omega_max;
+const double pole_position = 0.5 * omega_max;
 
 // Initialize Green's function in Matsubara frequencies
-// G(iω_n) = 1/(iω_n - ε) = -ε/(ω_n^2 + ε^2) - iω_n/(ω_n^2 + ε^2)
+// G(iω_n) = 1/(iω_n - ε) = ε/(ω_n^2 + ε^2) - iω_n/(ω_n^2 + ε^2)
 for (int i = 0; i < n_matsubara; ++i) {
-    assert(abs(matsubara_indices[i]) % 2 == 1); // fermionic Matsubara frequency
-    double w_n = matsubara_indices[i] * M_PI / beta;  // Matsubara frequency
-    double denominator = w_n * w_n + pole_position * pole_position;
-    g_matsubara[i] = -pole_position / denominator - I * w_n / denominator;
+    double i_n = (2 * matsubara_indices[i] + 1) * M_PI / beta;  // Fermionic Matsubara frequency
+    double denominator = i_n * i_n + pole_position * pole_position;
+    g_matsubara[i] = c_complex{
+        pole_position / denominator,  // Real part: ε/(ω_n^2 + ε^2)
+        -i_n / denominator           // Imaginary part: -ω_n/(ω_n^2 + ε^2)
+    };
 }
 
 int target_dim = 0; // target dimension for evaluation and fit
@@ -185,7 +183,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Evaluate the basis coefficients at imaginary times
 {
-    double tau = 0.000001 * beta;
+    double tau = 0.1 * beta;
     double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
     spir_polyvector* u = spir_fermionic_finite_temp_basis_get_u(basis);
     double* uval = (double*)malloc(n_basis * sizeof(double));
@@ -196,7 +194,6 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
     for (int i = 0; i < n_basis; ++i) {
         actual += creal(g_fit[i]) * uval[i];
     }
-    printf("actual: %f, expected: %f\n", actual, expected);
     assert(fabs(actual - expected) < epsilon);
 
     free(uval);
@@ -220,8 +217,8 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_tau; ++i) {
     double tau = tau_points[i];
     double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
-    assert(fabs(creal(g_tau[i]) - expected) < epsilon);
-    assert(fabs(cimag(g_tau[i])) < epsilon);
+    assert(fabs(g_tau[i].real - expected) < epsilon);
+    assert(fabs(g_tau[i].imag) < epsilon);
 }
 
 // Imaginary-time sampling points to basis coefficients
@@ -236,8 +233,8 @@ status = spir_sampling_evaluate_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit2, g_matsubara_reconstructed);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_matsubara; ++i) {
-    assert(fabs(creal(g_matsubara_reconstructed[i]) - creal(g_matsubara[i])) < epsilon);
-    assert(fabs(cimag(g_matsubara_reconstructed[i]) - cimag(g_matsubara[i])) < epsilon);
+    assert(fabs(g_matsubara_reconstructed[i].real2 - g_matsubara[i].real) < epsilon);
+    assert(fabs(g_matsubara_reconstructed[i].imag - g_matsubara[i].imag) < epsilon);
 }
 
 // Clean up (order is arbitrary)
@@ -253,3 +250,253 @@ spir_destroy_sampling(matsubara_sampling);
 
 We can create a bosonic basis using the logistic kernel as discussed in the [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
 This can be achived by replacing `fermionic` by `bosonic` in the above code.
+
+
+### Kernel Creation and Domain
+
+```c
+#include <sparseir/sparseir.h>
+
+// Create kernels for different statistics
+spir_kernel* fermionic_kernel = spir_logistic_kernel_new(9.0);
+spir_kernel* bosonic_kernel = spir_regularized_bose_kernel_new(9.0);
+
+// Get kernel domain
+double xmin, xmax, ymin, ymax;
+spir_kernel_domain(fermionic_kernel, &xmin, &xmax, &ymin, &ymax);
+
+// Clean up
+spir_destroy_kernel(fermionic_kernel);
+spir_destroy_kernel(bosonic_kernel);
+```
+
+### Basis Construction and Sampling
+
+```c
+#include <sparseir/sparseir.h>
+
+// Create a fermionic finite temperature basis
+double beta = 10.0;        // Inverse temperature
+double omega_max = 10.0;   // Frequency cutoff
+double epsilon = 1e-8;     // Accuracy target
+spir_fermionic_finite_temp_basis* basis =
+    spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
+
+// Create sampling objects for different domains
+spir_sampling* tau_sampling = spir_fermionic_tau_sampling_new(basis);
+spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis);
+
+// Create Green's function with a pole at 0.5*omega_max
+int n_matsubara;
+int status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
+if (status != 0) {
+    // Handle error
+    exit(-1);
+}
+
+c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+int* matsubara_indices = (int*)malloc(n_matsubara * sizeof(int));
+
+// Get Matsubara frequency indices
+status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indices);
+if (status != 0) {
+    // Handle error
+    free(matsubara_indices);
+    free(g_matsubara);
+    exit(-1);
+}
+
+// Set pole position
+const double pole_position = 0.5 * omega_max;
+
+// Initialize Green's function in Matsubara frequencies
+// G(iω_n) = 1/(iω_n - ε) = ε/(ω_n^2 + ε^2) - iω_n/(ω_n^2 + ε^2)
+for (int i = 0; i < n_matsubara; ++i) {
+    double i_n = (2 * matsubara_indices[i] + 1) * M_PI / beta;  // Fermionic Matsubara frequency
+    double denominator = i_n * i_n + pole_position * pole_position;
+    g_matsubara[i] = c_complex{
+        pole_position / denominator,  // Real part: ε/(ω_n^2 + ε^2)
+        -i_n / denominator           // Imaginary part: -ω_n/(ω_n^2 + ε^2)
+    };
+}
+
+// Clean up
+free(matsubara_indices);
+free(g_matsubara);
+spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_sampling(tau_sampling);
+spir_destroy_sampling(matsubara_sampling);
+```
+
+### Sampling Operations
+
+```c
+#include <sparseir/sparseir.h>
+
+// Create basis and sampling objects
+double beta = 10.0;
+double omega_max = 10.0;
+double epsilon = 1e-8;
+spir_fermionic_finite_temp_basis* basis =
+    spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
+spir_sampling* tau_sampling = spir_fermionic_tau_sampling_new(basis);
+
+// Example of evaluating basis coefficients at sampling points
+int32_t ndim = 2;
+int32_t input_dims[] = {3, 4};  // Example dimensions
+int32_t target_dim = 0;
+double input[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
+double output[12];
+
+// Real to real transformation
+spir_sampling_evaluate_dd(
+    tau_sampling,
+    SPIR_ORDER_COLUMN_MAJOR,
+    ndim,
+    input_dims,
+    target_dim,
+    input,
+    output
+);
+
+// Fit values back to basis coefficients
+spir_sampling_fit_dd(
+    tau_sampling,
+    SPIR_ORDER_COLUMN_MAJOR,
+    ndim,
+    input_dims,
+    target_dim,
+    output,
+    input
+);
+
+// Clean up
+spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_sampling(tau_sampling);
+```
+
+### Discrete Lehmann Representation (DLR)
+
+```c
+#include <sparseir/sparseir.h>
+#include <stdlib.h> // rand
+
+double beta = 100.0;
+double wmax = 1.0;
+double epsilon = 1e-12;
+
+spir_fermionic_finite_temp_basis *basis =
+    spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
+
+spir_fermionic_dlr *dlr = spir_fermionic_dlr_new(basis);
+
+int npoles = 10;
+double poles[npoles];
+double coeffs[npoles];
+for (int i = 0; i < npoles; i++) {
+    double r = (double)rand() / (double)RAND_MAX;
+    poles[i] = wmax * (2.0 * r - 1.0);
+    r = (double)rand() / (double)RAND_MAX;
+    coeffs[i] = 2.0 * r - 1.0;
+}
+
+spir_fermionic_dlr *dlr_with_poles =
+    spir_fermionic_dlr_new_with_poles(basis, npoles, poles);
+int fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
+int fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
+
+double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
+int32_t to_ir_input_dims[1] = {npoles};
+int status_to_IR =
+    spir_fermionic_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR, 1,
+                                to_ir_input_dims, coeffs, Gl);
+
+double *g_dlr = (double *)malloc(fitmat_rows * sizeof(double));
+int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
+int status_from_IR = spir_fermionic_dlr_from_IR(
+    dlr, SPIR_ORDER_COLUMN_MAJOR, 1, from_ir_input_dims, Gl, g_dlr);
+
+// Clean up
+free(Gl);
+free(g_dlr);
+spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_fermionic_dlr(dlr);
+spir_destroy_fermionic_dlr(dlr_with_poles);
+```
+
+### Complex Number Operations
+
+```c
+#include <sparseir/sparseir.h>
+#include <complex.h>
+
+// Create basis and sampling objects
+double beta = 10.0;
+double omega_max = 10.0;
+double epsilon = 1e-8;
+spir_fermionic_finite_temp_basis* basis =
+    spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
+spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis);
+
+// Setup dimensions and data
+int32_t ndim = 2;
+int32_t input_dims[] = {3, 4};
+int32_t target_dim = 0;
+
+// Initialize complex input data
+c_complex complex_input[12];
+c_complex complex_output[12];
+for (int i = 0; i < 12; i++) {
+    // Complex numbers with real and imaginary parts
+    complex_input[i] = c_complex{(double)i, (double)i};
+}
+
+// Complex to complex transformation
+spir_sampling_evaluate_zz(
+    matsubara_sampling,
+    SPIR_ORDER_COLUMN_MAJOR,
+    ndim,
+    input_dims,
+    target_dim,
+    complex_input,
+    complex_output
+);
+
+// Fit complex values back to basis coefficients
+c_complex recovered_input[12];
+spir_sampling_fit_zz(
+    matsubara_sampling,
+    SPIR_ORDER_COLUMN_MAJOR,
+    ndim,
+    input_dims,
+    target_dim,
+    complex_output,
+    recovered_input
+);
+
+// Clean up
+spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_sampling(matsubara_sampling);
+```
+
+# libsparseir Fortran Bindings Documentation
+
+This document describes how to use the Fortran bindings of libsparseir. The Fortran bindings provide a way to use the sparseir library from Fortran. All objects are immutable.
+
+## Basic Usage
+
+```fortran
+use sparseir
+implicit none
+
+type(spir_kernel) :: kernel
+real(8) :: lambda, xmin, xmax, ymin, ymax
+integer :: stat
+
+! Create a logistic kernel
+lambda = 9.0d0
+kernel = spir_logistic_kernel_new(lambda)
+
+! Get kernel domain
+stat = spir_kernel_domain(kernel, xmin, xmax, ymin, ymax)
+```
