@@ -49,9 +49,7 @@ public:
                                       bool positive_only = false) const = 0;
 };
 
-} // namespace sparseir
 
-namespace sparseir {
 
 template <typename S>
 class FiniteTempBasis : public AbstractBasis<S> {
