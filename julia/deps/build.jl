@@ -1,9 +1,10 @@
+using Pkg
+Pkg.activate(@__DIR__)
+
 using Clang.Generators
 using Clang.LibClang.Clang_jll
 
-cd(@__DIR__)
-
-include_dir = normpath("../include")
+include_dir = normpath(joinpath(@__DIR__, "../../include"))
 sparseir_dir = joinpath(include_dir, "sparseir")
 
 # wrapper generator options
