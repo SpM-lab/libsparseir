@@ -10,6 +10,15 @@
 extern "C" {
 #endif
 
+// Define export macros
+#ifndef SPARSEIR_EXPORT
+#  if defined(_WIN32)
+#    define SPARSEIR_EXPORT __declspec(dllexport)
+#  else
+#    define SPARSEIR_EXPORT __attribute__((visibility("default")))
+#  endif
+#endif
+
 // Define a C-compatible type alias for the C99 complex number.
 typedef double _Complex c_complex;
 
@@ -30,13 +39,13 @@ typedef enum {
     typedef struct _spir_##name spir_##name;                                  \
                                                                               \
     /* Destroy function */                                                     \
-    void spir_destroy_##name(spir_##name *obj);                               \
+    SPARSEIR_EXPORT void spir_destroy_##name(spir_##name *obj);               \
                                                                               \
     /* Clone function */                                                       \
-    spir_##name *spir_clone_##name(const spir_##name *src);                   \
+    SPARSEIR_EXPORT spir_##name *spir_clone_##name(const spir_##name *src);   \
                                                                               \
     /* Check if the shared_ptr is assigned to a valid object */                \
-    int spir_is_assigned_##name(const spir_##name *obj);
+    SPARSEIR_EXPORT int spir_is_assigned_##name(const spir_##name *obj);
 
 /* Declare opaque types */
 struct _spir_kernel;
@@ -77,7 +86,7 @@ DECLARE_OPAQUE_TYPE(bosonic_dlr);
  * @return A pointer to the newly created kernel object, or NULL if creation
  * fails
  */
-spir_kernel *spir_logistic_kernel_new(double lambda);
+SPARSEIR_EXPORT spir_kernel *spir_logistic_kernel_new(double lambda);
 
 /**
  * @brief Creates a new regularized bosonic kernel for analytical continuation.
@@ -98,7 +107,7 @@ spir_kernel *spir_logistic_kernel_new(double lambda);
  * @note This kernel is specifically designed for bosonic correlation functions
  *       and should not be used for fermionic cases.
  */
-spir_kernel *spir_regularized_bose_kernel_new(double lambda);
+SPARSEIR_EXPORT spir_kernel *spir_regularized_bose_kernel_new(double lambda);
 
 /**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
@@ -134,7 +143,7 @@ spir_kernel *spir_regularized_bose_kernel_new(double lambda);
  * longer needed
  * @see spir_destroy_sve_result
  */
-spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon);
+SPARSEIR_EXPORT spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon);
 
 
 /**
@@ -153,7 +162,7 @@ spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon);
  * @return 0 on success, -1 on failure (if the kernel is invalid or an exception
  * occurs)
  */
-int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
+SPARSEIR_EXPORT int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax);
 
 /**
@@ -161,12 +170,18 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  * and an array `out` of size `nx * ny`. On exit, set
  * `out[ix*ny + iy] = K(x[ix], y[iy])`.
  */
-int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
+SPARSEIR_EXPORT int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
                        const double *y, int ny, double *out);
 
-int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_basis *b, int *size);
+SPARSEIR_EXPORT void spir_destroy_kernel(spir_kernel *obj);
 
-int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis *b, int *size);
+SPARSEIR_EXPORT spir_kernel *spir_clone_kernel(const spir_kernel *src);
+
+SPARSEIR_EXPORT int spir_is_assigned_kernel(const spir_kernel *obj);
+
+SPARSEIR_EXPORT int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_basis *b, int *size);
+
+SPARSEIR_EXPORT int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis *b, int *size);
 
 
 /**
@@ -191,7 +206,7 @@ int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b);
+SPARSEIR_EXPORT spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b);
 
 /**
  * @brief Creates a new fermionic Matsubara sampling object for sparse sampling
@@ -220,7 +235,7 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
+SPARSEIR_EXPORT spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
 
 
 /**
@@ -245,7 +260,7 @@ spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b);
+SPARSEIR_EXPORT spir_sampling *spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b);
 
 /**
  * @brief Creates a new bosonic Matsubara sampling object for sparse sampling
@@ -274,7 +289,7 @@ spir_sampling *spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basi
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b);
+SPARSEIR_EXPORT spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b);
 
 
 /**
@@ -307,7 +322,7 @@ spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_tem
  * which differs from the original DLR method that uses rank-revealing
  * decomposition
  */
-spir_fermionic_dlr *spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b);
+SPARSEIR_EXPORT spir_fermionic_dlr *spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b);
 
 /**
  * @brief Creates a new fermionic Discrete Lehmann Representation (DLR) with
@@ -333,7 +348,8 @@ spir_fermionic_dlr *spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basi
  * @see spir_fermionic_dlr_new
  * @see spir_destroy_fermionic_dlr
  */
-spir_fermionic_dlr *spir_fermionic_dlr_new_with_poles(const spir_fermionic_finite_temp_basis *b, const int npoles, const double *poles);
+SPARSEIR_EXPORT spir_fermionic_dlr *spir_fermionic_dlr_new_with_poles(
+    const spir_fermionic_finite_temp_basis *b, const int npoles, const double *poles);
 
 /**
  * @brief Creates a new bosonic Discrete Lehmann Representation (DLR).
@@ -365,7 +381,7 @@ spir_fermionic_dlr *spir_fermionic_dlr_new_with_poles(const spir_fermionic_finit
  * which differs from the original DLR method that uses rank-revealing
  * decomposition
  */
-spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
+SPARSEIR_EXPORT spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
 
 /**
  * @brief Creates a new bosonic Discrete Lehmann Representation (DLR) with
@@ -391,7 +407,8 @@ spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
  * @see spir_bosonic_dlr_new
  * @see spir_destroy_bosonic_dlr
  */
-spir_bosonic_dlr *spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp_basis *b, const int npoles, const double *poles);
+SPARSEIR_EXPORT spir_bosonic_dlr *spir_bosonic_dlr_new_with_poles(
+    const spir_bosonic_finite_temp_basis *b, const int npoles, const double *poles);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to double
@@ -421,7 +438,7 @@ spir_bosonic_dlr *spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp
  * @see spir_sampling_evaluate_dz
  * @see spir_sampling_evaluate_zz
  */
-int spir_sampling_evaluate_dd(
+SPARSEIR_EXPORT int spir_sampling_evaluate_dd(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -461,7 +478,7 @@ int spir_sampling_evaluate_dd(
  * @see spir_sampling_evaluate_dd
  * @see spir_sampling_evaluate_zz
  */
-int spir_sampling_evaluate_dz(
+SPARSEIR_EXPORT int spir_sampling_evaluate_dz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -471,7 +488,7 @@ int spir_sampling_evaluate_dz(
     c_complex *out                    // Output array
     );
 
-int spir_sampling_evaluate_zz(
+SPARSEIR_EXPORT int spir_sampling_evaluate_zz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -508,7 +525,7 @@ int spir_sampling_evaluate_zz(
  * @see spir_sampling_evaluate_dd
  * @see spir_sampling_fit_zz
  */
-int spir_sampling_fit_dd(
+SPARSEIR_EXPORT int spir_sampling_fit_dd(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -545,7 +562,7 @@ int spir_sampling_fit_dd(
  * @see spir_sampling_evaluate_zz
  * @see spir_sampling_fit_dd
  */
-int spir_sampling_fit_zz(
+SPARSEIR_EXPORT int spir_sampling_fit_zz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -571,7 +588,7 @@ int spir_sampling_fit_zz(
  * @see spir_bosonic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
+SPARSEIR_EXPORT int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
 
 /**
  * @brief Gets the number of columns in the fitting matrix of a bosonic DLR.
@@ -589,7 +606,7 @@ int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
  * @see spir_bosonic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
+SPARSEIR_EXPORT int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
 
 /**
  * @brief Gets the number of rows in the fitting matrix of a fermionic DLR.
@@ -607,7 +624,7 @@ int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
  * @see spir_fermionic_dlr_from_IR
  * @see spir_fermionic_dlr_to_IR
  */
-int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
+SPARSEIR_EXPORT int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
 /**
  * @brief Gets the number of columns in the fitting matrix of a fermionic DLR.
  *
@@ -624,7 +641,7 @@ int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
  * @see spir_fermionic_dlr_from_IR
  * @see spir_fermionic_dlr_to_IR
  */
-int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
+SPARSEIR_EXPORT int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
 
 
 /**
@@ -650,13 +667,15 @@ int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
  * @see spir_fermionic_dlr_fitmat_rows
  * @see spir_fermionic_dlr_fitmat_cols
  */
-int spir_fermionic_dlr_from_IR(
+SPARSEIR_EXPORT int spir_fermionic_dlr_from_IR(
     const spir_fermionic_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
     int32_t *input_dims,
     const double *input,
-    double *out);/**
+    double *out);
+
+/**
  * @brief Transforms coefficients from IR basis to bosonic DLR representation.
  *
  * This function converts expansion coefficients from the Intermediate
@@ -693,7 +712,7 @@ int spir_fermionic_dlr_from_IR(
  * @see spir_bosonic_dlr_to_IR
  * @see spir_fermionic_dlr_from_IR
  */
-int spir_bosonic_dlr_from_IR(
+SPARSEIR_EXPORT int spir_bosonic_dlr_from_IR(
     const spir_bosonic_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
@@ -735,7 +754,7 @@ int spir_bosonic_dlr_from_IR(
  * @see spir_fermionic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_fermionic_dlr_from_IR(
+SPARSEIR_EXPORT int spir_fermionic_dlr_to_IR(
     const spir_fermionic_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
@@ -776,7 +795,7 @@ int spir_fermionic_dlr_from_IR(
  * @see spir_bosonic_dlr_from_IR
  * @see spir_fermionic_dlr_to_IR
  */
-int spir_bosonic_dlr_to_IR(
+SPARSEIR_EXPORT int spir_bosonic_dlr_to_IR(
     const spir_bosonic_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
@@ -817,7 +836,7 @@ int spir_bosonic_dlr_to_IR(
  * @see spir_fermionic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_fermionic_dlr_to_IR(
+SPARSEIR_EXPORT int spir_fermionic_dlr_to_IR(
     const spir_fermionic_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
@@ -877,7 +896,7 @@ int spir_fermionic_dlr_to_IR(
 //int spir_iw_roots(const spir_function *f, long *f0, int n);
 
 // Create new basis
-spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
+SPARSEIR_EXPORT spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
 /**
  * @brief Creates a new bosonic finite temperature IR basis.
  *
@@ -908,7 +927,7 @@ spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double be
  * spir_destroy_bosonic_finite_temp_basis when no longer needed
  * @see spir_destroy_bosonic_finite_temp_basis
  */
-spir_bosonic_finite_temp_basis* spir_bosonic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
+SPARSEIR_EXPORT spir_bosonic_finite_temp_basis* spir_bosonic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
 
 /**
  * @brief Creates a new fermionic finite temperature IR basis using a
@@ -932,10 +951,8 @@ spir_bosonic_finite_temp_basis* spir_bosonic_finite_temp_basis_new(double beta, 
  * @see spir_sve_result_new
  * @see spir_destroy_fermionic_finite_temp_basis
  */
-spir_fermionic_finite_temp_basis *
-spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
-                                             const spir_kernel *k,
-                                             const spir_sve_result *sve);
+SPARSEIR_EXPORT spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new_with_sve(
+    double beta, double omega_max, const spir_kernel *k, const spir_sve_result *sve);
 
 /**
  * @brief Creates a new bosonic finite temperature IR basis using a pre-computed
@@ -958,10 +975,8 @@ spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
  * @see spir_sve_result_new
  * @see spir_destroy_bosonic_finite_temp_basis
  */
-spir_bosonic_finite_temp_basis *
-spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
-                                             const spir_kernel *k,
-                                             const spir_sve_result *sve);
+SPARSEIR_EXPORT spir_bosonic_finite_temp_basis* spir_bosonic_finite_temp_basis_new_with_sve(
+    double beta, double omega_max, const spir_kernel *k, const spir_sve_result *sve);
 
 // Destroy basis instance
 //void spir_destroy_fermionic_basis(spir_fermionic_finite_temp_basis* b);
@@ -981,7 +996,7 @@ spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis* b);
+SPARSEIR_EXPORT spir_continuous_functions* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis* b);
 
 
 /**
@@ -999,7 +1014,7 @@ spir_continuous_functions* spir_fermionic_finite_temp_basis_get_u(const spir_fer
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis* b);
+SPARSEIR_EXPORT spir_continuous_functions* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a fermionic finite temperature basis in Matsubara frequency domain.
@@ -1015,7 +1030,7 @@ spir_continuous_functions* spir_fermionic_finite_temp_basis_get_v(const spir_fer
  *       when no longer needed
  * @see spir_destroy_matsubara_functions
  */
-spir_matsubara_functions* spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis* b);
+SPARSEIR_EXPORT spir_matsubara_functions* spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a bosonic finite temperature basis.
@@ -1032,7 +1047,7 @@ spir_matsubara_functions* spir_fermionic_finite_temp_basis_get_uhat(const spir_f
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis* b);
+SPARSEIR_EXPORT spir_continuous_functions* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a bosonic finite temperature basis on the real frequency axis.
@@ -1049,7 +1064,7 @@ spir_continuous_functions* spir_bosonic_finite_temp_basis_get_u(const spir_boson
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis* b);
+SPARSEIR_EXPORT spir_continuous_functions* spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a bosonic finite temperature basis in Matsubara frequency domain.
@@ -1065,7 +1080,7 @@ spir_continuous_functions* spir_bosonic_finite_temp_basis_get_v(const spir_boson
  *       when no longer needed
  * @see spir_destroy_matsubara_functions
  */
-spir_matsubara_functions* spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis* b);
+SPARSEIR_EXPORT spir_matsubara_functions* spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis* b);
 
 /**
  * @brief Evaluates basis functions at a single point in the imaginary-time domain or the real frequency domain.
@@ -1081,7 +1096,11 @@ spir_matsubara_functions* spir_bosonic_finite_temp_basis_get_uhat(const spir_bos
  *
  * @note The output array must be pre-allocated with sufficient size to store all basis function values
  */
-int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* uv, double x, double* out);
+SPARSEIR_EXPORT int32_t spir_evaluate_continuous_functions(
+    const spir_continuous_functions* uv,
+    double x,
+    double* out
+);
 
 
 /**
@@ -1102,11 +1121,13 @@ int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* uv, 
  *       at all requested frequencies. Indices n correspond to ωn = nπ/β,
  *       where n are odd for fermionic frequencies and even for bosonic frequencies.
  */
-int32_t spir_evaluate_matsubara_functions(
+SPARSEIR_EXPORT int32_t spir_evaluate_matsubara_functions(
     const spir_matsubara_functions* uiw,
-    spir_order_type order, 
+    spir_order_type order,
     int32_t num_freqs,
-    int32_t* matsubara_freq_indices, c_complex* out);
+    int32_t* matsubara_freq_indices,
+    c_complex* out
+);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.
@@ -1122,7 +1143,7 @@ int32_t spir_evaluate_matsubara_functions(
  * @see spir_sampling_get_tau_points
  * @see spir_sampling_get_matsubara_points
  */
-int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
+SPARSEIR_EXPORT int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
 
 /**
  * @brief Gets the imaginary time sampling points.
@@ -1140,7 +1161,7 @@ int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
  * @note The array must be pre-allocated with size >= spir_sampling_get_num_points(s)
  * @see spir_sampling_get_num_points
  */
-int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
+SPARSEIR_EXPORT int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
 
 /**
  * @brief Gets the Matsubara frequency sampling points.
@@ -1162,7 +1183,7 @@ int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
  * @see spir_sampling_get_num_points
  */
-int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points);
+SPARSEIR_EXPORT int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points);
 
 #ifdef __cplusplus
 }
