@@ -13,8 +13,9 @@
 #define DEBUG_LOG(msg)
 #endif
 
-#include "cinterface_impl/helper.hpp"
-
+#include "cinterface_impl/helper_types.hpp"
+#include "cinterface_impl/opaque_types.hpp"
+#include "cinterface_impl/helper_funcs.hpp"
 
 // Implementation of the C API
 extern "C" {
