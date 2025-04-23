@@ -9,4 +9,4 @@ Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
 [compat]
 CEnum = "0.5.0"
-Libdl = "1.11.0"
+Libdl = "1"
