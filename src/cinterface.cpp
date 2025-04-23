@@ -108,29 +108,6 @@ int spir_kernel_evaluate(const spir_kernel *k, double x, double y, double *out)
         return -1;
     }
 }
-
-int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
-                       const double *y, int ny, double *out)
-{
-    auto impl = get_impl_kernel(k);
-    if (!impl || !x || !y || !out)
-        return -1;
-    if (nx <= 0 || ny <= 0)
-        return -1;
-
-    try {
-        // Evaluate kernel at each point
-        for (int ix = 0; ix < nx; ++ix) {
-            for (int iy = 0; iy < ny; ++iy) {
-                out[ix * ny + iy] =
-                    impl->compute(x[ix], y[iy]); // column-major order
-            }
-        }
-        return 0;
-    } catch (...) {
-        return -1;
-    }
-}
 */
 
 
@@ -147,34 +124,25 @@ spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon)
     }
 }
 
-spir_fermionic_finite_temp_basis *
-spir_fermionic_finite_temp_basis_new(double beta, double omega_max,
+spir_finite_temp_basis *
+spir_finite_temp_basis_new(spir_statistics_type statistics, double beta, double omega_max,
                                      double epsilon)
 {
     try {
-        return create_fermionic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
-                beta, omega_max, epsilon));
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {  
+            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, omega_max, epsilon);
+            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+        } else {
+            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon);
+            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+        }
     } catch (...) {
         return nullptr;
     }
 }
 
-spir_bosonic_finite_temp_basis *
-spir_bosonic_finite_temp_basis_new(double beta, double omega_max,
-                                   double epsilon)
-{
-    try {
-        return create_bosonic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-                beta, omega_max, epsilon));
-    } catch (...) {
-        return nullptr;
-    }
-}
-
-spir_fermionic_finite_temp_basis *
-spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
+spir_finite_temp_basis *
+spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max,
                                               const spir_kernel *k,
                                               const spir_sve_result *sve)
 {
@@ -183,31 +151,18 @@ spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
         auto kernel_impl = get_impl_kernel(k);
         if (!sve_impl || !kernel_impl)
             return nullptr;
-        return create_fermionic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
-                beta, omega_max, kernel_impl, *sve_impl));
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {
+            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, omega_max, kernel_impl, *sve_impl);
+            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+        } else {
+            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, kernel_impl, *sve_impl);
+            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+        }
     } catch (...) {
         return nullptr;
     }
 }
 
-spir_bosonic_finite_temp_basis *
-spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
-                                            const spir_kernel *k,
-                                            const spir_sve_result *sve)
-{
-    try {
-        auto sve_impl = get_impl_sve_result(sve);
-        auto kernel_impl = get_impl_kernel(k);
-        if (!sve_impl || !kernel_impl)
-            return nullptr;
-        return create_bosonic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-                beta, omega_max, kernel_impl, *sve_impl));
-    } catch (...) {
-        return nullptr;
-    }
-}
 
 spir_sampling *
 spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b)

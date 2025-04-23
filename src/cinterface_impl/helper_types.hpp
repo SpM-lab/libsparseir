@@ -1,6 +1,21 @@
 #include "sparseir/sparseir.hpp"
 #include <memory>
 
+class AbstractFiniteTempBasis {
+public:
+    virtual ~AbstractFiniteTempBasis() = default;
+    virtual int size() const = 0;
+};
+
+template<typename InternalType>
+class FiniteTempBasis : public AbstractFiniteTempBasis {
+private:
+    std::shared_ptr<InternalType> impl;
+
+public:
+    FiniteTempBasis(std::shared_ptr<InternalType> impl): impl(impl) {}  
+}
+
 
 class AbstractMatsubaraFunctions {
 public:
