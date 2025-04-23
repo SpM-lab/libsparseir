@@ -157,11 +157,25 @@ for (int i = 0; i < n_basis; ++i) {
     printf("v[%d] = %f\n", i, vval[i]);
 }
 
+// Evaluate the basis functions at given Matsubara frequencies
+int n_freqs = 10;
+int* matsubara_freq_indices = (int*)malloc(n_freqs * sizeof(int));
+for (int i = 0; i < n_freqs; ++i) {
+    matsubara_freq_indices[i] = 2 * i + 1; // fermionic Matsubara frequency
+}
+
+c_complex* uhat_val = (c_complex*)malloc(n_basis * n_freqs * sizeof(c_complex));
+spir_matsubara_basis_functions* uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
+status = spir_evaluate_matsubara_basis_functions(uhat, SPIR_ORDER_COLUMN_MAJOR, n_freqs, matsubara_freq_indices, uhat_val);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+
+
 // Clean up (in arbitrary order)
 free(uval);
 free(vval);
 spir_destroy_polyvector(u);
 spir_destroy_polyvector(v);
+spir_destroy_matsubara_basis_functions(uhat);
 spir_destroy_fermionic_finite_temp_basis(basis);
 ```
 
@@ -332,12 +346,10 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 const double pole_position = 0.0 * omega_max;
 
 // Initialize Green's function in Matsubara frequencies
-// G(iω_n) = 1/(iω_n - ε) = -ε/(ω_n^2 + ε^2) - iω_n/(ω_n^2 + ε^2)
+// G(iω_n) = 1/(iω_n - ε)
 for (int i = 0; i < n_matsubara; ++i) {
     assert(abs(matsubara_indices[i]) % 2 == 1); // fermionic Matsubara frequency
-    double w_n = matsubara_indices[i] * M_PI / beta;  // Matsubara frequency
-    double denominator = w_n * w_n + pole_position * pole_position;
-    g_matsubara[i] = -pole_position / denominator - I * w_n / denominator;
+    g_matsubara[i] = 1.0 / (I * matsubara_indices[i] * M_PI / beta - pole_position);
 }
 
 int target_dim = 0; // target dimension for evaluation and fit
@@ -351,6 +363,29 @@ int dims[1] = {n_matsubara};
 status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
                              1, dims, target_dim, g_matsubara, g_fit);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+
+// Evaluate the basis coefficients at Matsubara frequencies
+{
+    int n_freqs_test = 10;
+    int* matsubara_freq_indices_test = (int*)malloc(n_freqs_test * sizeof(int));
+    for (int in = 0; in < n_freqs_test; ++in) {
+        matsubara_freq_indices_test[in] = 2 * in + 1; // fermionic Matsubara frequency
+    }
+    c_complex* uhat_val = (c_complex*)malloc(n_basis * n_freqs_test * sizeof(c_complex));
+    spir_matsubara_basis_functions* uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
+    status = spir_evaluate_matsubara_basis_functions(uhat, SPIR_ORDER_COLUMN_MAJOR, n_freqs_test, matsubara_freq_indices_test, uhat_val);
+    assert(status == SPIR_COMPUTATION_SUCCESS);
+    for (int ifreq = 0; ifreq < n_freqs_test; ++ifreq) {
+        c_complex actual = 0.0;
+        for (int ibasis = 0; ibasis < n_basis; ++ibasis) {
+            actual += uhat_val[ibasis + ifreq * n_basis] * g_fit[ibasis];
+        }
+        c_complex expected = 1.0 / (I * matsubara_freq_indices_test[ifreq] * M_PI / beta - pole_position);
+        assert(cabs(actual - expected) < epsilon);
+    }
+    free(uhat_val);
+    spir_destroy_matsubara_basis_functions(uhat);
+}
 
 // Evaluate the basis coefficients at imaginary times
 {

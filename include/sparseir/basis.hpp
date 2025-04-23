@@ -380,4 +380,32 @@ finite_temp_bases(double beta, double omega_max,
     return std::make_pair(basis_f, basis_b);
 }
 
+
+// For C interface
+class AbstractMatsubaraBasisFunctions {
+public:
+    virtual ~AbstractMatsubaraBasisFunctions() = default;
+    virtual Eigen::MatrixXcd operator()(const Eigen::ArrayXi &n_array) const = 0;
+    virtual int size() const = 0;
+};
+
+template<typename S>
+class MatsubaraBasisFunctions : public AbstractMatsubaraBasisFunctions {
+private:
+    std::shared_ptr<PiecewiseLegendreFTVector<S>> impl;
+
+public:
+    MatsubaraBasisFunctions(std::shared_ptr<PiecewiseLegendreFTVector<S>> impl): impl(impl) {}
+
+    virtual Eigen::MatrixXcd operator()(const Eigen::ArrayXi &n_array) const override {
+        return impl->operator()(n_array);
+    }
+
+    virtual int size() const override {
+        return impl->size();
+    }
+};
+
+
+
 } // namespace sparseir

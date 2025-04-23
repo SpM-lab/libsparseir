@@ -56,7 +56,7 @@ DECLARE_OPAQUE_TYPE(bosonic_dlr);
 /**
  * Kernel
  */
-typedef struct _spir_kernel spir_kernel;
+//typedef struct _spir_kernel spir_kernel;
 
 /**
  * Function
@@ -1111,14 +1111,14 @@ int32_t spir_evaluate_basis_functions(const spir_polyvector* uv, double x, doubl
  * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
  * @param num_freqs Number of Matsubara frequencies at which to evaluate
  * @param matsubara_freq_indices Array of Matsubara frequency indices
- * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size num_freqs x n_basis.
+ * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size n_basis x num_freqs.
  * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
  *
  * @note The output array must be pre-allocated with sufficient size to store all basis function values
  *       at all requested frequencies. Indices n correspond to ωn = nπ/β,
  *       where n are odd for fermionic frequencies and even for bosonic frequencies.
  */
-int32_t spir_evaluate_matsubarabasis_functions(
+int32_t spir_evaluate_matsubara_basis_functions(
     const spir_matsubara_basis_functions* uiw,
     spir_order_type order, 
     int32_t num_freqs,
