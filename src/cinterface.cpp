@@ -13,252 +13,8 @@
 #define DEBUG_LOG(msg)
 #endif
 
-// Define opaque type and implement its management functions
-#define IMPLEMENT_OPAQUE_TYPE(name, impl_type)                                 \
-    struct _spir_##name                                                        \
-    {                                                                          \
-        std::shared_ptr<impl_type> ptr;                                        \
-        _spir_##name() { }                                                     \
-        ~_spir_##name() { }                                                    \
-    };                                                                         \
-    typedef struct _spir_##name spir_##name;                                   \
-                                                                               \
-    /* Helper function for creating objects */                                 \
-    static inline spir_##name *create_##name(std::shared_ptr<impl_type> p)     \
-    {                                                                          \
-        auto *obj = new spir_##name;                                           \
-        obj->ptr = p;                                                          \
-        return obj;                                                            \
-    }                                                                          \
-                                                                               \
-    /* Check if the shared_ptr has a valid object */                           \
-    int spir_is_assigned_##name(const spir_##name *obj)                        \
-    {                                                                          \
-        if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
-            return 0;                                                          \
-        }                                                                      \
-        bool is_assigned = static_cast<bool>(obj->ptr);                        \
-        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get()  \
-                        << ", is_assigned=" << is_assigned);                   \
-        return is_assigned ? 1 : 0;                                            \
-    }                                                                          \
-                                                                               \
-    /* Clone function */                                                       \
-    spir_##name *spir_clone_##name(const spir_##name *src)                     \
-    {                                                                          \
-        DEBUG_LOG("Cloning " << #name << " at " << src);                       \
-        if (!src) {                                                            \
-            DEBUG_LOG("Source " << #name << " is null");                       \
-            return nullptr;                                                    \
-        }                                                                      \
-                                                                               \
-        try {                                                                  \
-            /* Create a new structure */                                       \
-            spir_##name *result = new spir_##name();                           \
-                                                                               \
-            /* If source has a valid shared_ptr, copy it */                    \
-            if (src->ptr) {                                                    \
-                /* Create a new shared_ptr instance that shares ownership */   \
-                result->ptr = src->ptr;                                        \
-                DEBUG_LOG("Cloned " << #name << " to " << result               \
-                                    << ", shared_ptr points to "               \
-                                    << result->ptr.get());                     \
-            } else {                                                           \
-                DEBUG_LOG("Source " << #name << " has null shared_ptr");       \
-                result->ptr = nullptr;                                         \
-            }                                                                  \
-                                                                               \
-            return result;                                                     \
-        } catch (const std::exception &e) {                                    \
-            DEBUG_LOG("Exception in " << #name << "_clone: " << e.what());     \
-            return nullptr;                                                    \
-        } catch (...) {                                                        \
-            DEBUG_LOG("Unknown exception in " << #name << "_clone");           \
-            return nullptr;                                                    \
-        }                                                                      \
-    }                                                                          \
-                                                                               \
-    /* Destroy function */                                                     \
-    void spir_destroy_##name(spir_##name *obj)                                 \
-    {                                                                          \
-        if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
-            return;                                                            \
-        }                                                                      \
-        DEBUG_LOG("Destroying " << #name << " object at " << obj);             \
-        /* Check before resetting */                                           \
-        if (obj->ptr) {                                                        \
-            DEBUG_LOG("Resetting shared_ptr in " << #name << " at "            \
-                                                 << obj->ptr.get());           \
-            obj->ptr.reset();                                                  \
-        }                                                                      \
-        /* Safely delete the object */                                         \
-        delete obj;                                                            \
-    }                                                                          \
-                                                                               \
-    /* Helper to get the implementation shared_ptr */                          \
-    static inline std::shared_ptr<impl_type> get_impl_##name(                  \
-        const spir_##name *obj)                                                \
-    {                                                                          \
-        if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
-            return nullptr;                                                    \
-        }                                                                      \
-        DEBUG_LOG(#name << " object at " << obj                                \
-                        << ", ptr=" << obj->ptr.get());                        \
-        return obj->ptr;                                                       \
-    }
+#include "cinterface_impl/helper.hpp"
 
-// Implementation of the opaque types
-IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
-IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
-IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
-IMPLEMENT_OPAQUE_TYPE(continuous_functions, sparseir::AbstractContinuousFunctions);
-IMPLEMENT_OPAQUE_TYPE(matsubara_functions, sparseir::AbstractMatsubaraFunctions);
-IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
-                      sparseir::FiniteTempBasis<sparseir::Fermionic>);
-IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
-                      sparseir::FiniteTempBasis<sparseir::Bosonic>);
-IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
-IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
-IMPLEMENT_OPAQUE_TYPE(
-    fermionic_dlr,
-    sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>);
-IMPLEMENT_OPAQUE_TYPE(
-    bosonic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>);
-
-// Helper function to convert N-dimensional array to 3D array by collapsing
-// dimensions
-static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
-                                             int32_t target_dim)
-{
-    std::array<int32_t, 3> dims_3d = {1, dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        dims_3d[0] *= dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        dims_3d[2] *= dims[i];
-    }
-    return dims_3d;
-}
-
-// Helper function to convert N-dimensional array to 2D array by collapsing
-// dimensions
-static std::array<int32_t, 2> collapse_to_2d(int32_t ndim, const int32_t *dims,
-                                             int32_t target_dim)
-{
-    std::array<int32_t, 2> dims_2d = {dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        dims_2d[0] *= dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        dims_2d[1] *= dims[i];
-    }
-    return dims_2d;
-}
-
-// Template function to handle all evaluation cases - moved outside extern "C"
-// block
-template <typename InputScalar, typename OutputScalar>
-static int
-evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
-              int32_t *input_dims, int32_t target_dim, const InputScalar *input,
-              OutputScalar *out,
-              int (sparseir::AbstractSampling::*eval_func)(
-                  const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
-                  int, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &)
-                  const)
-{
-    auto impl = get_impl_sampling(s);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-
-    // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
-        collapse_to_3d(ndim, input_dims, target_dim);
-
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-        // Convert to column-major order for Eigen
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    }
-}
-
-template <typename InputScalar, typename OutputScalar>
-static int
-fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
-         int32_t *input_dims, int32_t target_dim, const InputScalar *input,
-         OutputScalar *out,
-         int (sparseir::AbstractSampling::*eval_func)(
-             const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &, int,
-             Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &) const)
-{
-    auto impl = get_impl_sampling(s);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-
-    // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
-        collapse_to_3d(ndim, input_dims, target_dim);
-
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
-
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-        // Convert to column-major order for Eigen
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    }
-}
-
-template<typename InternalType>
-spir_continuous_functions* _create_continuous_functions(std::shared_ptr<InternalType> impl) {
-    return create_continuous_functions(
-        std::static_pointer_cast<sparseir::AbstractContinuousFunctions>(
-            std::make_shared<sparseir::ContinuousFunctions<InternalType>>(impl)
-        )
-    );
-}
 
 // Implementation of the C API
 extern "C" {
@@ -746,21 +502,21 @@ int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
 
 
 
-spir_continuous_functions *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis *b)
+spir_singular_funcs *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis *b)
 {
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_continuous_functions(impl->u);
+    return _create_singular_funcs(impl->u);
 }
 
 
-spir_continuous_functions *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis *b)
+spir_singular_funcs *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis *b)
 {
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_continuous_functions(impl->v);
+    return _create_singular_funcs(impl->v);
 }
 
 spir_matsubara_functions *spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis *b)
@@ -770,27 +526,27 @@ spir_matsubara_functions *spir_fermionic_finite_temp_basis_get_uhat(const spir_f
         return nullptr;
 
     return create_matsubara_functions(
-        std::static_pointer_cast<sparseir::AbstractMatsubaraFunctions>(
-            std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->uhat)
+        std::static_pointer_cast<AbstractMatsubaraFunctions>(
+            std::make_shared<MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->uhat)
         )
     );
 }
 
-spir_continuous_functions *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
+spir_singular_funcs *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_continuous_functions(impl->u);
+    return _create_singular_funcs(impl->u);
 }
 
 
-spir_continuous_functions *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
+spir_singular_funcs *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_continuous_functions(impl->v);
+    return _create_singular_funcs(impl->v);
 }
 
 spir_matsubara_functions *spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis *b)
@@ -800,8 +556,8 @@ spir_matsubara_functions *spir_bosonic_finite_temp_basis_get_uhat(const spir_bos
         return nullptr;
 
     return create_matsubara_functions(
-        std::static_pointer_cast<sparseir::AbstractMatsubaraFunctions>(
-            std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Bosonic>>(impl->uhat)
+        std::static_pointer_cast<AbstractMatsubaraFunctions>(
+            std::make_shared<MatsubaraBasisFunctions<sparseir::Bosonic>>(impl->uhat)
         )
     );
 }
@@ -925,7 +681,7 @@ int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis
     }
 }
 
-int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* u, double x, double* out) {
+int32_t spir_evaluate_singular_funcs(const spir_singular_funcs* u, double x, double* out) {
     if (!u || !out) {
         return SPIR_INVALID_ARGUMENT;
     }
@@ -935,7 +691,7 @@ int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* u, d
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception& e) {
-        DEBUG_LOG("Exception in spir_evaluate_continuous_functions: " << e.what());
+        DEBUG_LOG("Exception in spir_evaluate_singular_funcs: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }

@@ -47,7 +47,7 @@ DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
 
 //DECLARE_OPAQUE_TYPE(polyvector);
 
-DECLARE_OPAQUE_TYPE(continuous_functions);
+DECLARE_OPAQUE_TYPE(singular_funcs);
 DECLARE_OPAQUE_TYPE(matsubara_functions);
 
 DECLARE_OPAQUE_TYPE(fermionic_finite_temp_basis);
@@ -981,7 +981,7 @@ spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis* b);
+spir_singular_funcs* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis* b);
 
 
 /**
@@ -999,7 +999,7 @@ spir_continuous_functions* spir_fermionic_finite_temp_basis_get_u(const spir_fer
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis* b);
+spir_singular_funcs* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a fermionic finite temperature basis in Matsubara frequency domain.
@@ -1032,7 +1032,7 @@ spir_matsubara_functions* spir_fermionic_finite_temp_basis_get_uhat(const spir_f
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis* b);
+spir_singular_funcs* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a bosonic finite temperature basis on the real frequency axis.
@@ -1049,7 +1049,7 @@ spir_continuous_functions* spir_bosonic_finite_temp_basis_get_u(const spir_boson
  *       when no longer needed
  * @see spir_destroy_polyvector
  */
-spir_continuous_functions* spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis* b);
+spir_singular_funcs* spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a bosonic finite temperature basis in Matsubara frequency domain.
@@ -1081,7 +1081,7 @@ spir_matsubara_functions* spir_bosonic_finite_temp_basis_get_uhat(const spir_bos
  *
  * @note The output array must be pre-allocated with sufficient size to store all basis function values
  */
-int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* uv, double x, double* out);
+int32_t spir_evaluate_singular_funcs(const spir_singular_funcs* uv, double x, double* out);
 
 
 /**

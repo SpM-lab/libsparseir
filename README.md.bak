@@ -187,7 +187,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
     double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
     spir_polyvector* u = spir_fermionic_finite_temp_basis_get_u(basis);
     double* uval = (double*)malloc(n_basis * sizeof(double));
-    status = spir_evaluate_continuous_functions(u, tau, uval);
+    status = spir_evaluate_singular_funcs(u, tau, uval);
     assert(status == SPIR_COMPUTATION_SUCCESS);
 
     double actual = 0.0;
