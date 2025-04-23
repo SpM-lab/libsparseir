@@ -167,6 +167,9 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         spir_polyvector *u = spir_fermionic_finite_temp_basis_get_u(basis);
         REQUIRE(u != nullptr);
 
+        spir_matsubara_basis_functions *uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
+        REQUIRE(uhat != nullptr);
+
         // Test basis function evaluation
         int basis_size;
         int status = spir_fermionic_finite_temp_basis_get_size(basis, &basis_size);

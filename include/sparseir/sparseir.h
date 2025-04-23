@@ -45,6 +45,7 @@ DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
 DECLARE_OPAQUE_TYPE(polyvector);
+DECLARE_OPAQUE_TYPE(matsubara_basis_functions);
 DECLARE_OPAQUE_TYPE(fermionic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(bosonic_finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
@@ -55,7 +56,7 @@ DECLARE_OPAQUE_TYPE(bosonic_dlr);
 /**
  * Kernel
  */
-typedef struct _spir_kernel spir_kernel;
+//typedef struct _spir_kernel spir_kernel;
 
 /**
  * Function
@@ -1016,6 +1017,21 @@ spir_polyvector* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_fin
  */
 spir_polyvector* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis* b);
 
+/**
+ * @brief Gets the basis functions of a fermionic finite temperature basis in Matsubara frequency domain.
+ *
+ * This function returns a polynomial vector containing the basis functions of the
+ * specified fermionic finite temperature basis in Matsubara frequency domain.
+ *
+ * @param b Pointer to the fermionic finite temperature basis object
+ * @return A pointer to the object containing the basis functions,
+ *         or NULL if the basis object is invalid
+ *
+ * @note The returned object must be freed using spir_destroy_matsubara_basis_functions
+ *       when no longer needed
+ * @see spir_destroy_matsubara_basis_functions
+ */
+spir_matsubara_basis_functions* spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a bosonic finite temperature basis.
@@ -1052,20 +1068,61 @@ spir_polyvector* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_
 spir_polyvector* spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis* b);
 
 /**
- * @brief Evaluates basis functions at a single point.
+ * @brief Gets the basis functions of a bosonic finite temperature basis in Matsubara frequency domain.
+ *
+ * This function returns a polynomial vector containing the basis functions of the
+ * specified bosonic finite temperature basis in Matsubara frequency domain.
+ *
+ * @param b Pointer to the bosonic finite temperature basis object
+ * @return A pointer to the object containing the basis functions,
+ *         or NULL if the basis object is invalid
+ *
+ * @note The returned object must be freed using spir_destroy_matsubara_basis_functions
+ *       when no longer needed
+ * @see spir_destroy_matsubara_basis_functions
+ */
+spir_matsubara_basis_functions* spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis* b);
+
+/**
+ * @brief Evaluates basis functions at a single point in the imaginary-time domain or the real frequency domain.
  *
  * This function evaluates all basis functions contained in a polynomial vector at a specified point x.
  * The values of each basis function at x are stored in the output array.
  * The output array out[j] contains the value of the j-th basis function evaluated at x.
  *
- * @param u Pointer to the polynomial vector containing the basis functions
+ * @param uv Pointer to the polynomial vector containing the basis functions
  * @param x Point at which to evaluate the basis functions
  * @param out Pre-allocated array to store the evaluation results. Must have size >= n_basis
  * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
  *
  * @note The output array must be pre-allocated with sufficient size to store all basis function values
  */
-int32_t spir_evaluate_basis_functions(const spir_polyvector* u, double x, double* out);
+int32_t spir_evaluate_basis_functions(const spir_polyvector* uv, double x, double* out);
+
+
+/**
+ * @brief Evaluates basis functions at multiple Matsubara frequencies.
+ *
+ * This function evaluates all basis functions contained in a Matsubara basis functions object
+ * at the specified Matsubara frequency indices. The values of each basis function at each
+ * frequency are stored in the output array.
+ *
+ * @param uiw Pointer to the Matsubara basis functions object
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param num_freqs Number of Matsubara frequencies at which to evaluate
+ * @param matsubara_freq_indices Array of Matsubara frequency indices
+ * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size n_basis x num_freqs.
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ *
+ * @note The output array must be pre-allocated with sufficient size to store all basis function values
+ *       at all requested frequencies. Indices n correspond to ωn = nπ/β,
+ *       where n are odd for fermionic frequencies and even for bosonic frequencies.
+ */
+int32_t spir_evaluate_matsubara_basis_functions(
+    const spir_matsubara_basis_functions* uiw,
+    spir_order_type order, 
+    int32_t num_freqs,
+    int32_t* matsubara_freq_indices, c_complex* out);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.

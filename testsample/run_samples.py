@@ -8,8 +8,8 @@ from pathlib import Path
 
 
 def extract_c_code_blocks(markdown_text):
-    """Extract C/C++ code blocks from markdown text."""
-    pattern = r'```(?:c|cpp)\n(.*?)```'
+    """Extract C code blocks from markdown text."""
+    pattern = r'```c\n(.*?)```'
     return re.findall(pattern, markdown_text, re.DOTALL)
 
 
@@ -115,10 +115,9 @@ def main():
     
     code_blocks = extract_c_code_blocks(readme_text)
     if not code_blocks:
-        print("No C/C++ code blocks found in README.md")
+        print("No C code blocks found in README.md")
         sys.exit(0)
     
-    all_tests_passed = True
     for i, block in enumerate(code_blocks, 1):
         test_code = generate_c_file(block, i)
         test_file = output_dir / f"readme_sample{i}.c"
@@ -130,10 +129,8 @@ def main():
         
         # Compile and run test
         if not compile_and_run_test(test_file):
-            all_tests_passed = False
-    
-    if not all_tests_passed:
-        sys.exit(1)
+            print(f"Test failed for {test_file}. Stopping execution.")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

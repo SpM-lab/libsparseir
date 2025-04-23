@@ -115,8 +115,8 @@ IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
 IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
 IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
 IMPLEMENT_OPAQUE_TYPE(polyvector, sparseir::PiecewiseLegendrePolyVector);
-
-IMPLEMENT_OPAQUE_TYPE(basis, sparseir::FiniteTempBasis<sparseir::Fermionic>);
+IMPLEMENT_OPAQUE_TYPE(matsubara_basis_functions, sparseir::AbstractMatsubaraBasisFunctions);
+//IMPLEMENT_OPAQUE_TYPE(basis, sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
@@ -755,6 +755,19 @@ spir_polyvector *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_fin
     return create_polyvector(impl->v);
 }
 
+spir_matsubara_basis_functions *spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis *b)
+{
+    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    return create_matsubara_basis_functions(
+        std::static_pointer_cast<sparseir::AbstractMatsubaraBasisFunctions>(
+            std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->uhat)
+        )
+    );
+}
+
 spir_polyvector *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
@@ -765,6 +778,7 @@ spir_polyvector *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_
     return create_polyvector(impl->u);
 }
 
+
 spir_polyvector *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
@@ -774,6 +788,20 @@ spir_polyvector *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_
     // Simply use the shared_ptr that already exists in the implementation
     return create_polyvector(impl->v);
 }
+
+spir_matsubara_basis_functions *spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis *b)
+{
+    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    return create_matsubara_basis_functions(
+        std::static_pointer_cast<sparseir::AbstractMatsubaraBasisFunctions>(
+            std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Bosonic>>(impl->uhat)
+        )
+    );
+}
+
 
 // Create new regularized bose kernel
 // spir_regularized_bosonic_kernel *spir_kernel_regularized_bose_new(double
@@ -905,6 +933,55 @@ int32_t spir_evaluate_basis_functions(const spir_polyvector* u, double x, double
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception& e) {
         return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_evaluate_matsubara_basis_functions(
+    const spir_matsubara_basis_functions* uiw,
+    spir_order_type order,
+    int32_t num_freqs,
+    int32_t* matsubara_freq_indices,
+    c_complex* out)
+{
+    if (!uiw || !uiw->ptr) {
+        DEBUG_LOG("Matsubara basis functions object is null or not assigned");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    if (!matsubara_freq_indices || !out) {
+        DEBUG_LOG("Input or output array is null");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    if (num_freqs <= 0) {
+        DEBUG_LOG("Number of frequencies must be positive");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        // Convert C array to Eigen vector
+        Eigen::VectorXi freq_indices = Eigen::Map<Eigen::VectorXi>(matsubara_freq_indices, num_freqs);
+        
+        // Get the basis size
+        int basis_size = uiw->ptr->size();
+        
+        Eigen::MatrixXcd out_matrix = uiw->ptr->operator()(freq_indices);
+        
+        for (int ifreq = 0; ifreq < num_freqs; ++ifreq) {
+            for (int ibasis = 0; ibasis < basis_size; ++ibasis) {
+                const auto& val = out_matrix(ibasis, ifreq);
+                if (order == SPIR_ORDER_ROW_MAJOR) {
+                    out[ifreq + ibasis * num_freqs] = {val.real(), val.imag()};
+                } else {
+                    out[ibasis + ifreq * basis_size] = {val.real(), val.imag()};
+                }
+            }
+        }
+
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception& e) {
+        DEBUG_LOG("Exception in spir_evaluate_matsubarabasis_functions: " << e.what());
+        return SPIR_INTERNAL_ERROR;
     }
 }
 
