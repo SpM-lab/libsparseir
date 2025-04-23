@@ -114,9 +114,8 @@
 IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
 IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
 IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
-IMPLEMENT_OPAQUE_TYPE(polyvector, sparseir::PiecewiseLegendrePolyVector);
-IMPLEMENT_OPAQUE_TYPE(matsubara_basis_functions, sparseir::AbstractMatsubaraBasisFunctions);
-//IMPLEMENT_OPAQUE_TYPE(basis, sparseir::FiniteTempBasis<sparseir::Fermionic>);
+IMPLEMENT_OPAQUE_TYPE(continuous_functions, sparseir::AbstractContinuousFunctions);
+IMPLEMENT_OPAQUE_TYPE(matsubara_functions, sparseir::AbstractMatsubaraFunctions);
 IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
                       sparseir::FiniteTempBasis<sparseir::Fermionic>);
 IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
@@ -250,6 +249,15 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
 
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     }
+}
+
+template<typename InternalType>
+spir_continuous_functions* _create_continuous_functions(std::shared_ptr<InternalType> impl) {
+    return create_continuous_functions(
+        std::static_pointer_cast<sparseir::AbstractContinuousFunctions>(
+            std::make_shared<sparseir::ContinuousFunctions<InternalType>>(impl)
+        )
+    );
 }
 
 // Implementation of the C API
@@ -735,68 +743,64 @@ int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
     return SPIR_COMPUTATION_SUCCESS;
 }
 
-spir_polyvector *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis *b)
+
+
+
+spir_continuous_functions *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis *b)
 {
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-
-    // Simply use the shared_ptr that already exists in the implementation
-    return create_polyvector(impl->u);
+    return _create_continuous_functions(impl->u);
 }
 
-spir_polyvector *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis *b)
+
+spir_continuous_functions *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis *b)
 {
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-
-    // Simply use the shared_ptr that already exists in the implementation
-    return create_polyvector(impl->v);
+    return _create_continuous_functions(impl->v);
 }
 
-spir_matsubara_basis_functions *spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis *b)
+spir_matsubara_functions *spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis *b)
 {
     auto impl = get_impl_fermionic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
 
-    return create_matsubara_basis_functions(
-        std::static_pointer_cast<sparseir::AbstractMatsubaraBasisFunctions>(
+    return create_matsubara_functions(
+        std::static_pointer_cast<sparseir::AbstractMatsubaraFunctions>(
             std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->uhat)
         )
     );
 }
 
-spir_polyvector *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
+spir_continuous_functions *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-
-    // Simply use the shared_ptr that already exists in the implementation
-    return create_polyvector(impl->u);
+    return _create_continuous_functions(impl->u);
 }
 
 
-spir_polyvector *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
+spir_continuous_functions *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-
-    // Simply use the shared_ptr that already exists in the implementation
-    return create_polyvector(impl->v);
+    return _create_continuous_functions(impl->v);
 }
 
-spir_matsubara_basis_functions *spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis *b)
+spir_matsubara_functions *spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis *b)
 {
     auto impl = get_impl_bosonic_finite_temp_basis(b);
     if (!impl)
         return nullptr;
 
-    return create_matsubara_basis_functions(
-        std::static_pointer_cast<sparseir::AbstractMatsubaraBasisFunctions>(
+    return create_matsubara_functions(
+        std::static_pointer_cast<sparseir::AbstractMatsubaraFunctions>(
             std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Bosonic>>(impl->uhat)
         )
     );
@@ -921,23 +925,23 @@ int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis
     }
 }
 
-int32_t spir_evaluate_basis_functions(const spir_polyvector* u, double x, double* out) {
+int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* u, double x, double* out) {
     if (!u || !out) {
         return SPIR_INVALID_ARGUMENT;
     }
 
     try {
-        const auto& polyvec = *u->ptr;
-        Eigen::VectorXd result = polyvec(x);
+        Eigen::VectorXd result = u->ptr->operator()(x);
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception& e) {
-        return SPIR_GET_IMPL_FAILED;
+        DEBUG_LOG("Exception in spir_evaluate_continuous_functions: " << e.what());
+        return SPIR_INTERNAL_ERROR;
     }
 }
 
-int32_t spir_evaluate_matsubara_basis_functions(
-    const spir_matsubara_basis_functions* uiw,
+int32_t spir_evaluate_matsubara_functions(
+    const spir_matsubara_functions* uiw,
     spir_order_type order,
     int32_t num_freqs,
     int32_t* matsubara_freq_indices,
