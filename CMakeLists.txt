@@ -82,6 +82,13 @@ include_directories(${xprec_SOURCE_DIR}/include)
 # Set the default component name for installations
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
+# Define export macros
+if(WIN32)
+    set(SPARSEIR_EXPORT __declspec(dllexport))
+else()
+    set(SPARSEIR_EXPORT __attribute__((visibility("default"))))
+endif()
+
 add_library(sparseir SHARED
     src/utils.cpp
     src/linalg.cpp
@@ -94,7 +101,11 @@ add_library(sparseir SHARED
     src/cinterface.cpp
     )
 if(NOT MSVC)
-    target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
+    target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic -fvisibility=hidden)
+    set_target_properties(sparseir PROPERTIES
+        CXX_VISIBILITY_PRESET hidden
+        VISIBILITY_INLINES_HIDDEN ON
+    )
 endif()
 
 target_include_directories(sparseir PUBLIC
