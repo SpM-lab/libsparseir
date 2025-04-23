@@ -164,10 +164,10 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
             spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
         REQUIRE(basis != nullptr);
 
-        spir_polyvector *u = spir_fermionic_finite_temp_basis_get_u(basis);
+        spir_continuous_functions *u = spir_fermionic_finite_temp_basis_get_u(basis);
         REQUIRE(u != nullptr);
 
-        spir_matsubara_basis_functions *uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
+        spir_matsubara_functions *uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
         REQUIRE(uhat != nullptr);
 
         // Test basis function evaluation
@@ -178,7 +178,7 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         double x = 0.5; // Test point for u basis (imaginary time)
         double y = 0.5 * wmax; // Test point for v basis (real frequency)
         double *out = (double *)malloc(basis_size * sizeof(double));
-        status = spir_evaluate_basis_functions(u, x, out);
+        status = spir_evaluate_continuous_functions(u, x, out);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare with C++ implementation for u basis
@@ -189,11 +189,11 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         }
 
         // Test v basis functions
-        spir_polyvector *v = spir_fermionic_finite_temp_basis_get_v(basis);
+        spir_continuous_functions *v = spir_fermionic_finite_temp_basis_get_v(basis);
         REQUIRE(v != nullptr);
 
         // Test v basis function evaluation
-        status = spir_evaluate_basis_functions(v, y, out);
+        status = spir_evaluate_continuous_functions(v, y, out);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare with C++ implementation for v basis
@@ -203,14 +203,14 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         }
 
         free(out);
-        spir_destroy_polyvector(u);
-        spir_destroy_polyvector(v);
+        spir_destroy_continuous_functions(u);
+        spir_destroy_continuous_functions(v);
 
         // Test error cases
-        status = spir_evaluate_basis_functions(nullptr, x, out);
+        status = spir_evaluate_continuous_functions(nullptr, x, out);
         REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
-        status = spir_evaluate_basis_functions(u, x, nullptr);
+        status = spir_evaluate_continuous_functions(u, x, nullptr);
         REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
         // Clean up
@@ -227,7 +227,7 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
             spir_bosonic_finite_temp_basis_new(beta, wmax, epsilon);
         REQUIRE(basis != nullptr);
 
-        spir_polyvector *u = spir_bosonic_finite_temp_basis_get_u(basis);
+        spir_continuous_functions *u = spir_bosonic_finite_temp_basis_get_u(basis);
         REQUIRE(u != nullptr);
 
         // Test basis function evaluation
@@ -238,7 +238,7 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         double x = 0.5; // Test point for u basis (imaginary time)
         double y = 0.5 * wmax; // Test point for v basis (real frequency)
         double *out = (double *)malloc(basis_size * sizeof(double));
-        status = spir_evaluate_basis_functions(u, x, out);
+        status = spir_evaluate_continuous_functions(u, x, out);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare with C++ implementation for u basis
@@ -249,11 +249,11 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         }
 
         // Test v basis functions
-        spir_polyvector *v = spir_bosonic_finite_temp_basis_get_v(basis);
+        spir_continuous_functions *v = spir_bosonic_finite_temp_basis_get_v(basis);
         REQUIRE(v != nullptr);
 
         // Test v basis function evaluation
-        status = spir_evaluate_basis_functions(v, y, out);
+        status = spir_evaluate_continuous_functions(v, y, out);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare with C++ implementation for v basis
@@ -263,14 +263,14 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
         }
 
         free(out);
-        spir_destroy_polyvector(u);
-        spir_destroy_polyvector(v);
+        spir_destroy_continuous_functions(u);
+        spir_destroy_continuous_functions(v);
 
         // Test error cases
-        status = spir_evaluate_basis_functions(nullptr, x, out);
+        status = spir_evaluate_continuous_functions(nullptr, x, out);
         REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
-        status = spir_evaluate_basis_functions(u, x, nullptr);
+        status = spir_evaluate_continuous_functions(u, x, nullptr);
         REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
         // Clean up
