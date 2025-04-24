@@ -56,6 +56,11 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
     // Convert dimensions
     std::array<int32_t, 3> dims_3d =
         collapse_to_3d(ndim, input_dims, target_dim);
+    
+    // output ndim, target_dim, dims_3d
+    printf("ndim: %d\n", ndim);
+    printf("target_dim: %d\n", target_dim);
+    printf("dims_3d: %d, %d, %d\n", dims_3d[0], dims_3d[1], dims_3d[2]);
 
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::array<int32_t, 3> input_dims_3d = dims_3d;
@@ -93,6 +98,8 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
 {
     auto impl = get_impl_sampling(s);
     if (!impl)
+        return SPIR_GET_IMPL_FAILED;
+    if (!impl.get())
         return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions

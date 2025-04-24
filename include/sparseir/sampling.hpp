@@ -410,6 +410,9 @@ int evaluate_inplace_impl(
 
     if (sampler.basis_size() !=
         static_cast<std::size_t>(input.dimension(dim))) {
+            //output debug info
+        printf("error basis size: %d\n", sampler.basis_size());
+        printf("error input dimension: %d\n", input.dimension(dim));
         // Dimension mismatch
         return SPIR_INPUT_DIMENSION_MISMATCH;
     }

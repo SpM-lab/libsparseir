@@ -247,6 +247,7 @@ int32_t spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
                               int32_t target_dim, const c_complex *input,
                               c_complex *out)
 {
+    // DANGER: MEMORY LAYOUT MAY NOT BE CONSISTENT BETWEEN C99 AND C++
     std::complex<double> *cpp_input = (std::complex<double> *)(input);
     std::complex<double> *cpp_out = (std::complex<double> *)(out);
     return evaluate_impl(s, order, ndim, input_dims, target_dim, cpp_input,
