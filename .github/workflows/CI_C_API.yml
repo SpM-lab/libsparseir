@@ -63,7 +63,7 @@ jobs:
       env:
         cache-name: cache-pipelines
       with:
-        key: ${{ steps.build-c-api.outputs.cache-primary-key }}
+        key: ${{ runner.os }}-pipelines-${{ hashFiles('src/cinterface.cpp') }}
         path: .ccache
 
     - uses: julia-actions/setup-julia@v2
