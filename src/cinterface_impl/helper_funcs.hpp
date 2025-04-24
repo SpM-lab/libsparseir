@@ -126,22 +126,20 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
     }
 }
 
-template<typename InternalType>
-spir_singular_funcs* _create_singular_funcs(std::shared_ptr<InternalType> impl) {
+template <typename InternalType>
+spir_singular_funcs *_create_singular_funcs(std::shared_ptr<InternalType> impl)
+{
     return create_singular_funcs(
         std::static_pointer_cast<AbstractContinuousFunctions>(
-            std::make_shared<ContinuousFunctions<InternalType>>(impl)
-        )
-    );
+            std::make_shared<ContinuousFunctions<InternalType>>(impl)));
 }
 
-
-template<typename S>
-int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order,
-                           int32_t ndim, int32_t *input_dims,
-                           const double *input, double *out)
+template <typename S>
+int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+                       int32_t *input_dims, const double *input, double *out)
 {
-    std::shared_ptr<DLR<S>> impl = std::dynamic_pointer_cast<DLR<S>>(get_impl_dlr(dlr));
+    std::shared_ptr<_DLR<S>> impl =
+        std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
@@ -163,13 +161,13 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order,
     return SPIR_COMPUTATION_SUCCESS;
 }
 
-
-template<typename S>
+template <typename S>
 int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
-                             int32_t ndim, int32_t *input_dims,
-                             const double *input, double *out)
+                         int32_t ndim, int32_t *input_dims, const double *input,
+                         double *out)
 {
-    std::shared_ptr<DLR<S>> impl = std::dynamic_pointer_cast<DLR<S>>(get_impl_dlr(dlr));
+    std::shared_ptr<_DLR<S>> impl =
+        std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
@@ -180,7 +178,8 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
         input_tensor.data()[i] = input[i];
     }
 
-    Eigen::Tensor<double, 2> out_tensor = impl->get_impl()->from_IR(input_tensor);
+    Eigen::Tensor<double, 2> out_tensor =
+        impl->get_impl()->from_IR(input_tensor);
 
     // pass data to out
     std::size_t total_output_size =
@@ -189,4 +188,56 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
         out[i] = out_tensor.data()[i];
     }
     return SPIR_COMPUTATION_SUCCESS;
+}
+
+template <typename S, typename SMPL>
+spir_sampling *_spir_sampling_new(const spir_finite_temp_basis *b)
+{
+    std::shared_ptr<AbstractFiniteTempBasis> impl =
+        get_impl_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    auto impl_finite_temp_basis =
+        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
+        std::make_shared<SMPL>(impl_finite_temp_basis)));
+}
+
+template <typename S>
+spir_dlr* _spir_dlr_new(const spir_finite_temp_basis *b)
+{
+    auto impl = get_impl_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    auto ptr_finite_temp_basis =
+        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+    auto ptr_dlr = std::make_shared<_DLR<S>>(
+        std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis)
+    );
+    return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
+}
+
+
+template <typename S>
+spir_dlr *
+_spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles)
+{
+    auto impl = get_impl_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    auto ptr_finite_temp_basis =
+        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+
+    Eigen::VectorXd poles_vec(npoles);
+    for (int i = 0; i < npoles; i++) {
+        poles_vec(i) = poles[i];
+    }
+
+    auto ptr_dlr = std::make_shared<_DLR<S>>(
+        std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis)
+    );
+    return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
 }

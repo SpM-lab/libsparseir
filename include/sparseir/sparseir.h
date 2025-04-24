@@ -426,7 +426,7 @@ int spir_sampling_fit_zz(
  * @see spir_bosonic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_fitmat_rows(const spir_dlr *dlr);
+int spir_dlr_fitmat_rows(const spir_dlr *dlr);
 
 /**
  * @brief Gets the number of columns in the fitting matrix of a bosonic DLR.

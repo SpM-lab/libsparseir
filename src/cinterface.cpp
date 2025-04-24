@@ -156,43 +156,32 @@ spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta
 spir_sampling *
 spir_tau_sampling_new(const spir_finite_temp_basis *b)
 {
-    std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_finite_temp_basis(b);
-    if (!impl)
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
         return nullptr;
+    }
 
-    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return create_sampling(
-            std::static_pointer_cast<sparseir::AbstractSampling>(
-                std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl)
-            )
-        );
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_sampling_new<sparseir::Fermionic, sparseir::TauSampling<sparseir::Fermionic>>(b);
     } else {
-        return create_sampling(
-            std::static_pointer_cast<sparseir::AbstractSampling>(
-                std::make_shared<sparseir::TauSampling<sparseir::Bosonic>>(*impl)
-            )
-        );
+        return _spir_sampling_new<sparseir::Bosonic, sparseir::TauSampling<sparseir::Bosonic>>(b);
     }
 }
 
 spir_sampling *
 spir_matsubara_sampling_new(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_finite_temp_basis(b);
-    if (!impl)
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
         return nullptr;
-    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return create_sampling(
-            std::static_pointer_cast<sparseir::AbstractSampling>(
-                std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(*impl)
-            )
-        );
+    }
+
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_sampling_new<sparseir::Fermionic, sparseir::MatsubaraSampling<sparseir::Fermionic>>(b);
     } else {
-        return create_sampling(
-            std::static_pointer_cast<sparseir::AbstractSampling>(
-                std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(*impl)
-            )
-        );
+        return _spir_sampling_new<sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(b);
     }
 }
 
@@ -200,15 +189,16 @@ spir_matsubara_sampling_new(const spir_finite_temp_basis *b)
 spir_dlr *
 spir_dlr_new(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_finite_temp_basis(b);
-    if (!impl)
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
         return nullptr;
-    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        auto dlr_ptr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
-        return create_dlr(std::make_shared<AbstractDLR>(dlr_ptr));
+    }
+
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_dlr_new<sparseir::Fermionic>(b);
     } else {
-        auto dlr_ptr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
-        return create_dlr(std::make_shared<AbstractDLR>(dlr_ptr));
+        return _spir_dlr_new<sparseir::Bosonic>(b);
     }
 }
 
@@ -219,14 +209,17 @@ spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const
     if (!impl)
         return nullptr;
 
-    Eigen::VectorXd poles_vec(npoles);
-    for (int i = 0; i < npoles; i++) {
-        poles_vec(i) = poles[i];
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
+        return nullptr;
     }
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(
-        *impl, poles_vec);
-    return create_dlr(std::make_shared<AbstractDLR>(dlr));
+
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_dlr_new_with_poles<sparseir::Fermionic>(b, npoles, poles);
+    } else {
+        return _spir_dlr_new_with_poles<sparseir::Bosonic>(b, npoles, poles);
+    }
 }
 
 
@@ -351,11 +344,7 @@ spir_matsubara_functions *spir_finite_temp_basis_get_uhat(const spir_finite_temp
     if (!impl)
         return nullptr;
 
-    return create_matsubara_functions(
-        std::static_pointer_cast<AbstractMatsubaraFunctions>(
-            std::make_shared<MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->get_uhat())
-        )
-    );
+    return create_matsubara_functions(impl->get_uhat());
 }
 
 

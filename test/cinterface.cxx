@@ -63,6 +63,16 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
 }
 
 template <typename S>
+spir_statistics_type get_stat()
+{
+    if (std::is_same<S, sparseir::Fermionic>::value) {
+        return SPIR_STATISTICS_FERMIONIC;
+    } else {
+        return SPIR_STATISTICS_BOSONIC;
+    }
+}
+
+template <typename S>
 void test_finite_temp_basis_constructor()
 {
     double beta = 2.0;
@@ -70,8 +80,7 @@ void test_finite_temp_basis_constructor()
     double Lambda = 10.0;
     double epsilon = 1e-6;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
     spir_finite_temp_basis *basis =
@@ -98,8 +107,7 @@ void test_finite_temp_basis_constructor_with_sve()
     spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon);
     REQUIRE(sve_result != nullptr);
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     spir_finite_temp_basis *basis = spir_finite_temp_basis_new_with_sve(
         stat, beta, wmax, kernel, sve_result);
@@ -175,11 +183,10 @@ void test_finite_temp_basis_basis_functions()
     double wmax = 5.0;
     double epsilon = 1e-6;
 
-    auto stat = S == sparseir::Fermionic
-        ? SPIR_STATISTICS_FERMIONIC
+    auto stat = get_stat<S>();
 
-          spir_finite_temp_basis *basis =
-              spir_finite_temp_basis_new(stat, wmax, epsilon);
+    spir_finite_temp_basis *basis =
+        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
     REQUIRE(basis != nullptr);
 
     spir_singular_funcs *u = spir_finite_temp_basis_get_u(basis);
@@ -255,8 +262,7 @@ void test_finite_temp_basis_dlr()
     const double wmax = 1.0;
     const double epsilon = 1e-12;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     spir_finite_temp_basis *basis =
         spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
@@ -322,10 +328,9 @@ void test_tau_sampling()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic
-        ? SPIR_STATISTICS_FERMIONIC
+    auto stat = get_stat<S>();
 
-          auto basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15);
+    auto basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15);
     REQUIRE(basis != nullptr);
 
     auto sampling = spir_tau_sampling_new(basis);
@@ -360,8 +365,8 @@ void test_tau_sampling_evaluation_1d_column_major()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
+
     // Create basis
     spir_finite_temp_basis *basis =
         spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
@@ -440,14 +445,13 @@ void test_tau_sampling_evaluation_1d_column_major()
     free(fit_output);
 }
 
-template<typename S>
+template <typename S>
 void test_tau_sampling_evaluation_4d_row_major()
 {
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -572,13 +576,13 @@ void test_tau_sampling_evaluation_4d_row_major()
     free(fit_output);
 }
 
-template<typename S>
+template <typename S>
 void test_tau_sampling_evaluation_4d_row_major_complex()
 {
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -656,8 +660,8 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
             }
         }
 
-        c_complex *evaluate_input = (c_complex *)malloc(
-            basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        c_complex *evaluate_input =
+            (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
             evaluate_input[i] = (c_complex){gl_cpp_rowmajor.data()[i].real(),
                                             gl_cpp_rowmajor.data()[i].imag()};
@@ -677,8 +681,8 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
         // Compare results
         // Note that we need to specify Eigen::RowMajor here
         // because Eigen::Tensor<T, 4> is column-major by default
-        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor>
-            output_tensor(dims[0], dims[1], dims[2], dims[3]);
+        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> output_tensor(
+            dims[0], dims[1], dims[2], dims[3]);
         Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> fit_tensor(
             dims[0], dims[1], dims[2], dims[3]);
         for (int i = 0; i < output_tensor.size(); ++i) {
@@ -711,16 +715,17 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     free(fit_output);
 }
 
-template<typename S>
+template <typename S>
 void test_tau_sampling_evaluation_4d_column_major()
 {
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
+
     // Create basis
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis =
+        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
     REQUIRE(basis != nullptr);
 
     // Create sampling
@@ -808,14 +813,13 @@ void test_tau_sampling_evaluation_4d_column_major()
     free(fit_output);
 }
 
-template<typename S>
+template <typename S>
 void test_tau_sampling_evaluation_4d_column_major_complex()
 {
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -869,8 +873,8 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
         // Move the "frequency" dimension around
         Eigen::Tensor<std::complex<double>, 4> gl_cpp =
             sparseir::movedim(rhol_tensor, 0, dim);
-        c_complex *evaluate_input = (c_complex *)malloc(
-            basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        c_complex *evaluate_input =
+            (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
             evaluate_input[i] =
                 (c_complex){gl_cpp.data()[i].real(), gl_cpp.data()[i].imag()};
@@ -897,10 +901,8 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
 
         // Compare with C++ implementation
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(__real__ evaluate_output[i] ==
-                    Approx(gtau_cpp(i).real()));
-            REQUIRE(__imag__ evaluate_output[i] ==
-                    Approx(gtau_cpp(i).imag()));
+            REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
+            REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
             REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
             REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
         }
@@ -926,7 +928,6 @@ TEST_CASE("TauSampling", "[cinterface]")
         test_tau_sampling<sparseir::Bosonic>();
     }
 
-
     SECTION("TauSampling Evaluation 1-dimensional input COLUMN-MAJOR")
     {
         test_tau_sampling_evaluation_1d_column_major<sparseir::Fermionic>();
@@ -937,9 +938,11 @@ TEST_CASE("TauSampling", "[cinterface]")
         test_tau_sampling_evaluation_4d_row_major<sparseir::Fermionic>();
     }
 
-    SECTION("TauSampling Evaluation 4-dimensional complex input/output ROW-MAJOR")
+    SECTION(
+        "TauSampling Evaluation 4-dimensional complex input/output ROW-MAJOR")
     {
-        test_tau_sampling_evaluation_4d_row_major_complex<sparseir::Fermionic>();
+        test_tau_sampling_evaluation_4d_row_major_complex<
+            sparseir::Fermionic>();
     }
 
     SECTION("TauSampling Evaluation 4-dimensional input COLUMN-MAJOR")
@@ -947,114 +950,117 @@ TEST_CASE("TauSampling", "[cinterface]")
         test_tau_sampling_evaluation_4d_column_major<sparseir::Fermionic>();
     }
 
-    SECTION("TauSampling Evaluation 4-dimensional complex input/output COLUMN-MAJOR")
+    SECTION("TauSampling Evaluation 4-dimensional complex input/output "
+            "COLUMN-MAJOR")
     {
-        test_tau_sampling_evaluation_4d_column_major_complex<sparseir::Fermionic>();
-    }
-}
-
-
-SECTION("TauSampling Error Status", "[cinterface]")
-{
-    double beta = 1.0;
-    double wmax = 10.0;
-
-    // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10);
-    REQUIRE(basis != nullptr);
-
-    // Create sampling
-    spir_sampling *sampling = spir_tau_sampling_new(basis);
-    REQUIRE(sampling != nullptr);
-
-    // Test getting number of sampling points
-    int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(n_points > 0);
-
-    // Create equivalent C++ objects for comparison
-    sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, 1e-10);
-    sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
-
-    int basis_size = cpp_basis.size();
-
-    int d1 = 2;
-    int d2 = 3;
-    int d3 = 4;
-    Eigen::Tensor<double, 4> rhol_tensor(basis_size, d1, d2, d3);
-
-    std::mt19937 gen(42);
-    std::uniform_real_distribution<> dis(0, 1);
-
-    // Fill rhol_tensor with random complex values
-    for (int i = 0; i < rhol_tensor.size(); ++i) {
-        rhol_tensor.data()[i] = dis(gen);
+        test_tau_sampling_evaluation_4d_column_major_complex<
+            sparseir::Fermionic>();
     }
 
-    c_complex *output_complex =
-        (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
+    SECTION("TauSampling Error Status", "[cinterface]")
+    {
+        double beta = 1.0;
+        double wmax = 10.0;
 
-    double *output_double =
-        (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
-    double *fit_output_double =
-        (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
-    c_complex *fit_output_complex =
-        (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        // Create basis
+        spir_finite_temp_basis *basis = spir_finite_temp_basis_new(
+            SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10);
+        REQUIRE(basis != nullptr);
 
-    int ndim = 4;
-    int dims1[4] = {basis_size, d1, d2, d3};
-    int dims2[4] = {d1, basis_size, d2, d3};
-    int dims3[4] = {d1, d2, basis_size, d3};
-    int dims4[4] = {d1, d2, d3, basis_size};
+        // Create sampling
+        spir_sampling *sampling = spir_tau_sampling_new(basis);
+        REQUIRE(sampling != nullptr);
 
-    std::vector<int *> dims_list = {dims1, dims2, dims3, dims4};
+        // Test getting number of sampling points
+        int n_points;
+        int status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(n_points > 0);
 
-    // Test evaluate() and fit() along each dimension
-    for (int dim = 0; dim < 4; ++dim) {
-        // Move the "frequency" dimension around
-        Eigen::Tensor<double, 4> gl_cpp =
-            sparseir::movedim(rhol_tensor, 0, dim);
+        // Create equivalent C++ objects for comparison
+        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
+                                                                 1e-10);
+        sparseir::TauSampling<sparseir::Fermionic> cpp_sampling(cpp_basis);
 
-        // Set up parameters for evaluation
-        int *dims = dims_list[dim];
-        int target_dim = dim;
+        int basis_size = cpp_basis.size();
 
-        // Evaluate using C API that is not supported
-        int status_not_supported = spir_sampling_evaluate_dd(
-            sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
-            gl_cpp.data(), output_double);
-        REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
+        int d1 = 2;
+        int d2 = 3;
+        int d3 = 4;
+        Eigen::Tensor<double, 4> rhol_tensor(basis_size, d1, d2, d3);
 
-        int fit_status_not_supported = spir_sampling_fit_dd(
-            sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
-            output_double, fit_output_double);
-        REQUIRE(fit_status_not_supported == SPIR_NOT_SUPPORTED);
+        std::mt19937 gen(42);
+        std::uniform_real_distribution<> dis(0, 1);
 
-        if (dim == 0) {
-            continue;
+        // Fill rhol_tensor with random complex values
+        for (int i = 0; i < rhol_tensor.size(); ++i) {
+            rhol_tensor.data()[i] = dis(gen);
         }
 
-        // Evaluate using C API that has dimension mismatch
-        int status_dimension_mismatch = spir_sampling_evaluate_dz(
-            sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
-            gl_cpp.data(), output_complex);
-        REQUIRE(status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
+        c_complex *output_complex =
+            (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
 
-        int fit_status_dimension_mismatch = spir_sampling_fit_zz(
-            sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
-            output_complex, fit_output_complex);
-        REQUIRE(fit_status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
+        double *output_double =
+            (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+        double *fit_output_double =
+            (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+        c_complex *fit_output_complex =
+            (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
+
+        int ndim = 4;
+        int dims1[4] = {basis_size, d1, d2, d3};
+        int dims2[4] = {d1, basis_size, d2, d3};
+        int dims3[4] = {d1, d2, basis_size, d3};
+        int dims4[4] = {d1, d2, d3, basis_size};
+
+        std::vector<int *> dims_list = {dims1, dims2, dims3, dims4};
+
+        // Test evaluate() and fit() along each dimension
+        for (int dim = 0; dim < 4; ++dim) {
+            // Move the "frequency" dimension around
+            Eigen::Tensor<double, 4> gl_cpp =
+                sparseir::movedim(rhol_tensor, 0, dim);
+
+            // Set up parameters for evaluation
+            int *dims = dims_list[dim];
+            int target_dim = dim;
+
+            // Evaluate using C API that is not supported
+            int status_not_supported = spir_sampling_evaluate_dd(
+                sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
+                gl_cpp.data(), output_double);
+            REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
+
+            int fit_status_not_supported = spir_sampling_fit_dd(
+                sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
+                output_double, fit_output_double);
+            REQUIRE(fit_status_not_supported == SPIR_NOT_SUPPORTED);
+
+            if (dim == 0) {
+                continue;
+            }
+
+            // Evaluate using C API that has dimension mismatch
+            int status_dimension_mismatch = spir_sampling_evaluate_dz(
+                sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
+                gl_cpp.data(), output_complex);
+            REQUIRE(status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
+
+            int fit_status_dimension_mismatch = spir_sampling_fit_zz(
+                sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
+                output_complex, fit_output_complex);
+            REQUIRE(fit_status_dimension_mismatch ==
+                    SPIR_INPUT_DIMENSION_MISMATCH);
+        }
+
+        // Clean up
+        spir_destroy_sampling(sampling);
+        spir_destroy_finite_temp_basis(basis);
+        free(output_complex);
+        free(output_double);
+        free(fit_output_double);
+        free(fit_output_complex);
     }
-
-    // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
-    free(output_complex);
-    free(output_double);
-    free(fit_output_double);
-    free(fit_output_complex);
 }
 
 template <typename S>
@@ -1063,8 +1069,7 @@ void test_matsubara_sampling_constructor()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     auto basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15);
     REQUIRE(basis != nullptr);
@@ -1082,8 +1087,7 @@ void test_matsubara_sampling_evaluation_4d_column_major()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -1153,17 +1157,15 @@ void test_matsubara_sampling_evaluation_4d_column_major()
             gl_cpp.data(), evaluate_output);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
-        int fit_status = spir_sampling_fit_zz(
-            sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
-            evaluate_output, fit_output);
+        int fit_status =
+            spir_sampling_fit_zz(sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims,
+                                 target_dim, evaluate_output, fit_output);
         REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare with C++ implementation
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(__real__ evaluate_output[i] ==
-                    Approx(gtau_cpp(i).real()));
-            REQUIRE(__imag__ evaluate_output[i] ==
-                    Approx(gtau_cpp(i).imag()));
+            REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
+            REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
             REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
             REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
         }
@@ -1182,8 +1184,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -1209,8 +1210,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
     int d1 = 2;
     int d2 = 3;
     int d3 = 4;
-    Eigen::Tensor<std::complex<double>, 4> rhol_tensor(basis_size, d1, d2,
-                                                       d3);
+    Eigen::Tensor<std::complex<double>, 4> rhol_tensor(basis_size, d1, d2, d3);
 
     std::mt19937 gen(42);
     std::uniform_real_distribution<> dis(0, 1);
@@ -1247,8 +1247,8 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
         int *dims = dims_list[dim];
         int target_dim = dim;
 
-        c_complex *evaluate_input = (c_complex *)malloc(
-            basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        c_complex *evaluate_input =
+            (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
             evaluate_input[i] =
                 (c_complex){gl_cpp.data()[i].real(), gl_cpp.data()[i].imag()};
@@ -1266,10 +1266,8 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
         // Compare with C++ implementation
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(__real__ evaluate_output[i] ==
-                    Approx(gtau_cpp(i).real()));
-            REQUIRE(__imag__ evaluate_output[i] ==
-                    Approx(gtau_cpp(i).imag()));
+            REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
+            REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
             REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
             REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
         }
@@ -1289,8 +1287,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -1380,16 +1377,16 @@ void test_matsubara_sampling_evaluation_4d_row_major()
         // Compare results
         // Note that we need to specify Eigen::RowMajor here
         // because Eigen::Tensor<T, 4> is column-major by default
-        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor>
-            output_tensor(dims[0], dims[1], dims[2], dims[3]);
+        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> output_tensor(
+            dims[0], dims[1], dims[2], dims[3]);
         Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> fit_tensor(
             dims[0], dims[1], dims[2], dims[3]);
         for (int i = 0; i < output_tensor.size(); ++i) {
             // store output data to output_tensor
             output_tensor.data()[i] = std::complex<double>(
                 __real__ evaluate_output[i], __imag__ evaluate_output[i]);
-            fit_tensor.data()[i] = std::complex<double>(
-                __real__ fit_output[i], __imag__ fit_output[i]);
+            fit_tensor.data()[i] = std::complex<double>(__real__ fit_output[i],
+                                                        __imag__ fit_output[i]);
         }
         // Compare results
         for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -1419,8 +1416,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -1446,8 +1442,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     int d1 = 2;
     int d2 = 3;
     int d3 = 4;
-    Eigen::Tensor<std::complex<double>, 4> rhol_tensor(basis_size, d1, d2,
-                                                       d3);
+    Eigen::Tensor<std::complex<double>, 4> rhol_tensor(basis_size, d1, d2, d3);
     std::mt19937 gen(42);
     std::uniform_real_distribution<> dis(0, 1);
 
@@ -1483,8 +1478,8 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 
         // Note that we need to specify Eigen::RowMajor here
         // because Eigen::Tensor<double, 4> is column-major by default
-        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor>
-            gl_cpp_rowmajor(dims[0], dims[1], dims[2], dims[3]);
+        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> gl_cpp_rowmajor(
+            dims[0], dims[1], dims[2], dims[3]);
 
         // Fill row-major tensor in the correct order
         for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -1496,17 +1491,23 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
                 }
             }
         }
-        c_complex *evaluate_input = (c_complex *)malloc(
-            basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        c_complex *evaluate_input =
+            (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            evaluate_input[i] =
-                (c_complex){gl_cpp_rowmajor.data()[i].real(),
-                            gl_cpp_rowmajor.data()[i].imag()};
+            evaluate_input[i] = (c_complex){gl_cpp_rowmajor.data()[i].real(),
+                                            gl_cpp_rowmajor.data()[i].imag()};
         }
         // Evaluate using C API
         int evaluate_status = spir_sampling_evaluate_zz(
             sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
             evaluate_input, evaluate_output);
+        // output dims, target_dim
+        printf("output dims: %d, %d, %d, %d\n", dims[0], dims[1], dims[2], dims[3]);
+        printf("target dim: %d\n", target_dim);
+        // output basis size
+        printf("basis size: %d\n", basis_size);
+        // output n_points
+        printf("n_points: %d\n", n_points);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
         int fit_status =
@@ -1517,16 +1518,16 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
         // Compare results
         // Note that we need to specify Eigen::RowMajor here
         // because Eigen::Tensor<T, 4> is column-major by default
-        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor>
-            output_tensor(dims[0], dims[1], dims[2], dims[3]);
+        Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> output_tensor(
+            dims[0], dims[1], dims[2], dims[3]);
         Eigen::Tensor<std::complex<double>, 4, Eigen::RowMajor> fit_tensor(
             dims[0], dims[1], dims[2], dims[3]);
         for (int i = 0; i < output_tensor.size(); ++i) {
             // store output data to output_tensor
             output_tensor.data()[i] = std::complex<double>(
                 __real__ evaluate_output[i], __imag__ evaluate_output[i]);
-            fit_tensor.data()[i] = std::complex<double>(
-                __real__ fit_output[i], __imag__ fit_output[i]);
+            fit_tensor.data()[i] = std::complex<double>(__real__ fit_output[i],
+                                                        __imag__ fit_output[i]);
         }
         // Compare results
         for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -1557,8 +1558,7 @@ void test_matsubara_sampling_error_status()
     double beta = 1.0;
     double wmax = 10.0;
 
-    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
-                                         : SPIR_STATISTICS_BOSONIC;
+    auto stat = get_stat<S>();
 
     // Create basis
     spir_finite_temp_basis *basis =
@@ -1627,9 +1627,9 @@ void test_matsubara_sampling_error_status()
             gl_cpp.data(), output_double);
         REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
 
-        int fit_status_not_supported = spir_sampling_fit_dd(
-            sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
-            output_double, fit_output_double);
+        int fit_status_not_supported =
+            spir_sampling_fit_dd(sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims,
+                                 target_dim, output_double, fit_output_double);
         REQUIRE(fit_status_not_supported == SPIR_NOT_SUPPORTED);
 
         if (dim == 0) {
@@ -1669,44 +1669,57 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         test_matsubara_sampling_constructor<sparseir::Bosonic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR (fermionic)")
+    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
+            "(fermionic)")
     {
-        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Fermionic>();
+        test_matsubara_sampling_evaluation_4d_column_major<
+            sparseir::Fermionic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR (bosonic)")
+    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
+            "(bosonic)")
     {
         test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input COLUMN-MAJOR (fermionic)")
+    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
+            "COLUMN-MAJOR (fermionic)")
     {
-        test_matsubara_sampling_evaluation_4d_column_major_complex<sparseir::Fermionic>();
+        test_matsubara_sampling_evaluation_4d_column_major_complex<
+            sparseir::Fermionic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input COLUMN-MAJOR (bosonic)")
+    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
+            "COLUMN-MAJOR (bosonic)")
     {
-        test_matsubara_sampling_evaluation_4d_column_major_complex<sparseir::Bosonic>();
+        test_matsubara_sampling_evaluation_4d_column_major_complex<
+            sparseir::Bosonic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR (fermionic)")
+    SECTION("MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR "
+            "(fermionic)")
     {
         test_matsubara_sampling_evaluation_4d_row_major<sparseir::Fermionic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR (bosonic)")
+    SECTION(
+        "MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR (bosonic)")
     {
         test_matsubara_sampling_evaluation_4d_row_major<sparseir::Bosonic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input ROW-MAJOR (fermionic)")
+    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
+            "ROW-MAJOR (fermionic)")
     {
-        test_matsubara_sampling_evaluation_4d_row_major_complex<sparseir::Fermionic>();
+        test_matsubara_sampling_evaluation_4d_row_major_complex<
+            sparseir::Fermionic>();
     }
 
-    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input ROW-MAJOR (bosonic)")
+    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
+            "ROW-MAJOR (bosonic)")
     {
-        test_matsubara_sampling_evaluation_4d_row_major_complex<sparseir::Bosonic>();
+        test_matsubara_sampling_evaluation_4d_row_major_complex<
+            sparseir::Bosonic>();
     }
 
     SECTION("MatsubaraSampling Error Status (fermionic)")
@@ -1719,4 +1732,3 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         test_matsubara_sampling_error_status<sparseir::Bosonic>();
     }
 }
-

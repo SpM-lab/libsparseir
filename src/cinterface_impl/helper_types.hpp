@@ -103,6 +103,10 @@ public:
         return std::static_pointer_cast<AbstractMatsubaraFunctions>(
             std::make_shared<MatsubaraBasisFunctions<S>>(impl->uhat));
     }
+
+    std::shared_ptr<sparseir::FiniteTempBasis<S>> get_impl() const {
+        return impl;
+    }
 };
 
 
@@ -112,26 +116,30 @@ public:
     virtual int size() const = 0;
     virtual double get_beta() const = 0;
     virtual spir_statistics_type get_statistics() const = 0;
-    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
-    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
+    //virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
+    //virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
     virtual int fitmat_rows() const = 0;
     virtual int fitmat_cols() const = 0;
 };
 
-template<typename InternalType>
-class DLR : public AbstractDLR {
+template<typename S>
+class _DLR : public AbstractDLR {
 private:
-    std::shared_ptr<InternalType> impl;
+    std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl;
 
 public:
-    DLR(std::shared_ptr<InternalType> impl): impl(impl) {}
+    _DLR(std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl): impl(impl) {}
 
     virtual int size() const override {
         return impl->size();
     }
 
     virtual spir_statistics_type get_statistics() const override {
-        return impl->get_statistics();
+        if (std::is_same<S, sparseir::Fermionic>::value) {
+            return SPIR_STATISTICS_FERMIONIC;
+        } else {
+            return SPIR_STATISTICS_BOSONIC;
+        }
     }
 
     virtual double get_beta() const override {
@@ -139,14 +147,15 @@ public:
     }
 
     virtual int fitmat_rows() const override {
-        return impl->fitmat_rows();
+        return impl->fitmat.rows();
     }
 
     virtual int fitmat_cols() const override {
-        return impl->fitmat_cols();
+        return impl->fitmat.cols();
     }
 
-    std::shared_ptr<InternalType> get_impl() const {
+
+    std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> get_impl() const {
         return impl;
     }
 
