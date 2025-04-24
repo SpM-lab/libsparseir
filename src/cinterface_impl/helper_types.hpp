@@ -1,47 +1,6 @@
 #include "sparseir/sparseir.hpp"
 #include <memory>
 
-class AbstractFiniteTempBasis {
-public:
-    virtual ~AbstractFiniteTempBasis() = default;
-    virtual int size() const = 0;
-    virtual double get_beta() const = 0;
-    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
-    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
-    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
-};
-
-template<typename InternalType>
-class FiniteTempBasis : public AbstractFiniteTempBasis {
-private:
-    std::shared_ptr<InternalType> impl;
-
-public:
-    FiniteTempBasis(std::shared_ptr<InternalType> impl): impl(impl) {}  
-
-    virtual double get_beta() const override {
-        return impl->get_beta();
-    }
-
-    virtual int size() const override {
-        return impl->size();
-    }
-
-    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override {
-        return std::static_pointer_cast<AbstractContinuousFunctions>(
-            std::make_shared<ContinuousFunctions<InternalType>>(impl->get_u()));
-    }
-
-    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const override {
-        return std::static_pointer_cast<AbstractContinuousFunctions>(
-            std::make_shared<ContinuousFunctions<InternalType>>(impl->get_v()));
-    }
-
-    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const override {
-        return std::static_pointer_cast<AbstractMatsubaraFunctions>(
-            std::make_shared<MatsubaraBasisFunctions<InternalType>>(impl->get_uhat()));
-    }
-};
 
 class AbstractMatsubaraFunctions {
 public:
@@ -92,4 +51,103 @@ public:
     virtual int size() const override {
         return impl->size();
     }
+};
+
+
+class AbstractFiniteTempBasis {
+public:
+    virtual ~AbstractFiniteTempBasis() = default;
+    virtual int size() const = 0;
+    virtual double get_beta() const = 0;
+    virtual spir_statistics_type get_statistics() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
+};
+
+template<typename S>
+class _FiniteTempBasis : public AbstractFiniteTempBasis {
+private:
+    std::shared_ptr<sparseir::FiniteTempBasis<S>> impl;
+
+public:
+    _FiniteTempBasis(std::shared_ptr<sparseir::FiniteTempBasis<S>> impl): impl(impl) {}  
+
+    virtual double get_beta() const override {
+        return impl->get_beta();
+    }
+
+    virtual int size() const override {
+        return impl->size();
+    }
+
+    virtual spir_statistics_type get_statistics() const override {
+        if (std::is_same<S, sparseir::Fermionic>::value) {
+            return SPIR_STATISTICS_FERMIONIC;
+        } else {
+            return SPIR_STATISTICS_BOSONIC;
+        }
+    }
+
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override {
+        return std::static_pointer_cast<AbstractContinuousFunctions>(
+            std::make_shared<ContinuousFunctions<sparseir::PiecewiseLegendrePolyVector>>(impl->u));
+    }
+
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const override {
+        return std::static_pointer_cast<AbstractContinuousFunctions>(
+            std::make_shared<ContinuousFunctions<sparseir::PiecewiseLegendrePolyVector>>(impl->v));
+    }
+
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const override {
+        return std::static_pointer_cast<AbstractMatsubaraFunctions>(
+            std::make_shared<MatsubaraBasisFunctions<S>>(impl->uhat));
+    }
+};
+
+
+class AbstractDLR {
+public:
+    virtual ~AbstractDLR() = default;
+    virtual int size() const = 0;
+    virtual double get_beta() const = 0;
+    virtual spir_statistics_type get_statistics() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
+    virtual int fitmat_rows() const = 0;
+    virtual int fitmat_cols() const = 0;
+};
+
+template<typename InternalType>
+class DLR : public AbstractDLR {
+private:
+    std::shared_ptr<InternalType> impl;
+
+public:
+    DLR(std::shared_ptr<InternalType> impl): impl(impl) {}
+
+    virtual int size() const override {
+        return impl->size();
+    }
+
+    virtual spir_statistics_type get_statistics() const override {
+        return impl->get_statistics();
+    }
+
+    virtual double get_beta() const override {
+        return impl->get_beta();
+    }
+
+    virtual int fitmat_rows() const override {
+        return impl->fitmat_rows();
+    }
+
+    virtual int fitmat_cols() const override {
+        return impl->fitmat_cols();
+    }
+
+    std::shared_ptr<InternalType> get_impl() const {
+        return impl;
+    }
+
 };

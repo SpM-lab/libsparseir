@@ -115,11 +115,13 @@ spir_finite_temp_basis_new(
 {
     try {
         if (statistics == SPIR_STATISTICS_FERMIONIC) {  
-            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, omega_max, epsilon);
-            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Fermionic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
         } else {
-            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, epsilon);
-            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Bosonic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
         }
     } catch (...) {
         return nullptr;
@@ -137,11 +139,13 @@ spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta
         if (!sve_impl || !kernel_impl)
             return nullptr;
         if (statistics == SPIR_STATISTICS_FERMIONIC) {
-            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(beta, omega_max, kernel_impl, *sve_impl);
-            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Fermionic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, kernel_impl, *sve_impl);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
         } else {
-            auto impl = std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(beta, omega_max, kernel_impl, *sve_impl);
-            return create_finite_temp_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(impl));
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Bosonic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, kernel_impl, *sve_impl);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
         }
     } catch (...) {
         return nullptr;
@@ -156,15 +160,15 @@ spir_tau_sampling_new(const spir_finite_temp_basis *b)
     if (!impl)
         return nullptr;
 
-    if (impl->statistics() == SPIR_STATISTICS_FERMIONIC) {
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
         return create_sampling(
-            std::static_pointer_cast<AbstractSampling>(
+            std::static_pointer_cast<sparseir::AbstractSampling>(
                 std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl)
             )
         );
     } else {
         return create_sampling(
-            std::static_pointer_cast<AbstractSampling>(
+            std::static_pointer_cast<sparseir::AbstractSampling>(
                 std::make_shared<sparseir::TauSampling<sparseir::Bosonic>>(*impl)
             )
         );
@@ -177,15 +181,15 @@ spir_matsubara_sampling_new(const spir_finite_temp_basis *b)
     auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    if (impl->statistics() == SPIR_STATISTICS_FERMIONIC) {
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
         return create_sampling(
-            std::static_pointer_cast<AbstractSampling>(
+            std::static_pointer_cast<sparseir::AbstractSampling>(
                 std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(*impl)
             )
         );
     } else {
         return create_sampling(
-            std::static_pointer_cast<AbstractSampling>(
+            std::static_pointer_cast<sparseir::AbstractSampling>(
                 std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(*impl)
             )
         );
@@ -199,7 +203,7 @@ spir_dlr_new(const spir_finite_temp_basis *b)
     auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    if (impl->statistics() == SPIR_STATISTICS_FERMIONIC) {
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
         auto dlr_ptr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
         return create_dlr(std::make_shared<AbstractDLR>(dlr_ptr));
     } else {
@@ -280,7 +284,7 @@ int32_t spir_dlr_fitmat_rows(const spir_dlr *dlr)
     auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    return impl->impl->fitmat.rows();
+    return impl->fitmat_rows();
 }
 
 int32_t spir_dlr_fitmat_cols(const spir_dlr *dlr)
@@ -288,7 +292,7 @@ int32_t spir_dlr_fitmat_cols(const spir_dlr *dlr)
     auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    return impl->impl->fitmat.cols();
+    return impl->fitmat_cols();
 }
 
 
@@ -299,46 +303,28 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order,
     auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
+    
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return spir_dlr_to_IR<sparseir::Fermionic>(dlr, order, ndim, input_dims, input, out);
+    } else {
+        return spir_dlr_to_IR<sparseir::Bosonic>(dlr, order, ndim, input_dims, input, out);
     }
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
-    }
-    Eigen::Tensor<double, 2> out_tensor = impl->impl->to_IR(input_tensor);
-    size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
 }
+
 
 int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
                              int32_t ndim, int32_t *input_dims,
                              const double *input, double *out)
 {
+
     auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (std::size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return spir_dlr_from_IR<sparseir::Fermionic>(dlr, order, ndim, input_dims, input, out);
+    } else {
+        return spir_dlr_from_IR<sparseir::Bosonic>(dlr, order, ndim, input_dims, input, out);
     }
-    Eigen::Tensor<double, 2> out_tensor = impl->impl->from_IR(input_tensor);
-    // pass data to out
-    std::size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
 }
 
 
@@ -472,7 +458,7 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b, s
         return SPIR_INVALID_ARGUMENT;
     }
     try {
-        *statistics = impl->statistics();
+        *statistics = impl->get_statistics();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
         return SPIR_GET_IMPL_FAILED;

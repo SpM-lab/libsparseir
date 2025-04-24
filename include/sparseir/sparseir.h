@@ -261,7 +261,7 @@ spir_sampling *spir_matsubara_sampling_new(const spir_finite_temp_basis *b);
  * which differs from the original DLR method that uses rank-revealing
  * decomposition
  */
-spir_fermionic_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
+spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) with
@@ -287,7 +287,7 @@ spir_fermionic_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
  * @see spir_dlr_new
  * @see spir_destroy_dlr
  */
-spir_bosonic_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles);
+spir_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to double
@@ -526,6 +526,7 @@ int32_t spir_dlr_to_IR(
  * The basis is constructed based on the given beta (inverse temperature), omega_max (frequency cutoff),
  * and epsilon (accuracy target).
  *
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param epsilon Accuracy target for the basis
@@ -534,7 +535,7 @@ int32_t spir_dlr_to_IR(
  *         or NULL if creation fails
  * @see spir_finite_temp_basis_new_with_kernel
  */
-spir_finite_temp_basis* spir_finite_temp_basis_new(double beta, double omega_max, double epsilon);
+spir_finite_temp_basis* spir_finite_temp_basis_new(spir_statistics_type statistics, double beta, double omega_max, double epsilon);
 
 /**
  * @brief Creates a new finite temperature IR basis using a
@@ -545,6 +546,7 @@ spir_finite_temp_basis* spir_finite_temp_basis_new(double beta, double omega_max
  * reusing an existing SVE computation, which can be more efficient than
  * recomputing it.
  *
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param k Pointer to the kernel object used for the basis construction
@@ -558,7 +560,7 @@ spir_finite_temp_basis* spir_finite_temp_basis_new(double beta, double omega_max
  * @see spir_sve_result_new
  * @see spir_destroy_finite_temp_basis
  */
-spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(double beta, double omega_max,
+spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max,
                                              const spir_kernel *k,
                                              const spir_sve_result *sve);
 
