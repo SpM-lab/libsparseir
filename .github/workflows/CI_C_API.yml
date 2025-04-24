@@ -64,7 +64,7 @@ jobs:
         cache-name: cache-pipelines
       with:
         key: ${{ steps.build-c-api.outputs.cache-primary-key }}
-        path: ${{env.CCACHE_DIR }}
+        path: .ccache
 
     - uses: julia-actions/setup-julia@v2
     - uses: julia-actions/cache@v2
