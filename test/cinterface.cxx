@@ -408,7 +408,7 @@ void test_tau_sampling_evaluation_1d_column_major()
     }
 
     // Create output buffer
-    double *evaluate_output = (double *)malloc(basis_size * sizeof(double));
+    double *evaluate_output = (double *)malloc(n_points * sizeof(double));
     double *fit_output = (double *)malloc(basis_size * sizeof(double));
 
     // Evaluate using C API
@@ -1451,7 +1451,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     }
 
     c_complex *evaluate_output =
-        (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        (c_complex *)malloc(n_points * d1 * d2 * d3 * sizeof(c_complex));
     c_complex *fit_output =
         (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
 
