@@ -134,3 +134,18 @@ spir_singular_funcs* _create_singular_funcs(std::shared_ptr<InternalType> impl) 
         )
     );
 }
+
+
+
+template<typename S>
+spir_sampling *
+_spir_fermionic_tau_sampling_new(const spir_finite_temp_basis *b)
+{
+    std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    auto smpl =
+        std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
+    return create_sampling(smpl);
+}

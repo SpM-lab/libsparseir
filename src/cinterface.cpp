@@ -94,22 +94,6 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
     }
 }
 
-/*
-int spir_kernel_evaluate(const spir_kernel *k, double x, double y, double *out)
-{
-    auto impl = get_impl_kernel(k);
-    if (!impl || !out)
-        return -1;
-
-    try {
-        *out = impl->compute(x, y);
-        return 0;
-    } catch (...) {
-        return -1;
-    }
-}
-*/
-
 
 spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon)
 {
@@ -125,7 +109,8 @@ spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon)
 }
 
 spir_finite_temp_basis *
-spir_finite_temp_basis_new(spir_statistics_type statistics, double beta, double omega_max,
+spir_finite_temp_basis_new(
+    spir_statistics_type statistics, double beta, double omega_max,
                                      double epsilon)
 {
     try {
@@ -165,67 +150,68 @@ spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta
 
 
 spir_sampling *
-spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b)
+spir_tau_sampling_new(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
-    return create_sampling(smpl);
+
+    if (impl->statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return create_sampling(
+            std::static_pointer_cast<AbstractSampling>(
+                std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl)
+            )
+        );
+    } else {
+        return create_sampling(
+            std::static_pointer_cast<AbstractSampling>(
+                std::make_shared<sparseir::TauSampling<sparseir::Bosonic>>(*impl)
+            )
+        );
+    }
 }
 
 spir_sampling *
-spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b)
+spir_matsubara_sampling_new(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(
-            *impl);
-    return create_sampling(smpl);
+    if (impl->statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return create_sampling(
+            std::static_pointer_cast<AbstractSampling>(
+                std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(*impl)
+            )
+        );
+    } else {
+        return create_sampling(
+            std::static_pointer_cast<AbstractSampling>(
+                std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(*impl)
+            )
+        );
+    }
 }
 
-spir_sampling *
-spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b)
+
+spir_dlr *
+spir_dlr_new(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::TauSampling<sparseir::Bosonic>>(*impl);
-    return create_sampling(smpl);
+    if (impl->statistics() == SPIR_STATISTICS_FERMIONIC) {
+        auto dlr_ptr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
+        return create_dlr(std::make_shared<AbstractDLR>(dlr_ptr));
+    } else {
+        auto dlr_ptr = std::make_shared<sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
+        return create_dlr(std::make_shared<AbstractDLR>(dlr_ptr));
+    }
 }
 
-spir_sampling *
-spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b)
+spir_dlr *
+spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles)
 {
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            *impl);
-    return create_sampling(smpl);
-}
-
-spir_fermionic_dlr *
-spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
-{
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
-    return create_fermionic_dlr(dlr);
-}
-
-spir_fermionic_dlr *
-spir_fermionic_dlr_new_with_poles(const spir_fermionic_finite_temp_basis *b,
-                                  const int npoles, const double *poles)
-{
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
 
@@ -236,38 +222,11 @@ spir_fermionic_dlr_new_with_poles(const spir_fermionic_finite_temp_basis *b,
     auto dlr = std::make_shared<
         sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(
         *impl, poles_vec);
-    return create_fermionic_dlr(dlr);
+    return create_dlr(std::make_shared<AbstractDLR>(dlr));
 }
 
-spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
-    return create_bosonic_dlr(dlr);
-}
 
-spir_bosonic_dlr *
-spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp_basis *b,
-                                const int npoles, const double *poles)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-
-    Eigen::VectorXd poles_vec(npoles);
-    for (int i = 0; i < npoles; i++) {
-        poles_vec(i) = poles[i];
-    }
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl,
-                                                                    poles_vec);
-    return create_bosonic_dlr(dlr);
-}
-
-int spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
                               int32_t ndim, int32_t *input_dims,
                               int32_t target_dim, const double *input,
                               double *out)
@@ -276,7 +235,7 @@ int spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_dd);
 }
 
-int spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
                               int32_t ndim, int32_t *input_dims,
                               int32_t target_dim, const double *input,
                               c_complex *out)
@@ -286,7 +245,7 @@ int spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_dz);
 }
 
-int spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
                               int32_t ndim, int32_t *input_dims,
                               int32_t target_dim, const c_complex *input,
                               c_complex *out)
@@ -298,7 +257,7 @@ int spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_zz);
 }
 
-int spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
                          int32_t ndim, int32_t *input_dims, int32_t target_dim,
                          const double *input, double *out)
 {
@@ -306,7 +265,7 @@ int spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_dd);
 }
 
-int spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                          int32_t ndim, int32_t *input_dims, int32_t target_dim,
                          const c_complex *input, c_complex *out)
 {
@@ -316,45 +275,31 @@ int spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
+int32_t spir_dlr_fitmat_rows(const spir_dlr *dlr)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.rows();
+    return impl->impl->fitmat.rows();
 }
 
-int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
+int32_t spir_dlr_fitmat_cols(const spir_dlr *dlr)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.cols();
+    return impl->impl->fitmat.cols();
 }
 
-int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
-{
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.rows();
-}
 
-int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
-{
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.cols();
-}
-
-int spir_bosonic_dlr_to_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
+int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order,
                            int32_t ndim, int32_t *input_dims,
                            const double *input, double *out)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
+
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_2d.begin(), input_dims_2d.end());
@@ -364,7 +309,7 @@ int spir_bosonic_dlr_to_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
     for (size_t i = 0; i < total_input_size; i++) {
         input_tensor.data()[i] = input[i];
     }
-    Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
+    Eigen::Tensor<double, 2> out_tensor = impl->impl->to_IR(input_tensor);
     size_t total_output_size =
         out_tensor.dimension(0) * out_tensor.dimension(1);
     for (std::size_t i = 0; i < total_output_size; i++) {
@@ -373,11 +318,11 @@ int spir_bosonic_dlr_to_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
     return SPIR_COMPUTATION_SUCCESS;
 }
 
-int spir_bosonic_dlr_from_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
+int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
                              int32_t ndim, int32_t *input_dims,
                              const double *input, double *out)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
     std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
@@ -386,66 +331,7 @@ int spir_bosonic_dlr_from_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
     for (std::size_t i = 0; i < total_input_size; i++) {
         input_tensor.data()[i] = input[i];
     }
-    Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
-    // pass data to out
-    std::size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
-}
-
-int spir_fermionic_dlr_to_IR(const spir_fermionic_dlr *dlr,
-                             spir_order_type order, int32_t ndim,
-                             int32_t *input_dims, const double *input,
-                             double *out)
-{
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
-    }
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
-    }
-    Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
-    size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
-}
-
-int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
-                               spir_order_type order, int32_t ndim,
-                               int32_t *input_dims, const double *input,
-                               double *out)
-{
-    std::cout << "spir_fermionic_dlr_from_IR" << std::endl;
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    std::cout << "impl: " << std::endl;
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
-    }
-    std::cout << "input_dims_2d: " << input_dims_2d[0] << " "
-              << input_dims_2d[1] << std::endl;
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (std::size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
-    }
-    std::cout << "input_tensor: " << input_tensor.dimension(0) << " "
-              << input_tensor.dimension(1) << std::endl;
-    Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
+    Eigen::Tensor<double, 2> out_tensor = impl->impl->from_IR(input_tensor);
     // pass data to out
     std::size_t total_output_size =
         out_tensor.dimension(0) * out_tensor.dimension(1);
@@ -456,82 +342,38 @@ int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
 }
 
 
-
-
-spir_singular_funcs *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis *b)
+spir_singular_funcs *spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_singular_funcs(impl->u);
+    return _create_singular_funcs(impl->get_u());
 }
 
 
-spir_singular_funcs *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis *b)
+spir_singular_funcs *spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_singular_funcs(impl->v);
+    return _create_singular_funcs(impl->get_v());
 }
 
-spir_matsubara_functions *spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis *b)
+spir_matsubara_functions *spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-
-    return create_matsubara_functions(
-        std::static_pointer_cast<AbstractMatsubaraFunctions>(
-            std::make_shared<MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->uhat)
-        )
-    );
-}
-
-spir_singular_funcs *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    return _create_singular_funcs(impl->u);
-}
-
-
-spir_singular_funcs *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    return _create_singular_funcs(impl->v);
-}
-
-spir_matsubara_functions *spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
 
     return create_matsubara_functions(
         std::static_pointer_cast<AbstractMatsubaraFunctions>(
-            std::make_shared<MatsubaraBasisFunctions<sparseir::Bosonic>>(impl->uhat)
+            std::make_shared<MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->get_uhat())
         )
     );
 }
 
 
-// Create new regularized bose kernel
-// spir_regularized_bosonic_kernel *spir_kernel_regularized_bose_new(double
-// lambda)
-//{
-// try {
-// return create_regularized_bose_kernel(
-// std::make_shared<sparseir::RegularizedBoseKernel>(lambda));
-//} catch (...) {
-// return nullptr;
-//}
-//}
-
-int spir_sampling_get_num_points(const spir_sampling *s, int *num_points) {
+int32_t spir_sampling_get_num_points(const spir_sampling *s, int32_t *num_points) {
     auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
@@ -547,7 +389,7 @@ int spir_sampling_get_num_points(const spir_sampling *s, int *num_points) {
     }
 }
 
-int spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
+int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
     auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
@@ -575,7 +417,7 @@ int spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
     }
 }
 
-int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points) {
+int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points) {
     auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
@@ -605,8 +447,8 @@ int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points) {
     }
 }
 
-int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_basis *b, int *size) {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b, int32_t *size) {
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
@@ -621,16 +463,16 @@ int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_b
     }
 }
 
-int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis *b, int *size) {
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
+int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b, spir_statistics_type *statistics) {
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
-    if (!size) {
+    if (!statistics) {
         return SPIR_INVALID_ARGUMENT;
     }
     try {
-        *size = impl->size();
+        *statistics = impl->statistics();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
         return SPIR_GET_IMPL_FAILED;

@@ -5,6 +5,10 @@ class AbstractFiniteTempBasis {
 public:
     virtual ~AbstractFiniteTempBasis() = default;
     virtual int size() const = 0;
+    virtual double get_beta() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
 };
 
 template<typename InternalType>
@@ -14,8 +18,30 @@ private:
 
 public:
     FiniteTempBasis(std::shared_ptr<InternalType> impl): impl(impl) {}  
-}
 
+    virtual double get_beta() const override {
+        return impl->get_beta();
+    }
+
+    virtual int size() const override {
+        return impl->size();
+    }
+
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override {
+        return std::static_pointer_cast<AbstractContinuousFunctions>(
+            std::make_shared<ContinuousFunctions<InternalType>>(impl->get_u()));
+    }
+
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const override {
+        return std::static_pointer_cast<AbstractContinuousFunctions>(
+            std::make_shared<ContinuousFunctions<InternalType>>(impl->get_v()));
+    }
+
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const override {
+        return std::static_pointer_cast<AbstractMatsubaraFunctions>(
+            std::make_shared<MatsubaraBasisFunctions<InternalType>>(impl->get_uhat()));
+    }
+};
 
 class AbstractMatsubaraFunctions {
 public:

@@ -62,68 +62,80 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
     }
 }
 
+template <typename S>
+void test_finite_temp_basis_constructor()
+{
+    double beta = 2.0;
+    double wmax = 5.0;
+    double Lambda = 10.0;
+    double epsilon = 1e-6;
+
+    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
+                                         : SPIR_STATISTICS_BOSONIC;
+
+    sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
+    spir_finite_temp_basis *basis =
+        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
+    REQUIRE(basis != nullptr);
+
+    int basis_size;
+    int status = spir_finite_temp_basis_get_size(basis, &basis_size);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(basis_size == cpp_basis.size());
+}
+
+template <typename S>
+void test_finite_temp_basis_constructor_with_sve()
+{
+    double beta = 2.0;
+    double wmax = 5.0;
+    double Lambda = 10.0;
+    double epsilon = 1e-6;
+
+    spir_kernel *kernel = spir_logistic_kernel_new(Lambda);
+    REQUIRE(kernel != nullptr);
+
+    spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon);
+    REQUIRE(sve_result != nullptr);
+
+    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
+                                         : SPIR_STATISTICS_BOSONIC;
+
+    spir_finite_temp_basis *basis = spir_finite_temp_basis_new_with_sve(
+        stat, beta, wmax, kernel, sve_result);
+    REQUIRE(basis != nullptr);
+
+    spir_statistics_type stats;
+    int status = spir_finite_temp_basis_get_statistics(basis, &stats);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(stats == stat);
+
+    // Clean up
+    spir_destroy_kernel(kernel);
+    spir_destroy_sve_result(sve_result);
+    spir_destroy_finite_temp_basis(basis);
+}
+
 TEST_CASE("FiniteTempBasis", "[cinterface]")
 {
     SECTION("FiniteTempBasis Constructor Fermionic")
     {
-        double beta = 2.0;
-        double wmax = 5.0;
-        double Lambda = 10.0;
-        double epsilon = 1e-6;
-
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax,
-                                                                 epsilon);
-        spir_fermionic_finite_temp_basis *basis =
-            spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
-        REQUIRE(basis != nullptr);
-
-        int basis_size;
-        int status = spir_fermionic_finite_temp_basis_get_size(basis, &basis_size);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(basis_size == cpp_basis.size());
+        test_finite_temp_basis_constructor<sparseir::Fermionic>();
     }
 
     SECTION("FiniteTempBasis Constructor Bosonic")
     {
-        double beta = 2.0;
-        double wmax = 5.0;
-        double Lambda = 10.0;
-        double epsilon = 1e-6;
-
-        sparseir::FiniteTempBasis<sparseir::Bosonic> cpp_basis(beta, wmax,
-                                                                 epsilon);
-        spir_bosonic_finite_temp_basis *basis =
-            spir_bosonic_finite_temp_basis_new(beta, wmax, epsilon);
-        REQUIRE(basis != nullptr);
-        
-        int basis_size;
-        int status = spir_bosonic_finite_temp_basis_get_size(basis, &basis_size);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(basis_size == cpp_basis.size());
+        test_finite_temp_basis_constructor<sparseir::Bosonic>();
     }
 
     SECTION("FiniteTempBasis Constructor with SVE Fermionic/LogisticKernel")
     {
-        double beta = 2.0;
-        double wmax = 5.0;
-        double Lambda = 10.0;
-        double epsilon = 1e-6;
+        test_finite_temp_basis_constructor_with_sve<sparseir::Fermionic>();
+    }
 
-        spir_kernel *kernel = spir_logistic_kernel_new(Lambda);
-        REQUIRE(kernel != nullptr);
-
-        spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon);
-        REQUIRE(sve_result != nullptr);
-
-        spir_fermionic_finite_temp_basis *basis =
-            spir_fermionic_finite_temp_basis_new_with_sve(beta, wmax, kernel,
-                                                          sve_result);
-        REQUIRE(basis != nullptr);
-
-        // Clean up
-        spir_destroy_kernel(kernel);
-        spir_destroy_sve_result(sve_result);
-        spir_destroy_fermionic_finite_temp_basis(basis);
+    SECTION("FiniteTempBasis Constructor with SVE Bosonic/LogisticKernel")
+    {
+        test_finite_temp_basis_constructor_with_sve<sparseir::Fermionic>();
     }
 
     SECTION(
@@ -140,252 +152,169 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon);
         REQUIRE(sve_result != nullptr);
 
-        spir_bosonic_finite_temp_basis *basis =
-            spir_bosonic_finite_temp_basis_new_with_sve(beta, wmax, kernel,
-                                                        sve_result);
+        spir_finite_temp_basis *basis = spir_finite_temp_basis_new_with_sve(
+            SPIR_STATISTICS_BOSONIC, beta, wmax, kernel, sve_result);
         REQUIRE(basis != nullptr);
+
+        spir_statistics_type stats;
+        int status = spir_finite_temp_basis_get_statistics(basis, &stats);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(stats == SPIR_STATISTICS_BOSONIC);
 
         // Clean up
         spir_destroy_kernel(kernel);
         spir_destroy_sve_result(sve_result);
-        spir_destroy_bosonic_finite_temp_basis(basis);
+        spir_destroy_finite_temp_basis(basis);
     }
+}
+
+template <typename S>
+void test_finite_temp_basis_basis_functions()
+{
+    double beta = 2.0;
+    double wmax = 5.0;
+    double epsilon = 1e-6;
+
+    auto stat = S == sparseir::Fermionic
+        ? SPIR_STATISTICS_FERMIONIC
+
+          spir_finite_temp_basis *basis =
+              spir_finite_temp_basis_new(stat, wmax, epsilon);
+    REQUIRE(basis != nullptr);
+
+    spir_singular_funcs *u = spir_finite_temp_basis_get_u(basis);
+    REQUIRE(u != nullptr);
+
+    spir_matsubara_functions *uhat = spir_finite_temp_basis_get_uhat(basis);
+    REQUIRE(uhat != nullptr);
+
+    // Test basis function evaluation
+    int basis_size;
+    int status = spir_finite_temp_basis_get_size(basis, &basis_size);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    double x = 0.5;        // Test point for u basis (imaginary time)
+    double y = 0.5 * wmax; // Test point for v basis (real frequency)
+    double *out = (double *)malloc(basis_size * sizeof(double));
+    status = spir_evaluate_singular_funcs(u, x, out);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    // Compare with C++ implementation for u basis
+    sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
+    Eigen::VectorXd cpp_result = (*cpp_basis.u)(x);
+    for (int i = 0; i < basis_size; ++i) {
+        REQUIRE(out[i] == Approx(cpp_result(i)));
+    }
+
+    // Test v basis functions
+    spir_singular_funcs *v = spir_finite_temp_basis_get_v(basis);
+    REQUIRE(v != nullptr);
+
+    // Test v basis function evaluation
+    status = spir_evaluate_singular_funcs(v, y, out);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    // Compare with C++ implementation for v basis
+    cpp_result = (*cpp_basis.v)(y);
+    for (int i = 0; i < basis_size; ++i) {
+        REQUIRE(out[i] == Approx(cpp_result(i)));
+    }
+
+    free(out);
+    spir_destroy_singular_funcs(u);
+    spir_destroy_singular_funcs(v);
+
+    // Test error cases
+    status = spir_evaluate_singular_funcs(nullptr, x, out);
+    REQUIRE(status == SPIR_INVALID_ARGUMENT);
+
+    status = spir_evaluate_singular_funcs(u, x, nullptr);
+    REQUIRE(status == SPIR_INVALID_ARGUMENT);
+
+    // Clean up
+    spir_destroy_finite_temp_basis(basis);
 }
 
 TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
 {
-    SECTION("Fermionic Basis Functions")
+    SECTION("Basis Functions Fermionic")
     {
-        double beta = 2.0;
-        double wmax = 5.0;
-        double epsilon = 1e-6;
-
-        spir_fermionic_finite_temp_basis *basis =
-            spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
-        REQUIRE(basis != nullptr);
-
-        spir_singular_funcs *u = spir_fermionic_finite_temp_basis_get_u(basis);
-        REQUIRE(u != nullptr);
-
-        spir_matsubara_functions *uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
-        REQUIRE(uhat != nullptr);
-
-        // Test basis function evaluation
-        int basis_size;
-        int status = spir_fermionic_finite_temp_basis_get_size(basis, &basis_size);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-        double x = 0.5; // Test point for u basis (imaginary time)
-        double y = 0.5 * wmax; // Test point for v basis (real frequency)
-        double *out = (double *)malloc(basis_size * sizeof(double));
-        status = spir_evaluate_singular_funcs(u, x, out);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-        // Compare with C++ implementation for u basis
-        sparseir::FiniteTempBasis<sparseir::Fermionic> cpp_basis(beta, wmax, epsilon);
-        Eigen::VectorXd cpp_result = (*cpp_basis.u)(x);
-        for (int i = 0; i < basis_size; ++i) {
-            REQUIRE(out[i] == Approx(cpp_result(i)));
-        }
-
-        // Test v basis functions
-        spir_singular_funcs *v = spir_fermionic_finite_temp_basis_get_v(basis);
-        REQUIRE(v != nullptr);
-
-        // Test v basis function evaluation
-        status = spir_evaluate_singular_funcs(v, y, out);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-        // Compare with C++ implementation for v basis
-        cpp_result = (*cpp_basis.v)(y);
-        for (int i = 0; i < basis_size; ++i) {
-            REQUIRE(out[i] == Approx(cpp_result(i)));
-        }
-
-        free(out);
-        spir_destroy_singular_funcs(u);
-        spir_destroy_singular_funcs(v);
-
-        // Test error cases
-        status = spir_evaluate_singular_funcs(nullptr, x, out);
-        REQUIRE(status == SPIR_INVALID_ARGUMENT);
-
-        status = spir_evaluate_singular_funcs(u, x, nullptr);
-        REQUIRE(status == SPIR_INVALID_ARGUMENT);
-
-        // Clean up
-        spir_destroy_fermionic_finite_temp_basis(basis);
+        test_finite_temp_basis_basis_functions<sparseir::Fermionic>();
     }
 
-    SECTION("Bosonic Basis Functions")
+    SECTION("Basis Functions Bosonic")
     {
-        double beta = 2.0;
-        double wmax = 5.0;
-        double epsilon = 1e-6;
-
-        spir_bosonic_finite_temp_basis *basis =
-            spir_bosonic_finite_temp_basis_new(beta, wmax, epsilon);
-        REQUIRE(basis != nullptr);
-
-        spir_singular_funcs *u = spir_bosonic_finite_temp_basis_get_u(basis);
-        REQUIRE(u != nullptr);
-
-        // Test basis function evaluation
-        int basis_size;
-        int status = spir_bosonic_finite_temp_basis_get_size(basis, &basis_size);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-        double x = 0.5; // Test point for u basis (imaginary time)
-        double y = 0.5 * wmax; // Test point for v basis (real frequency)
-        double *out = (double *)malloc(basis_size * sizeof(double));
-        status = spir_evaluate_singular_funcs(u, x, out);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-        // Compare with C++ implementation for u basis
-        sparseir::FiniteTempBasis<sparseir::Bosonic> cpp_basis(beta, wmax, epsilon);
-        Eigen::VectorXd cpp_result = (*cpp_basis.u)(x);
-        for (int i = 0; i < basis_size; ++i) {
-            REQUIRE(out[i] == Approx(cpp_result(i)));
-        }
-
-        // Test v basis functions
-        spir_singular_funcs *v = spir_bosonic_finite_temp_basis_get_v(basis);
-        REQUIRE(v != nullptr);
-
-        // Test v basis function evaluation
-        status = spir_evaluate_singular_funcs(v, y, out);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-        // Compare with C++ implementation for v basis
-        cpp_result = (*cpp_basis.v)(y);
-        for (int i = 0; i < basis_size; ++i) {
-            REQUIRE(out[i] == Approx(cpp_result(i)));
-        }
-
-        free(out);
-        spir_destroy_singular_funcs(u);
-        spir_destroy_singular_funcs(v);
-
-        // Test error cases
-        status = spir_evaluate_singular_funcs(nullptr, x, out);
-        REQUIRE(status == SPIR_INVALID_ARGUMENT);
-
-        status = spir_evaluate_singular_funcs(u, x, nullptr);
-        REQUIRE(status == SPIR_INVALID_ARGUMENT);
-
-        // Clean up
-        spir_destroy_bosonic_finite_temp_basis(basis);
+        test_finite_temp_basis_basis_functions<sparseir::Bosonic>();
     }
+}
+
+
+template <typename S>
+void test_finite_temp_basis_dlr()
+{
+    const double beta = 10000.0;
+    const double wmax = 1.0;
+    const double epsilon = 1e-12;
+
+    auto stat = S == sparseir::Fermionic ? SPIR_STATISTICS_FERMIONIC
+                                         : SPIR_STATISTICS_BOSONIC;
+
+    spir_finite_temp_basis *basis =
+        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
+    REQUIRE(basis != nullptr);
+
+    spir_dlr *dlr = spir_dlr_new(basis);
+    REQUIRE(dlr != nullptr);
+
+    const int npoles = 10;
+    Eigen::VectorXd poles(npoles);
+    Eigen::VectorXd coeffs(npoles);
+    std::mt19937 gen(982743);
+    std::uniform_real_distribution<> dis(0.0, 1.0);
+    for (int i = 0; i < npoles; i++) {
+        poles(i) = wmax * (2.0 * dis(gen) - 1.0);
+        coeffs(i) = 2.0 * dis(gen) - 1.0;
+    }
+    REQUIRE(poles.array().abs().maxCoeff() <= wmax);
+
+    spir_dlr *dlr_with_poles =
+        spir_dlr_new_with_poles(basis, npoles, poles.data());
+    REQUIRE(dlr_with_poles != nullptr);
+    int fitmat_rows = spir_dlr_fitmat_rows(dlr_with_poles);
+    int fitmat_cols = spir_dlr_fitmat_cols(dlr_with_poles);
+    REQUIRE(fitmat_rows >= 0);
+    REQUIRE(fitmat_cols == npoles);
+    double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
+    int32_t to_ir_input_dims[1] = {npoles};
+    int status_to_IR =
+        spir_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR, 1,
+                                 to_ir_input_dims, coeffs.data(), Gl);
+
+    REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
+    double *g_dlr = (double *)malloc(fitmat_rows * sizeof(double));
+    int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
+    int status_from_IR = spir_dlr_from_IR(
+        dlr, SPIR_ORDER_COLUMN_MAJOR, 1, from_ir_input_dims, Gl, g_dlr);
+    REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
+
+    free(Gl);
+    free(g_dlr);
+
+    spir_destroy_finite_temp_basis(basis);
+    spir_destroy_dlr(dlr);
+    spir_destroy_dlr(dlr_with_poles);
 }
 
 TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
 {
     SECTION("DiscreteLehmannRepresentation Constructor Fermionic")
     {
-        const double beta = 10000.0;
-        const double wmax = 1.0;
-        const double epsilon = 1e-12;
-
-        spir_fermionic_finite_temp_basis *basis =
-            spir_fermionic_finite_temp_basis_new(beta, wmax, epsilon);
-        REQUIRE(basis != nullptr);
-
-        spir_fermionic_dlr *dlr = spir_fermionic_dlr_new(basis);
-        REQUIRE(dlr != nullptr);
-
-        const int npoles = 10;
-        Eigen::VectorXd poles(npoles);
-        Eigen::VectorXd coeffs(npoles);
-        std::mt19937 gen(982743);
-        std::uniform_real_distribution<> dis(0.0, 1.0);
-        for (int i = 0; i < npoles; i++) {
-            poles(i) = wmax * (2.0 * dis(gen) - 1.0);
-            coeffs(i) = 2.0 * dis(gen) - 1.0;
-        }
-        REQUIRE(poles.array().abs().maxCoeff() <= wmax);
-
-        spir_fermionic_dlr *dlr_with_poles =
-            spir_fermionic_dlr_new_with_poles(basis, npoles, poles.data());
-        REQUIRE(dlr_with_poles != nullptr);
-        int fitmat_rows = spir_fermionic_dlr_fitmat_rows(dlr_with_poles);
-        int fitmat_cols = spir_fermionic_dlr_fitmat_cols(dlr_with_poles);
-        REQUIRE(fitmat_rows >= 0);
-        REQUIRE(fitmat_cols == npoles);
-        double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
-        int32_t to_ir_input_dims[1] = {npoles};
-        int status_to_IR =
-            spir_fermionic_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR, 1,
-                                     to_ir_input_dims, coeffs.data(), Gl);
-
-        REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
-        double *g_dlr = (double *)malloc(fitmat_rows * sizeof(double));
-        int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
-        int status_from_IR = spir_fermionic_dlr_from_IR(
-            dlr, SPIR_ORDER_COLUMN_MAJOR, 1, from_ir_input_dims, Gl, g_dlr);
-        REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
-
-        // Clean up
-        // free allocated memory
-        free(Gl);
-        free(g_dlr);
-
-        spir_destroy_fermionic_finite_temp_basis(basis);
-        spir_destroy_fermionic_dlr(dlr);
-        spir_destroy_fermionic_dlr(dlr_with_poles);
+        test_finite_temp_basis_dlr<sparseir::Fermionic>();
     }
 
     SECTION("DiscreteLehmannRepresentation Constructor Bosonic")
     {
-        const double beta = 10000.0;
-        const double wmax = 1.0;
-        const double epsilon = 1e-12;
-
-        spir_bosonic_finite_temp_basis *basis =
-            spir_bosonic_finite_temp_basis_new(beta, wmax, epsilon);
-        REQUIRE(basis != nullptr);
-
-        spir_bosonic_dlr *dlr = spir_bosonic_dlr_new(basis);
-        REQUIRE(dlr != nullptr);
-
-        const int npoles = 10;
-        Eigen::VectorXd poles(npoles);
-        Eigen::VectorXd coeffs(npoles);
-        std::mt19937 gen(982743);
-        std::uniform_real_distribution<> dis(0.0, 1.0);
-        for (int i = 0; i < npoles; i++) {
-            poles(i) = wmax * (2.0 * dis(gen) - 1.0);
-            coeffs(i) = 2.0 * dis(gen) - 1.0;
-        }
-        REQUIRE(poles.array().abs().maxCoeff() <= wmax);
-
-        spir_bosonic_dlr *dlr_with_poles =
-            spir_bosonic_dlr_new_with_poles(basis, npoles, poles.data());
-        REQUIRE(dlr_with_poles != nullptr);
-        int fitmat_rows = spir_bosonic_dlr_fitmat_rows(dlr_with_poles);
-        int fitmat_cols = spir_bosonic_dlr_fitmat_cols(dlr_with_poles);
-        REQUIRE(fitmat_rows >= 0);
-        REQUIRE(fitmat_cols == npoles);
-        double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
-        int32_t to_ir_input_dims[1] = {npoles};
-        int status_to_IR =
-            spir_bosonic_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR, 1,
-                                   to_ir_input_dims, coeffs.data(), Gl);
-
-        REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
-        double *g_dlr = (double *)malloc(fitmat_rows * sizeof(double));
-        int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
-        int status_from_IR = spir_bosonic_dlr_from_IR(
-            dlr, SPIR_ORDER_COLUMN_MAJOR, 1, from_ir_input_dims, Gl, g_dlr);
-        REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
-
-        // Clean up
-        // free allocated memory
-        free(Gl);
-        free(g_dlr);
-
-        spir_destroy_bosonic_finite_temp_basis(basis);
-        spir_destroy_bosonic_dlr(dlr);
-        spir_destroy_bosonic_dlr(dlr_with_poles);
+        test_finite_temp_basis_dlr<sparseir::Bosonic>();
     }
 }
 
@@ -410,7 +339,8 @@ TEST_CASE("TauSampling", "[cinterface]")
 
         // Test getting sampling points
         double *tau_points = (double *)malloc(n_points * sizeof(double));
-        int status_get_tau_points = spir_sampling_get_tau_points(sampling, tau_points);
+        int status_get_tau_points =
+            spir_sampling_get_tau_points(sampling, tau_points);
         REQUIRE(status_get_tau_points == SPIR_COMPUTATION_SUCCESS);
         free(tau_points);
 
@@ -443,7 +373,8 @@ TEST_CASE("TauSampling", "[cinterface]")
 
         // Test getting sampling points
         double *tau_points = (double *)malloc(n_points * sizeof(double));
-        int status_get_tau_points = spir_sampling_get_tau_points(sampling, tau_points);
+        int status_get_tau_points =
+            spir_sampling_get_tau_points(sampling, tau_points);
         REQUIRE(status_get_tau_points == SPIR_COMPUTATION_SUCCESS);
         free(tau_points);
 

@@ -104,14 +104,6 @@ IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
 IMPLEMENT_OPAQUE_TYPE(singular_funcs, AbstractContinuousFunctions);
 IMPLEMENT_OPAQUE_TYPE(matsubara_functions, AbstractMatsubaraFunctions);
 IMPLEMENT_OPAQUE_TYPE(finite_temp_basis, AbstractFiniteTempBasis);
-//IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
-                      //sparseir::FiniteTempBasis<sparseir::Fermionic>);
-//IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
-                      //sparseir::FiniteTempBasis<sparseir::Bosonic>);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
 IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
-IMPLEMENT_OPAQUE_TYPE(
-    fermionic_dlr,
-    sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>);
-IMPLEMENT_OPAQUE_TYPE(
-    bosonic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>);
+IMPLEMENT_OPAQUE_TYPE(dlr, AbstractDLR);

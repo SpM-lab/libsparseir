@@ -44,18 +44,12 @@ struct _spir_kernel;
 DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
-
-//DECLARE_OPAQUE_TYPE(polyvector);
-
 DECLARE_OPAQUE_TYPE(singular_funcs);
 DECLARE_OPAQUE_TYPE(matsubara_functions);
-
-DECLARE_OPAQUE_TYPE(fermionic_finite_temp_basis);
-DECLARE_OPAQUE_TYPE(bosonic_finite_temp_basis);
+DECLARE_OPAQUE_TYPE(finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
-DECLARE_OPAQUE_TYPE(fermionic_dlr);
-DECLARE_OPAQUE_TYPE(bosonic_dlr);
+DECLARE_OPAQUE_TYPE(dlr);
 
 /**
  * @brief Creates a new logistic kernel for fermionic/bosonic analytical
@@ -153,24 +147,41 @@ spir_sve_result* spir_sve_result_new(const spir_kernel* k, double epsilon);
  * @return 0 on success, -1 on failure (if the kernel is invalid or an exception
  * occurs)
  */
-int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
+int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax);
 
 /**
- * Takes a kernel `k`, an array `x` of size `nx`, an array `y` of size `ny`
- * and an array `out` of size `nx * ny`. On exit, set
- * `out[ix*ny + iy] = K(x[ix], y[iy])`.
+ * @brief Gets the size (number of basis functions) of a finite temperature basis.
+ *
+ * This function returns the number of basis functions in the specified finite
+ * temperature basis object. This size determines the dimensionality of the basis
+ * and is needed when allocating arrays for basis function evaluations.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param size Pointer to store the number of basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ *
+ * @note The size is determined automatically during basis construction based on
+ *       the specified parameters (β, ωmax, ε)
  */
-int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
-                       const double *y, int ny, double *out);
-
-int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_basis *b, int *size);
-
-int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis *b, int *size);
-
+int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b, int *size);
 
 /**
- * @brief Creates a new fermionic tau sampling object for sparse sampling in
+ * @brief Gets the statistics type (Fermionic or Bosonic) of a finite temperature basis.
+ *
+ * This function returns the statistics type of the specified finite temperature basis object.
+ * The statistics type determines whether the basis is for fermionic or bosonic Green's functions.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param statistics Pointer to store the statistics type (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ *
+ * @note The statistics type is determined during basis construction and cannot be changed
+ */
+int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b, spir_statistics_type *statistics);
+
+/**
+ * @brief Creates a new tau sampling object for sparse sampling in
  * imaginary time.
  *
  * Constructs a sampling object that allows transformation between the IR basis
@@ -179,7 +190,7 @@ int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis
  * imaginary time, which provides near-optimal conditioning for the given basis
  * size.
  *
- * @param b Pointer to a fermionic finite temperature basis object
+ * @param b Pointer to a finite temperature basis object
  * @return A pointer to the newly created sampling object, or NULL if creation
  * fails
  *
@@ -191,10 +202,10 @@ int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b);
+spir_sampling *spir_tau_sampling_new(const spir_finite_temp_basis *b);
 
 /**
- * @brief Creates a new fermionic Matsubara sampling object for sparse sampling
+ * @brief Creates a new Matsubara sampling object for sparse sampling
  * in Matsubara frequencies.
  *
  * Constructs a sampling object that allows transformation between the IR basis
@@ -203,10 +214,8 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
  * highest-order basis function in Matsubara frequencies, which provides
  * near-optimal conditioning for the given basis size.
  *
- * For fermionic Matsubara frequencies, the sampling points are odd integers:
- * iωn = (2n + 1)π/β, where n is an integer.
  *
- * @param b Pointer to a fermionic finite temperature basis object
+ * @param b Pointer to a finite temperature basis object
  * @return A pointer to the newly created sampling object, or NULL if creation
  * fails
  *
@@ -214,71 +223,16 @@ spir_sampling *spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_
  * accuracy
  * @note The sampling matrix is automatically factorized using SVD for efficient
  * transformations
- * @note For fermionic functions, the Matsubara frequencies are odd multiples of
- * π/β, i.e. iωn = (2n + 1)π/β.
+ * @note The sampling frequencies are stored in the sampling object as integers, i.e, ωn = nπ/β. n are even for bosonic frequencies and odd for fermionic frequencies.
  * @note The returned object must be freed using spir_destroy_sampling when no
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b);
+spir_sampling *spir_matsubara_sampling_new(const spir_finite_temp_basis *b);
 
 
 /**
- * @brief Creates a new bosonic tau sampling object for sparse sampling in
- * imaginary time.
- *
- * Constructs a sampling object that allows transformation between the IR basis
- * and a set of sampling points in imaginary time (τ). The sampling points are
- * automatically chosen as the extrema of the highest-order basis function in
- * imaginary time, which provides near-optimal conditioning for the given basis
- * size.
- *
- * @param b Pointer to a bosonic finite temperature basis object
- * @return A pointer to the newly created sampling object, or NULL if creation
- * fails
- *
- * @note The sampling points are chosen to optimize numerical stability and
- * accuracy
- * @note The sampling matrix is automatically factorized using SVD for efficient
- * transformations
- * @note The returned object must be freed using spir_destroy_sampling when no
- * longer needed
- * @see spir_destroy_sampling
- */
-spir_sampling *spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b);
-
-/**
- * @brief Creates a new bosonic Matsubara sampling object for sparse sampling
- * in Matsubara frequencies.
- *
- * Constructs a sampling object that allows transformation between the IR basis
- * and a set of sampling points in Matsubara frequencies (iωn). The sampling
- * points are automatically chosen as the (discrete) extrema of the
- * highest-order basis function in Matsubara frequencies, which provides
- * near-optimal conditioning for the given basis size.
- *
- * For bosonic Matsubara frequencies, the sampling points are even integers:
- * iωn = 2nπ/β, where n is an integer.
- *
- * @param b Pointer to a bosonic finite temperature basis object
- * @return A pointer to the newly created sampling object, or NULL if creation
- * fails
- *
- * @note The sampling points are chosen to optimize numerical stability and
- * accuracy
- * @note The sampling matrix is automatically factorized using SVD for efficient
- * transformations
- * @note For bosonic functions, the Matsubara frequencies are even multiples of
- * π/β
- * @note The returned object must be freed using spir_destroy_sampling when no
- * longer needed
- * @see spir_destroy_sampling
- */
-spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b);
-
-
-/**
- * @brief Creates a new fermionic Discrete Lehmann Representation (DLR).
+ * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
  *
  * This function implements a variant of the discrete Lehmann representation
  * (DLR). Unlike the IR which uses truncated singular value expansion of the
@@ -291,87 +245,29 @@ spir_sampling *spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_tem
  * where:
  * - a[i] are the expansion coefficients
  * - w[i] are the poles on the real axis
- * - iν are the fermionic Matsubara frequencies
+ * - iν are Matsubara frequencies
  *
- * @param b Pointer to a fermionic finite temperature basis object
+ * @param b Pointer to a finite temperature basis object
  * @return A pointer to the newly created DLR object, or NULL if creation fails
  *
  * @note The poles on the real-frequency axis are selected based on the zeros of
  *       the IR basis functions on the real axis
- * @note The returned object must be freed using spir_destroy_fermionic_dlr when
+ * @note The returned object must be freed using spir_destroy_dlr when
  * no longer needed
- * @see spir_destroy_fermionic_dlr
- * @see spir_fermionic_dlr_new_with_poles
+ * @see spir_destroy_dlr
+ * @see spir_dlr_new_with_poles
  *
  * @warning This implementation uses a heuristic approach for pole selection,
  * which differs from the original DLR method that uses rank-revealing
  * decomposition
  */
-spir_fermionic_dlr *spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b);
+spir_fermionic_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
 
 /**
- * @brief Creates a new fermionic Discrete Lehmann Representation (DLR) with
+ * @brief Creates a new Discrete Lehmann Representation (DLR) with
  * custom poles.
  *
- * This function creates a fermionic DLR using a set of user-specified poles on
- * the real-frequency axis. The DLR represents Green's functions as a sum of
- * poles:
- *
- * G(iν) = ∑ a[i] / (iν - w[i]) for i = 1, 2, ..., npoles
- *
- * where w[i] are the specified poles and a[i] are the expansion coefficients.
- *
- * @param b Pointer to a fermionic finite temperature basis object
- * @param npoles Number of poles to use in the representation
- * @param poles Array of pole locations on the real-frequency axis
- *
- * @return A pointer to the newly created DLR object with custom poles, or NULL
- * if creation fails
- *
- * @note This function allows for more control over the pole selection compared
- * to the automatic pole selection in spir_fermionic_dlr_new
- * @see spir_fermionic_dlr_new
- * @see spir_destroy_fermionic_dlr
- */
-spir_fermionic_dlr *spir_fermionic_dlr_new_with_poles(const spir_fermionic_finite_temp_basis *b, const int npoles, const double *poles);
-
-/**
- * @brief Creates a new bosonic Discrete Lehmann Representation (DLR).
- *
- * This function implements a variant of the discrete Lehmann representation
- * (DLR). Unlike the IR which uses truncated singular value expansion of the
- * analytic continuation kernel K, the DLR is based on a "sketching" of K. The
- * resulting basis is a linear combination of discrete set of poles on the
- * real-frequency axis, continued to the imaginary-frequency axis:
- *
- * G(iωn) = ∑ a[i] / (iωn - w[i]) for i = 1, 2, ..., L
- *
- * where:
- * - a[i] are the expansion coefficients
- * - w[i] are the poles on the real axis
- * - iωn are the bosonic Matsubara frequencies (even multiples of π/β)
- *
- * @param b Pointer to a bosonic finite temperature basis object
- * @return A pointer to the newly created DLR object, or NULL if creation fails
- *
- * @note The poles on the real-frequency axis are selected based on the zeros of
- *       the IR basis functions on the real axis
- * @note The returned object must be freed using spir_destroy_bosonic_dlr when
- * no longer needed
- * @see spir_destroy_bosonic_dlr
- * @see spir_bosonic_dlr_new_with_poles
- *
- * @warning This implementation uses a heuristic approach for pole selection,
- * which differs from the original DLR method that uses rank-revealing
- * decomposition
- */
-spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
-
-/**
- * @brief Creates a new bosonic Discrete Lehmann Representation (DLR) with
- * custom poles.
- *
- * This function creates a bosonic DLR using a set of user-specified poles on
+ * This function creates a DLR using a set of user-specified poles on
  * the real-frequency axis. The DLR represents correlation functions as a sum of
  * poles:
  *
@@ -379,7 +275,7 @@ spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
  *
  * where w[i] are the specified poles and a[i] are the expansion coefficients.
  *
- * @param b Pointer to a bosonic finite temperature basis object
+ * @param b Pointer to a finite temperature basis object
  * @param npoles Number of poles to use in the representation
  * @param poles Array of pole locations on the real-frequency axis
  *
@@ -387,11 +283,11 @@ spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b);
  * if creation fails
  *
  * @note This function allows for more control over the pole selection compared
- * to the automatic pole selection in spir_bosonic_dlr_new
- * @see spir_bosonic_dlr_new
- * @see spir_destroy_bosonic_dlr
+ * to the automatic pole selection in spir_dlr_new
+ * @see spir_dlr_new
+ * @see spir_destroy_dlr
  */
-spir_bosonic_dlr *spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp_basis *b, const int npoles, const double *poles);
+spir_bosonic_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to double
@@ -410,7 +306,7 @@ spir_bosonic_dlr *spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp
  * @param input Input array of basis coefficients
  * @param out Output array for the evaluated values at sampling points
  *
- * @return 0 on success, non-zero on failure
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
  * @note For optimal performance, the target dimension should be either the
  * first (0) or the last (ndim-1) dimension to avoid large temporary array
@@ -421,7 +317,7 @@ spir_bosonic_dlr *spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp
  * @see spir_sampling_evaluate_dz
  * @see spir_sampling_evaluate_zz
  */
-int spir_sampling_evaluate_dd(
+int32_t spir_sampling_evaluate_dd(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -432,36 +328,12 @@ int spir_sampling_evaluate_dd(
     );
 
 /**
- * @brief Evaluates basis coefficients at sampling points (double to complex
- * version).
+ * @brief Evaluates basis coefficients at sampling points (double to complex version).
  *
- * Transforms basis coefficients to values at sampling points, where input is
- * real (double precision) and output is complex (double precision) values. The
- * operation can be performed along any dimension of a multidimensional array.
- *
- * @param s Pointer to the sampling object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
- * SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param target_dim Target dimension for the transformation (0-based)
- * @param input Input array of real basis coefficients
- * @param out Output array for the evaluated complex values at sampling points
- *
- * @return 0 on success, non-zero on failure
- *
- * @note For optimal performance, the target dimension should be either the
- * first (0) or the last (ndim-1) dimension to avoid large temporary array
- * allocations
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note Complex numbers are stored as pairs of consecutive double values (real,
- * imag)
- *
+ * For more details, see spir_sampling_evaluate_dd
  * @see spir_sampling_evaluate_dd
- * @see spir_sampling_evaluate_zz
  */
-int spir_sampling_evaluate_dz(
+int32_t spir_sampling_evaluate_dz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -471,7 +343,14 @@ int spir_sampling_evaluate_dz(
     c_complex *out                    // Output array
     );
 
-int spir_sampling_evaluate_zz(
+
+/**
+ * @brief Evaluates basis coefficients at sampling points (complex to complex version).
+ *
+ * For more details, see spir_sampling_evaluate_dd
+ * @see spir_sampling_evaluate_dd
+ */
+int32_t spir_sampling_evaluate_zz(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -499,16 +378,13 @@ int spir_sampling_evaluate_zz(
  *
  * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
- * @note For optimal performance, the target dimension should be either the first (0)
- *       or the last (ndim-1) dimension to avoid large temporary array allocations
  * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
  * @note This function performs the inverse operation of spir_sampling_evaluate_dd
  *
  * @see spir_sampling_evaluate_dd
  * @see spir_sampling_fit_zz
  */
-int spir_sampling_fit_dd(
+int32_t spir_sampling_fit_dd(
     const spir_sampling *s,        // Sampling object
     spir_order_type order,         // Order type (C or Fortran)
     int32_t ndim,                  // Number of dimensions
@@ -521,28 +397,7 @@ int spir_sampling_fit_dd(
 /**
  * @brief Fits values at sampling points to basis coefficients (complex to complex version).
  *
- * Transforms values at sampling points back to basis coefficients, where both input
- * and output are complex (double precision) values. The operation can be performed
- * along any dimension of a multidimensional array.
- *
- * @param s Pointer to the sampling object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param target_dim Target dimension for the transformation (0-based)
- * @param input Input array of complex values at sampling points
- * @param out Output array for the fitted complex basis coefficients
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
- *
- * @note For optimal performance, the target dimension should be either the first (0)
- *       or the last (ndim-1) dimension to avoid large temporary array allocations
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note Complex numbers are stored as pairs of consecutive double values (real, imag)
- * @note This function performs the inverse operation of spir_sampling_evaluate_zz
- *
- * @see spir_sampling_evaluate_zz
+ * For more details, see spir_sampling_fit_dd
  * @see spir_sampling_fit_dd
  */
 int spir_sampling_fit_zz(
@@ -571,7 +426,7 @@ int spir_sampling_fit_zz(
  * @see spir_bosonic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
+int spir_fitmat_rows(const spir_dlr *dlr);
 
 /**
  * @brief Gets the number of columns in the fitting matrix of a bosonic DLR.
@@ -589,47 +444,12 @@ int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr);
  * @see spir_bosonic_dlr_from_IR
  * @see spir_bosonic_dlr_to_IR
  */
-int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr);
-
-/**
- * @brief Gets the number of rows in the fitting matrix of a fermionic DLR.
- *
- * This function returns the number of rows in the fitting matrix of the specified
- * fermionic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
- *
- * @param dlr Pointer to the fermionic DLR object
- * @return The number of rows in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
- *
- * @note The fitting matrix dimensions determine the size of valid input/output arrays
- *       for transformations involving this DLR object
- * @see spir_fermionic_dlr_fitmat_cols
- * @see spir_fermionic_dlr_from_IR
- * @see spir_fermionic_dlr_to_IR
- */
-int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr);
-/**
- * @brief Gets the number of columns in the fitting matrix of a fermionic DLR.
- *
- * This function returns the number of columns in the fitting matrix of the specified
- * fermionic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
- *
- * @param dlr Pointer to the fermionic DLR object
- * @return The number of columns in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
- *
- * @note The fitting matrix dimensions determine the size of valid input/output arrays
- *       for transformations involving this DLR object
- * @see spir_fermionic_dlr_fitmat_rows
- * @see spir_fermionic_dlr_from_IR
- * @see spir_fermionic_dlr_to_IR
- */
-int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
+int spir_dlr_fitmat_cols(const spir_dlr *dlr);
 
 
 /**
- * Transforms a given input array from the Imaginary Frequency (IR) representation
- * to the Fermionic Discrete Lehmann Representation (DLR) using the specified DLR object.
+ * Transforms a given input array from the Intermediate Representation (IR) 
+ * to the Discrete Lehmann Representation (DLR) using the specified DLR object.
  *
  * @param dlr Pointer to the fermionic DLR object
  * @param order Order type (C or Fortran)
@@ -638,7 +458,7 @@ int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
  * @param input Input coefficients array in IR representation
  * @param out Output array in DLR representation
  *
- * @return 0 on success, or a negative value if an error occurred
+ * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
  *
  * @note The input and output arrays must be allocated with sufficient memory.
  *       The size of the input and output arrays should match the dimensions specified.
@@ -646,63 +466,21 @@ int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr);
  *       The function assumes that the input array is in the specified order type.
  *       The output array will be in the specified order type.
  *
- * @see spir_fermionic_dlr_to_IR
- * @see spir_fermionic_dlr_fitmat_rows
- * @see spir_fermionic_dlr_fitmat_cols
+ * @see spir_dlr_to_IR
+ * @see spir_dlr_fitmat_rows
+ * @see spir_dlr_fitmat_cols
  */
-int spir_fermionic_dlr_from_IR(
-    const spir_fermionic_dlr *dlr,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    const double *input,
-    double *out);/**
- * @brief Transforms coefficients from IR basis to bosonic DLR representation.
- *
- * This function converts expansion coefficients from the Intermediate
- * Representation (IR) basis to the Discrete Lehmann Representation (DLR).
- * The transformation is performed by solving a linear system using the
- * fitting matrix:
- *
- * g_DLR = matrix \ g_IR
- *
- * where:
- * - g_DLR are the coefficients in the DLR basis
- * - g_IR are the coefficients in the IR basis
- * - matrix is the SVD-factorized transformation matrix
- *
- * @param dlr Pointer to the bosonic DLR object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
- * SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param input Input array of IR coefficients (double precision)
- * @param out Output array for the DLR coefficients (double precision)
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
- * (if the DLR object is invalid or an error occurs)
- *
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note This function is specifically for bosonic (symmetric) Green's functions
- * @note The transformation preserves the numerical properties of the
- * representation
- * @note The transformation involves solving a linear system, which may be
- *       computationally more intensive than the forward transformation
- *
- * @see spir_bosonic_dlr_to_IR
- * @see spir_fermionic_dlr_from_IR
- */
-int spir_bosonic_dlr_from_IR(
-    const spir_bosonic_dlr *dlr,
+int32_t spir_dlr_from_IR(
+    const spir_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
     int32_t *input_dims,
     const double *input,
     double *out);
 
+
 /**
- * @brief Transforms coefficients from DLR basis to fermionic IR representation.
+ * @brief Transforms coefficients from DLR basis to IR representation.
  *
  * This function converts expansion coefficients from the Discrete Lehmann
  * Representation (DLR) basis to the Intermediate Representation (IR) basis.
@@ -715,49 +493,7 @@ int spir_bosonic_dlr_from_IR(
  * - g_DLR are the coefficients in the DLR basis
  * - fitmat is the transformation matrix
  *
- * @param dlr Pointer to the fermionic DLR object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
- * SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param input Input array of DLR coefficients (double precision)
- * @param out Output array for the IR coefficients (double precision)
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure (if the DLR object is invalid or an error
- * occurs)
- *
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note This function is specifically for fermionic Green's functions
- * @note The transformation is a direct matrix multiplication, which is
- * typically faster than the inverse transformation
- *
- * @see spir_fermionic_dlr_from_IR
- * @see spir_bosonic_dlr_to_IR
- */
-int spir_fermionic_dlr_from_IR(
-    const spir_fermionic_dlr *dlr,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    const double *input,
-    double *out);
-
-/**
- * @brief Transforms coefficients from DLR basis to bosonic IR representation.
- *
- * This function converts expansion coefficients from the Discrete Lehmann
- * Representation (DLR) basis to the Intermediate Representation (IR) basis.
- * The transformation is performed using the fitting matrix:
- *
- * g_IR = fitmat * g_DLR
- *
- * where:
- * - g_IR are the coefficients in the IR basis
- * - g_DLR are the coefficients in the DLR basis
- * - fitmat is the transformation matrix
- *
- * @param dlr Pointer to the bosonic DLR object
+ * @param dlr Pointer to the DLR object
  * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
  * @param ndim Number of dimensions in the input/output arrays
  * @param input_dims Array of dimension sizes
@@ -769,152 +505,42 @@ int spir_fermionic_dlr_from_IR(
  *
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
- * @note This function is specifically for bosonic (symmetric) Green's functions
  * @note The transformation is a direct matrix multiplication, which is
  *       typically faster than the inverse transformation
  *
- * @see spir_bosonic_dlr_from_IR
- * @see spir_fermionic_dlr_to_IR
+ * @see spir_dlr_from_IR
  */
-int spir_bosonic_dlr_to_IR(
-    const spir_bosonic_dlr *dlr,
+int32_t spir_dlr_to_IR(
+    const spir_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
     int32_t *input_dims,
     const double *input,
     double *out);
 
-/**
- * @brief Transforms coefficients from DLR basis to fermionic IR representation.
- *
- * This function converts expansion coefficients from the Discrete Lehmann
- * Representation (DLR) basis to the Intermediate Representation (IR) basis.
- * The transformation is performed using the fitting matrix:
- *
- * g_IR = fitmat * g_DLR
- *
- * where:
- * - g_IR are the coefficients in the IR basis
- * - g_DLR are the coefficients in the DLR basis
- * - fitmat is the transformation matrix
- *
- * @param dlr Pointer to the fermionic DLR object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param input Input array of DLR coefficients (double precision)
- * @param out Output array for the IR coefficients (double precision)
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
- *         (if the DLR object is invalid or an error occurs)
- *
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note This function is specifically for fermionic Green's functions
- * @note The transformation is a direct matrix multiplication, which is
- *       typically faster than the inverse transformation
- *
- * @see spir_fermionic_dlr_from_IR
- * @see spir_bosonic_dlr_to_IR
- */
-int spir_fermionic_dlr_to_IR(
-    const spir_fermionic_dlr *dlr,
-    spir_order_type order,
-    int32_t ndim,
-    int32_t *input_dims,
-    const double *input,
-    double *out);
-
-/** Destroy instance of kernel */
-//void spir_destroy_kernel(spir_kernel *k);
 
 /**
- * Given a kernel k, perform a truncated singular value expansion to precision
- * eps with at most n singular values. `u`, `s`, `v` must be arrays of size
- * at least `n`.
+ * @brief Creates a new finite temperature IR basis.
  *
- * On exit, fill `n` with the number of singular values which are significant
- * to a level `eps`, and `u[i]`, `s[i]`, and `v[i]` with the i-th left-singular
- * function, i-th singular value, and i-th right-singular function, respectively.
- */
-//int spir_sve(const spir_kernel *k,
-             //spir_function *u, double *s, spir_function *v, int *n,
-             //double eps);
-
-/** Fill [taumin, taumax] with the domain of the function */
-//int spir_func_domain(const spir_function *f, double *taumin, double *taumax);
-
-/**
- * Takes a function `f` and arrays of size `n`: `tau`, `out`.
- * On exit, set `out[n] = f(tau[n])` to double precision.
- */
-//int spir_tau_value(const spir_function *f, const double *tau,
-                   //double *out, int n);
-
-/**
- * Takes a function `f` and a buffer `f0` of size at least `n`. On exit, set
- * `f0[i]` to the `i`-th root of `f` and set `n` to the number of roots found.
- *
- * Return 0 on success, -1 if more roots were found.
- */
-//int spir_tau_roots(const spir_function *f, double *f0, int *n);
-
-/**
- * Takes a function `f` and two arrays of arrays of size `n`: `iw`, `out`.
- * On exit, set `out[n] = FT(f)(iw[n])` to double precision, where `FT` denotes
- * the Fourier transform.
- */
-//int spir_iw_value(const spir_function *f, const long *iw,
-                  //double _Complex *out, int n);
-
-/**
- * Takes a function `f` and a buffer `f0` of size at least `n`. On exit, set
- * `f0[i]` to the `i`-th sign change of the Fourier transform of `f` and set
- * `n` to the number of roots found.
- *
- * Return 0 on success, -1 if more roots were found.
- */
-//int spir_iw_roots(const spir_function *f, long *f0, int n);
-
-// Create new basis
-spir_fermionic_finite_temp_basis* spir_fermionic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
-/**
- * @brief Creates a new bosonic finite temperature IR basis.
- *
- * For a continuation kernel K from real frequencies, ω ∈ [-ωmax, ωmax], to
- * imaginary time, τ ∈ [0, β], this function creates an intermediate
- * representation (IR) basis that stores the truncated singular value expansion:
- *
- * K(τ, ω) ≈ ∑ u[l](τ) * s[l] * v[l](ω) for l = 1, 2, 3, ...
- *
- * where:
- * - u[l](τ) are IR basis functions on the imaginary time axis (stored as
- * piecewise Legendre polynomials)
- * - s[l] are singular values of the continuation kernel
- * - v[l](ω) are IR basis functions on the real frequency axis (stored as
- * piecewise Legendre polynomials)
+ * This function creates a new finite temperature IR basis using the specified parameters and the default logistic kernel.
+ * The basis is constructed based on the given beta (inverse temperature), omega_max (frequency cutoff),
+ * and epsilon (accuracy target).
  *
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param epsilon Accuracy target for the basis
  *
- * @return A pointer to the newly created bosonic finite temperature basis
- * object, or NULL if creation fails
- *
- * @note The basis includes both imaginary time and Matsubara frequency
- * representations
- * @note For Matsubara frequencies, bosonic basis uses even numbers (2n)
- * @note The returned object must be freed using
- * spir_destroy_bosonic_finite_temp_basis when no longer needed
- * @see spir_destroy_bosonic_finite_temp_basis
+ * @return A pointer to the newly created finite temperature IR basis
+ *         or NULL if creation fails
+ * @see spir_finite_temp_basis_new_with_kernel
  */
-spir_bosonic_finite_temp_basis* spir_bosonic_finite_temp_basis_new(double beta, double omega_max, double epsilon);
+spir_finite_temp_basis* spir_finite_temp_basis_new(double beta, double omega_max, double epsilon);
 
 /**
- * @brief Creates a new fermionic finite temperature IR basis using a
+ * @brief Creates a new finite temperature IR basis using a
  * pre-computed SVE result.
  *
- * This function creates a fermionic intermediate representation (IR) basis
+ * This function creates a intermediate representation (IR) basis
  * using a pre-computed singular value expansion (SVE) result. This allows for
  * reusing an existing SVE computation, which can be more efficient than
  * recomputing it.
@@ -924,88 +550,57 @@ spir_bosonic_finite_temp_basis* spir_bosonic_finite_temp_basis_new(double beta, 
  * @param k Pointer to the kernel object used for the basis construction
  * @param sve Pointer to a pre-computed SVE result for the kernel
  *
- * @return A pointer to the newly created fermionic finite temperature basis
+ * @return A pointer to the newly created finite temperature basis
  * object, or NULL if creation fails (invalid inputs or exception occurs)
  *
  * @note Using a pre-computed SVE can significantly improve performance when
  * creating multiple basis objects with the same kernel
  * @see spir_sve_result_new
- * @see spir_destroy_fermionic_finite_temp_basis
+ * @see spir_destroy_finite_temp_basis
  */
-spir_fermionic_finite_temp_basis *
-spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
+spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(double beta, double omega_max,
                                              const spir_kernel *k,
                                              const spir_sve_result *sve);
 
-/**
- * @brief Creates a new bosonic finite temperature IR basis using a pre-computed
- * SVE result.
- *
- * This function creates a bosonic intermediate representation (IR) basis using
- * a pre-computed singular value expansion (SVE) result. This allows for reusing
- * an existing SVE computation, which can be more efficient than recomputing it.
- *
- * @param beta Inverse temperature β (must be positive)
- * @param omega_max Frequency cutoff ωmax (must be non-negative)
- * @param k Pointer to the kernel object used for the basis construction
- * @param sve Pointer to a pre-computed SVE result for the kernel
- *
- * @return A pointer to the newly created bosonic finite temperature basis
- * object, or NULL if creation fails (invalid inputs or exception occurs)
- *
- * @note Using a pre-computed SVE can significantly improve performance when
- * creating multiple basis objects with the same kernel
- * @see spir_sve_result_new
- * @see spir_destroy_bosonic_finite_temp_basis
- */
-spir_bosonic_finite_temp_basis *
-spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
-                                             const spir_kernel *k,
-                                             const spir_sve_result *sve);
-
-// Destroy basis instance
-//void spir_destroy_fermionic_basis(spir_fermionic_finite_temp_basis* b);
 
 /**
- * @brief Gets the basis functions of a fermionic finite temperature basis.
+ * @brief Gets the basis functions of a finite temperature basis.
  *
- * This function returns a polynomial vector containing the basis functions of the
- * specified fermionic finite temperature basis. The basis functions are stored
- * as piecewise Legendre polynomials.
+ * This function returns an object representing the basis functions
+ * in the imaginary-time domain of the specified finite temperature basis.
  *
- * @param b Pointer to the fermionic finite temperature basis object
- * @return A pointer to the polynomial vector containing the basis functions,
+ * @param b Pointer to the finite temperature basis object
+ * @return A pointer to the object representing the basis functions,
  *         or NULL if the basis object is invalid
  *
- * @note The returned polynomial vector must be freed using spir_destroy_polyvector
+ * @note The returned object must be freed using spir_destroy_singular_funcs
  *       when no longer needed
- * @see spir_destroy_polyvector
+ * @see spir_destroy_singular_funcs
  */
-spir_singular_funcs* spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis* b);
+spir_singular_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b);
 
 
 /**
- * @brief Gets the basis functions of a fermionic finite temperature basis.
+ * @brief Gets the basis functions of a finite temperature basis.
  *
- * This function returns a polynomial vector containing the basis functions of the
- * specified fermionic finite temperature basis. The basis functions are stored
- * as piecewise Legendre polynomials.
+ * This function returns an object representing the basis functions
+ * in the real-frequency domain of the specified finite temperature basis.
  *
- * @param b Pointer to the fermionic finite temperature basis object
- * @return A pointer to the polynomial vector containing the basis functions,
+ * @param b Pointer to the finite temperature basis object
+ * @return A pointer to the object representing the basis functions,
  *         or NULL if the basis object is invalid
  *
- * @note The returned polynomial vector must be freed using spir_destroy_polyvector
+ * @note The returned object must be freed using spir_destroy_singular_funcs
  *       when no longer needed
- * @see spir_destroy_polyvector
+ * @see spir_destroy_singular_funcs
  */
-spir_singular_funcs* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis* b);
+spir_singular_funcs* spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b);
 
 /**
- * @brief Gets the basis functions of a fermionic finite temperature basis in Matsubara frequency domain.
+ * @brief Gets the basis functions of a finite temperature basis in Matsubara frequency domain.
  *
- * This function returns a polynomial vector containing the basis functions of the
- * specified fermionic finite temperature basis in Matsubara frequency domain.
+ * This function returns an object representing the basis functions
+ * in the Matsubara-frequency domain of the specified finite temperature basis.
  *
  * @param b Pointer to the fermionic finite temperature basis object
  * @return A pointer to the object containing the basis functions,
@@ -1015,57 +610,8 @@ spir_singular_funcs* spir_fermionic_finite_temp_basis_get_v(const spir_fermionic
  *       when no longer needed
  * @see spir_destroy_matsubara_functions
  */
-spir_matsubara_functions* spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis* b);
+spir_matsubara_functions* spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b);
 
-/**
- * @brief Gets the basis functions of a bosonic finite temperature basis.
- *
- * This function returns a polynomial vector containing the basis functions of the
- * specified bosonic finite temperature basis. The basis functions are stored
- * as piecewise Legendre polynomials.
- *
- * @param b Pointer to the bosonic finite temperature basis object
- * @return A pointer to the polynomial vector containing the basis functions,
- *         or NULL if the basis object is invalid
- *
- * @note The returned polynomial vector must be freed using spir_destroy_polyvector
- *       when no longer needed
- * @see spir_destroy_polyvector
- */
-spir_singular_funcs* spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis* b);
-
-/**
- * @brief Gets the basis functions of a bosonic finite temperature basis on the real frequency axis.
- *
- * This function returns a polynomial vector containing the basis functions of the
- * specified bosonic finite temperature basis on the real frequency axis. The basis functions are stored
- * as piecewise Legendre polynomials.
- *
- * @param b Pointer to the bosonic finite temperature basis object
- * @return A pointer to the polynomial vector containing the basis functions,
- *         or NULL if the basis object is invalid
- *
- * @note The returned polynomial vector must be freed using spir_destroy_polyvector
- *       when no longer needed
- * @see spir_destroy_polyvector
- */
-spir_singular_funcs* spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis* b);
-
-/**
- * @brief Gets the basis functions of a bosonic finite temperature basis in Matsubara frequency domain.
- *
- * This function returns a polynomial vector containing the basis functions of the
- * specified bosonic finite temperature basis in Matsubara frequency domain.
- *
- * @param b Pointer to the bosonic finite temperature basis object
- * @return A pointer to the object containing the basis functions,
- *         or NULL if the basis object is invalid
- *
- * @note The returned object must be freed using spir_destroy_matsubara_functions
- *       when no longer needed
- * @see spir_destroy_matsubara_functions
- */
-spir_matsubara_functions* spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis* b);
 
 /**
  * @brief Evaluates basis functions at a single point in the imaginary-time domain or the real frequency domain.
@@ -1122,7 +668,7 @@ int32_t spir_evaluate_matsubara_functions(
  * @see spir_sampling_get_tau_points
  * @see spir_sampling_get_matsubara_points
  */
-int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
+int32_t spir_sampling_get_num_points(const spir_sampling *s, int32_t *num_points);
 
 /**
  * @brief Gets the imaginary time sampling points.
@@ -1140,7 +686,7 @@ int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
  * @note The array must be pre-allocated with size >= spir_sampling_get_num_points(s)
  * @see spir_sampling_get_num_points
  */
-int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
+int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
 
 /**
  * @brief Gets the Matsubara frequency sampling points.
@@ -1162,7 +708,7 @@ int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
  * @see spir_sampling_get_num_points
  */
-int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points);
+int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points);
 
 #ifdef __cplusplus
 }
