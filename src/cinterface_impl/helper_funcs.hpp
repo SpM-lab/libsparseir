@@ -66,6 +66,7 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
         std::array<int32_t, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        output_dims_3d[1] = impl.get()->n_sampling_points();
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -77,6 +78,8 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
     } else {
         std::array<int32_t, 3> input_dims_3d = dims_3d;
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        output_dims_3d[1] = impl.get()->n_sampling_points();
+
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
             input, input_dims_3d);
@@ -111,6 +114,7 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
 
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        output_dims_3d[1] = impl.get()->basis_size();
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -122,6 +126,7 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
     } else {
         std::array<int32_t, 3> input_dims_3d = dims_3d;
         std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        output_dims_3d[1] = impl.get()->basis_size();
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -244,7 +249,7 @@ _spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, cons
     }
 
     auto ptr_dlr = std::make_shared<_DLR<S>>(
-        std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis)
+        std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis, poles_vec)
     );
     return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
 }

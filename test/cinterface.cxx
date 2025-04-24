@@ -486,7 +486,7 @@ void test_tau_sampling_evaluation_4d_row_major()
     }
 
     double *evaluate_output =
-        (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+        (double *)malloc(n_points * d1 * d2 * d3 * sizeof(double));
     double *fit_output =
         (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
 
@@ -617,7 +617,7 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     }
 
     c_complex *evaluate_output =
-        (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        (c_complex *)malloc(n_points * d1 * d2 * d3 * sizeof(c_complex));
     c_complex *fit_output =
         (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
 
@@ -758,7 +758,7 @@ void test_tau_sampling_evaluation_4d_column_major()
     }
 
     double *evaluate_output =
-        (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
+        (double *)malloc(n_points * d1 * d2 * d3 * sizeof(double));
     double *fit_output =
         (double *)malloc(basis_size * d1 * d2 * d3 * sizeof(double));
 
@@ -856,7 +856,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     }
 
     c_complex *evaluate_output =
-        (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        (c_complex *)malloc(n_points * d1 * d2 * d3 * sizeof(c_complex));
     c_complex *fit_output =
         (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
 
@@ -1510,9 +1510,11 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
         printf("n_points: %d\n", n_points);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
+        std::cout << "fit" << std::endl;
         int fit_status =
             spir_sampling_fit_zz(sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims,
                                  target_dim, evaluate_output, fit_output);
+        std::cout << "fit_status: " << fit_status << std::endl;
         REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare results
