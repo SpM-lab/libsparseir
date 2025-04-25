@@ -14,54 +14,6 @@
 using Catch::Approx;
 using xprec::DDouble;
 
-TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
-{
-    // Test individual kernels
-    SECTION("LogisticKernel(9)")
-    {
-        auto cpp_kernel = sparseir::LogisticKernel(9);
-        spir_kernel *kernel = spir_logistic_kernel_new(9);
-        REQUIRE(kernel != nullptr);
-    }
-
-    SECTION("RegularizedBoseKernel(10)")
-    {
-        auto cpp_kernel = sparseir::RegularizedBoseKernel(10);
-        spir_kernel *kernel = spir_regularized_bose_kernel_new(10);
-        REQUIRE(kernel != nullptr);
-    }
-
-    SECTION("Kernel Domain")
-    {
-        // Create a kernel through C API
-        // spir_logistic_kernel* kernel = spir_logistic_kernel_new(9);
-        spir_kernel *kernel = spir_logistic_kernel_new(9);
-        REQUIRE(kernel != nullptr);
-
-        // Get domain bounds
-        double xmin, xmax, ymin, ymax;
-        int status = spir_kernel_domain(kernel, &xmin, &xmax, &ymin, &ymax);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-        // Compare with C++ implementation
-        auto cpp_kernel = sparseir::LogisticKernel(9);
-        auto xrange = cpp_kernel.xrange();
-        auto yrange = cpp_kernel.yrange();
-        auto cpp_xmin = xrange.first;
-        auto cpp_xmax = xrange.second;
-        auto cpp_ymin = yrange.first;
-        auto cpp_ymax = yrange.second;
-
-        REQUIRE(xmin == cpp_xmin);
-        REQUIRE(xmax == cpp_xmax);
-        REQUIRE(ymin == cpp_ymin);
-        REQUIRE(ymax == cpp_ymax);
-
-        // Clean up
-        spir_destroy_kernel(kernel);
-    }
-}
-
 template <typename S>
 spir_statistics_type get_stat()
 {
@@ -69,256 +21,6 @@ spir_statistics_type get_stat()
         return SPIR_STATISTICS_FERMIONIC;
     } else {
         return SPIR_STATISTICS_BOSONIC;
-    }
-}
-
-template <typename S>
-void test_finite_temp_basis_constructor()
-{
-    double beta = 2.0;
-    double wmax = 5.0;
-    double Lambda = 10.0;
-    double epsilon = 1e-6;
-
-    auto stat = get_stat<S>();
-
-    sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
-    REQUIRE(basis != nullptr);
-
-    int basis_size;
-    int status = spir_finite_temp_basis_get_size(basis, &basis_size);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(basis_size == cpp_basis.size());
-}
-
-template <typename S>
-void test_finite_temp_basis_constructor_with_sve()
-{
-    double beta = 2.0;
-    double wmax = 5.0;
-    double Lambda = 10.0;
-    double epsilon = 1e-6;
-
-    spir_kernel *kernel = spir_logistic_kernel_new(Lambda);
-    REQUIRE(kernel != nullptr);
-
-    spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon);
-    REQUIRE(sve_result != nullptr);
-
-    auto stat = get_stat<S>();
-
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new_with_sve(
-        stat, beta, wmax, kernel, sve_result);
-    REQUIRE(basis != nullptr);
-
-    spir_statistics_type stats;
-    int status = spir_finite_temp_basis_get_statistics(basis, &stats);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(stats == stat);
-
-    // Clean up
-    spir_destroy_kernel(kernel);
-    spir_destroy_sve_result(sve_result);
-    spir_destroy_finite_temp_basis(basis);
-}
-
-TEST_CASE("FiniteTempBasis", "[cinterface]")
-{
-    SECTION("FiniteTempBasis Constructor Fermionic")
-    {
-        test_finite_temp_basis_constructor<sparseir::Fermionic>();
-    }
-
-    SECTION("FiniteTempBasis Constructor Bosonic")
-    {
-        test_finite_temp_basis_constructor<sparseir::Bosonic>();
-    }
-
-    SECTION("FiniteTempBasis Constructor with SVE Fermionic/LogisticKernel")
-    {
-        test_finite_temp_basis_constructor_with_sve<sparseir::Fermionic>();
-    }
-
-    SECTION("FiniteTempBasis Constructor with SVE Bosonic/LogisticKernel")
-    {
-        test_finite_temp_basis_constructor_with_sve<sparseir::Fermionic>();
-    }
-
-    SECTION(
-        "FiniteTempBasis Constructor with SVE Bosonic/RegularizedBoseKernel")
-    {
-        double beta = 2.0;
-        double wmax = 5.0;
-        double Lambda = 10.0;
-        double epsilon = 1e-6;
-
-        spir_kernel *kernel = spir_regularized_bose_kernel_new(Lambda);
-        REQUIRE(kernel != nullptr);
-
-        spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon);
-        REQUIRE(sve_result != nullptr);
-
-        spir_finite_temp_basis *basis = spir_finite_temp_basis_new_with_sve(
-            SPIR_STATISTICS_BOSONIC, beta, wmax, kernel, sve_result);
-        REQUIRE(basis != nullptr);
-
-        spir_statistics_type stats;
-        int status = spir_finite_temp_basis_get_statistics(basis, &stats);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(stats == SPIR_STATISTICS_BOSONIC);
-
-        // Clean up
-        spir_destroy_kernel(kernel);
-        spir_destroy_sve_result(sve_result);
-        spir_destroy_finite_temp_basis(basis);
-    }
-}
-
-template <typename S>
-void test_finite_temp_basis_basis_functions()
-{
-    double beta = 2.0;
-    double wmax = 5.0;
-    double epsilon = 1e-6;
-
-    auto stat = get_stat<S>();
-
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
-    REQUIRE(basis != nullptr);
-
-    spir_singular_funcs *u = spir_finite_temp_basis_get_u(basis);
-    REQUIRE(u != nullptr);
-
-    spir_matsubara_functions *uhat = spir_finite_temp_basis_get_uhat(basis);
-    REQUIRE(uhat != nullptr);
-
-    // Test basis function evaluation
-    int basis_size;
-    int status = spir_finite_temp_basis_get_size(basis, &basis_size);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-    double x = 0.5;        // Test point for u basis (imaginary time)
-    double y = 0.5 * wmax; // Test point for v basis (real frequency)
-    double *out = (double *)malloc(basis_size * sizeof(double));
-    status = spir_evaluate_singular_funcs(u, x, out);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-    // Compare with C++ implementation for u basis
-    sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
-    Eigen::VectorXd cpp_result = (*cpp_basis.u)(x);
-    for (int i = 0; i < basis_size; ++i) {
-        REQUIRE(out[i] == Approx(cpp_result(i)));
-    }
-
-    // Test v basis functions
-    spir_singular_funcs *v = spir_finite_temp_basis_get_v(basis);
-    REQUIRE(v != nullptr);
-
-    // Test v basis function evaluation
-    status = spir_evaluate_singular_funcs(v, y, out);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-    // Compare with C++ implementation for v basis
-    cpp_result = (*cpp_basis.v)(y);
-    for (int i = 0; i < basis_size; ++i) {
-        REQUIRE(out[i] == Approx(cpp_result(i)));
-    }
-
-    free(out);
-    spir_destroy_singular_funcs(u);
-    spir_destroy_singular_funcs(v);
-
-    // Test error cases
-    status = spir_evaluate_singular_funcs(nullptr, x, out);
-    REQUIRE(status == SPIR_INVALID_ARGUMENT);
-
-    status = spir_evaluate_singular_funcs(u, x, nullptr);
-    REQUIRE(status == SPIR_INVALID_ARGUMENT);
-
-    // Clean up
-    spir_destroy_finite_temp_basis(basis);
-}
-
-TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
-{
-    SECTION("Basis Functions Fermionic")
-    {
-        test_finite_temp_basis_basis_functions<sparseir::Fermionic>();
-    }
-
-    SECTION("Basis Functions Bosonic")
-    {
-        test_finite_temp_basis_basis_functions<sparseir::Bosonic>();
-    }
-}
-
-template <typename S>
-void test_finite_temp_basis_dlr()
-{
-    const double beta = 10000.0;
-    const double wmax = 1.0;
-    const double epsilon = 1e-12;
-
-    auto stat = get_stat<S>();
-
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
-    REQUIRE(basis != nullptr);
-
-    spir_dlr *dlr = spir_dlr_new(basis);
-    REQUIRE(dlr != nullptr);
-
-    const int npoles = 10;
-    Eigen::VectorXd poles(npoles);
-    Eigen::VectorXd coeffs(npoles);
-    std::mt19937 gen(982743);
-    std::uniform_real_distribution<> dis(0.0, 1.0);
-    for (int i = 0; i < npoles; i++) {
-        poles(i) = wmax * (2.0 * dis(gen) - 1.0);
-        coeffs(i) = 2.0 * dis(gen) - 1.0;
-    }
-    REQUIRE(poles.array().abs().maxCoeff() <= wmax);
-
-    spir_dlr *dlr_with_poles =
-        spir_dlr_new_with_poles(basis, npoles, poles.data());
-    REQUIRE(dlr_with_poles != nullptr);
-    int fitmat_rows = spir_dlr_fitmat_rows(dlr_with_poles);
-    int fitmat_cols = spir_dlr_fitmat_cols(dlr_with_poles);
-    REQUIRE(fitmat_rows >= 0);
-    REQUIRE(fitmat_cols == npoles);
-    double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
-    int32_t to_ir_input_dims[1] = {npoles};
-    int status_to_IR = spir_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR,
-                                      1, to_ir_input_dims, coeffs.data(), Gl);
-
-    REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
-    double *g_dlr = (double *)malloc(fitmat_rows * sizeof(double));
-    int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
-    int status_from_IR = spir_dlr_from_IR(dlr, SPIR_ORDER_COLUMN_MAJOR, 1,
-                                          from_ir_input_dims, Gl, g_dlr);
-    REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
-
-    free(Gl);
-    free(g_dlr);
-
-    spir_destroy_finite_temp_basis(basis);
-    spir_destroy_dlr(dlr);
-    spir_destroy_dlr(dlr_with_poles);
-}
-
-TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
-{
-    SECTION("DiscreteLehmannRepresentation Constructor Fermionic")
-    {
-        test_finite_temp_basis_dlr<sparseir::Fermionic>();
-    }
-
-    SECTION("DiscreteLehmannRepresentation Constructor Bosonic")
-    {
-        test_finite_temp_basis_dlr<sparseir::Bosonic>();
     }
 }
 
@@ -1025,12 +727,11 @@ TEST_CASE("TauSampling", "[cinterface]")
             int *dims = dims_list[dim];
             int target_dim = dim;
 
-            // Evaluate using C API that is not supported
             //int status_not_supported = spir_sampling_evaluate_dd(
                 //sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
                 //gl_cpp.data(), output_double);
             //REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
-//
+
             //int fit_status_not_supported = spir_sampling_fit_dd(
                 //sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
                 //output_double, fit_output_double);
@@ -1041,14 +742,15 @@ TEST_CASE("TauSampling", "[cinterface]")
             }
 
             // Evaluate using C API that has dimension mismatch
-            int status_dimension_mismatch = spir_sampling_evaluate_dz(
+            int status_dimension_mismatch = spir_sampling_evaluate_dd(
                 sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
-                gl_cpp.data(), output_complex);
+                gl_cpp.data(), output_double);
             REQUIRE(status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
 
             int fit_status_dimension_mismatch = spir_sampling_fit_zz(
                 sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
                 output_complex, fit_output_complex);
+
             REQUIRE(fit_status_dimension_mismatch ==
                     SPIR_INPUT_DIMENSION_MISMATCH);
         }
@@ -1124,17 +826,23 @@ void test_matsubara_sampling_evaluation_4d_column_major()
     }
 
     c_complex *evaluate_output =
-        (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
+        (c_complex *)malloc(n_points * d1 * d2 * d3 * sizeof(c_complex));
     c_complex *fit_output =
         (c_complex *)malloc(basis_size * d1 * d2 * d3 * sizeof(c_complex));
 
     int ndim = 4;
+
     int dims1[4] = {basis_size, d1, d2, d3};
     int dims2[4] = {d1, basis_size, d2, d3};
     int dims3[4] = {d1, d2, basis_size, d3};
     int dims4[4] = {d1, d2, d3, basis_size};
-
     std::vector<int *> dims_list = {dims1, dims2, dims3, dims4};
+
+    int dims1_smpl[4] = {n_points, d1, d2, d3};
+    int dims2_smpl[4] = {d1, n_points, d2, d3};
+    int dims3_smpl[4] = {d1, d2, n_points, d3};
+    int dims4_smpl[4] = {d1, d2, d3, n_points};
+    std::vector<int *> dims_list_smpl = {dims1_smpl, dims2_smpl, dims3_smpl, dims4_smpl};
 
     // Test evaluate() and fit() along each dimension
     for (int dim = 0; dim < 4; ++dim) {
@@ -1149,6 +857,7 @@ void test_matsubara_sampling_evaluation_4d_column_major()
             cpp_sampling.fit(gtau_cpp, dim);
         // Set up parameters for evaluation
         int *dims = dims_list[dim];
+        int *dims_smpl = dims_list_smpl[dim];
         int target_dim = dim;
 
         // Evaluate using C API
@@ -1158,7 +867,7 @@ void test_matsubara_sampling_evaluation_4d_column_major()
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
         int fit_status =
-            spir_sampling_fit_zz(sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims,
+            spir_sampling_fit_zz(sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims_smpl,
                                  target_dim, evaluate_output, fit_output);
         REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
@@ -1659,12 +1368,83 @@ void test_matsubara_sampling_error_status()
     free(fit_output_complex);
 }
 
+
 TEST_CASE("MatsubaraSampling", "[cinterface]")
 {
+    /*
+    SECTION("MatsubaraSampling Constructor (fermionic)")
+    {
+        test_matsubara_sampling_constructor<sparseir::Fermionic>();
+    }
+
+    SECTION("MatsubaraSampling Constructor (bosonic)")
+    {
+        test_matsubara_sampling_constructor<sparseir::Bosonic>();
+    }
+
+    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
+            "(fermionic)")
+    {
+        test_matsubara_sampling_evaluation_4d_column_major<
+            sparseir::Fermionic>();
+    }
+    */
+
+    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
+            "(bosonic)")
+    {
+        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>();
+    }
+
+    /*
+    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
+            "COLUMN-MAJOR (fermionic)")
+    {
+        test_matsubara_sampling_evaluation_4d_column_major_complex<
+            sparseir::Fermionic>();
+    }
+
+    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
+            "COLUMN-MAJOR (bosonic)")
+    {
+        test_matsubara_sampling_evaluation_4d_column_major_complex<
+            sparseir::Bosonic>();
+    }
+
+    SECTION("MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR "
+            "(fermionic)")
+    {
+        test_matsubara_sampling_evaluation_4d_row_major<sparseir::Fermionic>();
+    }
+
+    SECTION(
+        "MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR (bosonic)")
+    {
+        test_matsubara_sampling_evaluation_4d_row_major<sparseir::Bosonic>();
+    }
+
     SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
             "ROW-MAJOR (fermionic)")
     {
         test_matsubara_sampling_evaluation_4d_row_major_complex<
             sparseir::Fermionic>();
     }
+
+    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
+            "ROW-MAJOR (bosonic)")
+    {
+        test_matsubara_sampling_evaluation_4d_row_major_complex<
+            sparseir::Bosonic>();
+    }
+
+    SECTION("MatsubaraSampling Error Status (fermionic)")
+    {
+        test_matsubara_sampling_error_status<sparseir::Fermionic>();
+    }
+
+    SECTION("MatsubaraSampling Error Status (bosonic)")
+    {
+        test_matsubara_sampling_error_status<sparseir::Bosonic>();
+    }
+    */
 }

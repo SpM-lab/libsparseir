@@ -262,6 +262,9 @@ fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
     // Create a view of the tensor as a matrix
     Eigen::MatrixX<T> arr_view = Eigen::Map<Eigen::MatrixX<T>>(
         arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
+    // output matrix size
+    std::cout << "arr_view.rows() = " << arr_view.rows() << std::endl;
+    std::cout << "arr_view.cols() = " << arr_view.cols() << std::endl;
     Eigen::MatrixX<T> result = _fit_impl_first_dim<T, S, N>(svd, arr_view);
     // Copy the result to a tensor
     Eigen::array<Eigen::Index, N> dims;
@@ -443,7 +446,7 @@ int fit_inplace_impl(
         return SPIR_INVALID_DIMENSION;
     }
 
-    if (sampler.basis_size() !=
+    if (sampler.n_sampling_points() !=
         static_cast<std::size_t>(input.dimension(dim))) {
         // Dimension mismatch
         return SPIR_INPUT_DIMENSION_MISMATCH;

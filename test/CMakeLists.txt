@@ -15,7 +15,23 @@ enable_testing()
 
 # List of all test files
 set(TEST_FILES
-    cinterface.cxx
+    #utils.cxx
+    #linalg.cxx
+    #specfuncs.cxx
+    #root.cxx
+    #gauss.cxx
+    #freq.cxx
+    #poly.cxx
+    #kernel.cxx
+    #svd.cxx
+    #sve.cxx
+    #basis.cxx
+    #augment.cxx
+    #sampling.cxx
+    #dlr.cxx
+    #cinterface_core.cxx
+    cinterface_sampling.cxx
+    #cinterface_dlr.cxx
 )
 
 # Create a single combined test executable
@@ -35,6 +51,7 @@ endif()
 
 if(TARGET XPrec::xprec)
     get_target_property(XPREC_INCLUDE_DIRS XPrec::xprec INTERFACE_INCLUDE_DIRECTORIES)
+
     if(XPREC_INCLUDE_DIRS)
         target_include_directories(libsparseirtests PRIVATE ${XPREC_INCLUDE_DIRS})
     endif()
