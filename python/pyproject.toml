@@ -34,3 +34,20 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::UserWarning",
 ]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "B", "UP", "PL", "RUF"]
+ignore = []
+
+[tool.ruff.lint.isort]
+known-first-party = ["libsparseir"]
+known-third-party = ["numpy", "pytest", "ctypes"]
+combine-as-imports = true
+force-single-line = false
+force-sort-within-sections = true
+order-by-type = true
+split-on-trailing-comma = true
