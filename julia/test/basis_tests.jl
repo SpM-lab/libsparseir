@@ -1,19 +1,31 @@
 @testitem "basis" begin
 	using LibSparseIR
 
-	β = 0.1
-	ωmax = 0.3
-	ε = 0.0001
+	β = 2.0
+	ωmax = 5.0
+	ε = 1e-6
 
 	@testset "Bosonic basis" begin
-		bosonic_basis = LibSparseIR.spir_bosonic_finite_temp_basis_new(β, ωmax, ε)
-		LibSparseIR.spir_destroy_bosonic_finite_temp_basis(bosonic_basis)
+		basis = LibSparseIR.spir_bosonic_finite_temp_basis_new(β, ωmax, ε)
+		@test basis != C_NULL
+		basis_size_ref = Ref{Cint}(0)
+		status = LibSparseIR.spir_bosonic_finite_temp_basis_get_size(basis, basis_size_ref)
+		@test status == 0
+		basis_size = basis_size_ref[]
+		@test basis_size > 0
+		LibSparseIR.spir_destroy_bosonic_finite_temp_basis(basis)
 		@test true
 	end
 
 	@testset "Fermionic basis" begin
-		fermionic_basis = LibSparseIR.spir_fermionic_finite_temp_basis_new(β, ωmax, ε)
-		LibSparseIR.spir_destroy_fermionic_finite_temp_basis(fermionic_basis)
+		basis = LibSparseIR.spir_fermionic_finite_temp_basis_new(β, ωmax, ε)
+		@test basis != C_NULL
+		basis_size_ref = Ref{Cint}(0)
+		status = LibSparseIR.spir_fermionic_finite_temp_basis_get_size(basis, basis_size_ref)
+		@test status == 0
+		basis_size = basis_size_ref[]
+		@test basis_size > 0
+		LibSparseIR.spir_destroy_fermionic_finite_temp_basis(basis)
 		@test true
 	end
 end
