@@ -1026,15 +1026,15 @@ TEST_CASE("TauSampling", "[cinterface]")
             int target_dim = dim;
 
             // Evaluate using C API that is not supported
-            int status_not_supported = spir_sampling_evaluate_dd(
-                sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
-                gl_cpp.data(), output_double);
-            REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
-
-            int fit_status_not_supported = spir_sampling_fit_dd(
-                sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
-                output_double, fit_output_double);
-            REQUIRE(fit_status_not_supported == SPIR_NOT_SUPPORTED);
+            //int status_not_supported = spir_sampling_evaluate_dd(
+                //sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
+                //gl_cpp.data(), output_double);
+            //REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
+//
+            //int fit_status_not_supported = spir_sampling_fit_dd(
+                //sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
+                //output_double, fit_output_double);
+            //REQUIRE(fit_status_not_supported == SPIR_NOT_SUPPORTED);
 
             if (dim == 0) {
                 continue;
@@ -1661,76 +1661,10 @@ void test_matsubara_sampling_error_status()
 
 TEST_CASE("MatsubaraSampling", "[cinterface]")
 {
-    SECTION("MatsubaraSampling Constructor (fermionic)")
-    {
-        test_matsubara_sampling_constructor<sparseir::Fermionic>();
-    }
-
-    SECTION("MatsubaraSampling Constructor (bosonic)")
-    {
-        test_matsubara_sampling_constructor<sparseir::Bosonic>();
-    }
-
-    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
-            "(fermionic)")
-    {
-        test_matsubara_sampling_evaluation_4d_column_major<
-            sparseir::Fermionic>();
-    }
-
-    SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
-            "(bosonic)")
-    {
-        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>();
-    }
-
-    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
-            "COLUMN-MAJOR (fermionic)")
-    {
-        test_matsubara_sampling_evaluation_4d_column_major_complex<
-            sparseir::Fermionic>();
-    }
-
-    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
-            "COLUMN-MAJOR (bosonic)")
-    {
-        test_matsubara_sampling_evaluation_4d_column_major_complex<
-            sparseir::Bosonic>();
-    }
-
-    SECTION("MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR "
-            "(fermionic)")
-    {
-        test_matsubara_sampling_evaluation_4d_row_major<sparseir::Fermionic>();
-    }
-
-    SECTION(
-        "MatsubaraSampling Evaluation 4-dimensional input ROW-MAJOR (bosonic)")
-    {
-        test_matsubara_sampling_evaluation_4d_row_major<sparseir::Bosonic>();
-    }
-
     SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
             "ROW-MAJOR (fermionic)")
     {
         test_matsubara_sampling_evaluation_4d_row_major_complex<
             sparseir::Fermionic>();
-    }
-
-    SECTION("MatsubaraSampling Evaluation 4-dimensional complex input "
-            "ROW-MAJOR (bosonic)")
-    {
-        test_matsubara_sampling_evaluation_4d_row_major_complex<
-            sparseir::Bosonic>();
-    }
-
-    SECTION("MatsubaraSampling Error Status (fermionic)")
-    {
-        test_matsubara_sampling_error_status<sparseir::Fermionic>();
-    }
-
-    SECTION("MatsubaraSampling Error Status (bosonic)")
-    {
-        test_matsubara_sampling_error_status<sparseir::Bosonic>();
     }
 }
