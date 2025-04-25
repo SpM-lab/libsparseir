@@ -6,8 +6,9 @@ from libsparseir import (
     Kernel,
     FermionicFiniteTempBasis,
     BosonicFiniteTempBasis,
-    spir_order_type
+    spir_order_type,
 )
+
 
 def test_kernel_creation():
     # Test logistic kernel creation
@@ -17,6 +18,7 @@ def test_kernel_creation():
     # Test regularized bose kernel creation
     kernel = Kernel.regularized_bose(lambda_=1.0)
     assert kernel is not None
+
 
 def test_kernel_domain():
     # Test domain for logistic kernel
@@ -29,6 +31,7 @@ def test_kernel_domain():
     assert xmin < xmax
     assert ymin < ymax
 
+
 def test_finite_temp_basis_creation():
     # Test fermionic basis creation
     basis = FermionicFiniteTempBasis.new(beta=10.0, omega_max=1.0, epsilon=1e-6)
@@ -40,6 +43,7 @@ def test_finite_temp_basis_creation():
     assert basis is not None
     assert basis.size() > 0
 
+
 def test_sampling_creation(basis):
     # Test tau sampling
     sampling = basis.create_tau_sampling()
@@ -49,14 +53,16 @@ def test_sampling_creation(basis):
     sampling = basis.create_matsubara_sampling()
     assert sampling is not None
 
+
 def test_dlr_creation(basis):
     dlr = basis.create_dlr()
     assert dlr is not None
 
+
 def test_dlr_conversion(dlr, test_data):
     # Test to_IR conversion
-    ir_data = dlr.to_IR(test_data['real'])
-    assert ir_data.shape == test_data['real'].shape
+    ir_data = dlr.to_IR(test_data["real"])
+    assert ir_data.shape == test_data["real"].shape
     assert ir_data.dtype == np.float64
 
     # Test from_IR conversion
@@ -64,13 +70,21 @@ def test_dlr_conversion(dlr, test_data):
     assert output_data.shape == ir_data.shape
     assert output_data.dtype == np.float64
 
+
 def test_order_type(sampling, test_data):
     # Test row-major order
-    output_row = sampling.evaluate_dd(test_data['real'], order=spir_order_type.SPIR_ORDER_ROW_MAJOR)
-    output_col = sampling.evaluate_dd(test_data['real'], order=spir_order_type.SPIR_ORDER_COLUMN_MAJOR)
+    output_row = sampling.evaluate_dd(
+        test_data["real"], order=spir_order_type.SPIR_ORDER_ROW_MAJOR
+    )
+    output_col = sampling.evaluate_dd(
+        test_data["real"], order=spir_order_type.SPIR_ORDER_COLUMN_MAJOR
+    )
 
     assert output_row.shape == output_col.shape
-    assert not np.array_equal(output_row, output_col)  # Different orders should give different results
+    assert not np.array_equal(
+        output_row, output_col
+    )  # Different orders should give different results
+
 
 def test_error_handling():
     # Test invalid kernel creation
@@ -79,13 +93,16 @@ def test_error_handling():
 
     # Test invalid basis creation
     with pytest.raises(RuntimeError):
-        FermionicFiniteTempBasis.new(beta=-1.0, omega_max=1.0, epsilon=1e-6)  # Invalid beta
+        FermionicFiniteTempBasis.new(
+            beta=-1.0, omega_max=1.0, epsilon=1e-6
+        )  # Invalid beta
 
     # Test invalid sampling evaluation
     basis = FermionicFiniteTempBasis.new(beta=10.0, omega_max=1.0, epsilon=1e-6)
     sampling = basis.create_tau_sampling()
     with pytest.raises(RuntimeError):
         sampling.evaluate_dd(np.array([]))  # Empty input
+
 
 def test_memory_management():
     # Test that objects are properly cleaned up
@@ -97,6 +114,7 @@ def test_memory_management():
     del basis
     del sampling
     del dlr
+
 
 def test_sampling_points(sampling):
     # Test getting number of sampling points
