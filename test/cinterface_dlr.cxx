@@ -14,6 +14,18 @@
 using Catch::Approx;
 using xprec::DDouble;
 
+
+template <typename S>
+spir_statistics_type get_stat()
+{
+    if (std::is_same<S, sparseir::Fermionic>::value) {
+        return SPIR_STATISTICS_FERMIONIC;
+    } else {
+        return SPIR_STATISTICS_BOSONIC;
+    }
+}
+
+
 template <typename S>
 void test_finite_temp_basis_dlr()
 {
