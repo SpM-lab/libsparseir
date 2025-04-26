@@ -29,7 +29,9 @@ set(TEST_FILES
     augment.cxx
     sampling.cxx
     dlr.cxx
-    cinterface.cxx
+    cinterface_core.cxx
+    cinterface_sampling.cxx
+    cinterface_dlr.cxx
 )
 
 # Create a single combined test executable
@@ -49,6 +51,7 @@ endif()
 
 if(TARGET XPrec::xprec)
     get_target_property(XPREC_INCLUDE_DIRS XPrec::xprec INTERFACE_INCLUDE_DIRECTORIES)
+
     if(XPREC_INCLUDE_DIRS)
         target_include_directories(libsparseirtests PRIVATE ${XPREC_INCLUDE_DIRS})
     endif()

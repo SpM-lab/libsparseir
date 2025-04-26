@@ -13,252 +13,9 @@
 #define DEBUG_LOG(msg)
 #endif
 
-// Define opaque type and implement its management functions
-#define IMPLEMENT_OPAQUE_TYPE(name, impl_type)                                 \
-    struct _spir_##name                                                        \
-    {                                                                          \
-        std::shared_ptr<impl_type> ptr;                                        \
-        _spir_##name() { }                                                     \
-        ~_spir_##name() { }                                                    \
-    };                                                                         \
-    typedef struct _spir_##name spir_##name;                                   \
-                                                                               \
-    /* Helper function for creating objects */                                 \
-    static inline spir_##name *create_##name(std::shared_ptr<impl_type> p)     \
-    {                                                                          \
-        auto *obj = new spir_##name;                                           \
-        obj->ptr = p;                                                          \
-        return obj;                                                            \
-    }                                                                          \
-                                                                               \
-    /* Check if the shared_ptr has a valid object */                           \
-    int spir_is_assigned_##name(const spir_##name *obj)                        \
-    {                                                                          \
-        if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
-            return 0;                                                          \
-        }                                                                      \
-        bool is_assigned = static_cast<bool>(obj->ptr);                        \
-        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get()  \
-                        << ", is_assigned=" << is_assigned);                   \
-        return is_assigned ? 1 : 0;                                            \
-    }                                                                          \
-                                                                               \
-    /* Clone function */                                                       \
-    spir_##name *spir_clone_##name(const spir_##name *src)                     \
-    {                                                                          \
-        DEBUG_LOG("Cloning " << #name << " at " << src);                       \
-        if (!src) {                                                            \
-            DEBUG_LOG("Source " << #name << " is null");                       \
-            return nullptr;                                                    \
-        }                                                                      \
-                                                                               \
-        try {                                                                  \
-            /* Create a new structure */                                       \
-            spir_##name *result = new spir_##name();                           \
-                                                                               \
-            /* If source has a valid shared_ptr, copy it */                    \
-            if (src->ptr) {                                                    \
-                /* Create a new shared_ptr instance that shares ownership */   \
-                result->ptr = src->ptr;                                        \
-                DEBUG_LOG("Cloned " << #name << " to " << result               \
-                                    << ", shared_ptr points to "               \
-                                    << result->ptr.get());                     \
-            } else {                                                           \
-                DEBUG_LOG("Source " << #name << " has null shared_ptr");       \
-                result->ptr = nullptr;                                         \
-            }                                                                  \
-                                                                               \
-            return result;                                                     \
-        } catch (const std::exception &e) {                                    \
-            DEBUG_LOG("Exception in " << #name << "_clone: " << e.what());     \
-            return nullptr;                                                    \
-        } catch (...) {                                                        \
-            DEBUG_LOG("Unknown exception in " << #name << "_clone");           \
-            return nullptr;                                                    \
-        }                                                                      \
-    }                                                                          \
-                                                                               \
-    /* Destroy function */                                                     \
-    void spir_destroy_##name(spir_##name *obj)                                 \
-    {                                                                          \
-        if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
-            return;                                                            \
-        }                                                                      \
-        DEBUG_LOG("Destroying " << #name << " object at " << obj);             \
-        /* Check before resetting */                                           \
-        if (obj->ptr) {                                                        \
-            DEBUG_LOG("Resetting shared_ptr in " << #name << " at "            \
-                                                 << obj->ptr.get());           \
-            obj->ptr.reset();                                                  \
-        }                                                                      \
-        /* Safely delete the object */                                         \
-        delete obj;                                                            \
-    }                                                                          \
-                                                                               \
-    /* Helper to get the implementation shared_ptr */                          \
-    static inline std::shared_ptr<impl_type> get_impl_##name(                  \
-        const spir_##name *obj)                                                \
-    {                                                                          \
-        if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
-            return nullptr;                                                    \
-        }                                                                      \
-        DEBUG_LOG(#name << " object at " << obj                                \
-                        << ", ptr=" << obj->ptr.get());                        \
-        return obj->ptr;                                                       \
-    }
-
-// Implementation of the opaque types
-IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
-IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
-IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
-IMPLEMENT_OPAQUE_TYPE(continuous_functions, sparseir::AbstractContinuousFunctions);
-IMPLEMENT_OPAQUE_TYPE(matsubara_functions, sparseir::AbstractMatsubaraFunctions);
-IMPLEMENT_OPAQUE_TYPE(fermionic_finite_temp_basis,
-                      sparseir::FiniteTempBasis<sparseir::Fermionic>);
-IMPLEMENT_OPAQUE_TYPE(bosonic_finite_temp_basis,
-                      sparseir::FiniteTempBasis<sparseir::Bosonic>);
-IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
-IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
-IMPLEMENT_OPAQUE_TYPE(
-    fermionic_dlr,
-    sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>);
-IMPLEMENT_OPAQUE_TYPE(
-    bosonic_dlr, sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>);
-
-// Helper function to convert N-dimensional array to 3D array by collapsing
-// dimensions
-static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
-                                             int32_t target_dim)
-{
-    std::array<int32_t, 3> dims_3d = {1, dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        dims_3d[0] *= dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        dims_3d[2] *= dims[i];
-    }
-    return dims_3d;
-}
-
-// Helper function to convert N-dimensional array to 2D array by collapsing
-// dimensions
-static std::array<int32_t, 2> collapse_to_2d(int32_t ndim, const int32_t *dims,
-                                             int32_t target_dim)
-{
-    std::array<int32_t, 2> dims_2d = {dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        dims_2d[0] *= dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        dims_2d[1] *= dims[i];
-    }
-    return dims_2d;
-}
-
-// Template function to handle all evaluation cases - moved outside extern "C"
-// block
-template <typename InputScalar, typename OutputScalar>
-static int
-evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
-              int32_t *input_dims, int32_t target_dim, const InputScalar *input,
-              OutputScalar *out,
-              int (sparseir::AbstractSampling::*eval_func)(
-                  const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
-                  int, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &)
-                  const)
-{
-    auto impl = get_impl_sampling(s);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-
-    // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
-        collapse_to_3d(ndim, input_dims, target_dim);
-
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-        // Convert to column-major order for Eigen
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    }
-}
-
-template <typename InputScalar, typename OutputScalar>
-static int
-fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
-         int32_t *input_dims, int32_t target_dim, const InputScalar *input,
-         OutputScalar *out,
-         int (sparseir::AbstractSampling::*eval_func)(
-             const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &, int,
-             Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &) const)
-{
-    auto impl = get_impl_sampling(s);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-
-    // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
-        collapse_to_3d(ndim, input_dims, target_dim);
-
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
-
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-        // Convert to column-major order for Eigen
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
-
-        // Create TensorMaps
-        Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
-            input, input_dims_3d);
-        Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
-            out, output_dims_3d);
-
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
-    }
-}
-
-template<typename InternalType>
-spir_continuous_functions* _create_continuous_functions(std::shared_ptr<InternalType> impl) {
-    return create_continuous_functions(
-        std::static_pointer_cast<sparseir::AbstractContinuousFunctions>(
-            std::make_shared<sparseir::ContinuousFunctions<InternalType>>(impl)
-        )
-    );
-}
+#include "cinterface_impl/helper_types.hpp"
+#include "cinterface_impl/opaque_types.hpp"
+#include "cinterface_impl/helper_funcs.hpp"
 
 // Implementation of the C API
 extern "C" {
@@ -337,45 +94,6 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
     }
 }
 
-/*
-int spir_kernel_evaluate(const spir_kernel *k, double x, double y, double *out)
-{
-    auto impl = get_impl_kernel(k);
-    if (!impl || !out)
-        return -1;
-
-    try {
-        *out = impl->compute(x, y);
-        return 0;
-    } catch (...) {
-        return -1;
-    }
-}
-
-int spir_kernel_matrix(const spir_kernel *k, const double *x, int nx,
-                       const double *y, int ny, double *out)
-{
-    auto impl = get_impl_kernel(k);
-    if (!impl || !x || !y || !out)
-        return -1;
-    if (nx <= 0 || ny <= 0)
-        return -1;
-
-    try {
-        // Evaluate kernel at each point
-        for (int ix = 0; ix < nx; ++ix) {
-            for (int iy = 0; iy < ny; ++iy) {
-                out[ix * ny + iy] =
-                    impl->compute(x[ix], y[iy]); // column-major order
-            }
-        }
-        return 0;
-    } catch (...) {
-        return -1;
-    }
-}
-*/
-
 
 spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon)
 {
@@ -390,34 +108,28 @@ spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon)
     }
 }
 
-spir_fermionic_finite_temp_basis *
-spir_fermionic_finite_temp_basis_new(double beta, double omega_max,
+spir_finite_temp_basis *
+spir_finite_temp_basis_new(
+    spir_statistics_type statistics, double beta, double omega_max,
                                      double epsilon)
 {
     try {
-        return create_fermionic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
-                beta, omega_max, epsilon));
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {  
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Fermionic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
+        } else {
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Bosonic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
+        }
     } catch (...) {
         return nullptr;
     }
 }
 
-spir_bosonic_finite_temp_basis *
-spir_bosonic_finite_temp_basis_new(double beta, double omega_max,
-                                   double epsilon)
-{
-    try {
-        return create_bosonic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-                beta, omega_max, epsilon));
-    } catch (...) {
-        return nullptr;
-    }
-}
-
-spir_fermionic_finite_temp_basis *
-spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
+spir_finite_temp_basis *
+spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max,
                                               const spir_kernel *k,
                                               const spir_sve_result *sve)
 {
@@ -426,136 +138,92 @@ spir_fermionic_finite_temp_basis_new_with_sve(double beta, double omega_max,
         auto kernel_impl = get_impl_kernel(k);
         if (!sve_impl || !kernel_impl)
             return nullptr;
-        return create_fermionic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
-                beta, omega_max, kernel_impl, *sve_impl));
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Fermionic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, kernel_impl, *sve_impl);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
+        } else {
+            using FiniteTempBasisType = sparseir::FiniteTempBasis<sparseir::Bosonic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(beta, omega_max, kernel_impl, *sve_impl);
+            return create_finite_temp_basis(std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
+        }
     } catch (...) {
         return nullptr;
     }
 }
 
-spir_bosonic_finite_temp_basis *
-spir_bosonic_finite_temp_basis_new_with_sve(double beta, double omega_max,
-                                            const spir_kernel *k,
-                                            const spir_sve_result *sve)
+
+spir_sampling *
+spir_tau_sampling_new(const spir_finite_temp_basis *b)
 {
-    try {
-        auto sve_impl = get_impl_sve_result(sve);
-        auto kernel_impl = get_impl_kernel(k);
-        if (!sve_impl || !kernel_impl)
-            return nullptr;
-        return create_bosonic_finite_temp_basis(
-            std::make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
-                beta, omega_max, kernel_impl, *sve_impl));
-    } catch (...) {
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
         return nullptr;
+    }
+
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_sampling_new<sparseir::Fermionic, sparseir::TauSampling<sparseir::Fermionic>>(b);
+    } else {
+        return _spir_sampling_new<sparseir::Bosonic, sparseir::TauSampling<sparseir::Bosonic>>(b);
     }
 }
 
 spir_sampling *
-spir_fermionic_tau_sampling_new(const spir_fermionic_finite_temp_basis *b)
+spir_matsubara_sampling_new(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
-    if (!impl)
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
         return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::TauSampling<sparseir::Fermionic>>(*impl);
-    return create_sampling(smpl);
-}
-
-spir_sampling *
-spir_fermionic_matsubara_sampling_new(const spir_fermionic_finite_temp_basis *b)
-{
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Fermionic>>(
-            *impl);
-    return create_sampling(smpl);
-}
-
-spir_sampling *
-spir_bosonic_tau_sampling_new(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::TauSampling<sparseir::Bosonic>>(*impl);
-    return create_sampling(smpl);
-}
-
-spir_sampling *
-spir_bosonic_matsubara_sampling_new(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto smpl =
-        std::make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            *impl);
-    return create_sampling(smpl);
-}
-
-spir_fermionic_dlr *
-spir_fermionic_dlr_new(const spir_fermionic_finite_temp_basis *b)
-{
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(*impl);
-    return create_fermionic_dlr(dlr);
-}
-
-spir_fermionic_dlr *
-spir_fermionic_dlr_new_with_poles(const spir_fermionic_finite_temp_basis *b,
-                                  const int npoles, const double *poles)
-{
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-
-    Eigen::VectorXd poles_vec(npoles);
-    for (int i = 0; i < npoles; i++) {
-        poles_vec(i) = poles[i];
     }
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>>(
-        *impl, poles_vec);
-    return create_fermionic_dlr(dlr);
-}
 
-spir_bosonic_dlr *spir_bosonic_dlr_new(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl);
-    return create_bosonic_dlr(dlr);
-}
-
-spir_bosonic_dlr *
-spir_bosonic_dlr_new_with_poles(const spir_bosonic_finite_temp_basis *b,
-                                const int npoles, const double *poles)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-
-    Eigen::VectorXd poles_vec(npoles);
-    for (int i = 0; i < npoles; i++) {
-        poles_vec(i) = poles[i];
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_sampling_new<sparseir::Fermionic, sparseir::MatsubaraSampling<sparseir::Fermionic>>(b);
+    } else {
+        return _spir_sampling_new<sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(b);
     }
-    auto dlr = std::make_shared<
-        sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>>(*impl,
-                                                                    poles_vec);
-    return create_bosonic_dlr(dlr);
 }
 
-int spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
+
+spir_dlr *
+spir_dlr_new(const spir_finite_temp_basis *b)
+{
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
+        return nullptr;
+    }
+
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_dlr_new<sparseir::Fermionic>(b);
+    } else {
+        return _spir_dlr_new<sparseir::Bosonic>(b);
+    }
+}
+
+spir_dlr *
+spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles)
+{
+    auto impl = get_impl_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    spir_statistics_type stat;
+    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
+        return nullptr;
+    }
+
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_dlr_new_with_poles<sparseir::Fermionic>(b, npoles, poles);
+    } else {
+        return _spir_dlr_new_with_poles<sparseir::Bosonic>(b, npoles, poles);
+    }
+}
+
+
+int32_t spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
                               int32_t ndim, int32_t *input_dims,
                               int32_t target_dim, const double *input,
                               double *out)
@@ -564,7 +232,7 @@ int spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_dd);
 }
 
-int spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
                               int32_t ndim, int32_t *input_dims,
                               int32_t target_dim, const double *input,
                               c_complex *out)
@@ -574,11 +242,12 @@ int spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_dz);
 }
 
-int spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
                               int32_t ndim, int32_t *input_dims,
                               int32_t target_dim, const c_complex *input,
                               c_complex *out)
 {
+    // DANGER: MEMORY LAYOUT MAY NOT BE CONSISTENT BETWEEN C99 AND C++
     std::complex<double> *cpp_input = (std::complex<double> *)(input);
     std::complex<double> *cpp_out = (std::complex<double> *)(out);
     return evaluate_impl(s, order, ndim, input_dims, target_dim, cpp_input,
@@ -586,7 +255,7 @@ int spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_zz);
 }
 
-int spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
                          int32_t ndim, int32_t *input_dims, int32_t target_dim,
                          const double *input, double *out)
 {
@@ -594,7 +263,7 @@ int spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_dd);
 }
 
-int spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                          int32_t ndim, int32_t *input_dims, int32_t target_dim,
                          const c_complex *input, c_complex *out)
 {
@@ -604,222 +273,83 @@ int spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int spir_bosonic_dlr_fitmat_rows(const spir_bosonic_dlr *dlr)
+int32_t spir_dlr_fitmat_rows(const spir_dlr *dlr)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.rows();
+    return impl->fitmat_rows();
 }
 
-int spir_bosonic_dlr_fitmat_cols(const spir_bosonic_dlr *dlr)
+int32_t spir_dlr_fitmat_cols(const spir_dlr *dlr)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.cols();
+    return impl->fitmat_cols();
 }
 
-int spir_fermionic_dlr_fitmat_rows(const spir_fermionic_dlr *dlr)
-{
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.rows();
-}
 
-int spir_fermionic_dlr_fitmat_cols(const spir_fermionic_dlr *dlr)
-{
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat.cols();
-}
-
-int spir_bosonic_dlr_to_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
+int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order,
                            int32_t ndim, int32_t *input_dims,
                            const double *input, double *out)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
+    
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return spir_dlr_to_IR<sparseir::Fermionic>(dlr, order, ndim, input_dims, input, out);
+    } else {
+        return spir_dlr_to_IR<sparseir::Bosonic>(dlr, order, ndim, input_dims, input, out);
     }
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
-    }
-    Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
-    size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
 }
 
-int spir_bosonic_dlr_from_IR(const spir_bosonic_dlr *dlr, spir_order_type order,
+
+int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
                              int32_t ndim, int32_t *input_dims,
                              const double *input, double *out)
 {
-    auto impl = get_impl_bosonic_dlr(dlr);
+
+    auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (std::size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return spir_dlr_from_IR<sparseir::Fermionic>(dlr, order, ndim, input_dims, input, out);
+    } else {
+        return spir_dlr_from_IR<sparseir::Bosonic>(dlr, order, ndim, input_dims, input, out);
     }
-    Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
-    // pass data to out
-    std::size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
-}
-
-int spir_fermionic_dlr_to_IR(const spir_fermionic_dlr *dlr,
-                             spir_order_type order, int32_t ndim,
-                             int32_t *input_dims, const double *input,
-                             double *out)
-{
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
-    }
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
-    }
-    Eigen::Tensor<double, 2> out_tensor = impl->to_IR(input_tensor);
-    size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
-}
-
-int spir_fermionic_dlr_from_IR(const spir_fermionic_dlr *dlr,
-                               spir_order_type order, int32_t ndim,
-                               int32_t *input_dims, const double *input,
-                               double *out)
-{
-    std::cout << "spir_fermionic_dlr_from_IR" << std::endl;
-    auto impl = get_impl_fermionic_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    std::cout << "impl: " << std::endl;
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::reverse(input_dims_2d.begin(), input_dims_2d.end());
-    }
-    std::cout << "input_dims_2d: " << input_dims_2d[0] << " "
-              << input_dims_2d[1] << std::endl;
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (std::size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
-    }
-    std::cout << "input_tensor: " << input_tensor.dimension(0) << " "
-              << input_tensor.dimension(1) << std::endl;
-    Eigen::Tensor<double, 2> out_tensor = impl->from_IR(input_tensor);
-    // pass data to out
-    std::size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
 }
 
 
-
-
-spir_continuous_functions *spir_fermionic_finite_temp_basis_get_u(const spir_fermionic_finite_temp_basis *b)
+spir_funcs *spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_continuous_functions(impl->u);
+    return _create_funcs(impl->get_u());
 }
 
 
-spir_continuous_functions *spir_fermionic_finite_temp_basis_get_v(const spir_fermionic_finite_temp_basis *b)
+spir_funcs *spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_continuous_functions(impl->v);
+    return _create_funcs(impl->get_v());
 }
 
-spir_matsubara_functions *spir_fermionic_finite_temp_basis_get_uhat(const spir_fermionic_finite_temp_basis *b)
+spir_matsubara_functions *spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b)
 {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
 
-    return create_matsubara_functions(
-        std::static_pointer_cast<sparseir::AbstractMatsubaraFunctions>(
-            std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Fermionic>>(impl->uhat)
-        )
-    );
-}
-
-spir_continuous_functions *spir_bosonic_finite_temp_basis_get_u(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    return _create_continuous_functions(impl->u);
+    return create_matsubara_functions(impl->get_uhat());
 }
 
 
-spir_continuous_functions *spir_bosonic_finite_temp_basis_get_v(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    return _create_continuous_functions(impl->v);
-}
-
-spir_matsubara_functions *spir_bosonic_finite_temp_basis_get_uhat(const spir_bosonic_finite_temp_basis *b)
-{
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-
-    return create_matsubara_functions(
-        std::static_pointer_cast<sparseir::AbstractMatsubaraFunctions>(
-            std::make_shared<sparseir::MatsubaraBasisFunctions<sparseir::Bosonic>>(impl->uhat)
-        )
-    );
-}
-
-
-// Create new regularized bose kernel
-// spir_regularized_bosonic_kernel *spir_kernel_regularized_bose_new(double
-// lambda)
-//{
-// try {
-// return create_regularized_bose_kernel(
-// std::make_shared<sparseir::RegularizedBoseKernel>(lambda));
-//} catch (...) {
-// return nullptr;
-//}
-//}
-
-int spir_sampling_get_num_points(const spir_sampling *s, int *num_points) {
+int32_t spir_sampling_get_num_points(const spir_sampling *s, int32_t *num_points) {
     auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
@@ -835,7 +365,7 @@ int spir_sampling_get_num_points(const spir_sampling *s, int *num_points) {
     }
 }
 
-int spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
+int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
     auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
@@ -863,7 +393,7 @@ int spir_sampling_get_tau_points(const spir_sampling *s, double *points) {
     }
 }
 
-int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points) {
+int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points) {
     auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
@@ -893,8 +423,8 @@ int spir_sampling_get_matsubara_points(const spir_sampling *s, int *points) {
     }
 }
 
-int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_basis *b, int *size) {
-    auto impl = get_impl_fermionic_finite_temp_basis(b);
+int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b, int32_t *size) {
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
@@ -909,23 +439,23 @@ int spir_fermionic_finite_temp_basis_get_size(const spir_fermionic_finite_temp_b
     }
 }
 
-int spir_bosonic_finite_temp_basis_get_size(const spir_bosonic_finite_temp_basis *b, int *size) {
-    auto impl = get_impl_bosonic_finite_temp_basis(b);
+int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b, spir_statistics_type *statistics) {
+    auto impl = get_impl_finite_temp_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
-    if (!size) {
+    if (!statistics) {
         return SPIR_INVALID_ARGUMENT;
     }
     try {
-        *size = impl->size();
+        *statistics = impl->get_statistics();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
         return SPIR_GET_IMPL_FAILED;
     }
 }
 
-int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* u, double x, double* out) {
+int32_t spir_evaluate_funcs(const spir_funcs* u, double x, double* out) {
     if (!u || !out) {
         return SPIR_INVALID_ARGUMENT;
     }
@@ -935,7 +465,7 @@ int32_t spir_evaluate_continuous_functions(const spir_continuous_functions* u, d
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception& e) {
-        DEBUG_LOG("Exception in spir_evaluate_continuous_functions: " << e.what());
+        DEBUG_LOG("Exception in spir_evaluate_funcs: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }
