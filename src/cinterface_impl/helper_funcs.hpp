@@ -58,10 +58,6 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
         collapse_to_3d(ndim, input_dims, target_dim);
     
     // output ndim, target_dim, dims_3d
-    printf("ndim: %d\n", ndim);
-    printf("target_dim: %d\n", target_dim);
-    printf("dims_3d: %d, %d, %d\n", dims_3d[0], dims_3d[1], dims_3d[2]);
-
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::array<int32_t, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
@@ -143,9 +139,9 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
 }
 
 template <typename InternalType>
-spir_singular_funcs *_create_singular_funcs(std::shared_ptr<InternalType> impl)
+spir_funcs *_create_funcs(std::shared_ptr<InternalType> impl)
 {
-    return create_singular_funcs(
+    return create_funcs(
         std::static_pointer_cast<AbstractContinuousFunctions>(
             std::make_shared<ContinuousFunctions<InternalType>>(impl)));
 }

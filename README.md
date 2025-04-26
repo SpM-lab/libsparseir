@@ -138,20 +138,20 @@ status = spir_fermionic_finite_temp_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Evaluate the basis functions at a given tau point
-spir_singular_funcs* u = spir_fermionic_finite_temp_basis_get_u(basis);
+spir_funcs* u = spir_fermionic_finite_temp_basis_get_u(basis);
 double tau = 0.5 * beta;
 double* uval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_singular_funcs(u, tau, uval);
+status = spir_evaluate_funcs(u, tau, uval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("u[%d] = %f\n", i, uval[i]);
 }
 
 // Evaluate the basis functions at a given omega point
-spir_singular_funcs* v = spir_fermionic_finite_temp_basis_get_v(basis);
+spir_funcs* v = spir_fermionic_finite_temp_basis_get_v(basis);
 double omega = 0.5 * omega_max;
 double* vval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_singular_funcs(v, omega, vval);
+status = spir_evaluate_funcs(v, omega, vval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("v[%d] = %f\n", i, vval[i]);
@@ -173,8 +173,8 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 // Clean up (in arbitrary order)
 free(uval);
 free(vval);
-spir_destroy_singular_funcs(u);
-spir_destroy_singular_funcs(v);
+spir_destroy_funcs(u);
+spir_destroy_funcs(v);
 spir_destroy_matsubara_functions(uhat);
 spir_destroy_fermionic_finite_temp_basis(basis);
 ```
@@ -208,20 +208,20 @@ status = spir_bosonic_finite_temp_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Evaluate the basis functions at a given tau point
-spir_singular_funcs* u = spir_bosonic_finite_temp_basis_get_u(basis);
+spir_funcs* u = spir_bosonic_finite_temp_basis_get_u(basis);
 double tau = 0.5 * beta;
 double* uval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_singular_funcs(u, tau, uval);
+status = spir_evaluate_funcs(u, tau, uval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("u[%d] = %f\n", i, uval[i]);
 }
 
 // Evaluate the basis functions at a given omega point
-spir_singular_funcs* v = spir_bosonic_finite_temp_basis_get_v(basis);
+spir_funcs* v = spir_bosonic_finite_temp_basis_get_v(basis);
 double omega = 0.5 * omega_max;
 double* vval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_singular_funcs(v, omega, vval);
+status = spir_evaluate_funcs(v, omega, vval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("v[%d] = %f\n", i, vval[i]);
@@ -230,8 +230,8 @@ for (int i = 0; i < n_basis; ++i) {
 // Clean up (in arbitrary order)
 free(uval);
 free(vval);
-spir_destroy_singular_funcs(u);
-spir_destroy_singular_funcs(v);
+spir_destroy_funcs(u);
+spir_destroy_funcs(v);
 spir_destroy_bosonic_finite_temp_basis(basis);
 ```
 
@@ -268,20 +268,20 @@ status = spir_bosonic_finite_temp_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Evaluate the basis functions at a given tau point
-spir_singular_funcs* u = spir_bosonic_finite_temp_basis_get_u(basis);
+spir_funcs* u = spir_bosonic_finite_temp_basis_get_u(basis);
 double tau = 0.5 * beta;
 double* uval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_singular_funcs(u, tau, uval);
+status = spir_evaluate_funcs(u, tau, uval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("u[%d] = %f\n", i, uval[i]);
 }
 
 // Evaluate the basis functions at a given omega point
-spir_singular_funcs* v = spir_bosonic_finite_temp_basis_get_v(basis);
+spir_funcs* v = spir_bosonic_finite_temp_basis_get_v(basis);
 double omega = 0.5 * omega_max;
 double* vval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_singular_funcs(v, omega, vval);
+status = spir_evaluate_funcs(v, omega, vval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("v[%d] = %f\n", i, vval[i]);
@@ -292,8 +292,8 @@ free(uval);
 free(vval);
 spir_destroy_kernel(kernel);
 spir_destroy_sve_result(sve);
-spir_destroy_singular_funcs(u);
-spir_destroy_singular_funcs(v);
+spir_destroy_funcs(u);
+spir_destroy_funcs(v);
 spir_destroy_bosonic_finite_temp_basis(basis);
 ```
 
@@ -391,9 +391,9 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 {
     double tau = 0.000001 * beta;
     double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
-    spir_singular_funcs* u = spir_fermionic_finite_temp_basis_get_u(basis);
+    spir_funcs* u = spir_fermionic_finite_temp_basis_get_u(basis);
     double* uval = (double*)malloc(n_basis * sizeof(double));
-    status = spir_evaluate_singular_funcs(u, tau, uval);
+    status = spir_evaluate_funcs(u, tau, uval);
     assert(status == SPIR_COMPUTATION_SUCCESS);
 
     double actual = 0.0;
@@ -404,7 +404,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
     assert(fabs(actual - expected) < epsilon);
 
     free(uval);
-    spir_destroy_singular_funcs(u);
+    spir_destroy_funcs(u);
 }
 
 // Basis coefficients to imaginary-time sampling points

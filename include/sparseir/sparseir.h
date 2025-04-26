@@ -44,7 +44,7 @@ struct _spir_kernel;
 DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
-DECLARE_OPAQUE_TYPE(singular_funcs);
+DECLARE_OPAQUE_TYPE(funcs);
 DECLARE_OPAQUE_TYPE(matsubara_functions);
 DECLARE_OPAQUE_TYPE(finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
@@ -575,11 +575,11 @@ spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(spir_statistics_type
  * @return A pointer to the object representing the basis functions,
  *         or NULL if the basis object is invalid
  *
- * @note The returned object must be freed using spir_destroy_singular_funcs
+ * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
- * @see spir_destroy_singular_funcs
+ * @see spir_destroy_funcs
  */
-spir_singular_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b);
+spir_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b);
 
 
 /**
@@ -592,11 +592,11 @@ spir_singular_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* 
  * @return A pointer to the object representing the basis functions,
  *         or NULL if the basis object is invalid
  *
- * @note The returned object must be freed using spir_destroy_singular_funcs
+ * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
- * @see spir_destroy_singular_funcs
+ * @see spir_destroy_funcs
  */
-spir_singular_funcs* spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b);
+spir_funcs* spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis in Matsubara frequency domain.
@@ -629,7 +629,7 @@ spir_matsubara_functions* spir_finite_temp_basis_get_uhat(const spir_finite_temp
  *
  * @note The output array must be pre-allocated with sufficient size to store all basis function values
  */
-int32_t spir_evaluate_singular_funcs(const spir_singular_funcs* uv, double x, double* out);
+int32_t spir_evaluate_funcs(const spir_funcs* uv, double x, double* out);
 
 
 /**

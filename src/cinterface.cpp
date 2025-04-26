@@ -322,21 +322,21 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
 }
 
 
-spir_singular_funcs *spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b)
+spir_funcs *spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b)
 {
     auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_singular_funcs(impl->get_u());
+    return _create_funcs(impl->get_u());
 }
 
 
-spir_singular_funcs *spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b)
+spir_funcs *spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b)
 {
     auto impl = get_impl_finite_temp_basis(b);
     if (!impl)
         return nullptr;
-    return _create_singular_funcs(impl->get_v());
+    return _create_funcs(impl->get_v());
 }
 
 spir_matsubara_functions *spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b)
@@ -455,7 +455,7 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b, s
     }
 }
 
-int32_t spir_evaluate_singular_funcs(const spir_singular_funcs* u, double x, double* out) {
+int32_t spir_evaluate_funcs(const spir_funcs* u, double x, double* out) {
     if (!u || !out) {
         return SPIR_INVALID_ARGUMENT;
     }
@@ -465,7 +465,7 @@ int32_t spir_evaluate_singular_funcs(const spir_singular_funcs* u, double x, dou
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception& e) {
-        DEBUG_LOG("Exception in spir_evaluate_singular_funcs: " << e.what());
+        DEBUG_LOG("Exception in spir_evaluate_funcs: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }

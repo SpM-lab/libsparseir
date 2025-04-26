@@ -101,7 +101,7 @@
 IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
 IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
 IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
-IMPLEMENT_OPAQUE_TYPE(singular_funcs, AbstractContinuousFunctions);
+IMPLEMENT_OPAQUE_TYPE(funcs, AbstractContinuousFunctions);
 IMPLEMENT_OPAQUE_TYPE(matsubara_functions, AbstractMatsubaraFunctions);
 IMPLEMENT_OPAQUE_TYPE(finite_temp_basis, AbstractFiniteTempBasis);
 IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);

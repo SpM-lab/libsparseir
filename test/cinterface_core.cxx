@@ -189,7 +189,7 @@ void test_finite_temp_basis_basis_functions()
         spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
     REQUIRE(basis != nullptr);
 
-    spir_singular_funcs *u = spir_finite_temp_basis_get_u(basis);
+    spir_funcs *u = spir_finite_temp_basis_get_u(basis);
     REQUIRE(u != nullptr);
 
     spir_matsubara_functions *uhat = spir_finite_temp_basis_get_uhat(basis);
@@ -203,7 +203,7 @@ void test_finite_temp_basis_basis_functions()
     double x = 0.5;        // Test point for u basis (imaginary time)
     double y = 0.5 * wmax; // Test point for v basis (real frequency)
     double *out = (double *)malloc(basis_size * sizeof(double));
-    status = spir_evaluate_singular_funcs(u, x, out);
+    status = spir_evaluate_funcs(u, x, out);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for u basis
@@ -214,11 +214,11 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test v basis functions
-    spir_singular_funcs *v = spir_finite_temp_basis_get_v(basis);
+    spir_funcs *v = spir_finite_temp_basis_get_v(basis);
     REQUIRE(v != nullptr);
 
     // Test v basis function evaluation
-    status = spir_evaluate_singular_funcs(v, y, out);
+    status = spir_evaluate_funcs(v, y, out);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for v basis
@@ -228,14 +228,14 @@ void test_finite_temp_basis_basis_functions()
     }
 
     free(out);
-    spir_destroy_singular_funcs(u);
-    spir_destroy_singular_funcs(v);
+    spir_destroy_funcs(u);
+    spir_destroy_funcs(v);
 
     // Test error cases
-    status = spir_evaluate_singular_funcs(nullptr, x, out);
+    status = spir_evaluate_funcs(nullptr, x, out);
     REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
-    status = spir_evaluate_singular_funcs(u, x, nullptr);
+    status = spir_evaluate_funcs(u, x, nullptr);
     REQUIRE(status == SPIR_INVALID_ARGUMENT);
 
     // Clean up
