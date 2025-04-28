@@ -410,42 +410,32 @@ int spir_sampling_fit_zz(
     c_complex *out                    // Output array
     );
 
-/**
- * @brief Gets the number of rows in the fitting matrix of a bosonic DLR.
- *
- * This function returns the number of rows in the fitting matrix of the specified
- * bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
- *
- * @param dlr Pointer to the bosonic DLR object
- * @return The number of rows in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
- *
- * @note The fitting matrix dimensions determine the size of valid input/output arrays
- *       for transformations involving this DLR object
- * @see spir_bosonic_dlr_fitmat_cols
- * @see spir_bosonic_dlr_from_IR
- * @see spir_bosonic_dlr_to_IR
- */
-int spir_dlr_fitmat_rows(const spir_dlr *dlr);
 
 /**
- * @brief Gets the number of columns in the fitting matrix of a bosonic DLR.
+ * @brief Gets the number of poles in a DLR.
  *
- * This function returns the number of columns in the fitting matrix of the specified
- * bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
+ * This function returns the number of poles in the specified DLR object.
  *
- * @param dlr Pointer to the bosonic DLR object
- * @return The number of columns in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
+ * @param dlr Pointer to the DLR object
+ * @param num_poles Pointer to store the number of poles
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
- * @note The fitting matrix dimensions determine the size of valid input/output arrays
- *       for transformations involving this DLR object
- * @see spir_bosonic_dlr_fitmat_rows
- * @see spir_bosonic_dlr_from_IR
- * @see spir_bosonic_dlr_to_IR
+ * @see spir_dlr_get_poles
  */
-int spir_dlr_fitmat_cols(const spir_dlr *dlr);
+int32_t spir_dlr_get_num_poles(const spir_dlr *dlr, int32_t *num_poles);
 
+/**
+ * @brief Gets the poles in a DLR.
+ *
+ * This function returns the poles in the specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param poles Pointer to store the poles
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ *
+ * @see spir_dlr_get_num_poles
+ */
+int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
 
 /**
  * Transforms a given input array from the Intermediate Representation (IR) 
@@ -453,10 +443,11 @@ int spir_dlr_fitmat_cols(const spir_dlr *dlr);
  *
  * @param dlr Pointer to the fermionic DLR object
  * @param order Order type (C or Fortran)
- * @param ndim Number of dimensions
+ * @param ndim Number of dimensions of input/output arrays
  * @param input_dims Array of dimensions
- * @param input Input coefficients array in IR representation
- * @param out Output array in DLR representation
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input coefficients array in IR
+ * @param out Output array in DLR
  *
  * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
  *
@@ -467,14 +458,13 @@ int spir_dlr_fitmat_cols(const spir_dlr *dlr);
  *       The output array will be in the specified order type.
  *
  * @see spir_dlr_to_IR
- * @see spir_dlr_fitmat_rows
- * @see spir_dlr_fitmat_cols
  */
 int32_t spir_dlr_from_IR(
     const spir_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
     int32_t *input_dims,
+    int32_t target_dim,
     const double *input,
     double *out);
 
@@ -497,6 +487,7 @@ int32_t spir_dlr_from_IR(
  * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
  * @param ndim Number of dimensions in the input/output arrays
  * @param input_dims Array of dimension sizes
+ * @param target_dim Target dimension for the transformation (0-based)
  * @param input Input array of DLR coefficients (double precision)
  * @param out Output array for the IR coefficients (double precision)
  *
@@ -515,6 +506,7 @@ int32_t spir_dlr_to_IR(
     spir_order_type order,
     int32_t ndim,
     int32_t *input_dims,
+    int32_t target_dim,
     const double *input,
     double *out);
 

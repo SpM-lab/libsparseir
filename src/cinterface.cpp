@@ -273,27 +273,15 @@ int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int32_t spir_dlr_fitmat_rows(const spir_dlr *dlr)
-{
-    auto impl = get_impl_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat_rows();
-}
-
-int32_t spir_dlr_fitmat_cols(const spir_dlr *dlr)
-{
-    auto impl = get_impl_dlr(dlr);
-    if (!impl)
-        return SPIR_GET_IMPL_FAILED;
-    return impl->fitmat_cols();
-}
-
-
 int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order,
-                           int32_t ndim, int32_t *input_dims,
+                           int32_t ndim, int32_t *input_dims, int32_t target_dim,
                            const double *input, double *out)
 {
+    if (target_dim != 0) {
+        std::cerr << "target_dim must be 0" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
     auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
@@ -308,8 +296,13 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order,
 
 int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
                              int32_t ndim, int32_t *input_dims,
+                             int32_t target_dim,
                              const double *input, double *out)
 {
+    if (target_dim != 0) {
+        std::cerr << "target_dim must be 0" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
 
     auto impl = get_impl_dlr(dlr);
     if (!impl)
@@ -321,6 +314,42 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
     }
 }
 
+int32_t spir_dlr_get_num_poles(const spir_dlr *dlr, int32_t *num_poles) {
+    if (!dlr || !num_poles) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_dlr(dlr);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        *num_poles = impl->size();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles) {
+    if (!dlr || !poles) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_dlr(dlr);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        std::vector<double> poles_vec = impl->get_poles();
+        std::memcpy(poles, poles_vec.data(), poles_vec.size() * sizeof(double));
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
 
 spir_funcs *spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b)
 {

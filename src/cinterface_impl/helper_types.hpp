@@ -116,10 +116,7 @@ public:
     virtual int size() const = 0;
     virtual double get_beta() const = 0;
     virtual spir_statistics_type get_statistics() const = 0;
-    //virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
-    //virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
-    virtual int fitmat_rows() const = 0;
-    virtual int fitmat_cols() const = 0;
+    virtual std::vector<double> get_poles() const = 0;
 };
 
 template<typename S>
@@ -146,17 +143,12 @@ public:
         return impl->get_beta();
     }
 
-    virtual int fitmat_rows() const override {
-        return impl->fitmat.rows();
+    virtual std::vector<double> get_poles() const override {
+        Eigen::VectorXd eigen_poles = impl->poles;
+        return std::vector<double>(eigen_poles.data(), eigen_poles.data() + eigen_poles.size());
     }
-
-    virtual int fitmat_cols() const override {
-        return impl->fitmat.cols();
-    }
-
 
     std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> get_impl() const {
         return impl;
     }
-
 };
