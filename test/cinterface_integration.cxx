@@ -95,20 +95,22 @@ _evaluate_matsubara_basis_functions(const spir_matsubara_funcs* uhat,
     status = spir_matsubara_funcs_get_size(uhat, &funcs_size);
     _assert(status == SPIR_COMPUTATION_SUCCESS);
 
+    // Allocate output matrix with correct order
     Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic, ORDER> uhat_eval_mat(
         matsubara_indices.size(), funcs_size);
     
-    std::vector<std::complex<T>> uhat_eval(funcs_size);
-    for (Eigen::Index i = 0; i < matsubara_indices.size(); ++i) {
-        int32_t freq = matsubara_indices(i);
-        status = spir_evaluate_matsubara_funcs(uhat, 
-                                             ORDER == Eigen::ColMajor ? SPIR_ORDER_COLUMN_MAJOR : SPIR_ORDER_ROW_MAJOR,
-                                             1, 
-                                             &freq, 
-                                             reinterpret_cast<c_complex*>(uhat_eval.data()));
-        _assert(status == SPIR_COMPUTATION_SUCCESS);
-        uhat_eval_mat.row(i) = Eigen::Map<Eigen::VectorX<std::complex<T>>>(uhat_eval.data(), funcs_size);
-    }
+    // Create a non-const copy of the Matsubara indices
+    std::vector<int32_t> freq_indices(matsubara_indices.data(), 
+                                     matsubara_indices.data() + matsubara_indices.size());
+    
+    // Evaluate all frequencies at once
+    status = spir_evaluate_matsubara_funcs(uhat, 
+                                         ORDER == Eigen::ColMajor ? SPIR_ORDER_COLUMN_MAJOR : SPIR_ORDER_ROW_MAJOR,
+                                         matsubara_indices.size(),
+                                         freq_indices.data(),
+                                         reinterpret_cast<c_complex*>(uhat_eval_mat.data()));
+    _assert(status == SPIR_COMPUTATION_SUCCESS);
+
     return uhat_eval_mat;
 }
 
@@ -118,16 +120,24 @@ Eigen::Tensor<typename BasisEvalType::Scalar, ndim, ORDER>
 _transform_coefficients(const Eigen::Tensor<T, ndim, ORDER>& coeffs,
                        const BasisEvalType& basis_eval,
                        int target_dim) {
+    std::cout << "=== _transform_coefficients ===" << std::endl;
+    std::cout << "Input dimensions - coeffs: ";
+    for (int i = 0; i < ndim; ++i) {
+        std::cout << coeffs.dimension(i) << " ";
+    }
+    std::cout << "\nbasis_eval: " << basis_eval.rows() << " x " << basis_eval.cols() << std::endl;
+
+    // Move target dimension to the first position
     Eigen::Tensor<T, ndim, ORDER> coeffs_targetdim0 =
         sparseir::movedim(coeffs, target_dim, 0);
 
-    // Calculate extra dimensions size
+    // Calculate the size of extra dimensions
     Eigen::Index extra_size = 1;
     for (int i = 1; i < ndim; ++i) {
         extra_size *= coeffs_targetdim0.dimension(i);
     }
 
-    // Create result tensor
+    // Create result tensor with correct dimensions
     std::array<Eigen::Index, ndim> dims;
     dims[0] = basis_eval.rows();
     for (int i = 1; i < ndim; ++i) {
@@ -135,14 +145,17 @@ _transform_coefficients(const Eigen::Tensor<T, ndim, ORDER>& coeffs,
     }
     Eigen::Tensor<typename BasisEvalType::Scalar, ndim, ORDER> result(dims);
 
-    // Map input tensors to matrices
+    // Map tensors to matrices for multiplication
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>>
         coeffs_mat(coeffs_targetdim0.data(), coeffs_targetdim0.dimension(0), extra_size);
     Eigen::Map<Eigen::Matrix<typename BasisEvalType::Scalar, Eigen::Dynamic, Eigen::Dynamic, ORDER>> result_mat(
         result.data(), basis_eval.rows(), extra_size);
 
-    // Perform single matrix multiplication
-    result_mat = basis_eval * coeffs_mat;
+    std::cout << "Matrix dimensions - coeffs_mat: " << coeffs_mat.rows() << " x " << coeffs_mat.cols() 
+              << "\nresult_mat: " << result_mat.rows() << " x " << result_mat.cols() << std::endl;
+
+    // Perform matrix multiplication with consistent type
+    result_mat = basis_eval * coeffs_mat.template cast<typename BasisEvalType::Scalar>();
 
     // Move dimensions back to original order
     return sparseir::movedim(result, 0, target_dim);
@@ -162,8 +175,18 @@ Eigen::Tensor<std::complex<T>, ndim, ORDER>
 _evaluate_giw(const Eigen::Tensor<T, ndim, ORDER>& coeffs,
              const spir_matsubara_funcs* uhat, int target_dim,
              const Eigen::VectorXi& matsubara_indices) {
+    std::cout << "=== _evaluate_giw ===" << std::endl;
+    std::cout << "Input dimensions - coeffs: ";
+    for (int i = 0; i < ndim; ++i) {
+        std::cout << coeffs.dimension(i) << " ";
+    }
+    std::cout << std::endl;
+    
     auto uhat_eval_mat = _evaluate_matsubara_basis_functions<T, ORDER>(uhat, matsubara_indices);
-    return _transform_coefficients<T, ndim, ORDER>(coeffs, uhat_eval_mat, target_dim);
+    std::cout << "uhat_eval_mat dimensions: " << uhat_eval_mat.rows() << " x " << uhat_eval_mat.cols() << std::endl;
+    
+    auto result = _transform_coefficients<T, ndim, ORDER>(coeffs, uhat_eval_mat, target_dim);
+    return result;
 }
 
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
@@ -171,15 +194,17 @@ bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
                                          const Eigen::Tensor<T, ndim, ORDER> &b,
                                          double epsilon)
 {
-    Eigen::Tensor<T, ndim, ORDER> diff = (a - b).abs();
-
-    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> diff_vec(diff.data(),
-                                                                   diff.size());
-    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ref_vec(a.data(),
-                                                                  a.size());
-    T max_diff = diff_vec.maxCoeff();
-    T max_ref = ref_vec.maxCoeff();
-
+    // Convert to double tensor for absolute values
+    Eigen::Tensor<double, ndim, ORDER> diff = (a - b).abs();
+    Eigen::Tensor<double, ndim, ORDER> ref = a.abs();
+    
+    // Map tensors to matrices and use maxCoeff
+    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1>> diff_vec(diff.data(), diff.size());
+    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1>> ref_vec(ref.data(), ref.size());
+    
+    double max_diff = diff_vec.maxCoeff();
+    double max_ref = ref_vec.maxCoeff();
+    
     return max_diff <= epsilon * max_ref;
 }
 
@@ -306,6 +331,19 @@ void integration_test(double beta, double wmax, double epsilon,
             coeffs, dlr_u, target_dim, tau_points);
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, epsilon));
+    
+    // Compare the Greens function at all Matsubara frequencies between IR and DLR
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> giw_from_IR =
+        _evaluate_giw<double, ndim, ORDER>(
+            g_IR, ir_uhat, target_dim, matsubara_points);
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> giw_from_DLR =
+        _evaluate_giw<double, ndim, ORDER>(
+            coeffs, dlr_uhat, target_dim, matsubara_points);
+    // Debug
+    std::cout << "giw_from_IR: " << giw_from_IR << std::endl;
+    std::cout << "giw_from_DLR: " << giw_from_DLR << std::endl;
+    REQUIRE(compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
+        giw_from_IR, giw_from_DLR, epsilon));
 
     // TODO:
     // - Compare the Greens function at Matsubara frequencies
