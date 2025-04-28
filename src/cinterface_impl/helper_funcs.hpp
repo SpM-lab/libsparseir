@@ -332,3 +332,17 @@ int32_t _spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
         return SPIR_GET_IMPL_FAILED;
     }
 }
+
+template <typename S>
+int32_t _spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_t* size) {
+    try {
+        auto impl = get_impl_matsubara_funcs(funcs);
+        if (!impl) {
+            return SPIR_GET_IMPL_FAILED;
+        }
+        *size = impl->size();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}

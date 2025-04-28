@@ -543,7 +543,7 @@ int32_t spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u);
  * @brief Gets the basis functions of a DLR in the Matsubara-frequency domain.
  *
  * This function returns an object representing the basis functions
- * in the -frequency domain of the specified DLR object.
+ * in the Matsubara-frequency domain of the specified DLR object.
  *
  * @param dlr Pointer to the DLR object
  * @param uhat Pointer to store the basis functions
@@ -684,7 +684,9 @@ int32_t spir_evaluate_funcs(const spir_funcs* uv, double x, double* out);
  * frequency are stored in the output array.
  *
  * @param uiw Pointer to the Matsubara basis functions object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param order Specifies the memory layout of the output array:
+ *             SPIR_ORDER_ROW_MAJOR for row-major order (frequency index varies fastest),
+ *             SPIR_ORDER_COLUMN_MAJOR for column-major order (basis index varies fastest)
  * @param num_freqs Number of Matsubara frequencies at which to evaluate
  * @param matsubara_freq_indices Array of Matsubara frequency indices
  * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size n_basis x num_freqs.
@@ -755,6 +757,19 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @see spir_sampling_get_num_points
  */
 int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points);
+
+/**
+ * @brief Gets the number of functions in a Matsubara functions object.
+ *
+ * This function returns the number of functions contained in the specified
+ * Matsubara functions object. This number is needed to allocate arrays of the correct size
+ * when evaluating the functions.
+ *
+ * @param funcs Pointer to the Matsubara functions object
+ * @param size Pointer to store the number of functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ */
+int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_t* size);
 
 #ifdef __cplusplus
 }

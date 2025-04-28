@@ -706,4 +706,8 @@ int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size)
     }
 }
 
+int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_t* size) {
+    return _spir_matsubara_funcs_get_size<double>(funcs, size);
+}
+
 } // extern "C"

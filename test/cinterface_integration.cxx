@@ -65,19 +65,61 @@ std::array<Eigen::Index, ndim> _get_dims(int target_dim_size,
     return dims;
 }
 
-template <typename T, int ndim, Eigen::StorageOptions ORDER>
-Eigen::Tensor<T, ndim, ORDER>
-_evaluate_gtau(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
-                                const spir_funcs *u, int target_dim,
-                                const Eigen::VectorXd &x_values)
-{
+// Helper function to evaluate basis functions at multiple points
+template <typename T, Eigen::StorageOptions ORDER>
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>
+_evaluate_basis_functions(const spir_funcs* u, const Eigen::VectorXd& x_values) {
     int32_t status;
-    Eigen::Tensor<T, ndim, ORDER> coeffs_targetdim0 =
-        sparseir::movedim(coeffs, target_dim, 0);
-
     int32_t funcs_size;
     status = spir_funcs_get_size(u, &funcs_size);
     _assert(status == SPIR_COMPUTATION_SUCCESS);
+
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat(
+        x_values.size(), funcs_size);
+    for (Eigen::Index i = 0; i < x_values.size(); ++i) {
+        Eigen::VectorXd u_eval(funcs_size);
+        status = spir_evaluate_funcs(u, x_values(i), u_eval.data());
+        _assert(status == SPIR_COMPUTATION_SUCCESS);
+        u_eval_mat.row(i) = u_eval.transpose().cast<T>();
+    }
+    return u_eval_mat;
+}
+
+// Helper function to evaluate Matsubara basis functions at multiple frequencies
+template <typename T, Eigen::StorageOptions ORDER>
+Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic, ORDER>
+_evaluate_matsubara_basis_functions(const spir_matsubara_funcs* uhat, 
+                                  const Eigen::VectorXi& matsubara_indices) {
+    int32_t status;
+    int32_t funcs_size;
+    status = spir_matsubara_funcs_get_size(uhat, &funcs_size);
+    _assert(status == SPIR_COMPUTATION_SUCCESS);
+
+    Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic, ORDER> uhat_eval_mat(
+        matsubara_indices.size(), funcs_size);
+    
+    std::vector<std::complex<T>> uhat_eval(funcs_size);
+    for (Eigen::Index i = 0; i < matsubara_indices.size(); ++i) {
+        int32_t freq = matsubara_indices(i);
+        status = spir_evaluate_matsubara_funcs(uhat, 
+                                             ORDER == Eigen::ColMajor ? SPIR_ORDER_COLUMN_MAJOR : SPIR_ORDER_ROW_MAJOR,
+                                             1, 
+                                             &freq, 
+                                             reinterpret_cast<c_complex*>(uhat_eval.data()));
+        _assert(status == SPIR_COMPUTATION_SUCCESS);
+        uhat_eval_mat.row(i) = Eigen::Map<Eigen::VectorX<std::complex<T>>>(uhat_eval.data(), funcs_size);
+    }
+    return uhat_eval_mat;
+}
+
+// Helper function to perform the tensor transformation
+template <typename T, int ndim, Eigen::StorageOptions ORDER, typename BasisEvalType>
+Eigen::Tensor<typename BasisEvalType::Scalar, ndim, ORDER>
+_transform_coefficients(const Eigen::Tensor<T, ndim, ORDER>& coeffs,
+                       const BasisEvalType& basis_eval,
+                       int target_dim) {
+    Eigen::Tensor<T, ndim, ORDER> coeffs_targetdim0 =
+        sparseir::movedim(coeffs, target_dim, 0);
 
     // Calculate extra dimensions size
     Eigen::Index extra_size = 1;
@@ -87,35 +129,42 @@ _evaluate_gtau(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
 
     // Create result tensor
     std::array<Eigen::Index, ndim> dims;
-    dims[0] = x_values.size();
+    dims[0] = basis_eval.rows();
     for (int i = 1; i < ndim; ++i) {
         dims[i] = coeffs_targetdim0.dimension(i);
     }
-    Eigen::Tensor<T, ndim, ORDER> g(dims);
-
-    // Evaluate all basis functions at once
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat(
-        x_values.size(), funcs_size);
-    for (Eigen::Index i = 0; i < x_values.size(); ++i) {
-        Eigen::VectorXd u_eval(funcs_size);
-        status = spir_evaluate_funcs(u, x_values(i), u_eval.data());
-        _assert(status == SPIR_COMPUTATION_SUCCESS);
-        u_eval_mat.row(i) = u_eval.transpose().cast<T>();
-    }
+    Eigen::Tensor<typename BasisEvalType::Scalar, ndim, ORDER> result(dims);
 
     // Map input tensors to matrices
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>>
-        coeffs_mat(coeffs_targetdim0.data(), funcs_size, extra_size);
-    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>> g_mat(
-        g.data(), x_values.size(), extra_size);
+        coeffs_mat(coeffs_targetdim0.data(), coeffs_targetdim0.dimension(0), extra_size);
+    Eigen::Map<Eigen::Matrix<typename BasisEvalType::Scalar, Eigen::Dynamic, Eigen::Dynamic, ORDER>> result_mat(
+        result.data(), basis_eval.rows(), extra_size);
 
     // Perform single matrix multiplication
-    g_mat = u_eval_mat * coeffs_mat;
+    result_mat = basis_eval * coeffs_mat;
 
     // Move dimensions back to original order
-    return sparseir::movedim(g, 0, target_dim);
+    return sparseir::movedim(result, 0, target_dim);
 }
 
+template <typename T, int ndim, Eigen::StorageOptions ORDER>
+Eigen::Tensor<T, ndim, ORDER>
+_evaluate_gtau(const Eigen::Tensor<T, ndim, ORDER>& coeffs,
+              const spir_funcs* u, int target_dim,
+              const Eigen::VectorXd& x_values) {
+    auto u_eval_mat = _evaluate_basis_functions<T, ORDER>(u, x_values);
+    return _transform_coefficients<T, ndim, ORDER>(coeffs, u_eval_mat, target_dim);
+}
+
+template <typename T, int ndim, Eigen::StorageOptions ORDER>
+Eigen::Tensor<std::complex<T>, ndim, ORDER>
+_evaluate_giw(const Eigen::Tensor<T, ndim, ORDER>& coeffs,
+             const spir_matsubara_funcs* uhat, int target_dim,
+             const Eigen::VectorXi& matsubara_indices) {
+    auto uhat_eval_mat = _evaluate_matsubara_basis_functions<T, ORDER>(uhat, matsubara_indices);
+    return _transform_coefficients<T, ndim, ORDER>(coeffs, uhat_eval_mat, target_dim);
+}
 
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
 bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
