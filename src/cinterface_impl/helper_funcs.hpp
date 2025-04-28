@@ -276,3 +276,45 @@ int32_t _spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u) {
 
     return SPIR_COMPUTATION_SUCCESS;
 }
+
+template <typename S>
+int32_t _spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b, spir_funcs** u) {
+    try {
+        auto impl = get_impl_finite_temp_basis(b);
+        if (!impl) {
+            return SPIR_GET_IMPL_FAILED;
+        }
+        *u = _create_funcs(impl->get_u());
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+template <typename S>
+int32_t _spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b, spir_funcs** v) {
+    try {
+        auto impl = get_impl_finite_temp_basis(b);
+        if (!impl) {
+            return SPIR_GET_IMPL_FAILED;
+        }
+        *v = _create_funcs(impl->get_v());
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+template <typename S>
+int32_t _spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_matsubara_functions** uhat) {
+    try {
+        auto impl = get_impl_finite_temp_basis(b);
+        if (!impl) {
+            return SPIR_GET_IMPL_FAILED;
+        }
+        *uhat = create_matsubara_functions(impl->get_uhat());
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}

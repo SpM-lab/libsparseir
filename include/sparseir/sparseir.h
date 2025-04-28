@@ -592,14 +592,14 @@ spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(spir_statistics_type
  * in the imaginary-time domain of the specified finite temperature basis.
  *
  * @param b Pointer to the finite temperature basis object
- * @return A pointer to the object representing the basis functions,
- *         or NULL if the basis object is invalid
+ * @param u Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-spir_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b);
+int32_t spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b, spir_funcs** u);
 
 
 /**
@@ -609,14 +609,14 @@ spir_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b);
  * in the real-frequency domain of the specified finite temperature basis.
  *
  * @param b Pointer to the finite temperature basis object
- * @return A pointer to the object representing the basis functions,
- *         or NULL if the basis object is invalid
+ * @param v Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-spir_funcs* spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b);
+int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b, spir_funcs** v);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis in Matsubara frequency domain.
@@ -624,15 +624,15 @@ spir_funcs* spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b);
  * This function returns an object representing the basis functions
  * in the Matsubara-frequency domain of the specified finite temperature basis.
  *
- * @param b Pointer to the fermionic finite temperature basis object
- * @return A pointer to the object containing the basis functions,
- *         or NULL if the basis object is invalid
+ * @param b Pointer to the finite temperature basis object
+ * @param uhat Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
  * @note The returned object must be freed using spir_destroy_matsubara_functions
  *       when no longer needed
  * @see spir_destroy_matsubara_functions
  */
-spir_matsubara_functions* spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b);
+int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_matsubara_functions** uhat);
 
 
 /**

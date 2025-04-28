@@ -134,14 +134,14 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_dlr_get_u(dlr, &dlr_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_funcs *ir_u;
-    //status = spir_finite_temp_basis_get_u(basis, &ir_u);
-    //REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    spir_funcs *ir_u = nullptr;
+    status = spir_finite_temp_basis_get_u(basis, &ir_u);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     spir_destroy_finite_temp_basis(basis);
     spir_destroy_dlr(dlr);
     spir_destroy_funcs(dlr_u);
-    //spir_destroy_funcs(ir_u);
+    spir_destroy_funcs(ir_u);
 }
 
 TEST_CASE("Integration Test", "[cinterface]")

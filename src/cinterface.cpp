@@ -386,30 +386,46 @@ int32_t spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u) {
 }
 
 
-spir_funcs *spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b)
-{
+int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b, spir_funcs** v) {
+    if (!b || !v) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
     auto impl = get_impl_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    return _create_funcs(impl->get_u());
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            return _spir_finite_temp_basis_get_v<sparseir::Fermionic>(b, v);
+        } else {
+            return _spir_finite_temp_basis_get_v<sparseir::Bosonic>(b, v);
+        }
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
 }
 
+int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_matsubara_functions** uhat) {
+    if (!b || !uhat) {
+        return SPIR_INVALID_ARGUMENT;
+    }
 
-spir_funcs *spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b)
-{
     auto impl = get_impl_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-    return _create_funcs(impl->get_v());
-}
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
 
-spir_matsubara_functions *spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b)
-{
-    auto impl = get_impl_finite_temp_basis(b);
-    if (!impl)
-        return nullptr;
-
-    return create_matsubara_functions(impl->get_uhat());
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            return _spir_finite_temp_basis_get_uhat<sparseir::Fermionic>(b, uhat);
+        } else {
+            return _spir_finite_temp_basis_get_uhat<sparseir::Bosonic>(b, uhat);
+        }
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
 }
 
 
@@ -580,6 +596,27 @@ int32_t spir_evaluate_matsubara_functions(
     } catch (const std::exception& e) {
         DEBUG_LOG("Exception in spir_evaluate_matsubarabasis_functions: " << e.what());
         return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int32_t spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b, spir_funcs** u) {
+    if (!b || !u) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_finite_temp_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            return _spir_finite_temp_basis_get_u<sparseir::Fermionic>(b, u);
+        } else {
+            return _spir_finite_temp_basis_get_u<sparseir::Bosonic>(b, u);
+        }
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
     }
 }
 

@@ -189,10 +189,14 @@ void test_finite_temp_basis_basis_functions()
         spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
     REQUIRE(basis != nullptr);
 
-    spir_funcs *u = spir_finite_temp_basis_get_u(basis);
+    spir_funcs *u = nullptr;
+    int32_t status = spir_finite_temp_basis_get_u(basis, &u);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(u != nullptr);
 
-    spir_matsubara_functions *uhat = spir_finite_temp_basis_get_uhat(basis);
+    spir_matsubara_functions *uhat = nullptr;
+    status = spir_finite_temp_basis_get_uhat(basis, &uhat);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(uhat != nullptr);
 
     // Test basis function evaluation
@@ -214,7 +218,9 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test v basis functions
-    spir_funcs *v = spir_finite_temp_basis_get_v(basis);
+    spir_funcs *v = nullptr;
+    status = spir_finite_temp_basis_get_v(basis, &v);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(v != nullptr);
 
     // Test v basis function evaluation
