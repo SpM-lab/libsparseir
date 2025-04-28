@@ -94,7 +94,8 @@ _evaluate_greens_function_batch(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
     Eigen::Tensor<T, ndim, ORDER> g(dims);
 
     // Evaluate all basis functions at once
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat(x_values.size(), funcs_size);
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat(
+        x_values.size(), funcs_size);
     for (Eigen::Index i = 0; i < x_values.size(); ++i) {
         Eigen::VectorXd u_eval(funcs_size);
         status = spir_evaluate_funcs(u, x_values(i), u_eval.data());
@@ -105,8 +106,8 @@ _evaluate_greens_function_batch(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
     // Map input tensors to matrices
     Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>>
         coeffs_mat(coeffs_targetdim0.data(), funcs_size, extra_size);
-    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>>
-        g_mat(g.data(), x_values.size(), extra_size);
+    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>> g_mat(
+        g.data(), x_values.size(), extra_size);
 
     // Perform single matrix multiplication
     g_mat = u_eval_mat * coeffs_mat;
@@ -158,6 +159,23 @@ _evaluate_greens_function(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
 
     // Move dimensions back to original order
     return sparseir::movedim(g, 0, target_dim);
+}
+
+template <typename T, int ndim, Eigen::StorageOptions ORDER>
+bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
+                                         const Eigen::Tensor<T, ndim, ORDER> &b,
+                                         double epsilon)
+{
+    Eigen::Tensor<T, ndim, ORDER> diff = (a - b).abs();
+
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> diff_vec(diff.data(),
+                                                                   diff.size());
+    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, 1>> ref_vec(a.data(),
+                                                                  a.size());
+    T max_diff = diff_vec.maxCoeff();
+    T max_ref = ref_vec.maxCoeff();
+
+    return max_diff <= epsilon * max_ref;
 }
 
 template <typename S, typename K, int ndim, Eigen::StorageOptions ORDER>
@@ -248,55 +266,29 @@ void integration_test(double beta, double wmax, double epsilon,
                             coeffs.data(), g_IR.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
+    // DLR basis functions
     spir_funcs *dlr_u;
     status = spir_dlr_get_u(dlr, &dlr_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_funcs *ir_u = nullptr;
+    // IR basis functions
+    spir_funcs *ir_u;
     status = spir_finite_temp_basis_get_u(basis, &ir_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    Eigen::Tensor<double, ndim, ORDER> g_from_IR =
-        _evaluate_greens_function_batch<double, ndim, ORDER>(g_IR, ir_u,
-                                                             target_dim,
-                                                             tau_points);
-    Eigen::Tensor<double, ndim, ORDER> g_from_DLR =
-        _evaluate_greens_function_batch<double, ndim, ORDER>(coeffs, dlr_u,
-                                                       target_dim, tau_points);
+    // Compare the Greens function at all tau points between IR and DLR
+    Eigen::Tensor<double, ndim, ORDER> gtau_from_IR =
+        _evaluate_greens_function_batch<double, ndim, ORDER>(
+            g_IR, ir_u, target_dim, tau_points);
+    Eigen::Tensor<double, ndim, ORDER> gtau_from_DLR =
+        _evaluate_greens_function_batch<double, ndim, ORDER>(
+            coeffs, dlr_u, target_dim, tau_points);
+    REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
+        gtau_from_IR, gtau_from_DLR, epsilon));
 
-    Eigen::Tensor<double, ndim, ORDER> diff = (g_from_IR - g_from_DLR).abs();
-
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> diff_vec(diff.data(), diff.size());
-    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, 1>> ref_vec(g_from_IR.data(), g_from_IR.size());
-    double max_diff = diff_vec.maxCoeff();
-    double max_ref = ref_vec.maxCoeff();
-
-    REQUIRE(max_diff <= epsilon * max_ref);
-
-    // Evaluate the Greens function at x
-    for (auto x : tau_points) {
-        Eigen::Tensor<double, ndim - 1, ORDER> g_from_IR =
-            _evaluate_greens_function<double, ndim, ORDER>(g_IR, ir_u,
-                                                           target_dim, x);
-        Eigen::Tensor<double, ndim - 1, ORDER> g_from_DLR =
-            _evaluate_greens_function<double, ndim, ORDER>(coeffs, dlr_u,
-                                                           target_dim, x);
-
-        // Eigen::Tensor<double, ndim - 1, ORDER> diff = g_from_IR - g_from_DLR;
-        // double max_diff = diff.abs().maximum();
-        // double max_ref = g_from_IR.abs().maximum();
-        /// REQUIRE(max_diff <= epsilon * max_ref);
-        // double diff = (g_from_IR - g_from_DLR).abs().maximum()()(0);
-
-        // REQUIRE(g_from_IR(0) == Approx(g_from_DLR(0)).epsilon(epsilon));
-        // std::cout << "x: " << x << std::endl;
-        // std::cout << "g_from_IR: " << g_from_IR << std::endl;
-        // std::cout << "g_from_DLR: " << g_from_DLR << std::endl;
-        // std::cout << "diff: " << (g_from_IR - g_from_DLR).abs().maximum() <<
-        // std::endl;
-    }
-    // Eigen::Tensor<double, ndim, ORDER> g = _evaluate_greens_function(coeffs,
-    // ir_u, target_dim, x);
+    // TODO:
+    // - Compare the Greens function at Matsubara frequencies
+    // - Check the accuracy of Fourier transform
 
     spir_destroy_finite_temp_basis(basis);
     spir_destroy_dlr(dlr);
