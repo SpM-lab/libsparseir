@@ -194,7 +194,7 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(u != nullptr);
 
-    spir_matsubara_functions *uhat = nullptr;
+    spir_matsubara_funcs *uhat = nullptr;
     status = spir_finite_temp_basis_get_uhat(basis, &uhat);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(uhat != nullptr);

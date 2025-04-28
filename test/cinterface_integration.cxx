@@ -67,7 +67,7 @@ std::array<Eigen::Index, ndim> _get_dims(int target_dim_size,
 
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
 Eigen::Tensor<T, ndim, ORDER>
-_evaluate_greens_function_batch(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
+_evaluate_gtau(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
                                 const spir_funcs *u, int target_dim,
                                 const Eigen::VectorXd &x_values)
 {
@@ -116,50 +116,6 @@ _evaluate_greens_function_batch(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
     return sparseir::movedim(g, 0, target_dim);
 }
 
-template <typename T, int ndim, Eigen::StorageOptions ORDER>
-Eigen::Tensor<T, ndim - 1, ORDER>
-_evaluate_greens_function(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
-                          const spir_funcs *u, int target_dim, double x)
-{
-    int32_t status;
-    Eigen::Tensor<T, ndim, ORDER> coeffs_targetdim0 =
-        sparseir::movedim(coeffs, target_dim, 0);
-
-    int32_t funcs_size;
-    status = spir_funcs_get_size(u, &funcs_size);
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
-
-    // Evaluate the basis functions at x
-    Eigen::VectorXd u_eval(funcs_size);
-    status = spir_evaluate_funcs(u, x, u_eval.data());
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
-
-    // Calculate extra dimensions size
-    Eigen::Index extra_size = 1;
-    for (int i = 1; i < ndim; ++i) {
-        extra_size *= coeffs_targetdim0.dimension(i);
-    }
-
-    // Create result tensor and map it to matrix
-    Eigen::Tensor<T, ndim - 1, ORDER> g;
-    std::array<Eigen::Index, ndim - 1> dims;
-    for (int i = 0; i < ndim - 1; ++i) {
-        dims[i] = coeffs_targetdim0.dimension(i + 1);
-    }
-    g.resize(dims);
-    Eigen::Map<Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>> g_mat(
-        g.data(), 1, extra_size);
-
-    // Map input tensors to matrices and perform matrix multiplication
-    Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>>
-        coeffs_mat(coeffs_targetdim0.data(), funcs_size, extra_size);
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat =
-        u_eval.transpose().cast<T>();
-    g_mat = u_eval_mat * coeffs_mat;
-
-    // Move dimensions back to original order
-    return sparseir::movedim(g, 0, target_dim);
-}
 
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
 bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
@@ -212,13 +168,21 @@ void integration_test(double beta, double wmax, double epsilon,
     // Tau Sampling
     spir_sampling *tau_sampling = spir_tau_sampling_new(basis);
     REQUIRE(tau_sampling != nullptr);
-
-    // Sampling tau
     int32_t num_tau_points;
     status = spir_sampling_get_num_points(tau_sampling, &num_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     Eigen::VectorXd tau_points(num_tau_points);
     status = spir_sampling_get_tau_points(tau_sampling, tau_points.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    // Matsubara Sampling
+    spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis);
+    REQUIRE(matsubara_sampling != nullptr);
+    int32_t num_matsubara_points;
+    status = spir_sampling_get_num_points(matsubara_sampling, &num_matsubara_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    Eigen::Vector<int32_t, Eigen::Dynamic> matsubara_points(num_matsubara_points);
+    status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // DLR
@@ -271,17 +235,25 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_dlr_get_u(dlr, &dlr_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
+    spir_matsubara_funcs *dlr_uhat;
+    status = spir_dlr_get_uhat(dlr, &dlr_uhat);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
     // IR basis functions
     spir_funcs *ir_u;
     status = spir_finite_temp_basis_get_u(basis, &ir_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
+    spir_matsubara_funcs *ir_uhat;
+    status = spir_finite_temp_basis_get_uhat(basis, &ir_uhat);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
     // Compare the Greens function at all tau points between IR and DLR
     Eigen::Tensor<double, ndim, ORDER> gtau_from_IR =
-        _evaluate_greens_function_batch<double, ndim, ORDER>(
+        _evaluate_gtau<double, ndim, ORDER>(
             g_IR, ir_u, target_dim, tau_points);
     Eigen::Tensor<double, ndim, ORDER> gtau_from_DLR =
-        _evaluate_greens_function_batch<double, ndim, ORDER>(
+        _evaluate_gtau<double, ndim, ORDER>(
             coeffs, dlr_u, target_dim, tau_points);
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, epsilon));

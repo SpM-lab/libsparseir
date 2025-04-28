@@ -404,6 +404,28 @@ int32_t spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u)
     }
 }
 
+int32_t spir_dlr_get_uhat(const spir_dlr* dlr, spir_matsubara_funcs** uhat)
+{
+    if (!dlr || !uhat) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_dlr(dlr);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            return _spir_dlr_get_uhat<sparseir::Fermionic>(dlr, uhat);
+        } else {
+            return _spir_dlr_get_uhat<sparseir::Bosonic>(dlr, uhat);
+        }
+    } catch (const std::exception& e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
 int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
                                      spir_funcs **v)
 {
@@ -428,7 +450,7 @@ int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
 }
 
 int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
-                                        spir_matsubara_functions **uhat)
+                                        spir_matsubara_funcs **uhat)
 {
     if (!b || !uhat) {
         return SPIR_INVALID_ARGUMENT;
@@ -593,7 +615,7 @@ int32_t spir_evaluate_funcs(const spir_funcs *u, double x, double *out)
     }
 }
 
-int32_t spir_evaluate_matsubara_functions(const spir_matsubara_functions *uiw,
+int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
                                           spir_order_type order,
                                           int32_t num_freqs,
                                           int32_t *matsubara_freq_indices,

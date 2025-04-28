@@ -45,7 +45,7 @@ DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
 DECLARE_OPAQUE_TYPE(funcs);
-DECLARE_OPAQUE_TYPE(matsubara_functions);
+DECLARE_OPAQUE_TYPE(matsubara_funcs);
 DECLARE_OPAQUE_TYPE(finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
@@ -540,6 +540,18 @@ int32_t spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u);
 
 
 /**
+ * @brief Gets the basis functions of a DLR in the Matsubara-frequency domain.
+ *
+ * This function returns an object representing the basis functions
+ * in the -frequency domain of the specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param uhat Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ */
+int32_t spir_dlr_get_uhat(const spir_dlr* dlr, spir_matsubara_funcs** uhat);
+
+/**
  * @brief Creates a new finite temperature IR basis.
  *
  * This function creates a new finite temperature IR basis using the specified parameters and the default logistic kernel.
@@ -628,11 +640,11 @@ int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b, spir_funcs
  * @param uhat Pointer to store the basis functions
  * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
- * @note The returned object must be freed using spir_destroy_matsubara_functions
+ * @note The returned object must be freed using spir_destroy_matsubara_funcs
  *       when no longer needed
- * @see spir_destroy_matsubara_functions
+ * @see spir_destroy_matsubara_funcs
  */
-int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_matsubara_functions** uhat);
+int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_matsubara_funcs** uhat);
 
 /**
  * @brief Gets the number of functions in a functions object.
@@ -682,8 +694,8 @@ int32_t spir_evaluate_funcs(const spir_funcs* uv, double x, double* out);
  *       at all requested frequencies. Indices n correspond to ωn = nπ/β,
  *       where n are odd for fermionic frequencies and even for bosonic frequencies.
  */
-int32_t spir_evaluate_matsubara_functions(
-    const spir_matsubara_functions* uiw,
+int32_t spir_evaluate_matsubara_funcs(
+    const spir_matsubara_funcs* uiw,
     spir_order_type order, 
     int32_t num_freqs,
     int32_t* matsubara_freq_indices, c_complex* out);
