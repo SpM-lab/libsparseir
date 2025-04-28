@@ -54,6 +54,27 @@ public:
 };
 
 
+//template<typename S>
+//class DLRTauBasisFunctions : public AbstractContinuousFunctions {
+//private:
+    //std::shared_ptr<sparseir::TauPoles<S>> impl;
+//
+//public:
+    //DLRTauBasisFunctions(std::shared_ptr<sparseir::TauPoles<S>> impl): impl(impl) {}
+//
+    //virtual Eigen::VectorXd operator()(double x) const override {
+        //Eigen::VectorXd result(impl->size());
+        //for (int i = 0; i < impl->size(); i++) {
+            //result(i) = impl->operator()(x)(i);
+        //}
+        //return result;
+    //}
+//
+    //virtual int size() const override {
+        //return impl->size();
+    //}
+//};
+
 class AbstractFiniteTempBasis {
 public:
     virtual ~AbstractFiniteTempBasis() = default;

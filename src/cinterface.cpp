@@ -351,6 +351,41 @@ int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles) {
     }
 }
 
+int32_t spir_dlr_get_statistics(const spir_dlr *dlr, spir_statistics_type *statistics) {
+    if (!dlr || !statistics) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_dlr(dlr);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        *statistics = impl->get_statistics();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u) {
+    if (!dlr || !u) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_dlr(dlr);
+    if (!impl)
+        return SPIR_GET_IMPL_FAILED;
+
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_dlr_get_u<sparseir::Fermionic>(dlr, u);
+    } else {
+        return _spir_dlr_get_u<sparseir::Bosonic>(dlr, u);
+    }
+}
+
+
 spir_funcs *spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b)
 {
     auto impl = get_impl_finite_temp_basis(b);

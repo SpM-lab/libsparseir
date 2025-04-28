@@ -290,6 +290,20 @@ spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
 spir_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles);
 
 /**
+ * @brief Gets the statistics type of a DLR.
+ *
+ * This function returns the statistics type (fermionic or bosonic) of the
+ * specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param statistics Pointer to store the statistics type
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ *
+ * @see spir_statistics_type
+ */
+int32_t spir_dlr_get_statistics(const spir_dlr *dlr, spir_statistics_type *statistics);
+
+/**
  * @brief Evaluates basis coefficients at sampling points (double to double
  * version).
  *
@@ -509,6 +523,20 @@ int32_t spir_dlr_to_IR(
     int32_t target_dim,
     const double *input,
     double *out);
+
+
+/**
+ * @brief Gets the basis functions of a DLR.
+ *
+ * This function returns an object representing the basis functions
+ * in the imaginary-time domain of the specified DLR object.
+ * 
+ * @param dlr Pointer to the DLR object
+ * @param u Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @see spir_destroy_funcs
+ */
+int32_t spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u);
 
 
 /**

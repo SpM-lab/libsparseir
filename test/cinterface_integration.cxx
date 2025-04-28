@@ -8,6 +8,9 @@
 #include <random>
 #include <vector>
 
+#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
+
 #include <sparseir/sparseir.hpp>   // C++ interface
 #include <sparseir/sparseir.h>   // C interface
 
@@ -23,10 +26,29 @@ spir_statistics_type get_stat()
     }
 }
 
+//spir_order_type get_order(Eigen::StorageOptions order)
+//{
+    //if (order == Eigen::ColMajor) {
+        //return SPIR_ORDER_COLUMN_MAJOR;
+    //} else {
+        //return SPIR_ORDER_ROW_MAJOR;
+    //}
+//}
+
 template <typename S, typename K>
-void integration_test(double beta, double wmax, double epsilon, int ndim, int dim)
+void integration_test(double beta, double wmax, double epsilon, int ndim, int target_dim, spir_order_type order)
 {
+    if (target_dim != 0) {
+        std::cerr << "target_dim must be 0" << std::endl;
+        return;
+    }
+    if (ndim != 1) {
+        std::cerr << "ndim must be 1" << std::endl;
+        return;
+    }
+
     auto stat = get_stat<S>();
+    //auto order = get_order<ORDER>();
     int32_t status;
 
     // IR basis
@@ -62,6 +84,20 @@ void integration_test(double beta, double wmax, double epsilon, int ndim, int di
 
     // Convert DLR coefficients to IR coefficients
     Eigen::VectorXd g_IR(basis_size); // Extend to Eigen::Tensor
-    status = spir_dlr_to_IR(dlr, SPIR_ORDER_COLUMN_MAJOR, 1, &basis_size, 0, coeffs.data(), g_IR.data());
+    status = spir_dlr_to_IR(dlr, order, ndim, &basis_size, target_dim, coeffs.data(), g_IR.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    spir_funcs *dlr_u;
+    status = spir_dlr_get_u(dlr, &dlr_u);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    spir_destroy_finite_temp_basis(basis);
+    spir_destroy_dlr(dlr);
+    spir_destroy_funcs(dlr_u);
+}
+
+
+TEST_CASE("Integration Test", "[cinterface]")
+{
+    integration_test<sparseir::Fermionic, sparseir::LogisticKernel>(1.0, 10.0, 1e-10, 1, 0, SPIR_ORDER_COLUMN_MAJOR);
 }

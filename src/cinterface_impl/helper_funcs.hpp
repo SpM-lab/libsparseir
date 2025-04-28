@@ -253,3 +253,26 @@ _spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, cons
     );
     return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
 }
+
+
+template<typename S>
+int32_t _spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u) {
+    if (!dlr || !u) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_dlr(dlr);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    std::shared_ptr<sparseir::TauPoles<S>> u_impl = (std::static_pointer_cast<_DLR<S>>(impl))->get_impl()->u;
+
+    *u = _create_funcs(
+        std::static_pointer_cast<AbstractContinuousFunctions>(
+            std::make_shared<ContinuousFunctions<sparseir::TauPoles<S>>>(u_impl)
+        )
+    );
+
+    return SPIR_COMPUTATION_SUCCESS;
+}
