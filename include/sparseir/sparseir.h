@@ -634,6 +634,18 @@ int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b, spir_funcs
  */
 int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_matsubara_functions** uhat);
 
+/**
+ * @brief Gets the number of functions in a functions object.
+ *
+ * This function returns the number of functions contained in the specified
+ * functions object. This number is needed to allocate arrays of the correct size
+ * when evaluating the functions.
+ *
+ * @param funcs Pointer to the functions object
+ * @param size Pointer to store the number of functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ */
+int32_t spir_funcs_get_size(const spir_funcs* funcs, int32_t* size);
 
 /**
  * @brief Evaluates basis functions at a single point in the imaginary-time domain or the real frequency domain.
