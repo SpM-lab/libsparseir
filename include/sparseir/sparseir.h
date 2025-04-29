@@ -45,7 +45,7 @@ DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(logistic_kernel);
 DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
 DECLARE_OPAQUE_TYPE(funcs);
-DECLARE_OPAQUE_TYPE(matsubara_functions);
+DECLARE_OPAQUE_TYPE(matsubara_funcs);
 DECLARE_OPAQUE_TYPE(finite_temp_basis);
 DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
@@ -290,6 +290,20 @@ spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
 spir_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles);
 
 /**
+ * @brief Gets the statistics type of a DLR.
+ *
+ * This function returns the statistics type (fermionic or bosonic) of the
+ * specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param statistics Pointer to store the statistics type
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ *
+ * @see spir_statistics_type
+ */
+int32_t spir_dlr_get_statistics(const spir_dlr *dlr, spir_statistics_type *statistics);
+
+/**
  * @brief Evaluates basis coefficients at sampling points (double to double
  * version).
  *
@@ -410,42 +424,32 @@ int spir_sampling_fit_zz(
     c_complex *out                    // Output array
     );
 
-/**
- * @brief Gets the number of rows in the fitting matrix of a bosonic DLR.
- *
- * This function returns the number of rows in the fitting matrix of the specified
- * bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
- *
- * @param dlr Pointer to the bosonic DLR object
- * @return The number of rows in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
- *
- * @note The fitting matrix dimensions determine the size of valid input/output arrays
- *       for transformations involving this DLR object
- * @see spir_bosonic_dlr_fitmat_cols
- * @see spir_bosonic_dlr_from_IR
- * @see spir_bosonic_dlr_to_IR
- */
-int spir_dlr_fitmat_rows(const spir_dlr *dlr);
 
 /**
- * @brief Gets the number of columns in the fitting matrix of a bosonic DLR.
+ * @brief Gets the number of poles in a DLR.
  *
- * This function returns the number of columns in the fitting matrix of the specified
- * bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to
- * transform between the DLR representation and values at sampling points.
+ * This function returns the number of poles in the specified DLR object.
  *
- * @param dlr Pointer to the bosonic DLR object
- * @return The number of columns in the fitting matrix, or SPIR_GET_IMPL_FAILED if the DLR object is invalid
+ * @param dlr Pointer to the DLR object
+ * @param num_poles Pointer to store the number of poles
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
- * @note The fitting matrix dimensions determine the size of valid input/output arrays
- *       for transformations involving this DLR object
- * @see spir_bosonic_dlr_fitmat_rows
- * @see spir_bosonic_dlr_from_IR
- * @see spir_bosonic_dlr_to_IR
+ * @see spir_dlr_get_poles
  */
-int spir_dlr_fitmat_cols(const spir_dlr *dlr);
+int32_t spir_dlr_get_num_poles(const spir_dlr *dlr, int32_t *num_poles);
 
+/**
+ * @brief Gets the poles in a DLR.
+ *
+ * This function returns the poles in the specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param poles Pointer to store the poles
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ *
+ * @see spir_dlr_get_num_poles
+ */
+int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
 
 /**
  * Transforms a given input array from the Intermediate Representation (IR) 
@@ -453,10 +457,11 @@ int spir_dlr_fitmat_cols(const spir_dlr *dlr);
  *
  * @param dlr Pointer to the fermionic DLR object
  * @param order Order type (C or Fortran)
- * @param ndim Number of dimensions
+ * @param ndim Number of dimensions of input/output arrays
  * @param input_dims Array of dimensions
- * @param input Input coefficients array in IR representation
- * @param out Output array in DLR representation
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input coefficients array in IR
+ * @param out Output array in DLR
  *
  * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
  *
@@ -467,14 +472,13 @@ int spir_dlr_fitmat_cols(const spir_dlr *dlr);
  *       The output array will be in the specified order type.
  *
  * @see spir_dlr_to_IR
- * @see spir_dlr_fitmat_rows
- * @see spir_dlr_fitmat_cols
  */
 int32_t spir_dlr_from_IR(
     const spir_dlr *dlr,
     spir_order_type order,
     int32_t ndim,
     int32_t *input_dims,
+    int32_t target_dim,
     const double *input,
     double *out);
 
@@ -497,6 +501,7 @@ int32_t spir_dlr_from_IR(
  * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
  * @param ndim Number of dimensions in the input/output arrays
  * @param input_dims Array of dimension sizes
+ * @param target_dim Target dimension for the transformation (0-based)
  * @param input Input array of DLR coefficients (double precision)
  * @param out Output array for the IR coefficients (double precision)
  *
@@ -515,9 +520,36 @@ int32_t spir_dlr_to_IR(
     spir_order_type order,
     int32_t ndim,
     int32_t *input_dims,
+    int32_t target_dim,
     const double *input,
     double *out);
 
+
+/**
+ * @brief Gets the basis functions of a DLR.
+ *
+ * This function returns an object representing the basis functions
+ * in the imaginary-time domain of the specified DLR object.
+ * 
+ * @param dlr Pointer to the DLR object
+ * @param u Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @see spir_destroy_funcs
+ */
+int32_t spir_dlr_get_u(const spir_dlr* dlr, spir_funcs** u);
+
+
+/**
+ * @brief Gets the basis functions of a DLR in the Matsubara-frequency domain.
+ *
+ * This function returns an object representing the basis functions
+ * in the Matsubara-frequency domain of the specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param uhat Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ */
+int32_t spir_dlr_get_uhat(const spir_dlr* dlr, spir_matsubara_funcs** uhat);
 
 /**
  * @brief Creates a new finite temperature IR basis.
@@ -572,14 +604,14 @@ spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(spir_statistics_type
  * in the imaginary-time domain of the specified finite temperature basis.
  *
  * @param b Pointer to the finite temperature basis object
- * @return A pointer to the object representing the basis functions,
- *         or NULL if the basis object is invalid
+ * @param u Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-spir_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b);
+int32_t spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b, spir_funcs** u);
 
 
 /**
@@ -589,14 +621,14 @@ spir_funcs* spir_finite_temp_basis_get_u(const spir_finite_temp_basis* b);
  * in the real-frequency domain of the specified finite temperature basis.
  *
  * @param b Pointer to the finite temperature basis object
- * @return A pointer to the object representing the basis functions,
- *         or NULL if the basis object is invalid
+ * @param v Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-spir_funcs* spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b);
+int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b, spir_funcs** v);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis in Matsubara frequency domain.
@@ -604,54 +636,68 @@ spir_funcs* spir_finite_temp_basis_get_v(const spir_finite_temp_basis* b);
  * This function returns an object representing the basis functions
  * in the Matsubara-frequency domain of the specified finite temperature basis.
  *
- * @param b Pointer to the fermionic finite temperature basis object
- * @return A pointer to the object containing the basis functions,
- *         or NULL if the basis object is invalid
+ * @param b Pointer to the finite temperature basis object
+ * @param uhat Pointer to store the basis functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
  *
- * @note The returned object must be freed using spir_destroy_matsubara_functions
+ * @note The returned object must be freed using spir_destroy_matsubara_funcs
  *       when no longer needed
- * @see spir_destroy_matsubara_functions
+ * @see spir_destroy_matsubara_funcs
  */
-spir_matsubara_functions* spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b);
-
+int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_matsubara_funcs** uhat);
 
 /**
- * @brief Evaluates basis functions at a single point in the imaginary-time domain or the real frequency domain.
+ * @brief Gets the number of functions in a functions object.
  *
- * This function evaluates all basis functions contained in a polynomial vector at a specified point x.
+ * This function returns the number of functions contained in the specified
+ * functions object. This number is needed to allocate arrays of the correct size
+ * when evaluating the functions.
+ *
+ * @param funcs Pointer to the functions object
+ * @param size Pointer to store the number of functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ */
+int32_t spir_funcs_get_size(const spir_funcs* funcs, int32_t* size);
+
+/**
+ * @brief Evaluates functions at a single point in the imaginary-time domain or the real frequency domain.
+ *
+ * This function evaluates all functions at a specified point x.
  * The values of each basis function at x are stored in the output array.
- * The output array out[j] contains the value of the j-th basis function evaluated at x.
+ * The output array out[j] contains the value of the j-th function evaluated at x.
  *
- * @param uv Pointer to the polynomial vector containing the basis functions
- * @param x Point at which to evaluate the basis functions
- * @param out Pre-allocated array to store the evaluation results. Must have size >= n_basis
+ * @param uv Pointer to a functions object
+ * @param x Point at which to evaluate the functions
+ * @param out Pre-allocated array to store the evaluation results.
  * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
  *
- * @note The output array must be pre-allocated with sufficient size to store all basis function values
+ * @note The output array must be pre-allocated with sufficient size to store all function values
  */
-int32_t spir_evaluate_funcs(const spir_funcs* uv, double x, double* out);
+int32_t spir_evaluate_funcs(const spir_funcs* funcs, double x, double* out);
 
 
 /**
  * @brief Evaluates basis functions at multiple Matsubara frequencies.
  *
- * This function evaluates all basis functions contained in a Matsubara basis functions object
- * at the specified Matsubara frequency indices. The values of each basis function at each
+ * This function evaluates all functions contained in a Matsubara functions object
+ * at the specified Matsubara frequency indices. The values of each function at each
  * frequency are stored in the output array.
  *
- * @param uiw Pointer to the Matsubara basis functions object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param uiw Pointer to the Matsubara functions object
+ * @param order Specifies the memory layout of the output array:
+ *             SPIR_ORDER_ROW_MAJOR for row-major order (frequency index varies fastest),
+ *             SPIR_ORDER_COLUMN_MAJOR for column-major order (function index varies fastest)
  * @param num_freqs Number of Matsubara frequencies at which to evaluate
  * @param matsubara_freq_indices Array of Matsubara frequency indices
- * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size n_basis x num_freqs.
+ * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size num_freqs x n_funcs.
  * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
  *
- * @note The output array must be pre-allocated with sufficient size to store all basis function values
+ * @note The output array must be pre-allocated with sufficient size to store all function values
  *       at all requested frequencies. Indices n correspond to ωn = nπ/β,
  *       where n are odd for fermionic frequencies and even for bosonic frequencies.
  */
-int32_t spir_evaluate_matsubara_functions(
-    const spir_matsubara_functions* uiw,
+int32_t spir_evaluate_matsubara_funcs(
+    const spir_matsubara_funcs* uiw,
     spir_order_type order, 
     int32_t num_freqs,
     int32_t* matsubara_freq_indices, c_complex* out);
@@ -711,6 +757,19 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @see spir_sampling_get_num_points
  */
 int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points);
+
+/**
+ * @brief Gets the number of functions in a Matsubara functions object.
+ *
+ * This function returns the number of functions contained in the specified
+ * Matsubara functions object. This number is needed to allocate arrays of the correct size
+ * when evaluating the functions.
+ *
+ * @param funcs Pointer to the Matsubara functions object
+ * @param size Pointer to store the number of functions
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ */
+int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_t* size);
 
 #ifdef __cplusplus
 }

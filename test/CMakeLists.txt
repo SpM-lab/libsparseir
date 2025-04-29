@@ -32,6 +32,7 @@ set(TEST_FILES
     cinterface_core.cxx
     cinterface_sampling.cxx
     cinterface_dlr.cxx
+    cinterface_integration.cxx
 )
 
 # Create a single combined test executable

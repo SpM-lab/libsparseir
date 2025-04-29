@@ -48,6 +48,7 @@ public:
         return result;
     }
 
+
     // For vector of frequencies
     template <typename FreqType>
     Eigen::MatrixXcd operator()(const std::vector<FreqType> &n) const
@@ -57,6 +58,11 @@ public:
             result.col(i) = (*this)(MatsubaraFreq<Statistics>(n[i]));
         }
         return result;
+    }
+
+    Eigen::MatrixXcd operator()(const Eigen::ArrayXi &n_array) const {
+        // delegate to operator()(const std::vector<FreqType> &n)
+        return (*this)(std::vector<MatsubaraFreq<Statistics>>(n_array.data(), n_array.data() + n_array.size()));
     }
 };
 

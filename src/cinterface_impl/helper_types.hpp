@@ -9,13 +9,13 @@ public:
     virtual int size() const = 0;
 };
 
-template<typename S>
+template<typename InternalType>
 class MatsubaraBasisFunctions : public AbstractMatsubaraFunctions {
 private:
-    std::shared_ptr<sparseir::PiecewiseLegendreFTVector<S>> impl;
+    std::shared_ptr<InternalType> impl;
 
 public:
-    MatsubaraBasisFunctions(std::shared_ptr<sparseir::PiecewiseLegendreFTVector<S>> impl): impl(impl) {}
+    MatsubaraBasisFunctions(std::shared_ptr<InternalType> impl): impl(impl) {}
 
     virtual Eigen::MatrixXcd operator()(const Eigen::ArrayXi &n_array) const override {
         return impl->operator()(n_array);
@@ -53,6 +53,27 @@ public:
     }
 };
 
+
+//template<typename S>
+//class DLRTauBasisFunctions : public AbstractContinuousFunctions {
+//private:
+    //std::shared_ptr<sparseir::TauPoles<S>> impl;
+//
+//public:
+    //DLRTauBasisFunctions(std::shared_ptr<sparseir::TauPoles<S>> impl): impl(impl) {}
+//
+    //virtual Eigen::VectorXd operator()(double x) const override {
+        //Eigen::VectorXd result(impl->size());
+        //for (int i = 0; i < impl->size(); i++) {
+            //result(i) = impl->operator()(x)(i);
+        //}
+        //return result;
+    //}
+//
+    //virtual int size() const override {
+        //return impl->size();
+    //}
+//};
 
 class AbstractFiniteTempBasis {
 public:
@@ -101,7 +122,7 @@ public:
 
     virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const override {
         return std::static_pointer_cast<AbstractMatsubaraFunctions>(
-            std::make_shared<MatsubaraBasisFunctions<S>>(impl->uhat));
+            std::make_shared<MatsubaraBasisFunctions<sparseir::PiecewiseLegendreFTVector<S>>>(impl->uhat));
     }
 
     std::shared_ptr<sparseir::FiniteTempBasis<S>> get_impl() const {
@@ -115,11 +136,10 @@ public:
     virtual ~AbstractDLR() = default;
     virtual int size() const = 0;
     virtual double get_beta() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
     virtual spir_statistics_type get_statistics() const = 0;
-    //virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
-    //virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
-    virtual int fitmat_rows() const = 0;
-    virtual int fitmat_cols() const = 0;
+    virtual std::vector<double> get_poles() const = 0;
 };
 
 template<typename S>
@@ -146,17 +166,22 @@ public:
         return impl->get_beta();
     }
 
-    virtual int fitmat_rows() const override {
-        return impl->fitmat.rows();
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override {
+        return std::static_pointer_cast<AbstractContinuousFunctions>(
+            std::make_shared<ContinuousFunctions<sparseir::TauPoles<S>>>(impl->u));
     }
 
-    virtual int fitmat_cols() const override {
-        return impl->fitmat.cols();
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const override {
+        return std::static_pointer_cast<AbstractMatsubaraFunctions>(
+            std::make_shared<MatsubaraBasisFunctions<sparseir::MatsubaraPoles<S>>>(impl->uhat));
     }
 
+    virtual std::vector<double> get_poles() const override {
+        Eigen::VectorXd eigen_poles = impl->poles;
+        return std::vector<double>(eigen_poles.data(), eigen_poles.data() + eigen_poles.size());
+    }
 
     std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> get_impl() const {
         return impl;
     }
-
 };

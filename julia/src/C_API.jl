@@ -83,20 +83,20 @@ function spir_is_assigned_continuous_functions(obj)
     ccall((:spir_is_assigned_continuous_functions, libsparseir), Cint, (Ptr{spir_continuous_functions},), obj)
 end
 
-mutable struct _spir_matsubara_functions end
+mutable struct _spir_matsubara_funcs end
 
-const spir_matsubara_functions = _spir_matsubara_functions
+const spir_matsubara_funcs = _spir_matsubara_funcs
 
-function spir_destroy_matsubara_functions(obj)
-    ccall((:spir_destroy_matsubara_functions, libsparseir), Cvoid, (Ptr{spir_matsubara_functions},), obj)
+function spir_destroy_matsubara_funcs(obj)
+    ccall((:spir_destroy_matsubara_funcs, libsparseir), Cvoid, (Ptr{spir_matsubara_funcs},), obj)
 end
 
-function spir_clone_matsubara_functions(src)
-    ccall((:spir_clone_matsubara_functions, libsparseir), Ptr{spir_matsubara_functions}, (Ptr{spir_matsubara_functions},), src)
+function spir_clone_matsubara_funcs(src)
+    ccall((:spir_clone_matsubara_funcs, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_matsubara_funcs},), src)
 end
 
-function spir_is_assigned_matsubara_functions(obj)
-    ccall((:spir_is_assigned_matsubara_functions, libsparseir), Cint, (Ptr{spir_matsubara_functions},), obj)
+function spir_is_assigned_matsubara_funcs(obj)
+    ccall((:spir_is_assigned_matsubara_funcs, libsparseir), Cint, (Ptr{spir_matsubara_funcs},), obj)
 end
 
 mutable struct _spir_fermionic_finite_temp_basis end
@@ -1122,17 +1122,17 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_matsubara_functions`](@ref) when no longer needed
+    The returned object must be freed using [`spir_destroy_matsubara_funcs`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to the fermionic finite temperature basis object
 # Returns
 A pointer to the object containing the basis functions, or NULL if the basis object is invalid
 # See also
-[`spir_destroy_matsubara_functions`](@ref)
+[`spir_destroy_matsubara_funcs`](@ref)
 """
 function spir_fermionic_finite_temp_basis_get_uhat(b)
-    ccall((:spir_fermionic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_functions}, (Ptr{spir_fermionic_finite_temp_basis},), b)
+    ccall((:spir_fermionic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_fermionic_finite_temp_basis},), b)
 end
 
 """
@@ -1188,17 +1188,17 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_matsubara_functions`](@ref) when no longer needed
+    The returned object must be freed using [`spir_destroy_matsubara_funcs`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to the bosonic finite temperature basis object
 # Returns
 A pointer to the object containing the basis functions, or NULL if the basis object is invalid
 # See also
-[`spir_destroy_matsubara_functions`](@ref)
+[`spir_destroy_matsubara_funcs`](@ref)
 """
 function spir_bosonic_finite_temp_basis_get_uhat(b)
-    ccall((:spir_bosonic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_functions}, (Ptr{spir_bosonic_finite_temp_basis},), b)
+    ccall((:spir_bosonic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_bosonic_finite_temp_basis},), b)
 end
 
 """
@@ -1224,7 +1224,7 @@ function spir_evaluate_continuous_functions(uv, x, out)
 end
 
 """
-    spir_evaluate_matsubara_functions(uiw, order, num_freqs, matsubara_freq_indices, out)
+    spir_evaluate_matsubara_funcs(uiw, order, num_freqs, matsubara_freq_indices, out)
 
 Evaluates basis functions at multiple Matsubara frequencies.
 
@@ -1243,8 +1243,8 @@ This function evaluates all basis functions contained in a Matsubara basis funct
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success, error code on failure
 """
-function spir_evaluate_matsubara_functions(uiw, order, num_freqs, matsubara_freq_indices, out)
-    ccall((:spir_evaluate_matsubara_functions, libsparseir), Int32, (Ptr{spir_matsubara_functions}, spir_order_type, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
+function spir_evaluate_matsubara_funcs(uiw, order, num_freqs, matsubara_freq_indices, out)
+    ccall((:spir_evaluate_matsubara_funcs, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, spir_order_type, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
 end
 
 """

@@ -34,13 +34,32 @@ void test_finite_temp_basis_dlr()
     const double epsilon = 1e-12;
 
     auto stat = get_stat<S>();
+    int32_t status;
 
     spir_finite_temp_basis *basis =
         spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
     REQUIRE(basis != nullptr);
+    int32_t basis_size;
+    status = spir_finite_temp_basis_get_size(basis, &basis_size);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(basis_size >= 0);
+
 
     spir_dlr *dlr = spir_dlr_new(basis);
     REQUIRE(dlr != nullptr);
+
+    int32_t num_poles;
+    status = spir_dlr_get_num_poles(dlr, &num_poles);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(num_poles >= 0);
+    REQUIRE(num_poles >= basis_size);
+
+    {
+        double *poles = (double *)malloc(num_poles * sizeof(double));
+        status = spir_dlr_get_poles(dlr, poles);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        free(poles);
+    }
 
     const int npoles = 10;
     Eigen::VectorXd poles(npoles);
@@ -56,20 +75,17 @@ void test_finite_temp_basis_dlr()
     spir_dlr *dlr_with_poles =
         spir_dlr_new_with_poles(basis, npoles, poles.data());
     REQUIRE(dlr_with_poles != nullptr);
-    int fitmat_rows = spir_dlr_fitmat_rows(dlr_with_poles);
-    int fitmat_cols = spir_dlr_fitmat_cols(dlr_with_poles);
-    REQUIRE(fitmat_rows >= 0);
-    REQUIRE(fitmat_cols == npoles);
-    double *Gl = (double *)malloc(fitmat_rows * sizeof(double));
+
+    double *Gl = (double *)malloc(basis_size * sizeof(double));
     int32_t to_ir_input_dims[1] = {npoles};
     int status_to_IR = spir_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR,
-                                      1, to_ir_input_dims, coeffs.data(), Gl);
+                                      1, to_ir_input_dims, 0, coeffs.data(), Gl);
 
     REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
-    double *g_dlr = (double *)malloc(fitmat_rows * sizeof(double));
-    int32_t from_ir_input_dims[1] = {static_cast<int32_t>(fitmat_rows)};
+    double *g_dlr = (double *)malloc(num_poles * sizeof(double));
+    int32_t from_ir_input_dims[1] = {static_cast<int32_t>(num_poles)};
     int status_from_IR = spir_dlr_from_IR(dlr, SPIR_ORDER_COLUMN_MAJOR, 1,
-                                          from_ir_input_dims, Gl, g_dlr);
+                                          from_ir_input_dims, 0, Gl, g_dlr);
     REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
 
     free(Gl);
