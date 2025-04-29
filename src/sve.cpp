@@ -150,6 +150,7 @@ void canonicalize(PiecewiseLegendrePolyVector &u,
     }
 }
 
+/*
 SVEResult compute_sve(const std::shared_ptr<AbstractKernel> &kernel,
                       double epsilon, double cutoff, int lmax, int n_gauss,
                       std::string Twork)
@@ -171,6 +172,7 @@ SVEResult compute_sve(const std::shared_ptr<AbstractKernel> &kernel,
             "Twork must be either 'Float64' or 'Float64x2'");
     }
 }
+*/
 
 // Explicit template instantiations
 template SVEResult compute_sve(const LogisticKernel &, double, double, int, int,

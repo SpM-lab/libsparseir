@@ -104,7 +104,7 @@ public:
      *
      * @return True if the kernel is centrosymmetric, false otherwise.
      */
-    virtual bool is_centrosymmetric() const { return false; }
+    virtual bool is_centrosymmetric() const = 0;
 
     /**
      * @brief Power with which the y coordinate scales.
@@ -130,6 +130,16 @@ public:
 
     virtual ~AbstractKernel() = default;
 };
+
+
+// Type trait to check if a type is a concrete kernel
+template <typename T>
+struct is_concrete_kernel {
+    static constexpr bool value = 
+        !std::is_abstract<T>::value && 
+        std::is_base_of<AbstractKernel, T>::value;
+};
+
 
 /**
  * @brief Non-templated base class for all reduced kernels.
@@ -961,6 +971,10 @@ public:
         }
     }
 
+    virtual bool is_centrosymmetric() const override {
+        return false;
+    }
+
     /**
      * @brief Get the inner kernel.
      *
@@ -1006,6 +1020,10 @@ public:
         if (sign != -1) {
             throw std::invalid_argument("sign must be -1");
         }
+    }
+
+    virtual bool is_centrosymmetric() const override {
+        return false;
     }
 
     /**

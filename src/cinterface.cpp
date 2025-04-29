@@ -100,8 +100,15 @@ spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon)
         auto impl = get_impl_kernel(k);
         if (!impl)
             return nullptr;
-        auto sve = sparseir::compute_sve(impl, epsilon);
-        return create_sve_result(std::make_shared<sparseir::SVEResult>(sve));
+        if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
+            auto sve = sparseir::compute_sve(*logistic, epsilon);
+            return create_sve_result(std::make_shared<sparseir::SVEResult>(sve));
+        } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
+            auto sve = sparseir::compute_sve(*bose, epsilon);
+            return create_sve_result(std::make_shared<sparseir::SVEResult>(sve));
+        } else {
+            throw std::runtime_error("Unsupported kernel type");
+        }
     } catch (...) {
         return nullptr;
     }
@@ -112,18 +119,20 @@ spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
                            double omega_max, double epsilon)
 {
     try {
+        auto kernel = sparseir::LogisticKernel(beta * omega_max);
+        auto sve_result = sparseir::compute_sve(kernel, epsilon);
         if (statistics == SPIR_STATISTICS_FERMIONIC) {
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Fermionic>;
             auto impl =
-                std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon);
+                std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
             return create_finite_temp_basis(
                 std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
         } else {
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Bosonic>;
             auto impl =
-                std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon);
+                std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
             return create_finite_temp_basis(
                 std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
         }
@@ -136,27 +145,15 @@ spir_finite_temp_basis *spir_finite_temp_basis_new_with_sve(
     spir_statistics_type statistics, double beta, double omega_max,
     const spir_kernel *k, const spir_sve_result *sve)
 {
-    try {
-        auto sve_impl = get_impl_sve_result(sve);
-        auto kernel_impl = get_impl_kernel(k);
-        if (!sve_impl || !kernel_impl)
-            return nullptr;
-        if (statistics == SPIR_STATISTICS_FERMIONIC) {
-            using FiniteTempBasisType =
-                sparseir::FiniteTempBasis<sparseir::Fermionic>;
-            auto impl = std::make_shared<FiniteTempBasisType>(
-                beta, omega_max, kernel_impl, *sve_impl);
-            return create_finite_temp_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
-        } else {
-            using FiniteTempBasisType =
-                sparseir::FiniteTempBasis<sparseir::Bosonic>;
-            auto impl = std::make_shared<FiniteTempBasisType>(
-                beta, omega_max, kernel_impl, *sve_impl);
-            return create_finite_temp_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
-        }
-    } catch (...) {
+    // switch on kernel type
+    std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+    if (!impl)
+        return nullptr;
+    if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
+        return _spir_finite_temp_basis_new_with_sve(statistics, beta, omega_max, *logistic, sve);
+    } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
+        return _spir_finite_temp_basis_new_with_sve(statistics, beta, omega_max, *bose, sve);
+    } else {
         return nullptr;
     }
 }

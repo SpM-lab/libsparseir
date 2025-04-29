@@ -204,6 +204,21 @@ bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
     return max_diff <= epsilon * max_ref;
 }
 
+template <typename K>
+spir_kernel* _kernel_new(double lambda);
+
+template <>
+spir_kernel* _kernel_new<sparseir::LogisticKernel>(double lambda)
+{  
+    return spir_logistic_kernel_new(lambda);
+}
+
+template <>
+spir_kernel* _kernel_new<sparseir::RegularizedBoseKernel>(double lambda)
+{
+    return spir_regularized_bose_kernel_new(lambda);
+}
+
 /*
 T: double or std::complex<double>, scalar type of coeffs
 TODO: we need to test positive only mode. A different function is needed?
@@ -232,8 +247,12 @@ void integration_test(double beta, double wmax, double epsilon,
     int32_t status;
 
     // IR basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
+    spir_kernel* kernel = _kernel_new<K>(beta * wmax);
+    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
+    spir_finite_temp_basis* basis = spir_finite_temp_basis_new_with_sve(stat, beta, wmax, kernel, sve);
+    //spir_finite_temp_basis *basis =
+        //spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
+
     REQUIRE(basis != nullptr);
     int32_t basis_size;
     status = spir_finite_temp_basis_get_size(basis, &basis_size);

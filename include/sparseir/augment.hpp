@@ -358,7 +358,7 @@ public:
 
     size_t nAug() const { return augmentations.size(); }
 
-    const Eigen::VectorXd default_tau_sampling_points() const override
+    Eigen::VectorXd default_tau_sampling_points() const override
     {
         int sz = basis->size() + augmentations.size();
         auto x = default_sampling_points(*(basis->sve_result->u), sz);

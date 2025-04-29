@@ -47,36 +47,31 @@ public:
 
     // Factory method
     static std::shared_ptr<FiniteTempBasisSet>
-    create(double beta, double wmax,
-           double epsilon = std::numeric_limits<double>::quiet_NaN())
+    create(double beta, double wmax, double epsilon)
     {
-        std::pair<FiniteTempBasis<Fermionic>, FiniteTempBasis<Bosonic>> bases =
-            finite_temp_bases(beta, wmax, epsilon);
-        FiniteTempBasis<Fermionic> basis_f = bases.first;
-        FiniteTempBasis<Bosonic> basis_b = bases.second;
+        auto bases = finite_temp_bases(beta, wmax, epsilon);
+        auto basis_f = bases.first;
+        auto basis_b = bases.second;
 
         // Get default sampling points
-        Eigen::VectorXd tau = basis_f.default_tau_sampling_points();
+        Eigen::VectorXd tau = basis_f->default_tau_sampling_points();
 
         // Get Matsubara frequencies using uhat_full
         std::vector<int> wn_f;
         bool fence = false;
         bool positive_only = false;
-        for (const auto &freq : basis_f.default_matsubara_sampling_points(
-                 basis_f.size(), fence, positive_only)) {
+        for (const auto &freq : basis_f->default_matsubara_sampling_points(
+                 basis_f->size(), fence, positive_only)) {
             wn_f.push_back(freq.get_n());
         }
 
         std::vector<int> wn_b;
-        for (const auto &freq : basis_b.default_matsubara_sampling_points(
-                 basis_b.size(), fence, positive_only)) {
+        for (const auto &freq : basis_b->default_matsubara_sampling_points(
+                 basis_b->size(), fence, positive_only)) {
             wn_b.push_back(freq.get_n());
         }
 
-        return std::make_shared<FiniteTempBasisSet>(
-            std::make_shared<FiniteTempBasis<Fermionic>>(basis_f),
-            std::make_shared<FiniteTempBasis<Bosonic>>(basis_b), tau, wn_f,
-            wn_b);
+        return std::make_shared<FiniteTempBasisSet>(basis_f, basis_b, tau, wn_f, wn_b);
     }
 
     // String representation
