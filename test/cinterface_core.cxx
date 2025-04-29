@@ -201,7 +201,7 @@ void test_finite_temp_basis_basis_functions()
 
     // Test basis function evaluation
     int basis_size;
-    int status = spir_finite_temp_basis_get_size(basis, &basis_size);
+    status = spir_finite_temp_basis_get_size(basis, &basis_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     double x = 0.5;        // Test point for u basis (imaginary time)

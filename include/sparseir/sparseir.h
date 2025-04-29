@@ -660,39 +660,39 @@ int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis* b, spir_ma
 int32_t spir_funcs_get_size(const spir_funcs* funcs, int32_t* size);
 
 /**
- * @brief Evaluates basis functions at a single point in the imaginary-time domain or the real frequency domain.
+ * @brief Evaluates functions at a single point in the imaginary-time domain or the real frequency domain.
  *
- * This function evaluates all basis functions contained in a polynomial vector at a specified point x.
+ * This function evaluates all functions at a specified point x.
  * The values of each basis function at x are stored in the output array.
- * The output array out[j] contains the value of the j-th basis function evaluated at x.
+ * The output array out[j] contains the value of the j-th function evaluated at x.
  *
- * @param uv Pointer to the polynomial vector containing the basis functions
- * @param x Point at which to evaluate the basis functions
- * @param out Pre-allocated array to store the evaluation results. Must have size >= n_basis
+ * @param uv Pointer to a functions object
+ * @param x Point at which to evaluate the functions
+ * @param out Pre-allocated array to store the evaluation results.
  * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
  *
- * @note The output array must be pre-allocated with sufficient size to store all basis function values
+ * @note The output array must be pre-allocated with sufficient size to store all function values
  */
-int32_t spir_evaluate_funcs(const spir_funcs* uv, double x, double* out);
+int32_t spir_evaluate_funcs(const spir_funcs* funcs, double x, double* out);
 
 
 /**
  * @brief Evaluates basis functions at multiple Matsubara frequencies.
  *
- * This function evaluates all basis functions contained in a Matsubara basis functions object
- * at the specified Matsubara frequency indices. The values of each basis function at each
+ * This function evaluates all functions contained in a Matsubara functions object
+ * at the specified Matsubara frequency indices. The values of each function at each
  * frequency are stored in the output array.
  *
- * @param uiw Pointer to the Matsubara basis functions object
+ * @param uiw Pointer to the Matsubara functions object
  * @param order Specifies the memory layout of the output array:
  *             SPIR_ORDER_ROW_MAJOR for row-major order (frequency index varies fastest),
- *             SPIR_ORDER_COLUMN_MAJOR for column-major order (basis index varies fastest)
+ *             SPIR_ORDER_COLUMN_MAJOR for column-major order (function index varies fastest)
  * @param num_freqs Number of Matsubara frequencies at which to evaluate
  * @param matsubara_freq_indices Array of Matsubara frequency indices
- * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size n_basis x num_freqs.
+ * @param out Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size num_freqs x n_funcs.
  * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
  *
- * @note The output array must be pre-allocated with sufficient size to store all basis function values
+ * @note The output array must be pre-allocated with sufficient size to store all function values
  *       at all requested frequencies. Indices n correspond to ωn = nπ/β,
  *       where n are odd for fermionic frequencies and even for bosonic frequencies.
  */

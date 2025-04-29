@@ -599,14 +599,14 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
     }
 }
 
-int32_t spir_evaluate_funcs(const spir_funcs *u, double x, double *out)
+int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out)
 {
-    if (!u || !out) {
+    if (!funcs || !out) {
         return SPIR_INVALID_ARGUMENT;
     }
 
     try {
-        Eigen::VectorXd result = u->ptr->operator()(x);
+        Eigen::VectorXd result = funcs->ptr->operator()(x);
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
@@ -641,26 +641,28 @@ int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
         Eigen::VectorXi freq_indices =
             Eigen::Map<Eigen::VectorXi>(matsubara_freq_indices, num_freqs);
 
-        // Get the basis size
-        int basis_size = uiw->ptr->size();
+        // Get the func size
+        int func_size = uiw->ptr->size();
 
+        // Evaluate functions at all frequencies
+        // The operator() returns a matrix of shape (nfuncs, nfreqs)
         Eigen::MatrixXcd out_matrix = uiw->ptr->operator()(freq_indices);
 
+        // Copy the results to the output array
         for (int ifreq = 0; ifreq < num_freqs; ++ifreq) {
-            for (int ibasis = 0; ibasis < basis_size; ++ibasis) {
-                const auto &val = out_matrix(ibasis, ifreq);
+            for (int ifunc = 0; ifunc < func_size; ++ifunc) {
+                const auto &val = out_matrix(ifunc, ifreq);
                 if (order == SPIR_ORDER_ROW_MAJOR) {
-                    out[ifreq + ibasis * num_freqs] = {val.real(), val.imag()};
+                    out[ifreq * func_size + ifunc] = {val.real(), val.imag()};
                 } else {
-                    out[ibasis + ifreq * basis_size] = {val.real(), val.imag()};
+                    out[ifunc * num_freqs + ifreq] = {val.real(), val.imag()};
                 }
             }
         }
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_evaluate_matsubarabasis_functions: "
-                  << e.what());
+        DEBUG_LOG("Exception in spir_evaluate_matsubara_funcs: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }
