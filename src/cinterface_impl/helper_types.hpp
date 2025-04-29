@@ -26,6 +26,28 @@ public:
     }
 };
 
+// Abstract class for functions of a single variable 
+class AbstractContinuousFunction {
+public:
+    virtual ~AbstractContinuousFunction() = default;
+    virtual double operator()(double x) const = 0;
+};
+
+
+template<typename InternalType>
+class ContinuousFunction : public AbstractContinuousFunction {
+private:
+    std::shared_ptr<InternalType> impl;
+
+public:
+    ContinuousFunction(std::shared_ptr<InternalType> impl): impl(impl) {}
+
+    virtual double operator()(double x) const override {
+        return impl->operator()(x);
+    }
+};
+
+
 
 // Abstract class for functions of a single variable (in the imaginary time domain or the real frequency domain)
 class AbstractContinuousFunctions {
