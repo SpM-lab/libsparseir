@@ -131,6 +131,16 @@ public:
     virtual ~AbstractKernel() = default;
 };
 
+
+// Type trait to check if a type is a concrete kernel
+template <typename T>
+struct is_concrete_kernel {
+    static constexpr bool value = 
+        !std::is_abstract<T>::value && 
+        std::is_base_of<AbstractKernel, T>::value;
+};
+
+
 /**
  * @brief Non-templated base class for all reduced kernels.
  * This allows us to use dynamic_pointer_cast with all reduced kernel types.

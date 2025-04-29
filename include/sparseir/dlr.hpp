@@ -159,7 +159,7 @@ public:
     }
     double get_accuracy() const override { return basis.get_accuracy(); }
     double get_wmax() const override { return basis.get_wmax(); }
-    const Eigen::VectorXd default_tau_sampling_points() const override
+    Eigen::VectorXd default_tau_sampling_points() const override
     {
         return basis.default_tau_sampling_points();
     }

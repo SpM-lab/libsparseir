@@ -472,48 +472,6 @@ pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
         sve);
 }
 
-template <typename T>
-std::tuple<SVEResult, std::shared_ptr<AbstractSVE<T>>>
-pre_postprocess(const std::shared_ptr<AbstractKernel> &kernel,
-                double safe_epsilon, int n_gauss, double cutoff, int lmax)
-{
-    auto sve = determine_sve<T>(kernel, safe_epsilon, n_gauss);
-
-    std::vector<Eigen::MatrixX<T>> matrices = sve->matrices();
-    std::vector<
-        std::tuple<Eigen::MatrixX<T>, Eigen::VectorX<T>, Eigen::MatrixX<T>>>
-        svds;
-    for (const auto &mat : matrices) {
-        auto svd = sparseir::compute_svd(mat);
-        svds.push_back(svd);
-    }
-
-    std::vector<Eigen::MatrixX<T>> u_list, v_list;
-    std::vector<Eigen::VectorX<T>> s_list;
-    for (const auto &svd : svds) {
-        auto u = std::get<0>(svd);
-        auto s = std::get<1>(svd);
-        auto v = std::get<2>(svd);
-        u_list.push_back(u);
-        s_list.push_back(s);
-        v_list.push_back(v);
-    }
-
-    T cutoff_actual = std::isnan(cutoff)
-                          ? T(2) * T(std::numeric_limits<T>::epsilon())
-                          : T(cutoff);
-
-    std::vector<Eigen::MatrixX<T>> u_list_truncated;
-    std::vector<Eigen::VectorX<T>> s_list_truncated;
-    std::vector<Eigen::MatrixX<T>> v_list_truncated;
-
-    std::tie(u_list_truncated, s_list_truncated, v_list_truncated) =
-        truncate(u_list, s_list, v_list, cutoff_actual, lmax);
-
-    return std::make_tuple(
-        sve->postprocess(u_list_truncated, s_list_truncated, v_list_truncated),
-        sve);
-}
 
 template <typename K>
 SVEResult compute_sve(const K &kernel, double epsilon, double cutoff, int lmax,

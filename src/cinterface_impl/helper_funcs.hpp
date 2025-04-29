@@ -346,3 +346,33 @@ int32_t _spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_
         return SPIR_GET_IMPL_FAILED;
     }
 }
+
+
+template <typename K>
+spir_finite_temp_basis* _spir_finite_temp_basis_new_with_sve(
+    spir_statistics_type statistics, double beta, double omega_max,
+    const K& kernel, const spir_sve_result *sve)
+{
+    try {
+        auto sve_impl = get_impl_sve_result(sve);
+        if (!sve_impl)
+            return nullptr;
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {
+            using FiniteTempBasisType =
+                sparseir::FiniteTempBasis<sparseir::Fermionic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(
+                beta, omega_max, kernel, *sve_impl);
+            return create_finite_temp_basis(
+                std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
+        } else {
+            using FiniteTempBasisType =
+                sparseir::FiniteTempBasis<sparseir::Bosonic>;
+            auto impl = std::make_shared<FiniteTempBasisType>(
+                beta, omega_max, kernel, *sve_impl);
+            return create_finite_temp_basis(
+                std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
+        }
+    } catch (...) {
+        return nullptr;
+    }
+}
