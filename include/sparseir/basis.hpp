@@ -121,8 +121,8 @@ public:
         Δx=ωmax .* Δx(v_), symm=symm(v_))
         */
 
-        auto u_knots_ = u_.polyvec[0].knots;
-        auto v_knots_ = v_.polyvec[0].knots;
+        auto u_knots_ = u_.polyvec[0]->knots;
+        auto v_knots_ = v_.polyvec[0]->knots;
 
         Eigen::VectorXd u_knots = (beta / 2) * (u_knots_.array() + 1);
         Eigen::VectorXd v_knots = wmax * v_knots_;
@@ -131,11 +131,11 @@ public:
         Eigen::VectorXd deltax4v = wmax * v_.get_delta_x();
         std::vector<int> u_symm_vec;
         for (std::size_t i = 0; i < u_.size(); ++i) {
-            u_symm_vec.push_back(u_.polyvec[i].get_symm());
+            u_symm_vec.push_back(u_.polyvec[i]->get_symm());
         }
         std::vector<int> v_symm_vec;
         for (std::size_t i = 0; i < v_.size(); ++i) {
-            v_symm_vec.push_back(v_.polyvec[i].get_symm());
+            v_symm_vec.push_back(v_.polyvec[i]->get_symm());
         }
 
         Eigen::VectorXi u_symm =
@@ -159,7 +159,7 @@ public:
         this->uhat_full = std::make_shared<PiecewiseLegendreFTVector<S>>(
             uhat_base_full, statistics, kernel.conv_radius());
 
-        std::vector<PiecewiseLegendreFT<S>> uhat_polyvec;
+        std::vector<std::shared_ptr<PiecewiseLegendreFT<S>>> uhat_polyvec;
         for (int i = 0; i < this->s.size(); ++i) {
             uhat_polyvec.push_back(this->uhat_full->operator[](i));
         }
@@ -258,10 +258,10 @@ default_sampling_points(const PiecewiseLegendrePolyVector &u, int L)
         throw std::runtime_error("Expecting unscaled functions here.");
 
     if (static_cast<std::size_t>(L) < u.size()) {
-        return u.polyvec[L].roots();
+        return u.polyvec[L]->roots();
     } else {
         // Approximate roots by extrema
-        PiecewiseLegendrePoly poly = u.polyvec.back();
+        PiecewiseLegendrePoly poly = *u.polyvec.back();
         Eigen::VectorXd maxima = poly.deriv().roots();
 
         double left = (maxima[0] + poly.xmin) / 2.0;
@@ -333,9 +333,9 @@ std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points_impl(
     std::vector<MatsubaraFreq<S>> omega_n;
 
     if (l_requested < u_hat.size()) {
-        omega_n = sign_changes(u_hat[l_requested], positive_only);
+        omega_n = sign_changes(*u_hat[l_requested], positive_only);
     } else {
-        omega_n = find_extrema(u_hat[u_hat.size() - 1], positive_only);
+        omega_n = find_extrema(*u_hat[u_hat.size() - 1], positive_only);
     }
 
     std::size_t expected_size = l_requested;

@@ -185,7 +185,7 @@ Eigen::VectorXcd phase_stable(const PiecewiseLegendrePoly &poly, int wn);
 class PiecewiseLegendrePolyVector {
 public:
     // Member variable
-    std::vector<PiecewiseLegendrePoly> polyvec;
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> polyvec;
 
 public:
     // Default constructor
@@ -193,9 +193,12 @@ public:
 
     // Constructor with a vector of PiecewiseLegendrePoly
     explicit PiecewiseLegendrePolyVector(
-        const std::vector<PiecewiseLegendrePoly> &polyvec)
-        : polyvec(polyvec)
+        const std::vector<std::shared_ptr<PiecewiseLegendrePoly>> &polyvec_)
+        : polyvec(polyvec_.size())
     {
+        for (size_t i = 0; i < polyvec_.size(); ++i) {
+            polyvec[i] = polyvec_[i];
+        }
     }
 
     // Constructor with a 3D array, knots, and symmetry vector
@@ -219,23 +222,12 @@ public:
             Eigen::VectorXd delta_x =
                 (knots.tail(knots.size() - 1) - knots.head(knots.size() - 1))
                     .matrix();
-            polyvec[i] =
-                PiecewiseLegendrePoly(data, knots, static_cast<int>(i), delta_x,
-                                      symm.empty() ? 0 : symm[i]);
+            polyvec[i] = std::make_shared<PiecewiseLegendrePoly>(
+                data, knots, static_cast<int>(i), delta_x,
+                symm.empty() ? 0 : symm[i]);
         }
     }
 
-    /*
-    function PiecewiseLegendrePolyVector(polys::PiecewiseLegendrePolyVector,
-            knots::AbstractVector; Δx=diff(knots), symm=0)
-        length(polys) == length(symm) ||
-            throw(DimensionMismatch("Sizes of polys and symm don't match"))
-
-        PiecewiseLegendrePolyVector(map(zip(polys, symm)) do (poly, sym)
-            PiecewiseLegendrePoly(poly.data, knots, poly.l; Δx, symm=sym)
-        end)
-    end
-    */
     PiecewiseLegendrePolyVector(const PiecewiseLegendrePolyVector &polys,
                                 const Eigen::VectorXd &knots,
                                 const Eigen::VectorXd &Δx,
@@ -248,26 +240,15 @@ public:
                                         std::to_string(symm.size()));
         }
         for (size_t i = 0; i < polys.size(); ++i) {
-            polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(), knots,
-                                               polys[i].l, Δx, symm(i));
+            polyvec[i] = std::make_shared<PiecewiseLegendrePoly>(polys[i]->get_data(), knots,
+                                               polys[i]->l, Δx, symm(i));
         }
     }
 
-    /*
-    function PiecewiseLegendrePolyVector(data::AbstractArray{T,3},
-        polys::PiecewiseLegendrePolyVector) where {T}
-    size(data, 3) == length(polys) ||
-        throw(DimensionMismatch("Sizes of data and polys don't match"))
-
-    PiecewiseLegendrePolyVector(map(eachindex(polys)) do i
-        PiecewiseLegendrePoly(data[:, :, i], polys[i])
-    end)
-    }
-    */
     PiecewiseLegendrePolyVector(const Eigen::Tensor<double, 3> &data,
                                 const PiecewiseLegendrePolyVector &polys)
     {
-        std::vector<PiecewiseLegendrePoly> polyvec;
+        std::vector<std::shared_ptr<PiecewiseLegendrePoly>> polyvec;
         if (static_cast<size_t>(data.dimension(2)) != polys.size()) {
             throw std::invalid_argument("Sizes of data and polys don't match");
         }
@@ -280,15 +261,15 @@ public:
                                         static_cast<Eigen::Index>(i));
                 }
             }
-            auto p = PiecewiseLegendrePoly(data2d, polys[i]);
+            auto p = std::make_shared<PiecewiseLegendrePoly>(data2d, *polys[i]);
             polyvec.push_back(p);
         }
         this->polyvec = polyvec;
     }
 
     // Add iterator support
-    using iterator = std::vector<PiecewiseLegendrePoly>::iterator;
-    using const_iterator = std::vector<PiecewiseLegendrePoly>::const_iterator;
+    using iterator = std::vector<std::shared_ptr<PiecewiseLegendrePoly>>::iterator;
+    using const_iterator = std::vector<std::shared_ptr<PiecewiseLegendrePoly>>::const_iterator;
 
     // Iterator methods
     iterator begin() { return polyvec.begin(); }
@@ -299,38 +280,38 @@ public:
     // Accessors
     size_t size() const { return polyvec.size(); }
 
-    const PiecewiseLegendrePoly &operator[](size_t i) const
+    const std::shared_ptr<PiecewiseLegendrePoly> &operator[](size_t i) const
     {
         return polyvec[i];
     }
 
-    PiecewiseLegendrePoly &operator[](size_t i) { return polyvec[i]; }
+    std::shared_ptr<PiecewiseLegendrePoly> &operator[](size_t i) { return polyvec[i]; }
 
     // Functions to mimic Julia's property accessors
-    double xmin() const { return polyvec.empty() ? 0.0 : polyvec[0].xmin; }
-    double xmax() const { return polyvec.empty() ? 0.0 : polyvec[0].xmax; }
+    double xmin() const { return polyvec.empty() ? 0.0 : polyvec[0]->xmin; }
+    double xmax() const { return polyvec.empty() ? 0.0 : polyvec[0]->xmax; }
     Eigen::VectorXd get_knots() const
     {
-        return polyvec.empty() ? Eigen::VectorXd() : polyvec[0].knots;
+        return polyvec.empty() ? Eigen::VectorXd() : polyvec[0]->knots;
     }
     Eigen::VectorXd get_delta_x() const
     {
-        return polyvec.empty() ? Eigen::VectorXd() : polyvec[0].delta_x;
+        return polyvec.empty() ? Eigen::VectorXd() : polyvec[0]->delta_x;
     }
     int get_polyorder() const
     {
-        return polyvec.empty() ? 0 : polyvec[0].polyorder;
+        return polyvec.empty() ? 0 : polyvec[0]->polyorder;
     }
     Eigen::VectorXd get_norms() const
     {
-        return polyvec.empty() ? Eigen::VectorXd() : polyvec[0].norms;
+        return polyvec.empty() ? Eigen::VectorXd() : polyvec[0]->norms;
     }
 
     std::vector<int> get_symm() const
     {
         std::vector<int> symms(polyvec.size());
         for (size_t i = 0; i < polyvec.size(); ++i) {
-            symms[i] = polyvec[i].symm;
+            symms[i] = polyvec[i]->symm;
         }
         return symms;
     }
@@ -342,8 +323,8 @@ public:
             return Eigen::Tensor<double, 3>();
 
         int npolys = polyvec.size();
-        int nrows = polyvec[0].data.rows();
-        int ncols = polyvec[0].data.cols();
+        int nrows = polyvec[0]->data.rows();
+        int ncols = polyvec[0]->data.cols();
 
         Eigen::Tensor<double, 3> data(nrows, ncols, npolys);
         for (int i = 0; i < npolys; ++i) {
@@ -351,7 +332,7 @@ public:
                 for (int c = 0; c < ncols; ++c) {
                     data(static_cast<Eigen::Index>(r),
                          static_cast<Eigen::Index>(c),
-                         static_cast<Eigen::Index>(i)) = polyvec[i].data(r, c);
+                         static_cast<Eigen::Index>(i)) = polyvec[i]->data(r, c);
                 }
             }
         }
@@ -363,7 +344,7 @@ public:
     {
         Eigen::VectorXd results(polyvec.size());
         for (size_t i = 0; i < polyvec.size(); ++i) {
-            results[i] = polyvec[i](x);
+            results[i] = (*polyvec[i])(x);
         }
         return results;
     }
@@ -373,7 +354,7 @@ public:
     {
         Eigen::MatrixXd results(polyvec.size(), xs.size());
         for (size_t i = 0; i < polyvec.size(); ++i) {
-            results.row(i) = polyvec[i](xs);
+            results.row(i) = (*polyvec[i])(xs);
         }
         return results;
     }
@@ -636,7 +617,7 @@ std::complex<double> evalpoly(std::complex<double> x,
 template <typename S>
 class PiecewiseLegendreFTVector {
 private:
-    std::vector<PiecewiseLegendreFT<S>> polyvec;
+    std::vector<std::shared_ptr<PiecewiseLegendreFT<S>>> polyvec;
 
 public:
     // Default constructor
@@ -644,7 +625,7 @@ public:
 
     // Constructor from vector of PiecewiseLegendreFT<S>
     PiecewiseLegendreFTVector(
-        const std::vector<PiecewiseLegendreFT<S>> &polyvec_)
+        const std::vector<std::shared_ptr<PiecewiseLegendreFT<S>>> &polyvec_)
         : polyvec(polyvec_)
     {
     }
@@ -654,10 +635,10 @@ public:
         PiecewiseLegendrePolyVector &polys, S &stat,
         double n_asymp = std::numeric_limits<double>::infinity())
     {
-        std::vector<PiecewiseLegendreFT<S>> polyvec_;
+        std::vector<std::shared_ptr<PiecewiseLegendreFT<S>>> polyvec_;
         polyvec_.reserve(polys.size());
         for (const auto &poly : polys) {
-            polyvec_.push_back(PiecewiseLegendreFT<S>(poly, stat, n_asymp));
+            polyvec_.push_back(std::make_shared<PiecewiseLegendreFT<S>>(*poly, stat, n_asymp));
         }
         polyvec = polyvec_;
     }
@@ -666,10 +647,10 @@ public:
     size_t size() const { return polyvec.size(); }
 
     // Indexing operator (non-const)
-    PiecewiseLegendreFT<S> &operator[](size_t i) { return polyvec[i]; }
+    std::shared_ptr<PiecewiseLegendreFT<S>> &operator[](size_t i) { return polyvec[i]; }
 
     // Indexing operator (const)
-    const PiecewiseLegendreFT<S> &operator[](size_t i) const
+    const std::shared_ptr<PiecewiseLegendreFT<S>> &operator[](size_t i) const
     {
         return polyvec[i];
     }
@@ -678,7 +659,7 @@ public:
     PiecewiseLegendreFTVector
     operator[](const std::vector<size_t> &indices) const
     {
-        std::vector<PiecewiseLegendreFT<S>> new_polyvec;
+        std::vector<std::shared_ptr<PiecewiseLegendreFT<S>>> new_polyvec;
         new_polyvec.reserve(indices.size());
         for (size_t idx : indices) {
             new_polyvec.push_back(polyvec[idx]);
@@ -687,7 +668,7 @@ public:
     }
 
     // Set element at index i
-    void set(size_t i, const PiecewiseLegendreFT<S> &p)
+    void set(size_t i, const std::shared_ptr<PiecewiseLegendreFT<S>> &p)
     {
         if (i < polyvec.size()) {
             polyvec[i] = p;
@@ -704,16 +685,16 @@ public:
     double n_asymp() const
     {
         return polyvec.empty() ? std::numeric_limits<double>::infinity()
-                               : polyvec.front().get_n_asymp();
+                               : polyvec.front()->get_n_asymp();
     }
 
     // Get statistics from the first element
-    S statistics() const { return polyvec.front().get_statistics(); }
+    S statistics() const { return polyvec.front()->get_statistics(); }
 
     // Get zeta from the first element
     double zeta() const
     {
-        return polyvec.empty() ? 0.0 : polyvec.front().zeta();
+        return polyvec.empty() ? 0.0 : polyvec.front()->zeta();
     }
 
     // Overload operator() for MatsubaraFreq<S>
@@ -722,7 +703,7 @@ public:
         size_t num_funcs = polyvec.size();
         Eigen::VectorXcd result(num_funcs);
         for (size_t i = 0; i < num_funcs; ++i) {
-            result(i) = polyvec[i](omega);
+            result(i) = (*polyvec[i])(omega);
         }
         return result;
     }
@@ -741,7 +722,7 @@ public:
         Eigen::MatrixXcd result(num_funcs, num_freqs);
         for (size_t i = 0; i < num_funcs; ++i) {
             for (size_t j = 0; j < num_freqs; ++j) {
-                result(i, j) = polyvec[i](n_array[j]);
+                result(i, j) = (*polyvec[i])(n_array[j]);
             }
         }
         return result;

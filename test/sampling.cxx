@@ -46,10 +46,9 @@ TEST_CASE("TauSampling Constructor Test", "[sampling]")
         Eigen::Map<Eigen::MatrixXd>(mat_ref_vec.data(), 1, 19);
     Eigen::MatrixXd mat = eval_matrix(basis, x);
 
-    REQUIRE((*basis->u)[0](0.3) == Approx(0.8209004724107448));
-
-    REQUIRE((*basis->u)(x).transpose().isApprox(mat));
-    REQUIRE((*basis->u)(x).transpose().isApprox(mat_ref));
+    REQUIRE((*basis->u)[0]->operator()(0.3) == Approx(0.8209004724107448));
+    REQUIRE(basis->u->operator()(x).transpose().isApprox(mat));
+    REQUIRE(basis->u->operator()(x).transpose().isApprox(mat_ref));
 
     std::vector<double> sampling_points_ref_vec = {
         0.0036884193900212914, 0.019354981745749233, 0.04721451082761008,

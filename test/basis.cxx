@@ -71,13 +71,13 @@ TEST_CASE("basis.u[0] test", "[basis]")
 
     double x = 0.3;
     auto u0 = (*basis->u)[0];
-    auto u0x = u0(x);
+    //auto u0x = u0(x);
 
-    REQUIRE(u0.xmin == 0.0);
-    REQUIRE(u0.xmax == 1.0);
-    REQUIRE(u0.get_polyorder() == 16);
-    REQUIRE(u0.l == 0);
-    REQUIRE(u0.symm == 1);
+    REQUIRE(u0->xmin == 0.0);
+    REQUIRE(u0->xmax == 1.0);
+    REQUIRE(u0->get_polyorder() == 16);
+    REQUIRE(u0->l == 0);
+    REQUIRE(u0->symm == 1);
 
     vector<double> u_knot_ref_vec = {
         0.0,
@@ -112,7 +112,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
         0.9863765537872669,
         1.0,
     };
-    Eigen::Map<Eigen::VectorXd> u_knots(u0.knots.data(), u0.knots.size());
+    Eigen::Map<Eigen::VectorXd> u_knots(u0->knots.data(), u0->knots.size());
     REQUIRE(u_knots.isApprox(Eigen::Map<Eigen::VectorXd>(
         u_knot_ref_vec.data(), u_knot_ref_vec.size())));
 
@@ -128,14 +128,14 @@ TEST_CASE("basis.u[0] test", "[basis]")
         0.026348364680459868, 0.02324712520287775,  0.020424728514969015,
         0.01788673828888998,  0.015625091735571195, 0.013623446212733203,
     };
-    Eigen::Map<Eigen::VectorXd> u_delta_x(u0.delta_x.data(), u0.delta_x.size());
+    Eigen::Map<Eigen::VectorXd> u_delta_x(u0->delta_x.data(), u0->delta_x.size());
     REQUIRE(u_delta_x.isApprox(Eigen::Map<Eigen::VectorXd>(
         u_delta_x_ref_vec.data(), u_delta_x_ref_vec.size())));
 
-    REQUIRE(u0(0.3) == Approx(0.8209004724107448));
+    REQUIRE(u0->operator()(0.3) == Approx(0.8209004724107448));
     int i;
     double x_tilde;
-    std::tie(i, x_tilde) = u0.split(0.3);
+    std::tie(i, x_tilde) = u0->split(0.3);
     REQUIRE(i == 10);
     REQUIRE(x_tilde == Approx(0.9304866288710429));
 }
@@ -165,7 +165,7 @@ TEST_CASE("basis.u(x)", "[basis]")
         beta, wmax, 1e-15, kernel, sve_result);
     double x = 0.3;
     auto u0 = (*basis->u)[0];
-    auto u0x = u0(x);
+    //auto u0x = u0(x);
 
     vector<double> u0_data_vec = {
         0.1306343289249387,      -0.003088620328392153,
@@ -411,7 +411,7 @@ TEST_CASE("basis.u(x)", "[basis]")
     };
     Eigen::MatrixXd u0_data_mat_eigen =
         Eigen::Map<Eigen::MatrixXd>(u0_data_vec.data(), 16, 30);
-    REQUIRE(u0.data.isApprox(u0_data_mat_eigen));
+    REQUIRE(u0->data.isApprox(u0_data_mat_eigen));
 
     std::vector<double> u0_knots_vec = {
         0.0,
@@ -448,16 +448,16 @@ TEST_CASE("basis.u(x)", "[basis]")
     };
     Eigen::VectorXd u0_knots_vec_eigen =
         Eigen::Map<Eigen::VectorXd>(u0_knots_vec.data(), u0_knots_vec.size());
-    REQUIRE(u0_knots_vec_eigen.size() == u0.knots.size());
-    REQUIRE(u0_knots_vec_eigen.isApprox(u0.knots));
-    REQUIRE(u0.xmin == 0.0);
-    REQUIRE(u0.xmax == 1.0);
-    REQUIRE(u0.symm == 1);
-    REQUIRE(u0.polyorder == 16);
-    REQUIRE(u0.l == 0);
-    REQUIRE(u0.xm.size() == 30);
-    REQUIRE(u0.inv_xs.size() == 30);
-    REQUIRE(u0.norms.size() == 30);
+    REQUIRE(u0_knots_vec_eigen.size() == u0->knots.size());
+    REQUIRE(u0_knots_vec_eigen.isApprox(u0->knots));
+    REQUIRE(u0->xmin == 0.0);
+    REQUIRE(u0->xmax == 1.0);
+    REQUIRE(u0->symm == 1);
+    REQUIRE(u0->polyorder == 16);
+    REQUIRE(u0->l == 0);
+    REQUIRE(u0->xm.size() == 30);
+    REQUIRE(u0->inv_xs.size() == 30);
+    REQUIRE(u0->norms.size() == 30);
 }
 
 TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
@@ -641,8 +641,8 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         REQUIRE(std::fabs(s_double[30] - s_ref[30]) < 1e-10);
         REQUIRE(std::fabs(s_double[31] - s_ref[31]) < 1e-10);
 
-        REQUIRE((*sve_result.u)[0].data.rows() == 10);
-        REQUIRE((*sve_result.u)[0].data.cols() == 32);
+        REQUIRE((*sve_result.u)[0]->data.rows() == 10);
+        REQUIRE((*sve_result.u)[0]->data.cols() == 32);
 
         std::vector<double> u_knots_ref = {-1.0,
                                            -0.9768276289532026,
@@ -679,7 +679,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
                                            1.0};
         Eigen::VectorXd u_knots_ref_eigen =
             Eigen::Map<Eigen::VectorXd>(u_knots_ref.data(), u_knots_ref.size());
-        REQUIRE((*sve_result.u)[0].knots.isApprox(u_knots_ref_eigen));
+        REQUIRE((*sve_result.u)[0]->knots.isApprox(u_knots_ref_eigen));
 
         std::vector<double> v_knots_ref = {-1.0,
                                            -0.9833147686254275,
@@ -728,31 +728,31 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
                                            1.0};
         Eigen::VectorXd v_knots_ref_eigen =
             Eigen::Map<Eigen::VectorXd>(v_knots_ref.data(), v_knots_ref.size());
-        REQUIRE((*sve_result.v)[0].knots.isApprox(v_knots_ref_eigen));
+        REQUIRE((*sve_result.v)[0]->knots.isApprox(v_knots_ref_eigen));
 
-        REQUIRE((*sve_result.u)[1].xmin == -1.0);
-        REQUIRE((*sve_result.u)[1].xmax == 1.0);
+        REQUIRE((*sve_result.u)[1]->xmin == -1.0);
+        REQUIRE((*sve_result.u)[1]->xmax == 1.0);
 
-        REQUIRE((*sve_result.v)[1].xmin == -1.0);
-        REQUIRE((*sve_result.v)[1].xmax == 1.0);
+        REQUIRE((*sve_result.v)[1]->xmin == -1.0);
+        REQUIRE((*sve_result.v)[1]->xmax == 1.0);
 
-        REQUIRE((*sve_result.u)[0].l == 0);
-        REQUIRE((*sve_result.u)[1].l == 1);
-        REQUIRE((*sve_result.u)[2].l == 2);
+        REQUIRE((*sve_result.u)[0]->l == 0);
+        REQUIRE((*sve_result.u)[1]->l == 1);
+        REQUIRE((*sve_result.u)[2]->l == 2);
 
-        REQUIRE((*sve_result.v)[0].l == 0);
-        REQUIRE((*sve_result.v)[1].l == 1);
-        REQUIRE((*sve_result.v)[2].l == 2);
+        REQUIRE((*sve_result.v)[0]->l == 0);
+        REQUIRE((*sve_result.v)[1]->l == 1);
+        REQUIRE((*sve_result.v)[2]->l == 2);
 
-        REQUIRE((*sve_result.u)[0].symm == 1);
-        REQUIRE((*sve_result.u)[1].symm == -1);
-        REQUIRE((*sve_result.u)[2].symm == 1);
-        REQUIRE((*sve_result.u)[3].symm == -1);
+        REQUIRE((*sve_result.u)[0]->symm == 1);
+        REQUIRE((*sve_result.u)[1]->symm == -1);
+        REQUIRE((*sve_result.u)[2]->symm == 1);
+        REQUIRE((*sve_result.u)[3]->symm == -1);
 
-        REQUIRE((*sve_result.v)[0].symm == 1);
-        REQUIRE((*sve_result.v)[1].symm == -1);
-        REQUIRE((*sve_result.v)[2].symm == 1);
-        REQUIRE((*sve_result.v)[3].symm == -1);
+        REQUIRE((*sve_result.v)[0]->symm == 1);
+        REQUIRE((*sve_result.v)[1]->symm == -1);
+        REQUIRE((*sve_result.v)[2]->symm == 1);
+        REQUIRE((*sve_result.v)[3]->symm == -1);
 
         // std::cout << "Singular values: " << s.transpose() << std::endl;
 

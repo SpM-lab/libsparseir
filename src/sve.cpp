@@ -31,10 +31,10 @@ SVEResult::part(double eps, int max_size) const
     if (max_size > 0) {
         cut = std::min(cut, max_size);
     }
-    std::vector<PiecewiseLegendrePoly> u_part_(u->begin(), u->begin() + cut);
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> u_part_(u->begin(), u->begin() + cut);
     PiecewiseLegendrePolyVector u_part(u_part_);
     Eigen::VectorXd s_part(s.head(cut));
-    std::vector<PiecewiseLegendrePoly> v_part_(v->begin(), v->begin() + cut);
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> v_part_(v->begin(), v->begin() + cut);
     PiecewiseLegendrePolyVector v_part(v_part_);
     return std::make_tuple(u_part, s_part, v_part);
 }
@@ -144,35 +144,12 @@ void canonicalize(PiecewiseLegendrePolyVector &u,
                   PiecewiseLegendrePolyVector &v)
 {
     for (size_t i = 0; i < u.size(); ++i) {
-        double gauge = std::copysign(1.0, u.polyvec[i](1.0));
-        u.polyvec[i].data *= gauge;
-        v.polyvec[i].data *= gauge;
+        double gauge = std::copysign(1.0, (*u.polyvec[i])(1.0));
+        u.polyvec[i]->data *= gauge;
+        v.polyvec[i]->data *= gauge;
     }
 }
 
-/*
-SVEResult compute_sve(const std::shared_ptr<AbstractKernel> &kernel,
-                      double epsilon, double cutoff, int lmax, int n_gauss,
-                      std::string Twork)
-{
-    double safe_epsilon;
-    std::string Twork_actual;
-    std::string svd_strategy_actual;
-    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
-        sparseir::auto_choose_accuracy(epsilon, Twork);
-
-    if (Twork_actual == "Float64") {
-        return std::get<0>(pre_postprocess<double>(kernel, safe_epsilon,
-                                                   n_gauss, cutoff, lmax));
-    } else if (Twork_actual == "Float64x2") {
-        return std::get<0>(pre_postprocess<xprec::DDouble>(
-            kernel, safe_epsilon, n_gauss, cutoff, lmax));
-    } else {
-        throw std::invalid_argument(
-            "Twork must be either 'Float64' or 'Float64x2'");
-    }
-}
-*/
 
 // Explicit template instantiations
 template SVEResult compute_sve(const LogisticKernel &, double, double, int, int,

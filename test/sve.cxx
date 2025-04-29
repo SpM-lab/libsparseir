@@ -32,15 +32,15 @@ TEST_CASE("sve_result.u(x)", "[sve]")
     auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     double x = 0.3;
     auto u0 = (*sve_result.u)[0];
-    auto u0x = u0(x);
-    REQUIRE(u0.l == 0);
-    REQUIRE(u0.symm == 1);
-    REQUIRE(u0.polyorder == 16);
-    REQUIRE(u0.xmin == -1.0);
-    REQUIRE(u0.xmax == 1.0);
-    REQUIRE(u0.xm.size() == 30);
-    REQUIRE(u0.inv_xs.size() == 30);
-    REQUIRE(u0.norms.size() == 30);
+    auto u0x = u0->operator()(x);
+    REQUIRE(u0->l == 0);
+    REQUIRE(u0->symm == 1);
+    REQUIRE(u0->polyorder == 16);
+    REQUIRE(u0->xmin == -1.0);
+    REQUIRE(u0->xmax == 1.0);
+    REQUIRE(u0->xm.size() == 30);
+    REQUIRE(u0->inv_xs.size() == 30);
+    REQUIRE(u0->norms.size() == 30);
     std::vector<double> u0_data_vec = {
         0.1306343289249387,      -0.003088620328392153,
         4.332434116041884e-5,    -4.051803535484306e-7,
@@ -285,7 +285,7 @@ TEST_CASE("sve_result.u(x)", "[sve]")
     };
     Eigen::MatrixXd u0_data_mat_eigen =
         Eigen::Map<Eigen::MatrixXd>(u0_data_vec.data(), 16, 30);
-    REQUIRE(u0.data.isApprox(u0_data_mat_eigen));
+    REQUIRE(u0->data.isApprox(u0_data_mat_eigen));
 
     std::vector<double> u0_knots_vec = {
         -1.0,
@@ -322,8 +322,8 @@ TEST_CASE("sve_result.u(x)", "[sve]")
     };
     Eigen::VectorXd u0_knots_vec_eigen =
         Eigen::Map<Eigen::VectorXd>(u0_knots_vec.data(), u0_knots_vec.size());
-    REQUIRE(u0_knots_vec_eigen.size() == u0.knots.size());
-    REQUIRE(u0_knots_vec_eigen.isApprox(u0.knots));
+    REQUIRE(u0_knots_vec_eigen.size() == u0->knots.size());
+    REQUIRE(u0_knots_vec_eigen.isApprox(u0->knots));
 }
 
 // Function to check smoothness
@@ -1713,7 +1713,7 @@ end
 TEST_CASE("SVEResult::part", "[sve]")
 {
     // Create dummy polynomial vectors (default-constructed)
-    std::vector<sparseir::PiecewiseLegendrePoly> dummy(4);
+    std::vector<std::shared_ptr<sparseir::PiecewiseLegendrePoly>> dummy(4);
     sparseir::PiecewiseLegendrePolyVector u_dummy(dummy);
     sparseir::PiecewiseLegendrePolyVector v_dummy(dummy);
 

@@ -146,8 +146,8 @@ SVEResult SamplingSVE<K, T>::postprocess(
         }
     }
 
-    std::vector<PiecewiseLegendrePoly> polyvec_u;
-    std::vector<PiecewiseLegendrePoly> polyvec_v;
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> polyvec_u;
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> polyvec_v;
     std::vector<double> segs_x_double(segs_x.size());
     std::vector<double> segs_y_double(segs_y.size());
 
@@ -171,7 +171,7 @@ SVEResult SamplingSVE<K, T>::postprocess(
         }
 
         polyvec_u.push_back(
-            PiecewiseLegendrePoly(slice_double, knots_x, i, diff(knots_x)));
+            std::make_shared<PiecewiseLegendrePoly>(slice_double, knots_x, i, diff(knots_x)));
     }
 
     for (int i = 0; i < v_data.dimension(2); ++i) {
@@ -183,7 +183,7 @@ SVEResult SamplingSVE<K, T>::postprocess(
         }
 
         polyvec_v.push_back(
-            PiecewiseLegendrePoly(slice_double, knots_y, i, diff(knots_y)));
+            std::make_shared<PiecewiseLegendrePoly>(slice_double, knots_y, i, diff(knots_y)));
     }
 
     PiecewiseLegendrePolyVector ulx(polyvec_u);
@@ -240,7 +240,7 @@ SVEResult CentrosymmSVE<K, T>::postprocess(
     SVEResult result_odd =
         odd.postprocess({u_list[1]}, {s_list[1]}, {v_list[1]});
 
-    std::vector<PiecewiseLegendrePoly> u_merged;
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> u_merged;
     u_merged.reserve(result_even.u->size() + result_odd.u->size());
     u_merged.insert(u_merged.end(), result_even.u->begin(),
                     result_even.u->end());
@@ -249,7 +249,7 @@ SVEResult CentrosymmSVE<K, T>::postprocess(
     Eigen::VectorXd s_merged(result_even.s.size() + result_odd.s.size());
     s_merged << result_even.s, result_odd.s;
 
-    std::vector<PiecewiseLegendrePoly> v_merged;
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> v_merged;
     v_merged.reserve(result_even.v->size() + result_odd.v->size());
     v_merged.insert(v_merged.end(), result_even.v->begin(),
                     result_even.v->end());
@@ -271,8 +271,8 @@ SVEResult CentrosymmSVE<K, T>::postprocess(
 
     assert(sorted_indices.size() == s_merged.size());
 
-    std::vector<PiecewiseLegendrePoly> u_sorted(sorted_indices.size());
-    std::vector<PiecewiseLegendrePoly> v_sorted(sorted_indices.size());
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> u_sorted(sorted_indices.size());
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> v_sorted(sorted_indices.size());
     Eigen::VectorXi signs_sorted(sorted_indices.size());
     Eigen::VectorXd s_sorted(sorted_indices.size());
 
@@ -302,19 +302,19 @@ SVEResult CentrosymmSVE<K, T>::postprocess(
     Eigen::VectorXd segs_y =
         Eigen::Map<Eigen::VectorXd>(segs_y_double.data(), segs_y_double.size());
 
-    std::vector<PiecewiseLegendrePoly> u_complete_vec;
-    std::vector<PiecewiseLegendrePoly> v_complete_vec;
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> u_complete_vec;
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> v_complete_vec;
 
-    Eigen::VectorXd poly_flip_x(u_sorted[0].data.rows());
-    for (int i = 0; i < u_sorted[0].data.rows(); ++i) {
+    Eigen::VectorXd poly_flip_x(u_sorted[0]->data.rows());
+    for (int i = 0; i < u_sorted[0]->data.rows(); ++i) {
         poly_flip_x(i) = (i % 2 == 0) ? 1.0 : -1.0;
     }
 
     for (size_t i = 0; i < u_sorted.size(); ++i) {
         Eigen::MatrixXd u_pos_data =
-            u_sorted[i].data.template cast<double>() / std::sqrt(2);
+            u_sorted[i]->data.template cast<double>() / std::sqrt(2);
         Eigen::MatrixXd v_pos_data =
-            v_sorted[i].data.template cast<double>() / std::sqrt(2);
+            v_sorted[i]->data.template cast<double>() / std::sqrt(2);
 
         Eigen::MatrixXd u_neg_data = u_pos_data.rowwise().reverse();
         u_neg_data =
@@ -338,9 +338,9 @@ SVEResult CentrosymmSVE<K, T>::postprocess(
             segs_y.tail(segs_y.size() - 1) - segs_y.head(segs_y.size() - 1);
 
         u_complete_vec.push_back(
-            PiecewiseLegendrePoly(u_data, segs_x, i, segs_x_diff, signs[i]));
+            std::make_shared<PiecewiseLegendrePoly>(u_data, segs_x, i, segs_x_diff, signs[i]));
         v_complete_vec.push_back(
-            PiecewiseLegendrePoly(v_data, segs_y, i, segs_y_diff, signs[i]));
+            std::make_shared<PiecewiseLegendrePoly>(v_data, segs_y, i, segs_y_diff, signs[i]));
     }
 
     PiecewiseLegendrePolyVector u_complete(u_complete_vec);
