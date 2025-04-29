@@ -104,7 +104,7 @@ public:
      *
      * @return True if the kernel is centrosymmetric, false otherwise.
      */
-    virtual bool is_centrosymmetric() const { return false; }
+    virtual bool is_centrosymmetric() const = 0;
 
     /**
      * @brief Power with which the y coordinate scales.
@@ -961,6 +961,10 @@ public:
         }
     }
 
+    virtual bool is_centrosymmetric() const override {
+        return false;
+    }
+
     /**
      * @brief Get the inner kernel.
      *
@@ -1006,6 +1010,10 @@ public:
         if (sign != -1) {
             throw std::invalid_argument("sign must be -1");
         }
+    }
+
+    virtual bool is_centrosymmetric() const override {
+        return false;
     }
 
     /**
