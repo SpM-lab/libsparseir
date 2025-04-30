@@ -201,6 +201,12 @@ bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
     double max_diff = diff_vec.maxCoeff();
     double max_ref = ref_vec.maxCoeff();
 
+    // debug
+    if (max_diff > epsilon * max_ref) {
+        std::cout << "max_diff: " << max_diff << std::endl;
+        std::cout << "max_ref: " << max_ref << std::endl;
+    }
+
     return max_diff <= epsilon * max_ref;
 }
 
@@ -350,6 +356,9 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<double, ndim, ORDER> gtau_from_DLR =
         _evaluate_gtau<double, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
+    // debug
+    std::cout << "gtau_from_IR: " << gtau_from_IR << std::endl;
+    std::cout << "gtau_from_DLR: " << gtau_from_DLR << std::endl;
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, epsilon));
 
@@ -421,7 +430,19 @@ void integration_test(double beta, double wmax, double epsilon,
 TEST_CASE("Integration Test", "[cinterface]")
 {
     std::vector<int> extra_dims = {};
-    integration_test<sparseir::Fermionic, sparseir::LogisticKernel, 1,
-                     Eigen::ColMajor>(1.0, 10.0, 1e-10, extra_dims, 0,
+    double beta = 1.0;
+    double wmax = 100.0;
+    double epsilon = 1e-10;
+
+    //integration_test<sparseir::Fermionic, sparseir::LogisticKernel, 1,
+                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                      //SPIR_ORDER_COLUMN_MAJOR);
+
+    //integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                      //SPIR_ORDER_COLUMN_MAJOR);
+
+    integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
+                     Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       SPIR_ORDER_COLUMN_MAJOR);
 }

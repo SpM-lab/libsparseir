@@ -12,11 +12,24 @@ class MatsubaraPoles {
 public:
     double beta;
     Eigen::VectorXd poles;
+    double wmax;
+    std::vector<double> weights;
 
-    MatsubaraPoles(double beta, const Eigen::VectorXd &poles)
-        : beta(beta), poles(poles)
+    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double)> weight_func)   
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+    {
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            weights[i] = weight_func(poles(i) / wmax);
+        }
+    }
+
+    template <typename T = Statistics>
+    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax,
+                   typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
     {
     }
+
 
     // Return the size of the poles vector
     std::size_t size() const { return poles.size(); }
@@ -42,8 +55,9 @@ public:
     {
         Eigen::VectorXcd result(poles.size());
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            result(i) =
-                std::tanh(beta * poles(i) / 2.0) / (n.valueim(beta) - poles(i));
+            double y = poles(i) / wmax;
+            double weight = weights[i];
+            result(i) = 1.0 / ((n.valueim(beta) - poles(i)) * weight);
         }
         return result;
     }
@@ -71,28 +85,51 @@ class TauPoles {
 public:
     double beta;
     Eigen::VectorXd poles;
-    double omega_max;
+    double wmax;
+    std::vector<double> weights;
 
-    TauPoles(double beta, const Eigen::VectorXd &poles)
-        : beta(beta), poles(poles), omega_max(poles.array().abs().maxCoeff())
+    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double)> weight_func)
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+    {
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            weights[i] = weight_func(poles(i) / wmax);
+        }
+    }
+
+    template <typename T = S>
+    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
     {
     }
+
 
     // Return the size of the poles vector
     std::size_t size() const { return poles.size(); }
 
     // Evaluate at tau points
+    template <typename T = S,
+              typename std::enable_if<std::is_same<T, Fermionic>::value, int>::type = 0>
     Eigen::VectorXd operator()(double tau) const
     {
         Eigen::VectorXd result(poles.size());
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
             double x = poles(i);
             double xtau = x * tau;
-            if (std::is_same<S, Fermionic>::value) {
-                result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x));
-            } else {
-                result(i) = std::exp(-xtau) / (1.0 - std::exp(-beta * x));
-            }
+            result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x)) / weights[i];
+        }
+        return result;
+    }
+
+    template <typename T = S,
+              typename std::enable_if<std::is_same<T, Bosonic>::value, int>::type = 0>
+    Eigen::VectorXd operator()(double tau) const
+    {
+        Eigen::VectorXd result(poles.size());
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            double w = poles(i);
+            double xtau = w * tau;
+            // FIXME: accuracy is not good for beta * x ~ 0.0
+            result(i) = -std::exp(-xtau) / (1.0 - std::exp(-beta * w)) / weights[i];
         }
         return result;
     }
@@ -121,18 +158,20 @@ class DiscreteLehmannRepresentation : public AbstractBasis<S> {
 public:
     FiniteTempBasis<S> basis;
     Eigen::VectorXd poles;
+    double wmax;
     std::shared_ptr<TauPoles<S>> u;
     std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
+    std::function<double(double)> weight_func;
 
     // Constructor with basis and poles
     DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b,
                                   const Eigen::VectorXd &poles)
         : basis(b),
           poles(poles),
-          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles)),
-          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles))
+          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func)),
+          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func))
     {
         // Fitting matrix from IR
         Eigen::MatrixXd A = (*basis.v)(poles);
@@ -143,6 +182,9 @@ public:
         fitmat = (-A_array * s_array.replicate(1, A.cols())).matrix();
 
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+        weight_func = basis.weight_func;
+        wmax = basis.get_wmax();
     }
 
     // Constructor with just basis

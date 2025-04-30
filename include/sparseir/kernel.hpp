@@ -403,7 +403,11 @@ private:
  * In dimensionless variables x = 2τ/β - 1, y = βω/Λ, the integral kernel is a
  * function on [-1, 1] × [-1, 1]:
  *
- *     K(x, y) = y * exp(-Λ y (x + 1) / 2) / (exp(-Λ y) - 1)
+ *     K(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
+ * 
+ * This non-dimensionalized kernel is connected to the dimensionalized kernel as
+ *     K(τ, ω) = ωmax * K(2τ/β - 1, ω/ωmax),
+ * where ωmax = Λ/β.
  *
  * Care has to be taken in evaluating this expression around y = 0.
  */

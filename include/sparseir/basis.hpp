@@ -64,6 +64,8 @@ public:
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat;
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat_full;
 
+    std::function<double(double)> weight_func; // weight function especially for bosonic basis
+
     template <typename K, typename = typename std::enable_if<is_concrete_kernel<K>::value>::type>
     FiniteTempBasis(double beta, double omega_max, double epsilon,
                     const K& kernel)
@@ -95,6 +97,7 @@ public:
         this->beta = beta;
         this->lambda = kernel.lambda_;
         this->sve_result = std::make_shared<SVEResult>(sve_result);
+        this->weight_func = kernel.template weight_func<double>(S());
 
         double wmax = this->lambda / beta;
 
@@ -148,7 +151,7 @@ public:
         this->v = std::make_shared<PiecewiseLegendrePolyVector>(
             v_, v_knots, deltax4v, v_symm);
         this->s =
-            (std::sqrt(beta / 2 * wmax) * std::pow(wmax, -(kernel.ypower()))) *
+            (std::sqrt(beta * wmax / 2) * std::pow(wmax, (kernel.ypower()))) *
             s_;
 
         Eigen::Tensor<double, 3> udata3d = sve_result.u->get_data();
@@ -190,7 +193,7 @@ public:
     FiniteTempBasis<S> operator[](const std::pair<int, int> &range) const
     {
         int new_size = range.second - range.first + 1;
-        return FiniteTempBasis<S>(statistics(), this->get_beta(), get_wmax(),
+        return FiniteTempBasis<S>(statistics(), this->get_beta(), this->get_wmax(),
                                   0.0, new_size, lambda, sve_result);
     }
 
