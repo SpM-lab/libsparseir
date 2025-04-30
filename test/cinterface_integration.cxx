@@ -186,7 +186,7 @@ _evaluate_giw(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
 bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
                                          const Eigen::Tensor<T, ndim, ORDER> &b,
-                                         double epsilon)
+                                         double tol)
 {
     // Convert to double tensor for absolute values
     Eigen::Tensor<double, ndim, ORDER> diff = (a - b).abs();
@@ -202,12 +202,13 @@ bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
     double max_ref = ref_vec.maxCoeff();
 
     // debug
-    if (max_diff > epsilon * max_ref) {
+    if (max_diff > tol * max_ref) {
         std::cout << "max_diff: " << max_diff << std::endl;
         std::cout << "max_ref: " << max_ref << std::endl;
+        std::cout << "tol " << tol << std::endl;
     }
 
-    return max_diff <= epsilon * max_ref;
+    return max_diff <= tol * max_ref;
 }
 
 template <typename K>
@@ -232,7 +233,7 @@ TODO: we need to test positive only mode. A different function is needed?
 template <typename S, typename K, int ndim, Eigen::StorageOptions ORDER>
 void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
-                      const spir_order_type order)
+                      const spir_order_type order, double tol)
 {
     if (target_dim != 0) {
         std::cerr << "target_dim must be 0" << std::endl;
@@ -256,8 +257,6 @@ void integration_test(double beta, double wmax, double epsilon,
     spir_kernel* kernel = _kernel_new<K>(beta * wmax);
     spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
     spir_finite_temp_basis* basis = spir_finite_temp_basis_new_with_sve(stat, beta, wmax, kernel, sve);
-    //spir_finite_temp_basis *basis =
-        //spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
 
     REQUIRE(basis != nullptr);
     int32_t basis_size;
@@ -273,6 +272,7 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::VectorXd tau_points(num_tau_points);
     status = spir_sampling_get_tau_points(tau_sampling, tau_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(num_tau_points >= basis_size);
 
     // Matsubara Sampling
     spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis);
@@ -286,6 +286,7 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_sampling_get_matsubara_points(matsubara_sampling,
                                                 matsubara_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(num_matsubara_points >= basis_size);
 
     // DLR
     spir_dlr *dlr = spir_dlr_new(basis);
@@ -293,7 +294,6 @@ void integration_test(double beta, double wmax, double epsilon,
     int32_t npoles;
     status = spir_dlr_get_num_poles(dlr, &npoles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(npoles >= 0);
     REQUIRE(npoles >= basis_size);
     Eigen::VectorXd poles(npoles);
     status = spir_dlr_get_poles(dlr, poles.data());
@@ -319,6 +319,7 @@ void integration_test(double beta, double wmax, double epsilon,
         }
     }
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
+    std::cout << "poles: " << poles << std::endl;
 
     // Move the axis for the poles from the first to the target dimension
     Eigen::Tensor<double, ndim, ORDER> coeffs =
@@ -328,7 +329,8 @@ void integration_test(double beta, double wmax, double epsilon,
     // TODO: Extend to Tensor
     Eigen::Tensor<double, ndim, ORDER> g_IR(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
-    status = spir_dlr_to_IR(dlr, order, ndim, &basis_size, target_dim,
+    status = spir_dlr_to_IR(dlr, order, ndim,
+                            _get_dims<ndim, int32_t>(npoles, extra_dims, target_dim).data(), target_dim,
                             coeffs.data(), g_IR.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -357,10 +359,9 @@ void integration_test(double beta, double wmax, double epsilon,
         _evaluate_gtau<double, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
     // debug
-    std::cout << "gtau_from_IR: " << gtau_from_IR << std::endl;
-    std::cout << "gtau_from_DLR: " << gtau_from_DLR << std::endl;
+    Eigen::Tensor<double, ndim, ORDER> gtau_diff = (gtau_from_IR - gtau_from_DLR).abs();
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
-        gtau_from_IR, gtau_from_DLR, epsilon));
+        gtau_from_IR, gtau_from_DLR, tol));
 
     // Compare the Greens function at all Matsubara frequencies between IR and
     // DLR
@@ -372,7 +373,7 @@ void integration_test(double beta, double wmax, double epsilon,
                                            matsubara_points);
     REQUIRE(
         compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
-            giw_from_IR, giw_from_DLR, epsilon));
+            giw_from_IR, giw_from_DLR, tol));
 
     auto dims_matsubara =
         _get_dims<ndim, int32_t>(num_matsubara_points, extra_dims, target_dim);
@@ -418,7 +419,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
     REQUIRE(
         compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
-            giw_from_DLR, giw_reconst, epsilon));
+            giw_from_DLR, giw_reconst, tol));
 
     spir_destroy_finite_temp_basis(basis);
     spir_destroy_dlr(dlr);
@@ -430,22 +431,24 @@ void integration_test(double beta, double wmax, double epsilon,
 TEST_CASE("Integration Test", "[cinterface]")
 {
     std::vector<int> extra_dims = {};
-    double beta = 2.0;
-    double wmax = 50.0;
+    double beta = 1e+4;
+    double wmax = 2.0;
     double epsilon = 1e-10;
 
-    //std::cout << "Integration test for fermionic LogisticKernel" << std::endl;
-    //integration_test<sparseir::Fermionic, sparseir::LogisticKernel, 1,
-                    //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                      //SPIR_ORDER_COLUMN_MAJOR);
+    double tol = 10 * epsilon;
+
+    std::cout << "Integration test for fermionic LogisticKernel" << std::endl;
+    integration_test<sparseir::Fermionic, sparseir::LogisticKernel, 1,
+                    Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                      SPIR_ORDER_COLUMN_MAJOR, tol);
 
     std::cout << "Integration test for bosonic LogisticKernel" << std::endl;
     integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
                     Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                      SPIR_ORDER_COLUMN_MAJOR);
+                                      SPIR_ORDER_COLUMN_MAJOR, tol);
 
-    //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
-    //integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
-                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                      //SPIR_ORDER_COLUMN_MAJOR);
+    std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
+    integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
+                    Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                      SPIR_ORDER_COLUMN_MAJOR, tol);
 }

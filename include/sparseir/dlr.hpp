@@ -111,11 +111,15 @@ public:
               typename std::enable_if<std::is_same<T, Fermionic>::value, int>::type = 0>
     Eigen::VectorXd operator()(double tau) const
     {
+        auto kernel = LogisticKernel(beta * wmax); // k(x, y)
         Eigen::VectorXd result(poles.size());
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            double x = poles(i);
-            double xtau = x * tau;
-            result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x)) / weights[i];
+            //double x = poles(i);
+            //double xtau = x * tau;
+            //result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x)) / weights[i];
+            double x = 2 * tau / beta - 1.0;
+            double y = poles(i) / wmax;
+            result(i) = - kernel.compute(x, y) / weights[i];
         }
         return result;
     }
@@ -140,9 +144,9 @@ public:
 
             // FIXME: accuracy is not good for beta * x ~ 0.0
             //result(i) = -std::exp(-xtau) / (1.0 - std::exp(-beta * w)) / weights[i];
-            //std::cout << "k_tau_omega: " << k_tau_omega << std::endl;
-            //std::cout << "w: " << w << std::endl;
-            //std::cout << "weights[i]: " << weights[i] << std::endl;
+            std::cout << "k_tau_omega: " << k_tau_omega << std::endl;
+            std::cout << "w: " << w << std::endl;
+            std::cout << "weights[i]: " << weights[i] << std::endl;
             result(i) = - k_tau_omega / (w * weights[i]);
         }
         return result;
@@ -219,6 +223,7 @@ public:
         Eigen::ArrayXd s_array = basis.s.array();
 
         // Perform element-wise multiplication
+        // size: (size of basis, size of poles)
         fitmat = (-A_array * s_array.replicate(1, A.cols())).matrix();
 
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);

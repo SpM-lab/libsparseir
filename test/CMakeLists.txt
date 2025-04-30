@@ -15,23 +15,23 @@ enable_testing()
 
 # List of all test files
 set(TEST_FILES
-    #utils.cxx
-    #linalg.cxx
-    #specfuncs.cxx
-    #root.cxx
-    #gauss.cxx
-    #freq.cxx
-    #poly.cxx
-    #kernel.cxx
-    #svd.cxx
-    #sve.cxx
-    #basis.cxx
-    #augment.cxx
-    #sampling.cxx
-    #dlr.cxx
-    #cinterface_core.cxx
-    #cinterface_sampling.cxx
-    #cinterface_dlr.cxx
+    utils.cxx
+    linalg.cxx
+    specfuncs.cxx
+    root.cxx
+    gauss.cxx
+    freq.cxx
+    poly.cxx
+    kernel.cxx
+    svd.cxx
+    sve.cxx
+    basis.cxx
+    augment.cxx
+    sampling.cxx
+    dlr.cxx
+    cinterface_core.cxx
+    cinterface_sampling.cxx
+    cinterface_dlr.cxx
     cinterface_integration.cxx
 )
 
