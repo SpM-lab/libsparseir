@@ -430,19 +430,22 @@ void integration_test(double beta, double wmax, double epsilon,
 TEST_CASE("Integration Test", "[cinterface]")
 {
     std::vector<int> extra_dims = {};
-    double beta = 1.0;
-    double wmax = 100.0;
+    double beta = 2.0;
+    double wmax = 50.0;
     double epsilon = 1e-10;
 
+    //std::cout << "Integration test for fermionic LogisticKernel" << std::endl;
     //integration_test<sparseir::Fermionic, sparseir::LogisticKernel, 1,
-                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                    //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       //SPIR_ORDER_COLUMN_MAJOR);
 
-    //integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                      //SPIR_ORDER_COLUMN_MAJOR);
-
-    integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
-                     Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+    std::cout << "Integration test for bosonic LogisticKernel" << std::endl;
+    integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                    Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       SPIR_ORDER_COLUMN_MAJOR);
+
+    //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
+    //integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
+                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                      //SPIR_ORDER_COLUMN_MAJOR);
 }

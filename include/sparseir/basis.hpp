@@ -64,7 +64,7 @@ public:
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat;
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat_full;
 
-    std::function<double(double)> weight_func; // weight function especially for bosonic basis
+    std::function<double(double, double)> weight_func; // weight function especially for bosonic basis
 
     template <typename K, typename = typename std::enable_if<is_concrete_kernel<K>::value>::type>
     FiniteTempBasis(double beta, double omega_max, double epsilon,

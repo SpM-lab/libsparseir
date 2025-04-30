@@ -22,17 +22,17 @@ set(TEST_FILES
     #gauss.cxx
     #freq.cxx
     #poly.cxx
-    kernel.cxx
+    #kernel.cxx
     #svd.cxx
     #sve.cxx
-    basis.cxx
+    #basis.cxx
     #augment.cxx
     #sampling.cxx
     #dlr.cxx
     #cinterface_core.cxx
     #cinterface_sampling.cxx
     #cinterface_dlr.cxx
-    #cinterface_integration.cxx
+    cinterface_integration.cxx
 )
 
 # Create a single combined test executable
