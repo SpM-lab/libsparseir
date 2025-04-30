@@ -130,13 +130,6 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
         Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
             out, output_dims_3d);
 
-        // output input_dims_3d and output_dims_3d
-        std::cout << "input_dims_3d: " << input_dims_3d[0] << ", "
-                  << input_dims_3d[1] << ", " << input_dims_3d[2] << std::endl;
-        std::cout << "output_dims_3d: " << output_dims_3d[0] << ", "
-                  << output_dims_3d[1] << ", " << output_dims_3d[2]
-                  << std::endl;
-
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     }
 }

@@ -130,15 +130,26 @@ int32_t status;
 double beta = 10.0;        // Inverse temperature
 double omega_max = 10.0;   // Ultraviolet cutoff
 double epsilon = 1e-8;     // Accuracy target
-spir_fermionic_finite_temp_basis* basis =
-    spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
+
+// Create a logistic kernel
+spir_kernel* kernel = spir_logistic_kernel_new(beta * omega_max);
+
+// Create a pre-computed SVE result
+spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
+
+// Create a fermionic finite temperature basis with pre-computed SVE result
+// Use SPIR_STATISTICS_BOSONIC for bosonic basis
+spir_finite_temp_basis* basis =
+    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_FERMIONIC, beta, omega_max, kernel, sve);
 
 int n_basis;
-status = spir_fermionic_finite_temp_basis_get_size(basis, &n_basis);
+status = spir_finite_temp_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Evaluate the basis functions at a given tau point
-spir_funcs* u = spir_fermionic_finite_temp_basis_get_u(basis);
+spir_funcs* u;
+status = spir_finite_temp_basis_get_u(basis, &u);
+assert(status == SPIR_COMPUTATION_SUCCESS);
 double tau = 0.5 * beta;
 double* uval = (double*)malloc(n_basis * sizeof(double));
 status = spir_evaluate_funcs(u, tau, uval);
@@ -148,7 +159,9 @@ for (int i = 0; i < n_basis; ++i) {
 }
 
 // Evaluate the basis functions at a given omega point
-spir_funcs* v = spir_fermionic_finite_temp_basis_get_v(basis);
+spir_funcs* v;
+status = spir_finite_temp_basis_get_v(basis, &v);
+assert(status == SPIR_COMPUTATION_SUCCESS);
 double omega = 0.5 * omega_max;
 double* vval = (double*)malloc(n_basis * sizeof(double));
 status = spir_evaluate_funcs(v, omega, vval);
@@ -165,10 +178,11 @@ for (int i = 0; i < n_freqs; ++i) {
 }
 
 c_complex* uhat_val = (c_complex*)malloc(n_basis * n_freqs * sizeof(c_complex));
-spir_matsubara_funcs* uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
+spir_matsubara_funcs* uhat;
+status = spir_finite_temp_basis_get_uhat(basis, &uhat);
+assert(status == SPIR_COMPUTATION_SUCCESS);
 status = spir_evaluate_matsubara_funcs(uhat, SPIR_ORDER_COLUMN_MAJOR, n_freqs, matsubara_freq_indices, uhat_val);
 assert(status == SPIR_COMPUTATION_SUCCESS);
-
 
 // Clean up (in arbitrary order)
 free(uval);
@@ -176,70 +190,14 @@ free(vval);
 spir_destroy_funcs(u);
 spir_destroy_funcs(v);
 spir_destroy_matsubara_funcs(uhat);
-spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_finite_temp_basis(basis);
 ```
 
-### Bosonic basis with logistic kernel
+### Bosonic basis
 
-We can create a bosonic basis using the logistic kernel as discussed in the [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
-This can be achived by replacing `fermionic` by `bosonic` in the fermionic basis construction code.
-
-```c
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <complex.h>
-#include <assert.h>
-#include <sparseir/sparseir.h>
-
-typedef double _Complex c_complex;
-
-int32_t status;
-
-// Create a bosonic finite temperature basis
-double beta = 10.0;        // Inverse temperature
-double omega_max = 10.0;   // Ultraviolet cutoff
-double epsilon = 1e-8;     // Accuracy target
-spir_bosonic_finite_temp_basis* basis =
-    spir_bosonic_finite_temp_basis_new(beta, omega_max, epsilon);
-
-int n_basis;
-status = spir_bosonic_finite_temp_basis_get_size(basis, &n_basis);
-assert(status == SPIR_COMPUTATION_SUCCESS);
-
-// Evaluate the basis functions at a given tau point
-spir_funcs* u = spir_bosonic_finite_temp_basis_get_u(basis);
-double tau = 0.5 * beta;
-double* uval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_funcs(u, tau, uval);
-assert(status == SPIR_COMPUTATION_SUCCESS);
-for (int i = 0; i < n_basis; ++i) {
-    printf("u[%d] = %f\n", i, uval[i]);
-}
-
-// Evaluate the basis functions at a given omega point
-spir_funcs* v = spir_bosonic_finite_temp_basis_get_v(basis);
-double omega = 0.5 * omega_max;
-double* vval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_funcs(v, omega, vval);
-assert(status == SPIR_COMPUTATION_SUCCESS);
-for (int i = 0; i < n_basis; ++i) {
-    printf("v[%d] = %f\n", i, vval[i]);
-}
-
-// Clean up (in arbitrary order)
-free(uval);
-free(vval);
-spir_destroy_funcs(u);
-spir_destroy_funcs(v);
-spir_destroy_bosonic_finite_temp_basis(basis);
-```
-
-### Constructing a basis with pre-computed SVE
-
-One can use the pre-computed SVE result to create the basis, which is more efficient when multiple bases with the same kernel are needed.
-Possible choices of kernels are `spir_logistic_kernel_new` (default choice in the basis constructor) and `spir_regularized_bose_kernel_new` (only for bosonic basis, not a default choice).
-The following example demonstrates how to create a bosonic basis using the regularized bosonic kernel and pre-computed SVE result.
+A bosonic basis can be created by replacing `SPIR_STATISTICS_FERMIONIC` with `SPIR_STATISTICS_BOSONIC` in the fermionic basis construction code.
+We can use either `spir_logistic_kernel_new` or `spir_regularized_bose_kernel_new` for a bosonic basis.
+For the definitions, we refer to the [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
 
 ```c
 #include <stdio.h>
@@ -258,45 +216,34 @@ double beta = 10.0;        // Inverse temperature
 double omega_max = 10.0;   // Ultraviolet cutoff
 double epsilon = 1e-8;     // Accuracy target
 
-spir_kernel* kernel = spir_regularized_bose_kernel_new(beta * omega_max);
-spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
+// Create a logistic kernel
+spir_kernel* logistic_kernel = spir_logistic_kernel_new(beta * omega_max);
 
-spir_bosonic_finite_temp_basis* basis = spir_bosonic_finite_temp_basis_new_with_sve(beta, omega_max, kernel, sve);
+// Create a pre-computed SVE result
+spir_sve_result* sve_logistic = spir_sve_result_new(logistic_kernel, epsilon);
 
-int n_basis;
-status = spir_bosonic_finite_temp_basis_get_size(basis, &n_basis);
-assert(status == SPIR_COMPUTATION_SUCCESS);
+// Create fermionic and bosonic finite temperature bases with pre-computed SVE result
+spir_finite_temp_basis* basis_fermionic =
+    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_FERMIONIC, beta, omega_max, logistic_kernel, sve_logistic);
 
-// Evaluate the basis functions at a given tau point
-spir_funcs* u = spir_bosonic_finite_temp_basis_get_u(basis);
-double tau = 0.5 * beta;
-double* uval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_funcs(u, tau, uval);
-assert(status == SPIR_COMPUTATION_SUCCESS);
-for (int i = 0; i < n_basis; ++i) {
-    printf("u[%d] = %f\n", i, uval[i]);
-}
+spir_finite_temp_basis* basis_bosonic =
+    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_BOSONIC, beta, omega_max, logistic_kernel, sve_logistic);
 
-// Evaluate the basis functions at a given omega point
-spir_funcs* v = spir_bosonic_finite_temp_basis_get_v(basis);
-double omega = 0.5 * omega_max;
-double* vval = (double*)malloc(n_basis * sizeof(double));
-status = spir_evaluate_funcs(v, omega, vval);
-assert(status == SPIR_COMPUTATION_SUCCESS);
-for (int i = 0; i < n_basis; ++i) {
-    printf("v[%d] = %f\n", i, vval[i]);
-}
+// Create a regularized bosonic basis
+spir_kernel* regularized_kernel = spir_regularized_bose_kernel_new(beta * omega_max);
+spir_sve_result* sve_regularized = spir_sve_result_new(regularized_kernel, epsilon);
+spir_finite_temp_basis* basis_regularized =
+    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_BOSONIC, beta, omega_max, regularized_kernel, sve_regularized);
 
 // Clean up (in arbitrary order)
-free(uval);
-free(vval);
-spir_destroy_kernel(kernel);
-spir_destroy_sve_result(sve);
-spir_destroy_funcs(u);
-spir_destroy_funcs(v);
-spir_destroy_bosonic_finite_temp_basis(basis);
+spir_destroy_kernel(logistic_kernel);
+spir_destroy_sve_result(sve_logistic);
+spir_destroy_kernel(regularized_kernel);
+spir_destroy_sve_result(sve_regularized);
+spir_destroy_finite_temp_basis(basis_fermionic);
+spir_destroy_finite_temp_basis(basis_bosonic);
+spir_destroy_finite_temp_basis(basis_regularized);
 ```
-
 
 ### Sparse Sampling
 The following example demonstrates how to transform a single-variable Green's function between Matsubara frequency and imaginary-time domains.
@@ -323,12 +270,12 @@ typedef double _Complex c_complex;
 double beta = 10.0;        // Inverse temperature
 double omega_max = 10.0;   // Ultraviolet cutoff
 double epsilon = 1e-8;     // Accuracy target
-spir_fermionic_finite_temp_basis* basis =
-    spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon);
+spir_finite_temp_basis* basis =
+    spir_finite_temp_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon); // default choice of kernel is logistic kernel
 
 // Create sampling objects for imaginary-time and Matsubara domains
-spir_sampling* tau_sampling = spir_fermionic_tau_sampling_new(basis);
-spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis);
+spir_sampling* tau_sampling = spir_tau_sampling_new(basis);
+spir_sampling* matsubara_sampling = spir_matsubara_sampling_new(basis);
 
 // Create Green's function with a pole at 0.5*omega_max
 int n_matsubara;
@@ -356,56 +303,13 @@ int target_dim = 0; // target dimension for evaluation and fit
 
 // Matsubara sampling points to basis coefficients
 int n_basis;
-status = spir_fermionic_finite_temp_basis_get_size(basis, &n_basis);
+status = spir_finite_temp_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 c_complex* g_fit = (c_complex*)malloc(n_basis * sizeof(c_complex));
 int dims[1] = {n_matsubara};
 status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
                              1, dims, target_dim, g_matsubara, g_fit);
 assert(status == SPIR_COMPUTATION_SUCCESS);
-
-// Evaluate the basis coefficients at Matsubara frequencies
-{
-    int n_freqs_test = 10;
-    int* matsubara_freq_indices_test = (int*)malloc(n_freqs_test * sizeof(int));
-    for (int in = 0; in < n_freqs_test; ++in) {
-        matsubara_freq_indices_test[in] = 2 * in + 1; // fermionic Matsubara frequency
-    }
-    c_complex* uhat_val = (c_complex*)malloc(n_basis * n_freqs_test * sizeof(c_complex));
-    spir_matsubara_funcs* uhat = spir_fermionic_finite_temp_basis_get_uhat(basis);
-    status = spir_evaluate_matsubara_funcs(uhat, SPIR_ORDER_COLUMN_MAJOR, n_freqs_test, matsubara_freq_indices_test, uhat_val);
-    assert(status == SPIR_COMPUTATION_SUCCESS);
-    for (int ifreq = 0; ifreq < n_freqs_test; ++ifreq) {
-        c_complex actual = 0.0;
-        for (int ibasis = 0; ibasis < n_basis; ++ibasis) {
-            actual += uhat_val[ibasis + ifreq * n_basis] * g_fit[ibasis];
-        }
-        c_complex expected = 1.0 / (I * matsubara_freq_indices_test[ifreq] * M_PI / beta - pole_position);
-        assert(cabs(actual - expected) < epsilon);
-    }
-    free(uhat_val);
-    spir_destroy_matsubara_funcs(uhat);
-}
-
-// Evaluate the basis coefficients at imaginary times
-{
-    double tau = 0.000001 * beta;
-    double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
-    spir_funcs* u = spir_fermionic_finite_temp_basis_get_u(basis);
-    double* uval = (double*)malloc(n_basis * sizeof(double));
-    status = spir_evaluate_funcs(u, tau, uval);
-    assert(status == SPIR_COMPUTATION_SUCCESS);
-
-    double actual = 0.0;
-    for (int i = 0; i < n_basis; ++i) {
-        actual += creal(g_fit[i]) * uval[i];
-    }
-    printf("actual: %f, expected: %f\n", actual, expected);
-    assert(fabs(actual - expected) < epsilon);
-
-    free(uval);
-    spir_destroy_funcs(u);
-}
 
 // Basis coefficients to imaginary-time sampling points
 int n_tau;
@@ -450,13 +354,10 @@ free(g_matsubara);
 free(g_fit);
 free(g_fit2);
 free(g_tau);
-spir_destroy_fermionic_finite_temp_basis(basis);
+spir_destroy_finite_temp_basis(basis);
 spir_destroy_sampling(tau_sampling);
 spir_destroy_sampling(matsubara_sampling);
 ```
-
-We can create a bosonic basis using the logistic kernel as discussed in the [SparseIR Tutorial](https://spm-lab.github.io/sparse-ir-tutorial/).
-This can be achived by replacing `fermionic` by `bosonic` in the above code.
 
 ## Calling from C++
 We have to be careful about the interoperability between `double _Complex` and `std::complex<double>`.
