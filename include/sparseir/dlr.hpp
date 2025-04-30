@@ -12,11 +12,24 @@ class MatsubaraPoles {
 public:
     double beta;
     Eigen::VectorXd poles;
+    double wmax;
+    std::vector<double> weights;
 
-    MatsubaraPoles(double beta, const Eigen::VectorXd &poles)
-        : beta(beta), poles(poles)
+    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)   
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+    {
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            weights[i] = weight_func(beta, poles(i));
+        }
+    }
+
+    template <typename T = Statistics>
+    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax,
+                   typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
     {
     }
+
 
     // Return the size of the poles vector
     std::size_t size() const { return poles.size(); }
@@ -42,8 +55,9 @@ public:
     {
         Eigen::VectorXcd result(poles.size());
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            result(i) =
-                std::tanh(beta * poles(i) / 2.0) / (n.valueim(beta) - poles(i));
+            double y = poles(i) / wmax;
+            double weight = weights[i];
+            result(i) = 1.0 / ((n.valueim(beta) - poles(i)) * weight);
         }
         return result;
     }
@@ -71,28 +85,69 @@ class TauPoles {
 public:
     double beta;
     Eigen::VectorXd poles;
-    double omega_max;
+    double wmax;
+    std::vector<double> weights;
 
-    TauPoles(double beta, const Eigen::VectorXd &poles)
-        : beta(beta), poles(poles), omega_max(poles.array().abs().maxCoeff())
+    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+    {
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            weights[i] = weight_func(beta, poles(i));
+        }
+    }
+
+    template <typename T = S>
+    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
     {
     }
+
 
     // Return the size of the poles vector
     std::size_t size() const { return poles.size(); }
 
     // Evaluate at tau points
+    template <typename T = S,
+              typename std::enable_if<std::is_same<T, Fermionic>::value, int>::type = 0>
+    Eigen::VectorXd operator()(double tau) const
+    {
+        auto kernel = LogisticKernel(beta * wmax); // k(x, y)
+        Eigen::VectorXd result(poles.size());
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            //double x = poles(i);
+            //double xtau = x * tau;
+            //result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x)) / weights[i];
+            double x = 2 * tau / beta - 1.0;
+            double y = poles(i) / wmax;
+            result(i) = - kernel.compute(x, y) / weights[i];
+        }
+        return result;
+    }
+
+    template <typename T = S,
+              typename std::enable_if<std::is_same<T, Bosonic>::value, int>::type = 0>
     Eigen::VectorXd operator()(double tau) const
     {
         Eigen::VectorXd result(poles.size());
+
+        // k(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
+        auto kernel = RegularizedBoseKernel(beta * wmax); // k(x, y)
+
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            double x = poles(i);
-            double xtau = x * tau;
-            if (std::is_same<S, Fermionic>::value) {
-                result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x));
-            } else {
-                result(i) = std::exp(-xtau) / (1.0 - std::exp(-beta * x));
-            }
+            double w = poles(i);
+            double x = 2.0 * tau / beta - 1.0;
+            double y = w / wmax;
+            double xtau = w * tau;
+
+            // k(τ, ω) = ωmax * k(2τ/β - 1, ω/ωmax) = ω * exp(- τ * ω) / (1 - exp(-beta * ω))
+            double k_tau_omega = wmax * kernel.compute(x, y);
+
+            // FIXME: accuracy is not good for beta * x ~ 0.0
+            //result(i) = -std::exp(-xtau) / (1.0 - std::exp(-beta * w)) / weights[i];
+            std::cout << "k_tau_omega: " << k_tau_omega << std::endl;
+            std::cout << "w: " << w << std::endl;
+            std::cout << "weights[i]: " << weights[i] << std::endl;
+            result(i) = - k_tau_omega / (w * weights[i]);
         }
         return result;
     }
@@ -111,9 +166,35 @@ public:
 template <typename S>
 Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
 {
-    Eigen::VectorXd y =
-        default_sampling_points(*(basis.sve_result->v), basis.size());
-    return basis.get_wmax() * y;
+    Eigen::VectorXd y = default_sampling_points(*(basis.sve_result->v), basis.size());
+    
+    // If the number of points is even, return as is
+    if (y.size() % 2 == 0) {
+        return basis.get_wmax() * y;
+    }
+    
+    // For odd number of points, we need to handle the symmetry
+    int n = y.size();
+    int n_half = (n - 1) / 2;  // number of positive frequencies excluding zero
+    
+    // Create a new vector with 2*n_half + 2 elements
+    Eigen::VectorXd y_new(2*n_half + 2);
+    
+    // Copy positive frequencies (excluding zero)
+    y_new.head(n_half) = y.tail(n_half);
+    
+    // Add the new points (half of the smallest positive frequency)
+    double min_pos = y_new(0);  // smallest positive frequency
+    y_new(n_half) = min_pos/2.0;
+    y_new(n_half+1) = -min_pos/2.0;
+    
+    // Copy positive frequencies to negative side
+    y_new.tail(n_half) = -y_new.head(n_half);
+    
+    // Sort the frequencies
+    std::sort(y_new.data(), y_new.data() + y_new.size());
+    
+    return basis.get_wmax() * y_new;
 }
 
 template <typename S>
@@ -121,18 +202,20 @@ class DiscreteLehmannRepresentation : public AbstractBasis<S> {
 public:
     FiniteTempBasis<S> basis;
     Eigen::VectorXd poles;
+    double wmax;
     std::shared_ptr<TauPoles<S>> u;
     std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
+    std::function<double(double, double)> weight_func;
 
     // Constructor with basis and poles
     DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b,
                                   const Eigen::VectorXd &poles)
         : basis(b),
           poles(poles),
-          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles)),
-          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles))
+          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func)),
+          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func))
     {
         // Fitting matrix from IR
         Eigen::MatrixXd A = (*basis.v)(poles);
@@ -140,9 +223,13 @@ public:
         Eigen::ArrayXd s_array = basis.s.array();
 
         // Perform element-wise multiplication
+        // size: (size of basis, size of poles)
         fitmat = (-A_array * s_array.replicate(1, A.cols())).matrix();
 
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+        weight_func = basis.weight_func;
+        wmax = basis.get_wmax();
     }
 
     // Constructor with just basis

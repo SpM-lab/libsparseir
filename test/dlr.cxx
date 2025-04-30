@@ -117,6 +117,8 @@ TEST_CASE("DLR Tests", "[dlr]")
     {
         double beta = M_PI;
         Eigen::Vector3d poles(2.0, 3.3, 9.3);
+        double wmax = 10.0;
+        REQUIRE(wmax >= poles.array().abs().maxCoeff());
 
         // Choose 100 random odd integers between -12345 and 987
         std::vector<int> n;
@@ -130,7 +132,7 @@ TEST_CASE("DLR Tests", "[dlr]")
         }
 
         REQUIRE(n.size() == 100);
-        sparseir::MatsubaraPoles<sparseir::Fermionic> mpb(beta, poles);
+        sparseir::MatsubaraPoles<sparseir::Fermionic> mpb(beta, poles, wmax);
 
         Eigen::MatrixXcd result = mpb(n);
 
@@ -148,8 +150,12 @@ TEST_CASE("DLR Tests", "[dlr]")
     {
         double beta = M_PI;
         Eigen::Vector3d poles(2.0, 3.3, 9.3);
+        double wmax = 10.0;
+        REQUIRE(wmax >= poles.array().abs().maxCoeff());
 
-        sparseir::MatsubaraPoles<sparseir::Bosonic> mbp(beta, poles);
+        sparseir::LogisticKernel kernel(beta * wmax);
+
+        sparseir::MatsubaraPoles<sparseir::Bosonic> mbp(beta, poles, wmax, kernel.template weight_func<double>(sparseir::Bosonic{}));
         // Choose 100 random even integers between -234 and 13898
         std::vector<int> n;
         std::mt19937 gen(42);

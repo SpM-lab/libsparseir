@@ -1210,20 +1210,11 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
         int evaluate_status = spir_sampling_evaluate_zz(
             sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
             evaluate_input, evaluate_output);
-        // input dims, target_dim
-        printf("input dims: %d, %d, %d, %d\n", dims[0], dims[1], dims[2], dims[3]);
-        printf("target dim: %d\n", target_dim);
-        // output basis size
-        printf("basis size: %d\n", basis_size);
-        // output n_points
-        printf("n_points: %d\n", n_points);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
-        std::cout << "fit" << std::endl;
         int fit_status =
             spir_sampling_fit_zz(sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims,
                                  target_dim, evaluate_output, fit_output);
-        std::cout << "fit_status: " << fit_status << std::endl;
         REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare results

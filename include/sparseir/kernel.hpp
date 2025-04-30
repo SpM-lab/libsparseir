@@ -50,16 +50,19 @@ public:
         return std::vector<std::shared_ptr<AbstractKernel>>();
     }
 
+    /**
+     * @brief Return the weight function for given statistics.
+     *
+     * @param statistics 'F' for fermions or 'B' for bosons.
+     */
     template <typename T>
-    std::function<T(T)> weight_func(Fermionic) const
-    {
-        return [](T) { return 1.0; };
+    std::function<T(T, T)> weight_func(Fermionic) const {
+        return [](T beta, T omega) { return 1.0; };
     }
 
     template <typename T>
-    std::function<T(T)> weight_func(Bosonic) const
-    {
-        return [](T) { return 1.0; };
+    std::function<T(T, T)> weight_func(Bosonic) const {
+        return [](T beta, T omega) { return 1.0; };
     }
 
     virtual double compute(
@@ -321,23 +324,17 @@ public:
      */
     double conv_radius() const override { return 40.0 * this->lambda_; }
 
-    /**
-     * @brief Return the weight function for given statistics.
-     *
-     * @param statistics 'F' for fermions or 'B' for bosons.
-     * @return A function representing the weight function w(y).
-     */
     template <typename T>
-    std::function<T(T)> weight_func(Fermionic) const
+    std::function<T(T, T)> weight_func(Fermionic) const
     {
-        return [](T) { return 1.0; };
+        return [](T beta , T omega) { return 1.0; };
     }
 
     template <typename T>
-    std::function<T(T)> weight_func(Bosonic) const
+    std::function<T(T, T)> weight_func(Bosonic) const
     {
         using std::tanh;
-        return [this](T y) { return 1.0 / tanh(0.5 * this->lambda_ * y); };
+        return [this](T beta, T omega) { return 1.0 / tanh(0.5 * beta * omega); };
     }
 
 private:
@@ -403,7 +400,11 @@ private:
  * In dimensionless variables x = 2τ/β - 1, y = βω/Λ, the integral kernel is a
  * function on [-1, 1] × [-1, 1]:
  *
- *     K(x, y) = y * exp(-Λ y (x + 1) / 2) / (exp(-Λ y) - 1)
+ *     K(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
+ * 
+ * This non-dimensionalized kernel is connected to the dimensionalized kernel as
+ *     K(τ, ω) = ωmax * K(2τ/β - 1, ω/ωmax),
+ * where ωmax = Λ/β.
  *
  * Care has to be taken in evaluating this expression around y = 0.
  */
@@ -511,7 +512,7 @@ public:
     double conv_radius() const override { return 40.0 * this->lambda_; }
 
     template <typename T>
-    std::function<T(T)> weight_func(Fermionic) const
+    std::function<T(T, T)> weight_func(Fermionic) const
     {
         std::cerr
             << "RegularizedBoseKernel does not support fermionic functions"
@@ -521,10 +522,10 @@ public:
     }
 
     template <typename T>
-    std::function<T(T)> weight_func(Bosonic) const
+    std::function<T(T, T)> weight_func(Bosonic) const
     {
         using std::tanh;
-        return [this](T y) { return static_cast<T>(1.0) / y; };
+        return [this](T beta, T omega) { return static_cast<T>(1.0) / omega; };
     }
 
     template <typename T>

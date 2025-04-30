@@ -476,16 +476,14 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic>;
         using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic>;
 
-        std::pair<std::shared_ptr<FermKernel>, std::shared_ptr<BosKernel>> bases =
-            sparseir::finite_temp_bases(beta, omega_max, epsilon);
+        std::pair<std::shared_ptr<FermKernel>, std::shared_ptr<BosKernel>>
+            bases = sparseir::finite_temp_bases(beta, omega_max, epsilon);
 
         // Create the basis set without template parameter
-        sparseir::FiniteTempBasisSet bs(
-            bases.first,
-            bases.second,
-            Eigen::VectorXd(),  // Empty tau vector
-            std::vector<int>(), // Empty wn_f vector
-            std::vector<int>()  // Empty wn_b vector
+        sparseir::FiniteTempBasisSet bs(bases.first, bases.second,
+                                        Eigen::VectorXd(),  // Empty tau vector
+                                        std::vector<int>(), // Empty wn_f vector
+                                        std::vector<int>()  // Empty wn_b vector
         );
 
         // Use s (singular values) instead of singular_values() method
@@ -508,8 +506,9 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         using FermKernel = sparseir::FiniteTempBasis<sparseir::Fermionic>;
         using BosKernel = sparseir::FiniteTempBasis<sparseir::Bosonic>;
 
-        std::pair<std::shared_ptr<FermKernel>, std::shared_ptr<BosKernel>> bases =
-            sparseir::finite_temp_bases(beta, omega_max, epsilon, sve_result);
+        std::pair<std::shared_ptr<FermKernel>, std::shared_ptr<BosKernel>>
+            bases = sparseir::finite_temp_bases(beta, omega_max, epsilon,
+                                                sve_result);
 
         // Create shared pointers for the bases
         std::shared_ptr<FermKernel> basis_f_ptr = bases.first;
@@ -538,9 +537,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
         auto sve_result = sparseir::compute_sve(kernel, epsilon);
         sparseir::FiniteTempBasis<sparseir::Fermionic> basis(
-            beta, omega_max, epsilon,
-            kernel,
-            sve_result);
+            beta, omega_max, epsilon, kernel, sve_result);
         REQUIRE(sve_result.s.size() > 0);
         REQUIRE(basis.s.size() > 0);
         double scale = std::sqrt(beta / 2.0 * omega_max);
@@ -565,9 +562,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
         auto sve_result = sparseir::compute_sve(kernel, epsilon);
         sparseir::FiniteTempBasis<sparseir::Fermionic> basis(
-            beta, omega_max, epsilon,
-            kernel,
-            sve_result);
+            beta, omega_max, epsilon, kernel, sve_result);
         sparseir::FiniteTempBasis<sparseir::Fermionic> rescaled_basis =
             basis.rescale(2.0);
         REQUIRE(rescaled_basis.sve_result->s.size() ==
@@ -584,9 +579,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
         auto sve_result = sparseir::compute_sve(kernel, epsilon);
         auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic>(
-            beta, omega_max, epsilon,
-            kernel,
-            sve_result);
+            beta, omega_max, epsilon, kernel, sve_result);
         auto s = sve_result.s;
         // REQUIRE(s.size() == 32);
 
@@ -765,47 +758,72 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         */
     }
 
-    SECTION("RegularizedBoseKernel epsilon = 1e-6")
+    SECTION("LogisticKernel reconstruction, epsilon = 1e-10")
     {
-        double beta = 2.0;
-        double omega_max = 5.0;
-        double epsilon = 1e-6;
-        auto rbk = sparseir::RegularizedBoseKernel(10.0);
-        auto sve_result = SVECache::get_sve_result(rbk, epsilon);
-        auto basis = sparseir::FiniteTempBasis<sparseir::Bosonic>(
-            beta, omega_max, rbk, sve_result);
-        Eigen::VectorXd s = basis.s;
-        std::vector<double> s_ref = {
-            0.10510068935158154,   0.09586154039284563,  0.030202857804989477,
-            0.012403239133253094,  0.003620231925658172, 0.0008751907696266496,
-            0.0001785603501618872, 3.146583475667217e-5, 4.873570749209003e-6,
-            6.728252233050357e-7};
-        Eigen::VectorXd s_ref_eigen =
-            Eigen::Map<Eigen::VectorXd>(s_ref.data(), s_ref.size());
-        REQUIRE(s.isApprox(s_ref_eigen));
+        double beta = 10.0;
+        double omega_max = 10.0;
+        double epsilon = 1e-10;
+
+        auto kernel = sparseir::LogisticKernel(beta * omega_max);
+        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
+        auto basis_f =
+            make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
+                beta, omega_max, epsilon, kernel, sve_result);
+
+        for (double tau :
+             {1e-1 * beta, 0.5 * beta, 0.9 * beta}) {
+            for (double omega :
+                 {1e-1 * omega_max, 0.5 * omega_max, 0.9 * omega_max}) {
+                double x = 2.0 * tau / beta - 1.0;
+                double y = omega / omega_max;
+
+                // Compute kernel value directly
+                double kernel_value = kernel.compute(x, y);
+
+                // Compute reconstruction using basis functions
+                double reconstruction = 0.0;
+                for (int l = 0; l < basis_f->size(); ++l) {
+                    reconstruction += basis_f->s[l] * (*basis_f->u)[l](tau) *
+                                      (*basis_f->v)[l](omega);
+                }
+
+                REQUIRE(std::abs(kernel_value - reconstruction) < 10 * epsilon);
+            }
+        }
     }
 
-    SECTION("RegularizedBoseKernel epsilon = 1e-10")
+    SECTION("RegularizedBoseKernel reconstruction, epsilon = 1e-10")
     {
-        double beta = 2.0;
-        double omega_max = 5.0;
+        double beta = 10.0;
+        double omega_max = 10.0;
         double epsilon = 1e-10;
-        auto rbk = sparseir::RegularizedBoseKernel(10.0);
-        auto sve_result = SVECache::get_sve_result(rbk, epsilon);
-        auto basis = sparseir::FiniteTempBasis<sparseir::Bosonic>(
-            beta, omega_max, rbk, sve_result);
-        Eigen::VectorXd s = basis.s;
-        std::vector<double> s_ref = {
-            0.10510068935158154,    0.09586154039284558,
-            0.030202857804989457,   0.012403239133253087,
-            0.0036202319256581714,  0.0008751907696266496,
-            0.00017856035016188457, 3.146583475667272e-5,
-            4.873570749208084e-6,   6.72825223304962e-7,
-            8.374707823163109e-8,   9.48760053912297e-9,
-            9.86065074062678e-10,   9.465414711499528e-11};
-        Eigen::VectorXd s_ref_eigen =
-            Eigen::Map<Eigen::VectorXd>(s_ref.data(), s_ref.size());
-        REQUIRE(s.isApprox(s_ref_eigen));
+
+        auto kernel = sparseir::RegularizedBoseKernel(beta * omega_max);
+        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
+        auto basis_b =
+            make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+                beta, omega_max, epsilon, kernel, sve_result);
+
+        for (double tau :
+             {1e-1 * beta, 0.5 * beta, 0.9 * beta}) {
+            for (double omega :
+                 {1e-1 * omega_max, 0.5 * omega_max, 0.9 * omega_max}) {
+                double x = 2.0 * tau / beta - 1.0;
+                double y = omega / omega_max;
+
+                // Compute kernel value directly
+                double kernel_value = omega_max * kernel.compute(x, y);
+
+                // Compute reconstruction using basis functions
+                double reconstruction = 0.0;
+                for (int l = 0; l < basis_b->size(); ++l) {
+                    reconstruction += basis_b->s[l] * (*basis_b->u)[l](tau) *
+                                      (*basis_b->v)[l](omega);
+                }
+
+                REQUIRE(std::abs(kernel_value - reconstruction) < 10 * epsilon);
+            }
+        }
     }
 }
 
