@@ -158,6 +158,7 @@ public:
     // Accessor functions
     double get_xmin() const { return xmin; }
     double get_xmax() const { return xmax; }
+    int get_l() const { return l; }
     std::pair<double, double> get_domain() const { return std::make_pair(xmin, xmax); }
     const Eigen::VectorXd &get_knots() const { return knots; }
     const Eigen::VectorXd &get_delta_x() const { return delta_x; }
@@ -398,8 +399,11 @@ make_polyvec(const PiecewiseLegendrePolyVector &polys,
                                         std::to_string(symm.size()));
     }
     for (size_t i = 0; i < polys.size(); ++i) {
-        polyvec[i] = std::make_shared<PiecewiseLegendrePoly>(polys[i].get_data(), knots,
-                                               polys[i].l, Δx, symm(i));
+        Eigen::MatrixXd data = polys[i].get_data();
+        Eigen::VectorXd knots_copy = knots;
+        Eigen::VectorXd delta_x_copy = Δx;
+        polyvec[i] = std::make_shared<PiecewiseLegendrePoly>(data, knots_copy,
+                                               polys[i].l, delta_x_copy, symm(i));
     }
     return polyvec;
 }

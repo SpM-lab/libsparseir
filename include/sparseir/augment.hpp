@@ -233,13 +233,14 @@ public:
 
 // Add before AugmentedBasis class definition
 
+template <typename S>
 class AugmentedTauFunction {
 public:
-    std::shared_ptr<PiecewiseLegendrePolyVector> basis_func;
+    std::shared_ptr<IRTauFuncsType<S>> basis_func;
     const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations;
 
     AugmentedTauFunction(
-        std::shared_ptr<PiecewiseLegendrePolyVector> basis_func,
+        std::shared_ptr<IRTauFuncsType<S>> basis_func,
         const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations)
         : basis_func(basis_func), augmentations(augmentations)
     {
@@ -317,7 +318,7 @@ class AugmentedBasis : public AbstractBasis<S> {
 public:
     std::vector<std::shared_ptr<AbstractAugmentation>> augmentations;
     std::shared_ptr<FiniteTempBasis<S>> basis;
-    std::shared_ptr<AugmentedTauFunction> u;
+    std::shared_ptr<AugmentedTauFunction<S>> u;
     std::shared_ptr<AugmentedMatsubaraFunction<S>> uhat;
 
     AugmentedBasis(
@@ -325,7 +326,7 @@ public:
         const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations)
         : basis(basis),
           augmentations(augmentations),
-          u(std::make_shared<AugmentedTauFunction>(basis->u, augmentations)),
+          u(std::make_shared<AugmentedTauFunction<S>>(basis->u, augmentations)),
           uhat(std::make_shared<AugmentedMatsubaraFunction<S>>(basis->uhat,
                                                                augmentations))
     {
@@ -380,6 +381,8 @@ public:
     {
         return std::make_shared<AugmentedBasis<S>>(basis, augmentations);
     }
+
+    double get_beta() const override { return basis->get_beta(); }
 };
 
 } // namespace sparseir

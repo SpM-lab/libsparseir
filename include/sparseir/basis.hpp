@@ -59,7 +59,7 @@ public:
 //  beta -> beta^-
 //  +0.0 -> 0^+
 //  -0.0 -> 0^-
-inline std::pair<double, int> regularize_tau(double tau, double beta, int fermionic_sign)
+inline std::pair<double, double> regularize_tau(double tau, double beta, int fermionic_sign)
 {
     // Check if tau is in the valid range
     if (tau < -beta) {
@@ -71,19 +71,15 @@ inline std::pair<double, int> regularize_tau(double tau, double beta, int fermio
     }
 
     if (0 < tau && tau <= beta) {
-        return std::make_pair(tau, 0);
-    }
-
-    if (-beta <= tau && tau < 0) {
+        return std::make_pair(tau, 1.0);
+    } else if (-beta <= tau && tau < 0) {
         return std::make_pair(tau + beta, fermionic_sign);
-    }
-
-    if (tau == 0) {
+    } else if (tau == 0) {
         // Check if tau is -0.0
         if (std::signbit(tau)) {
             return std::make_pair(beta, fermionic_sign);
         } else {
-            return std::make_pair(0.0, 0);
+            return std::make_pair(0.0, 1.0);
         }
     }
 
@@ -125,6 +121,10 @@ public:
     std::pair<double, double> get_domain() const
     {
         return std::make_pair(-beta, beta);
+    }
+
+    ImplType get_obj() const {
+        return *impl;
     }
 };
 
@@ -174,6 +174,11 @@ public:
     std::pair<double, double> get_domain() const
     {
         return funcs[0]->get_domain();
+    }
+
+    std::shared_ptr<TauFunction<S, ImplType>> operator[](size_t i) const
+    {
+        return funcs[i];
     }
 };
 
@@ -277,9 +282,9 @@ public:
 
         {
             std::vector<std::shared_ptr<PiecewiseLegendrePoly>> u_polyvec = make_polyvec(u_, u_knots, deltax4u, u_symm);
-            std::vector<std::shared_ptr<TauFunction<S, PiecewiseLegendrePoly>>> u_funcs;
+            std::vector<std::shared_ptr<TauFunction<S, PiecewiseLegendrePoly>>> u_funcs(u_polyvec.size());
             for (int i = 0; i < u_polyvec.size(); ++i) {
-                u_funcs.push_back(std::make_shared<TauFunction<S, PiecewiseLegendrePoly>>(u_polyvec[i], beta));
+                u_funcs[i] = std::make_shared<TauFunction<S, PiecewiseLegendrePoly>>(u_polyvec[i], beta);
             }
             this->u = std::make_shared<IRTauFuncsType<S>>(u_funcs, beta);
         }

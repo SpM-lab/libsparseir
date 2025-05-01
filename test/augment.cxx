@@ -125,8 +125,8 @@ TEST_CASE("Augmented bosonic basis", "[augment]")
     std::vector<std::shared_ptr<sparseir::AbstractAugmentation>> augmentations;
     augmentations.push_back(std::make_shared<sparseir::TauConst>(beta));
     augmentations.push_back(std::make_shared<sparseir::TauLinear>(beta));
-    sparseir::PiecewiseLegendrePolyVector u = *basis->u;
-    sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic> uhat = *basis->uhat;
+    auto u = *basis->u;
+    auto uhat = *basis->uhat;
 
     // Define G(τ) = c - exp(-τ * pole) / (1 - exp(-β * pole))
     double pole = 1.0;
@@ -336,7 +336,7 @@ TEST_CASE("AugmentBasis basis_aug->u", "[augment]")
             basis, augmentations);
 
     Eigen::VectorXd sampling_points = basis_aug->default_tau_sampling_points();
-    sparseir::AugmentedTauFunction u = *(basis_aug->u);
+    sparseir::AugmentedTauFunction<sparseir::Bosonic> u = *(basis_aug->u);
     // TODO: Check numerical correctness
     Eigen::VectorXd v = u(1.0);
 

@@ -250,9 +250,6 @@ public:
           uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
           _ir_default_tau_sampling_points(b.default_tau_sampling_points())
     {
-        //std::cout << "DiscreteLehmannRepresentation constructor" << std::endl;
-        //std::cout << "b.get_beta(): " << b.get_beta() << std::endl;
-
         // initialize u
         std::vector<std::shared_ptr<TauFunction<S, DLRBasisFunction<S>>>> u_funcs;
         for (int i = 0; i < poles.size(); ++i) {
