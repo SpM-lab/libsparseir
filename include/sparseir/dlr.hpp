@@ -200,27 +200,33 @@ Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
 template <typename S>
 class DiscreteLehmannRepresentation : public AbstractBasis<S> {
 public:
-    FiniteTempBasis<S> basis;
     Eigen::VectorXd poles;
+    double beta;
     double wmax;
+    double accuracy;
     std::shared_ptr<TauPoles<S>> u;
     std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
     std::function<double(double, double)> weight_func;
+    Eigen::VectorXd _ir_default_tau_sampling_points;
+
 
     // Constructor with basis and poles
     DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b,
                                   const Eigen::VectorXd &poles)
-        : basis(b),
-          poles(poles),
-          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func)),
-          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func))
+        : beta(b.get_beta()), wmax(b.get_wmax()), poles(poles), accuracy(b.get_accuracy()),
+          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
+          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
+          _ir_default_tau_sampling_points(b.default_tau_sampling_points())
     {
+        //std::cout << "DiscreteLehmannRepresentation constructor" << std::endl;
+        //std::cout << "b.get_beta(): " << b.get_beta() << std::endl;
+
         // Fitting matrix from IR
-        Eigen::MatrixXd A = (*basis.v)(poles);
+        Eigen::MatrixXd A = (*b.v)(poles);
         Eigen::ArrayXXd A_array = A.array();
-        Eigen::ArrayXd s_array = basis.s.array();
+        Eigen::ArrayXd s_array = b.s.array();
 
         // Perform element-wise multiplication
         // size: (size of basis, size of poles)
@@ -228,8 +234,8 @@ public:
 
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-        weight_func = basis.weight_func;
-        wmax = basis.get_wmax();
+        weight_func = b.weight_func;
+        wmax = b.get_wmax();
     }
 
     // Constructor with just basis
@@ -244,18 +250,24 @@ public:
     {
         return Eigen::VectorXd::Ones(size());
     }
-    double get_accuracy() const override { return basis.get_accuracy(); }
-    double get_wmax() const override { return basis.get_wmax(); }
+    double get_accuracy() const override { return accuracy; }
     Eigen::VectorXd default_tau_sampling_points() const override
     {
-        return basis.default_tau_sampling_points();
+        throw std::runtime_error("default_tau_sampling_points is not implemented for DiscreteLehmannRepresentation");
+        // return length 0 vector
+        return Eigen::VectorXd::Zero(0);
     }
+
+    double get_wmax() const override { return wmax; }
+    double get_beta() const override { return beta; }
 
     std::vector<MatsubaraFreq<S>>
     default_matsubara_sampling_points(int L, bool fence = false,
                                       bool positive_only = false) const override
     {
-        return basis.default_matsubara_sampling_points(L, fence, positive_only);
+        throw std::runtime_error("default_matsubara_sampling_points is not implemented for DiscreteLehmannRepresentation");
+        return std::vector<MatsubaraFreq<S>>();
+        //return basis.default_matsubara_sampling_points(L, fence, positive_only);
     }
 
     template <typename T, int N>
@@ -325,8 +337,6 @@ public:
         return fitmat_as_tensor.contract(g_dlr, contraction_pairs);
     }
 
-    double beta() const { return basis.beta; }
-    double Lambda() const { return basis.Lambda(); }
 };
 
 } // namespace sparseir

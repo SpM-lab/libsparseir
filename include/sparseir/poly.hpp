@@ -158,6 +158,7 @@ public:
     // Accessor functions
     double get_xmin() const { return xmin; }
     double get_xmax() const { return xmax; }
+    std::pair<double, double> get_domain() const { return std::make_pair(xmin, xmax); }
     const Eigen::VectorXd &get_knots() const { return knots; }
     const Eigen::VectorXd &get_delta_x() const { return delta_x; }
     int get_symm() const { return symm; }

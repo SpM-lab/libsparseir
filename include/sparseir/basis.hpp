@@ -20,7 +20,7 @@ class AbstractBasis {
 public:
     virtual ~AbstractBasis() { }
     double beta;
-    double get_beta() const { return beta; }
+    virtual double get_beta() const = 0;
     /*
      * @brief Significances of the basis functions.
      *
@@ -57,7 +57,7 @@ public:
     double lambda;
     std::shared_ptr<SVEResult> sve_result;
     double accuracy;
-    // double beta;
+    double beta;
     std::shared_ptr<PiecewiseLegendrePolyVector> u;
     std::shared_ptr<PiecewiseLegendrePolyVector> v;
     Eigen::VectorXd s;
@@ -205,6 +205,7 @@ public:
 
     // Getter for ωmax
     double get_wmax() const override { return lambda / this->get_beta(); }
+    double get_beta() const override { return beta; }
     size_t size() const override { return s.size(); }
     // Getter for SVEResult
     std::shared_ptr<const SVEResult> getSVEResult() const { return sve_result; }

@@ -19,15 +19,6 @@
 
 using Catch::Approx;
 
-// assert working in non-debug mode
-inline void _assert(bool cond)
-{
-    if (!cond) {
-        std::cerr << "Assertion failed" << std::endl;
-        abort();
-    }
-}
-
 template <typename S>
 spir_statistics_type get_stat()
 {
@@ -73,14 +64,14 @@ _evaluate_basis_functions(const spir_funcs *u, const Eigen::VectorXd &x_values)
     int32_t status;
     int32_t funcs_size;
     status = spir_funcs_get_size(u, &funcs_size);
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat(
         x_values.size(), funcs_size);
     for (Eigen::Index i = 0; i < x_values.size(); ++i) {
         Eigen::VectorXd u_eval(funcs_size);
         status = spir_evaluate_funcs(u, x_values(i), u_eval.data());
-        _assert(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         u_eval_mat.row(i) = u_eval.transpose().cast<T>();
     }
     return u_eval_mat;
@@ -95,7 +86,7 @@ _evaluate_matsubara_basis_functions(const spir_matsubara_funcs *uhat,
     int32_t status;
     int32_t funcs_size;
     status = spir_matsubara_funcs_get_size(uhat, &funcs_size);
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Allocate output matrix with shape (nfreqs, nfuncs)
     Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic, ORDER>
@@ -113,7 +104,7 @@ _evaluate_matsubara_basis_functions(const spir_matsubara_funcs *uhat,
                                  : SPIR_ORDER_ROW_MAJOR,
         matsubara_indices.size(), freq_indices.data(),
         reinterpret_cast<c_complex *>(uhat_eval_mat.data()));
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     return uhat_eval_mat;
 }
@@ -264,6 +255,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Tau Sampling
+    std::cout << "Tau sampling" << std::endl;
     spir_sampling *tau_sampling = spir_tau_sampling_new(basis);
     REQUIRE(tau_sampling != nullptr);
     int32_t num_tau_points;
@@ -275,6 +267,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(num_tau_points >= basis_size);
 
     // Matsubara Sampling
+    std::cout << "Matsubara sampling" << std::endl;
     spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis);
     REQUIRE(matsubara_sampling != nullptr);
     int32_t num_matsubara_points;
@@ -289,6 +282,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(num_matsubara_points >= basis_size);
 
     // DLR
+    std::cout << "DLR" << std::endl;
     spir_dlr *dlr = spir_dlr_new(basis);
     REQUIRE(dlr != nullptr);
     int32_t npoles;
@@ -319,7 +313,7 @@ void integration_test(double beta, double wmax, double epsilon,
         }
     }
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
-    std::cout << "poles: " << poles << std::endl;
+    //std::cout << "poles: " << poles << std::endl;
 
     // Move the axis for the poles from the first to the target dimension
     Eigen::Tensor<double, ndim, ORDER> coeffs =
@@ -353,6 +347,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare the Greens function at all tau points between IR and DLR
+    std::cout << "Evaluate Greens function at all tau points between IR and DLR" << std::endl;
     Eigen::Tensor<double, ndim, ORDER> gtau_from_IR =
         _evaluate_gtau<double, ndim, ORDER>(g_IR, ir_u, target_dim, tau_points);
     Eigen::Tensor<double, ndim, ORDER> gtau_from_DLR =
