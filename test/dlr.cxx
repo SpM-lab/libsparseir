@@ -109,6 +109,23 @@ TEST_CASE("DLR Tests", "[dlr]")
             REQUIRE(std::abs(u0(tau) - dlr_basis_func_logistic(beta, tau, poles[0])) < 1e-13);
             REQUIRE(std::abs(u1(tau) - dlr_basis_func_logistic(beta, tau, poles[size_dlr - 1])) < 1e-13);
         }
+
+        // corner 
+        auto taus = std::vector<double>({-beta, -0.0, 0.0, beta});
+        auto taus_regularized = std::vector<double>({0.0, beta, 0.0, beta});
+        auto signs = std::vector<double>({-1.0, -1.0, 1.0, 1.0});
+
+        for (int i = 0; i < taus.size(); ++i) {
+            double tau = taus[i];
+            double tau_regularized = taus_regularized[i];
+            double sign = signs[i];
+            double u0_tau = u0(tau);
+            double u0_ref = sign * dlr_basis_func_logistic(beta, tau_regularized, poles[0]);
+            double u1_tau = u1(tau);
+            double u1_ref = sign * dlr_basis_func_logistic(beta, tau_regularized, poles[size_dlr - 1]);
+            REQUIRE(std::abs(u0_tau - u0_ref) < 1e-13);
+            REQUIRE(std::abs(u1_tau - u1_ref) < 1e-13);
+        }
     }
 
     SECTION("DLR basis function tests (bosonic)")
