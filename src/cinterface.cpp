@@ -7,11 +7,11 @@
 #include <iostream>
 
 // Debug macro
-//#ifdef DEBUG_CINTERFACE
+#ifdef DEBUG_CINTERFACE
 #define DEBUG_LOG(msg) std::cerr << "[DEBUG] " << msg << std::endl
-//#else
-//#define DEBUG_LOG(msg)
-//#endif
+#else
+#define DEBUG_LOG(msg)
+#endif
 
 #include "cinterface_impl/helper_types.hpp"
 #include "cinterface_impl/opaque_types.hpp"

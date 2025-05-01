@@ -379,7 +379,31 @@ public:
     {
         int sz = size();
         auto x = default_sampling_points(*(this->sve_result->u), sz);
-        return (this->beta / 2.0) * (x.array() + 1.0);
+        Eigen::VectorXd smpl_taus = (this->beta / 2.0) * (x.array() + 1.0);
+        std::sort(smpl_taus.data(), smpl_taus.data() + smpl_taus.size());
+
+        // Check if the distribution is symmetric
+        Eigen::VectorXd smpl_taus_reverse = Eigen::VectorXd::Constant(smpl_taus.size(), beta) - smpl_taus;
+        std::sort(smpl_taus_reverse.data(), smpl_taus_reverse.data() + smpl_taus_reverse.size());
+        Eigen::VectorXd diff = (smpl_taus - smpl_taus_reverse).array().abs();
+        auto max_diff = diff.maxCoeff();
+        if (max_diff > beta * 1e-5) {
+            std::cerr << "Warning: The distribution of tau sampling points is not symmetric with respect to the center of the interval [0, beta]." << std::endl;
+            std::cerr << "smpl_taus: " << smpl_taus << std::endl;
+            std::cerr << "max_diff: " << max_diff << std::endl;
+        }
+
+        auto smpl_taus_symm = smpl_taus;
+        if (smpl_taus.size() % 2 == 0) {
+            auto halfN = smpl_taus.size() / 2;
+            smpl_taus_symm.segment(halfN, halfN) = -smpl_taus.segment(0, halfN);
+        } else {
+            auto halfN = (smpl_taus.size() - 1) / 2;
+            smpl_taus_symm.segment(halfN + 1, halfN) = -smpl_taus.segment(0, halfN);
+        }
+
+        std::sort(smpl_taus_symm.data(), smpl_taus_symm.data() + smpl_taus_symm.size());
+        return smpl_taus_symm;
     }
 
     std::vector<MatsubaraFreq<S>>
