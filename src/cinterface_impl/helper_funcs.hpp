@@ -141,12 +141,12 @@ spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparse
         std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>>>(impl, beta)));
 }
 
-template <typename S>
-spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::TauPoles<S>>> impl, double beta)
-{
-    return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::TauPoles<S>>>>(impl, beta)));
-}
+//template <typename S>
+//spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::TauPoles<S>>> impl, double beta)
+//{
+    //return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
+        //std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::TauPoles<S>>>>(impl, beta)));
+//}
 
 template <typename InternalType>
 spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)

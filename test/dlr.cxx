@@ -113,8 +113,11 @@ TEST_CASE("DLR Tests", "[dlr]")
 
     SECTION("DLR basis function tests (bosonic)")
     {
+        std::cout << "DLR basis function tests (bosonic)" << std::endl;
+        //double beta = 1e+2;
+        //double omega_max = 2.0;
         double beta = 1e+2;
-        double omega_max = 2.0;
+        double omega_max = 1.0;
         double epsilon = 1e-7;
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
         auto sve_result = SVECache::get_sve_result(kernel, epsilon);
@@ -128,16 +131,20 @@ TEST_CASE("DLR Tests", "[dlr]")
 
         double delta = beta * 1e-13;
 
+        REQUIRE(std::abs(u0(-0.0) - u0(beta) ) < 1e-8);
+        REQUIRE(std::abs(u1(-0.0) - u1(beta) ) < 1e-8);
 
-        REQUIRE(std::abs(u0(-0.0) - (-1 * u0(beta)) ) < 1e-8);
-        REQUIRE(std::abs(u1(-0.0) - (-1 * u1(beta)) ) < 1e-8);
-
-        REQUIRE(std::abs(u0(0.0) - (u0(delta)) ) < 1e-8);
-        REQUIRE(std::abs(u1(0.0) - (u1(delta)) ) < 1e-8);
+        REQUIRE(std::abs(u0(0.0) - u0(delta) ) < 1e-8);
+        REQUIRE(std::abs(u1(0.0) - u1(delta) ) < 1e-8);
 
         for (double tau: std::vector<double>{0.0, 1e-3*beta, 1e-2*beta, 1e-1*beta, (1-1e-3)*beta, beta}) {
-            REQUIRE(std::abs(u0(tau) - dlr_basis_func_logistic(beta, tau, poles[0])) < 1e-13);
-            REQUIRE(std::abs(u1(tau) - dlr_basis_func_logistic(beta, tau, poles[size_dlr - 1])) < 1e-13);
+            double u0_tau = u0(tau);
+            double u0_ref = dlr_basis_func_logistic(beta, tau, poles[0]);
+            REQUIRE(std::abs(u0_tau - u0_ref) < 1e-13);
+
+            double u1_tau = u1(tau);
+            double u1_ref = dlr_basis_func_logistic(beta, tau, poles[size_dlr - 1]);
+            REQUIRE(std::abs(u1_tau - u1_ref) < 1e-13);
         }
     }
 

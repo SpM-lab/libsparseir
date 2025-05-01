@@ -118,12 +118,11 @@ public:
     {
         // k(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
         auto kernel = RegularizedBoseKernel(beta * wmax); // k(x, y)
-
         double x = 2.0 * tau / beta - 1.0;
         double y = pole / wmax;
         double xtau = pole * tau;
-        double k_tau_omega = wmax * kernel.compute(x, y);
-        return - k_tau_omega / weight;
+        double k_tau_omega = kernel.compute(x, y);
+        return - k_tau_omega / (y * weight);
     }
 
     // For vector of tau points
@@ -137,57 +136,6 @@ public:
     }
 };
 
-
-template <typename S>
-class TauPoles {
-public:
-    double beta;
-    Eigen::VectorXd poles;
-    double wmax;
-    std::vector<double> weights;
-    std::vector<std::shared_ptr<DLRBasisFunction<S>>> dlr_basis_funcs;
-
-    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
-        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
-    {
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            weights[i] = weight_func(beta, poles(i));
-        }
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            dlr_basis_funcs.push_back(std::make_shared<DLRBasisFunction<S>>(beta, poles(i), wmax, weights[i]));
-        }
-    }
-
-    template <typename T = S>
-    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
-        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
-    {
-    }
-
-
-    // Return the size of the poles vector
-    std::size_t size() const { return poles.size(); }
-
-    // Evaluate at tau points
-    Eigen::VectorXd operator()(double tau) const
-    {
-        Eigen::VectorXd result(poles.size());
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            result(i) = dlr_basis_funcs[i]->operator()(tau);
-        }
-        return result;
-    }
-
-    // For vector of tau points
-    Eigen::MatrixXd operator()(const Eigen::VectorXd &tau) const
-    {
-        Eigen::MatrixXd result(poles.size(), tau.size());
-        for (Eigen::Index i = 0; i < tau.size(); ++i) {
-            result.col(i) = (*this)(tau(i));
-        }
-        return result;
-    }
-};
 
 template <typename S>
 Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
@@ -255,7 +203,9 @@ public:
         for (int i = 0; i < poles.size(); ++i) {
             u_funcs.push_back(
                 std::make_shared<TauFunction<S, DLRBasisFunction<S>>>(
-                    std::make_shared<DLRBasisFunction<S>>(b.get_beta(), poles[i], b.get_wmax(), b.weight_func(beta, poles[i])),
+                    std::make_shared<DLRBasisFunction<S>>(
+                        b.get_beta(), poles[i], b.get_wmax(), b.weight_func(beta, poles[i])
+                    ),
                     b.get_beta()
                 )
             );
