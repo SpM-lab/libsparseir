@@ -134,11 +134,18 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
     }
 }
 
-template <typename S, typename InternalType>
-spir_funcs *_create_tau_funcs(std::shared_ptr<InternalType> impl, double beta)
+template <typename S>
+spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>> impl, double beta)
 {
     return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<TauFunctions<InternalType>>(impl, beta, _sign<S>())));
+        std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>>>(impl, beta)));
+}
+
+template <typename S>
+spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::TauPoles<S>>> impl, double beta)
+{
+    return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
+        std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::TauPoles<S>>>>(impl, beta)));
 }
 
 template <typename InternalType>
@@ -270,7 +277,9 @@ int32_t _spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u)
         if (beta <= 0) {
             throw std::runtime_error("beta is less than or equal to 0");
         }
-        *u = _create_tau_funcs<S>(impl->get_u(), beta);
+
+        std::shared_ptr<AbstractContinuousFunctions> u_funcs = std::static_pointer_cast<_DLR<S>>(impl)->get_u();
+        *u = create_funcs(u_funcs);
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
         return SPIR_GET_IMPL_FAILED;
@@ -301,7 +310,8 @@ int32_t _spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
-        *u = _create_tau_funcs<S>(impl->get_u(), impl->get_beta());
+        std::shared_ptr<sparseir::TauFunctions<S, sparseir::PiecewiseLegendrePoly>> u_impl = std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl()->u;
+        *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
         return SPIR_GET_IMPL_FAILED;

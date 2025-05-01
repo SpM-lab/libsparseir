@@ -353,7 +353,6 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<double, ndim, ORDER> gtau_from_DLR =
         _evaluate_gtau<double, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
-    // debug
     Eigen::Tensor<double, ndim, ORDER> gtau_diff = (gtau_from_IR - gtau_from_DLR).abs();
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, tol));
@@ -378,6 +377,8 @@ void integration_test(double beta, double wmax, double epsilon,
 
     Eigen::Tensor<std::complex<double>, ndim, ORDER> gIR(
         _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> gIR2(
+        _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
     Eigen::Tensor<std::complex<double>, ndim, ORDER> gtau(
         _get_dims<ndim, Eigen::Index>(num_tau_points, extra_dims, target_dim));
     Eigen::Tensor<std::complex<double>, ndim, ORDER> giw_reconst(
@@ -397,18 +398,21 @@ void integration_test(double beta, double wmax, double epsilon,
         reinterpret_cast<const c_complex *>(gIR.data()),
         reinterpret_cast<c_complex *>(gtau.data()));
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    //REQUIRE(
+        //compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
+            //gtau, gtau_from_DLR, tol));
 
     // tau -> IR
     status = spir_sampling_fit_zz(
         tau_sampling, order, ndim, dims_tau.data(), target_dim,
         reinterpret_cast<const c_complex *>(gtau.data()),
-        reinterpret_cast<c_complex *>(gIR.data()));
+        reinterpret_cast<c_complex *>(gIR2.data()));
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // IR -> Matsubara
     status = spir_sampling_evaluate_zz(
         matsubara_sampling, order, ndim, dims_IR.data(), target_dim,
-        reinterpret_cast<const c_complex *>(gIR.data()),
+        reinterpret_cast<const c_complex *>(gIR2.data()),
         reinterpret_cast<c_complex *>(giw_reconst.data()));
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 

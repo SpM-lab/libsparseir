@@ -65,45 +65,6 @@ int _sign()
     return 1;
 }
 
-// Accept a tau in [-beta, beta] and return a tau in [0, beta] with a sign
-// change for the fermionic case
-//
-// Interpreted as:
-// -beta -> -beta^+
-//  beta -> beta^-
-//  +0.0 -> 0^+
-//  -0.0 -> 0^-
-inline std::pair<double, int> regularize_tau(double tau, double beta, int fermionic_sign)
-{
-    // Check if tau is in the valid range
-    if (tau < -beta) {
-        throw std::invalid_argument("tau is less than -beta");
-    }
-    if (tau > beta) {
-        std::cout << "tau " << tau << " is greater than beta " << beta << std::endl;
-        throw std::invalid_argument("tau is greater than beta");
-    }
-
-    if (0 < tau && tau <= beta) {
-        return std::make_pair(tau, 0);
-    }
-
-    if (-beta <= tau && tau < 0) {
-        return std::make_pair(tau + beta, fermionic_sign);
-    }
-
-    if (tau == 0) {
-        // Check if tau is -0.0
-        if (std::signbit(tau)) {
-            return std::make_pair(beta, fermionic_sign);
-        } else {
-            return std::make_pair(0.0, 0);
-        }
-    }
-
-    throw std::invalid_argument("Something is wrong with the input tau");
-}
-
 
 template <typename ImplType>
 class OmegaFunctions : public AbstractContinuousFunctions {
@@ -135,11 +96,10 @@ class TauFunctions : public AbstractContinuousFunctions {
 private:
     std::shared_ptr<ImplType> impl;
     double beta;
-    int fermionic_sign;
 
 public:
-    TauFunctions(std::shared_ptr<ImplType> impl, double beta, int fermionic_sign)
-        : impl(impl), beta(beta), fermionic_sign(fermionic_sign)
+    TauFunctions(std::shared_ptr<ImplType> impl, double beta)
+        : impl(impl), beta(beta)
     {
     }
 
@@ -148,9 +108,7 @@ public:
         if (!impl) {
             throw std::runtime_error("impl is not initialized");
         }
-        std::pair<double, int> regularized_tau = regularize_tau(x, beta, fermionic_sign);
-        std::cout << "regularized_tau: " << regularized_tau.first << ", " << regularized_tau.second << std::endl;
-        return impl->operator()(regularized_tau.first) * regularized_tau.second;
+        return impl->operator()(x);
     }
 
     virtual int size() const override { return impl->size(); }
@@ -159,8 +117,6 @@ public:
     {
         return std::make_pair(-beta, beta);
     }
-
-    int get_fermionic_sign() const { return fermionic_sign; }
 };
 
 
@@ -201,9 +157,8 @@ public:
 
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override
     {
-        using ImplType = sparseir::PiecewiseLegendrePolyVector;
-        int fermionic_sign = _sign<S>();
-        auto u_tau_funcs = std::make_shared<TauFunctions<ImplType>>(impl->u, get_beta(), fermionic_sign);
+        std::shared_ptr<sparseir::IRTauFuncsType<S>> u_impl = impl->u;
+        auto u_tau_funcs = std::make_shared<TauFunctions<sparseir::IRTauFuncsType<S>>>(u_impl, get_beta());
         return std::static_pointer_cast<AbstractContinuousFunctions>(u_tau_funcs);
     }
 
@@ -278,9 +233,13 @@ public:
         if (!impl) {
             throw std::runtime_error("impl is not initialized");
         }
-        using ImplType = sparseir::TauPoles<S>;
+        //using ImplType = sparseir::TauFunctions<S, sparseir::TauPoles<S>>;
+
+        std::shared_ptr<sparseir::DLRTauFuncsType<S>> u_funcs = impl->u;
+
         return std::static_pointer_cast<AbstractContinuousFunctions>(
-            std::make_shared<TauFunctions<ImplType>>(impl->u, get_beta(), _sign<S>()));
+            std::make_shared<TauFunctions<sparseir::DLRTauFuncsType<S>>>(u_funcs, get_beta())
+        );
     }
 
     virtual std::shared_ptr<AbstractMatsubaraFunctions>

@@ -80,6 +80,64 @@ public:
     }
 };
 
+
+
+template <typename S>
+class DLRBasisFunction {
+public:
+    double beta;
+    double pole;
+    double wmax;
+    double weight;
+
+    DLRBasisFunction(double beta, double pole, double wmax, double weight)
+        : beta(beta), pole(pole), wmax(wmax), weight(weight)
+    {
+    }
+
+    template <typename T = S>
+    DLRBasisFunction(double beta, double pole, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
+        : beta(beta), pole(pole), wmax(wmax), weight(1.0)
+    {
+    }
+
+    // Evaluate at tau points
+    template <typename T = S,
+              typename std::enable_if<std::is_same<T, Fermionic>::value, int>::type = 0>
+    double operator()(double tau) const
+    {
+        auto kernel = LogisticKernel(beta * wmax); // k(x, y)
+        double x = 2 * tau / beta - 1.0;
+        double y = pole / wmax;
+        return - kernel.compute(x, y) / weight;
+    }
+
+    template <typename T = S,
+              typename std::enable_if<std::is_same<T, Bosonic>::value, int>::type = 0>
+    double operator()(double tau) const
+    {
+        // k(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
+        auto kernel = RegularizedBoseKernel(beta * wmax); // k(x, y)
+
+        double x = 2.0 * tau / beta - 1.0;
+        double y = pole / wmax;
+        double xtau = pole * tau;
+        double k_tau_omega = wmax * kernel.compute(x, y);
+        return - k_tau_omega / weight;
+    }
+
+    // For vector of tau points
+    Eigen::VectorXd operator()(const Eigen::VectorXd &tau) const
+    {
+        Eigen::VectorXd result(tau.size());
+        for (Eigen::Index i = 0; i < tau.size(); ++i) {
+            result(i) = (*this)(tau(i));
+        }
+        return result;
+    }
+};
+
+
 template <typename S>
 class TauPoles {
 public:
@@ -87,12 +145,16 @@ public:
     Eigen::VectorXd poles;
     double wmax;
     std::vector<double> weights;
+    std::vector<std::shared_ptr<DLRBasisFunction<S>>> dlr_basis_funcs;
 
     TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
         : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
     {
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
             weights[i] = weight_func(beta, poles(i));
+        }
+        for (Eigen::Index i = 0; i < poles.size(); ++i) {
+            dlr_basis_funcs.push_back(std::make_shared<DLRBasisFunction<S>>(beta, poles(i), wmax, weights[i]));
         }
     }
 
@@ -107,47 +169,11 @@ public:
     std::size_t size() const { return poles.size(); }
 
     // Evaluate at tau points
-    template <typename T = S,
-              typename std::enable_if<std::is_same<T, Fermionic>::value, int>::type = 0>
-    Eigen::VectorXd operator()(double tau) const
-    {
-        auto kernel = LogisticKernel(beta * wmax); // k(x, y)
-        Eigen::VectorXd result(poles.size());
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            //double x = poles(i);
-            //double xtau = x * tau;
-            //result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x)) / weights[i];
-            double x = 2 * tau / beta - 1.0;
-            double y = poles(i) / wmax;
-            result(i) = - kernel.compute(x, y) / weights[i];
-        }
-        return result;
-    }
-
-    template <typename T = S,
-              typename std::enable_if<std::is_same<T, Bosonic>::value, int>::type = 0>
     Eigen::VectorXd operator()(double tau) const
     {
         Eigen::VectorXd result(poles.size());
-
-        // k(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
-        auto kernel = RegularizedBoseKernel(beta * wmax); // k(x, y)
-
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            double w = poles(i);
-            double x = 2.0 * tau / beta - 1.0;
-            double y = w / wmax;
-            double xtau = w * tau;
-
-            // k(τ, ω) = ωmax * k(2τ/β - 1, ω/ωmax) = ω * exp(- τ * ω) / (1 - exp(-beta * ω))
-            double k_tau_omega = wmax * kernel.compute(x, y);
-
-            // FIXME: accuracy is not good for beta * x ~ 0.0
-            //result(i) = -std::exp(-xtau) / (1.0 - std::exp(-beta * w)) / weights[i];
-            std::cout << "k_tau_omega: " << k_tau_omega << std::endl;
-            std::cout << "w: " << w << std::endl;
-            std::cout << "weights[i]: " << weights[i] << std::endl;
-            result(i) = - k_tau_omega / (w * weights[i]);
+            result(i) = dlr_basis_funcs[i]->operator()(tau);
         }
         return result;
     }
@@ -197,6 +223,10 @@ Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
     return basis.get_wmax() * y_new;
 }
 
+
+template<typename S>
+using DLRTauFuncsType = TauFunctions<S, DLRBasisFunction<S>>;
+
 template <typename S>
 class DiscreteLehmannRepresentation : public AbstractBasis<S> {
 public:
@@ -204,7 +234,7 @@ public:
     double beta;
     double wmax;
     double accuracy;
-    std::shared_ptr<TauPoles<S>> u;
+    std::shared_ptr<DLRTauFuncsType<S>> u;
     std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
@@ -216,12 +246,24 @@ public:
     DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b,
                                   const Eigen::VectorXd &poles)
         : beta(b.get_beta()), wmax(b.get_wmax()), poles(poles), accuracy(b.get_accuracy()),
-          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
+          u(nullptr),
           uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
           _ir_default_tau_sampling_points(b.default_tau_sampling_points())
     {
         //std::cout << "DiscreteLehmannRepresentation constructor" << std::endl;
         //std::cout << "b.get_beta(): " << b.get_beta() << std::endl;
+
+        // initialize u
+        std::vector<std::shared_ptr<TauFunction<S, DLRBasisFunction<S>>>> u_funcs;
+        for (int i = 0; i < poles.size(); ++i) {
+            u_funcs.push_back(
+                std::make_shared<TauFunction<S, DLRBasisFunction<S>>>(
+                    std::make_shared<DLRBasisFunction<S>>(b.get_beta(), poles[i], b.get_wmax(), b.weight_func(beta, poles[i])),
+                    b.get_beta()
+                )
+            );
+        }
+        this->u = std::make_shared<DLRTauFuncsType<S>>(u_funcs, b.get_beta());
 
         // Fitting matrix from IR
         Eigen::MatrixXd A = (*b.v)(poles);

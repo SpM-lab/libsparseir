@@ -476,7 +476,7 @@ inline Eigen::MatrixXd eval_matrix(const std::shared_ptr<Basis> &basis,
 
     // Evaluate basis functions at sampling points
     auto u_eval = (*basis->u)(x);
-    // Transpose and scale by singular values
+    // Transpose
     matrix = u_eval.transpose();
 
     return matrix;
@@ -580,6 +580,7 @@ public:
 
         // Initialize evaluation matrix with correct dimensions
         matrix_ = eval_matrix(basis, sampling_points_);
+
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
             matrix_.cols() != static_cast<std::size_t>(basis->size())) {

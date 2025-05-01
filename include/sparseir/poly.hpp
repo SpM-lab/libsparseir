@@ -183,6 +183,9 @@ shift_xmid(const std::vector<double> &knots,
 
 Eigen::VectorXcd phase_stable(const PiecewiseLegendrePoly &poly, int wn);
 
+
+
+
 class PiecewiseLegendrePolyVector {
 public:
     // Member variable
@@ -379,6 +382,28 @@ public:
         return results;
     }
 };
+
+
+inline
+std::vector<std::shared_ptr<PiecewiseLegendrePoly>>
+make_polyvec(const PiecewiseLegendrePolyVector &polys,
+                            const Eigen::VectorXd &knots,
+                                const Eigen::VectorXd &Δx,
+                                const Eigen::VectorXi &symm = Eigen::VectorXi())
+{
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> polyvec(polys.size());
+    if (polys.size() != static_cast<size_t>(symm.size())) {
+        throw std::invalid_argument("Sizes of polys and symm don't match " +
+                                    std::to_string(polys.size()) + " " +
+                                        std::to_string(symm.size()));
+    }
+    for (size_t i = 0; i < polys.size(); ++i) {
+        polyvec[i] = std::make_shared<PiecewiseLegendrePoly>(polys[i].get_data(), knots,
+                                               polys[i].l, Δx, symm(i));
+    }
+    return polyvec;
+}
+
 
 // Forward declarations
 class PiecewiseLegendrePoly;
