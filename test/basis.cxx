@@ -796,8 +796,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
                                       (*basis_f->v)[l](omega);
                 }
 
-                std::cout << "kernel_value: " << kernel_value << std::endl;
-                std::cout << "reconstruction: " << reconstruction << std::endl;
                 REQUIRE(std::abs(kernel_value * sign - reconstruction) < 10 * epsilon);
             }
         }
