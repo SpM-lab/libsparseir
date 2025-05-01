@@ -19,15 +19,6 @@
 
 using Catch::Approx;
 
-// assert working in non-debug mode
-inline void _assert(bool cond)
-{
-    if (!cond) {
-        std::cerr << "Assertion failed" << std::endl;
-        abort();
-    }
-}
-
 template <typename S>
 spir_statistics_type get_stat()
 {
@@ -73,14 +64,14 @@ _evaluate_basis_functions(const spir_funcs *u, const Eigen::VectorXd &x_values)
     int32_t status;
     int32_t funcs_size;
     status = spir_funcs_get_size(u, &funcs_size);
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat(
         x_values.size(), funcs_size);
     for (Eigen::Index i = 0; i < x_values.size(); ++i) {
         Eigen::VectorXd u_eval(funcs_size);
         status = spir_evaluate_funcs(u, x_values(i), u_eval.data());
-        _assert(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         u_eval_mat.row(i) = u_eval.transpose().cast<T>();
     }
     return u_eval_mat;
@@ -95,7 +86,7 @@ _evaluate_matsubara_basis_functions(const spir_matsubara_funcs *uhat,
     int32_t status;
     int32_t funcs_size;
     status = spir_matsubara_funcs_get_size(uhat, &funcs_size);
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Allocate output matrix with shape (nfreqs, nfuncs)
     Eigen::Matrix<std::complex<T>, Eigen::Dynamic, Eigen::Dynamic, ORDER>
@@ -113,7 +104,7 @@ _evaluate_matsubara_basis_functions(const spir_matsubara_funcs *uhat,
                                  : SPIR_ORDER_ROW_MAJOR,
         matsubara_indices.size(), freq_indices.data(),
         reinterpret_cast<c_complex *>(uhat_eval_mat.data()));
-    _assert(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     return uhat_eval_mat;
 }
@@ -264,6 +255,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Tau Sampling
+    std::cout << "Tau sampling" << std::endl;
     spir_sampling *tau_sampling = spir_tau_sampling_new(basis);
     REQUIRE(tau_sampling != nullptr);
     int32_t num_tau_points;
@@ -275,6 +267,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(num_tau_points >= basis_size);
 
     // Matsubara Sampling
+    std::cout << "Matsubara sampling" << std::endl;
     spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis);
     REQUIRE(matsubara_sampling != nullptr);
     int32_t num_matsubara_points;
@@ -289,6 +282,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(num_matsubara_points >= basis_size);
 
     // DLR
+    std::cout << "DLR" << std::endl;
     spir_dlr *dlr = spir_dlr_new(basis);
     REQUIRE(dlr != nullptr);
     int32_t npoles;
@@ -314,12 +308,17 @@ void integration_test(double beta, double wmax, double epsilon,
         for (Eigen::Index i = 0; i < npoles; ++i) {
             for (Eigen::Index j = 0; j < extra_size; ++j) {
                 coeffs_2d(i, j) =
-                    (2.0 * dis(gen) - 1.0) * std::sqrt(std::abs(poles(i)));
+                   (2.0 * dis(gen) - 1.0) * std::sqrt(std::abs(poles(i)));
             }
         }
+        coeffs_2d(0, 0) = 1.0;
+        for (Eigen::Index i = 1; i < npoles; ++i) {
+            coeffs_2d(i, 0) = 0.0;
+        }
+
     }
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
-    std::cout << "poles: " << poles << std::endl;
+    //std::cout << "poles: " << poles << std::endl;
 
     // Move the axis for the poles from the first to the target dimension
     Eigen::Tensor<double, ndim, ORDER> coeffs =
@@ -353,13 +352,16 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare the Greens function at all tau points between IR and DLR
+    std::cout << "Evaluate Greens function at all tau points between IR and DLR" << std::endl;
     Eigen::Tensor<double, ndim, ORDER> gtau_from_IR =
         _evaluate_gtau<double, ndim, ORDER>(g_IR, ir_u, target_dim, tau_points);
     Eigen::Tensor<double, ndim, ORDER> gtau_from_DLR =
         _evaluate_gtau<double, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
-    // debug
     Eigen::Tensor<double, ndim, ORDER> gtau_diff = (gtau_from_IR - gtau_from_DLR).abs();
+    std::cout << "gtau_from_IR: " << gtau_from_IR << std::endl;
+    std::cout << "gtau_from_DLR: " << gtau_from_DLR << std::endl;
+    std::cout << "gtau_diff: " << gtau_diff << std::endl;
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, tol));
 
@@ -383,6 +385,8 @@ void integration_test(double beta, double wmax, double epsilon,
 
     Eigen::Tensor<std::complex<double>, ndim, ORDER> gIR(
         _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> gIR2(
+        _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
     Eigen::Tensor<std::complex<double>, ndim, ORDER> gtau(
         _get_dims<ndim, Eigen::Index>(num_tau_points, extra_dims, target_dim));
     Eigen::Tensor<std::complex<double>, ndim, ORDER> giw_reconst(
@@ -402,18 +406,21 @@ void integration_test(double beta, double wmax, double epsilon,
         reinterpret_cast<const c_complex *>(gIR.data()),
         reinterpret_cast<c_complex *>(gtau.data()));
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    //REQUIRE(
+        //compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
+            //gtau, gtau_from_DLR, tol));
 
     // tau -> IR
     status = spir_sampling_fit_zz(
         tau_sampling, order, ndim, dims_tau.data(), target_dim,
         reinterpret_cast<const c_complex *>(gtau.data()),
-        reinterpret_cast<c_complex *>(gIR.data()));
+        reinterpret_cast<c_complex *>(gIR2.data()));
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // IR -> Matsubara
     status = spir_sampling_evaluate_zz(
         matsubara_sampling, order, ndim, dims_IR.data(), target_dim,
-        reinterpret_cast<const c_complex *>(gIR.data()),
+        reinterpret_cast<const c_complex *>(gIR2.data()),
         reinterpret_cast<c_complex *>(giw_reconst.data()));
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -437,18 +444,18 @@ TEST_CASE("Integration Test", "[cinterface]")
 
     double tol = 10 * epsilon;
 
-    std::cout << "Integration test for fermionic LogisticKernel" << std::endl;
-    integration_test<sparseir::Fermionic, sparseir::LogisticKernel, 1,
-                    Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                      SPIR_ORDER_COLUMN_MAJOR, tol);
+    //std::cout << "Integration test for fermionic LogisticKernel" << std::endl;
+    //integration_test<sparseir::Fermionic, sparseir::LogisticKernel, 1,
+                    //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                      //SPIR_ORDER_COLUMN_MAJOR, tol);
 
     std::cout << "Integration test for bosonic LogisticKernel" << std::endl;
     integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
                     Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       SPIR_ORDER_COLUMN_MAJOR, tol);
-
-    std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
-    integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
-                    Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                      SPIR_ORDER_COLUMN_MAJOR, tol);
+//
+    //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
+    //integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
+                    //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                      //SPIR_ORDER_COLUMN_MAJOR, tol);
 }

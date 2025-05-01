@@ -20,7 +20,7 @@ class AbstractBasis {
 public:
     virtual ~AbstractBasis() { }
     double beta;
-    double get_beta() const { return beta; }
+    virtual double get_beta() const = 0;
     /*
      * @brief Significances of the basis functions.
      *
@@ -51,14 +51,148 @@ public:
 
 
 
+// Accept a tau in [-beta, beta] and return a tau in [0, beta] with a sign
+// change for the fermionic case
+//
+// Interpreted as:
+// -beta -> -beta^+
+//  beta -> beta^-
+//  +0.0 -> 0^+
+//  -0.0 -> 0^-
+inline std::pair<double, double> regularize_tau(double tau, double beta, int fermionic_sign)
+{
+    // Check if tau is in the valid range
+    if (tau < -beta) {
+        throw std::invalid_argument("tau is less than -beta");
+    }
+    if (tau > beta) {
+        std::cout << "tau " << tau << " is greater than beta " << beta << std::endl;
+        throw std::invalid_argument("tau is greater than beta");
+    }
+
+    if (0 < tau && tau <= beta) {
+        return std::make_pair(tau, 1.0);
+    } else if (-beta <= tau && tau < 0) {
+        return std::make_pair(tau + beta, fermionic_sign);
+    } else if (tau == 0) {
+        // Check if tau is -0.0
+        if (std::signbit(tau)) {
+            return std::make_pair(beta, fermionic_sign);
+        } else {
+            return std::make_pair(0.0, 1.0);
+        }
+    }
+
+    throw std::invalid_argument("Something is wrong with the input tau");
+}
+
+
+// ImplType = PiecewiseLegendrePoly, DLRBasisFunction
+template <typename S, typename ImplType>
+class TauFunction {
+private:
+    std::shared_ptr<ImplType> impl;
+    double beta;
+
+public:
+    TauFunction(std::shared_ptr<ImplType> impl, double beta)
+        : impl(impl), beta(beta)
+    {
+    }
+
+    double operator()(double x) const
+    {
+        if (!impl) {
+            throw std::runtime_error("impl is not initialized");
+        }
+        auto _sign = fermionic_sign<S>();
+        std::pair<double, int> regularized_tau = regularize_tau(x, beta, _sign);
+        return impl->operator()(regularized_tau.first) * regularized_tau.second;
+    }
+
+    Eigen::VectorXd operator()(const Eigen::VectorXd &xs) const {
+        Eigen::VectorXd result(xs.size());
+        for (int i = 0; i < xs.size(); ++i) {
+            result(i) = this->operator()(xs(i));
+        }
+        return result;
+    }
+
+    std::pair<double, double> get_domain() const
+    {
+        return std::make_pair(-beta, beta);
+    }
+
+    ImplType get_obj() const {
+        return *impl;
+    }
+};
+
+
+template <typename S, typename ImplType>
+class TauFunctions {
+private:
+    std::vector<std::shared_ptr<TauFunction<S, ImplType>>> funcs;
+    double beta;
+
+public:
+    TauFunctions(
+        std::vector<std::shared_ptr<TauFunction<S, ImplType>>> funcs, double beta)
+        : funcs(funcs), beta(beta)
+    {
+        // check all funcs have the same domain
+        for (int i = 0; i < funcs.size(); ++i) {
+            if (funcs[i]->get_domain() != funcs[0]->get_domain()) {
+                throw std::runtime_error("All functions must have the same domain");
+            }
+        }
+    }
+
+    Eigen::VectorXd operator()(double x) const
+    {
+        if (funcs.empty()) {
+            throw std::runtime_error("funcs is not initialized");
+        }
+        Eigen::VectorXd result(funcs.size());
+        for (int i = 0; i < funcs.size(); ++i) {
+            result(i) = funcs[i]->operator()(x);
+        }
+        return result;
+    }
+
+    Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const
+    {
+        Eigen::MatrixXd results(funcs.size(), xs.size());
+        for (size_t i = 0; i < funcs.size(); ++i) {
+            results.row(i) = funcs[i]->operator()(xs);
+        }
+        return results;
+    }
+
+    int size() const { return funcs.size(); }
+
+    std::pair<double, double> get_domain() const
+    {
+        return funcs[0]->get_domain();
+    }
+
+    std::shared_ptr<TauFunction<S, ImplType>> operator[](size_t i) const
+    {
+        return funcs[i];
+    }
+};
+
+template <typename S>
+using IRTauFuncsType = TauFunctions<S, PiecewiseLegendrePoly>;
+
 template <typename S>
 class FiniteTempBasis : public AbstractBasis<S> {
 public:
     double lambda;
     std::shared_ptr<SVEResult> sve_result;
     double accuracy;
-    // double beta;
-    std::shared_ptr<PiecewiseLegendrePolyVector> u;
+    double beta;
+    std::shared_ptr<IRTauFuncsType<S>> u;
     std::shared_ptr<PiecewiseLegendrePolyVector> v;
     Eigen::VectorXd s;
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat;
@@ -146,8 +280,15 @@ public:
         Eigen::VectorXi v_symm =
             Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
 
-        this->u = std::make_shared<PiecewiseLegendrePolyVector>(
-            u_, u_knots, deltax4u, u_symm);
+        {
+            std::vector<std::shared_ptr<PiecewiseLegendrePoly>> u_polyvec = make_polyvec(u_, u_knots, deltax4u, u_symm);
+            std::vector<std::shared_ptr<TauFunction<S, PiecewiseLegendrePoly>>> u_funcs(u_polyvec.size());
+            for (int i = 0; i < u_polyvec.size(); ++i) {
+                u_funcs[i] = std::make_shared<TauFunction<S, PiecewiseLegendrePoly>>(u_polyvec[i], beta);
+            }
+            this->u = std::make_shared<IRTauFuncsType<S>>(u_funcs, beta);
+        }
+
         this->v = std::make_shared<PiecewiseLegendrePolyVector>(
             v_, v_knots, deltax4v, v_symm);
         this->s =
@@ -205,6 +346,7 @@ public:
 
     // Getter for ωmax
     double get_wmax() const override { return lambda / this->get_beta(); }
+    double get_beta() const override { return beta; }
     size_t size() const override { return s.size(); }
     // Getter for SVEResult
     std::shared_ptr<const SVEResult> getSVEResult() const { return sve_result; }
@@ -237,7 +379,31 @@ public:
     {
         int sz = size();
         auto x = default_sampling_points(*(this->sve_result->u), sz);
-        return (this->beta / 2.0) * (x.array() + 1.0);
+        Eigen::VectorXd smpl_taus = (this->beta / 2.0) * (x.array() + 1.0);
+        std::sort(smpl_taus.data(), smpl_taus.data() + smpl_taus.size());
+
+        // Check if the distribution is symmetric
+        Eigen::VectorXd smpl_taus_reverse = Eigen::VectorXd::Constant(smpl_taus.size(), beta) - smpl_taus;
+        std::sort(smpl_taus_reverse.data(), smpl_taus_reverse.data() + smpl_taus_reverse.size());
+        Eigen::VectorXd diff = (smpl_taus - smpl_taus_reverse).array().abs();
+        auto max_diff = diff.maxCoeff();
+        if (max_diff > beta * 1e-5) {
+            std::cerr << "Warning: The distribution of tau sampling points is not symmetric with respect to the center of the interval [0, beta]." << std::endl;
+            std::cerr << "smpl_taus: " << smpl_taus << std::endl;
+            std::cerr << "max_diff: " << max_diff << std::endl;
+        }
+
+        auto smpl_taus_symm = smpl_taus;
+        if (smpl_taus.size() % 2 == 0) {
+            auto halfN = smpl_taus.size() / 2;
+            smpl_taus_symm.segment(halfN, halfN) = -smpl_taus.segment(0, halfN);
+        } else {
+            auto halfN = (smpl_taus.size() - 1) / 2;
+            smpl_taus_symm.segment(halfN + 1, halfN) = -smpl_taus.segment(0, halfN);
+        }
+
+        std::sort(smpl_taus_symm.data(), smpl_taus_symm.data() + smpl_taus_symm.size());
+        return smpl_taus_symm;
     }
 
     std::vector<MatsubaraFreq<S>>

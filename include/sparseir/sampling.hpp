@@ -263,8 +263,6 @@ fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
     Eigen::MatrixX<T> arr_view = Eigen::Map<Eigen::MatrixX<T>>(
         arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
     // output matrix size
-    std::cout << "arr_view.rows() = " << arr_view.rows() << std::endl;
-    std::cout << "arr_view.cols() = " << arr_view.cols() << std::endl;
     Eigen::MatrixX<T> result = _fit_impl_first_dim<T, S, N>(svd, arr_view);
     // Copy the result to a tensor
     Eigen::array<Eigen::Index, N> dims;
@@ -476,7 +474,7 @@ inline Eigen::MatrixXd eval_matrix(const std::shared_ptr<Basis> &basis,
 
     // Evaluate basis functions at sampling points
     auto u_eval = (*basis->u)(x);
-    // Transpose and scale by singular values
+    // Transpose
     matrix = u_eval.transpose();
 
     return matrix;
@@ -580,6 +578,7 @@ public:
 
         // Initialize evaluation matrix with correct dimensions
         matrix_ = eval_matrix(basis, sampling_points_);
+
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
             matrix_.cols() != static_cast<std::size_t>(basis->size())) {

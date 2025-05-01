@@ -95,6 +95,10 @@
         }                                                                      \
         DEBUG_LOG(#name << " object at " << obj                                \
                         << ", ptr=" << obj->ptr.get());                        \
+        if (!obj->ptr) {                                                       \
+            DEBUG_LOG(#name << " object has null shared_ptr");                 \
+            return nullptr;                                                    \
+        }                                                                      \
         return obj->ptr;                                                       \
     }
 

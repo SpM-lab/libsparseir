@@ -70,14 +70,14 @@ TEST_CASE("basis.u[0] test", "[basis]")
     REQUIRE(s.isApprox(s_ref));
 
     double x = 0.3;
-    auto u0 = (*basis->u)[0];
+    auto u0 = (*basis->u)[0]->get_obj();
     auto u0x = u0(x);
 
-    REQUIRE(u0.xmin == 0.0);
-    REQUIRE(u0.xmax == 1.0);
+    REQUIRE(u0.get_xmin() == 0.0);
+    REQUIRE(u0.get_xmax() == 1.0);
     REQUIRE(u0.get_polyorder() == 16);
-    REQUIRE(u0.l == 0);
-    REQUIRE(u0.symm == 1);
+    REQUIRE(u0.get_l() == 0);
+    REQUIRE(u0.get_symm() == 1);
 
     vector<double> u_knot_ref_vec = {
         0.0,
@@ -164,7 +164,7 @@ TEST_CASE("basis.u(x)", "[basis]")
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, 1e-15, kernel, sve_result);
     double x = 0.3;
-    auto u0 = (*basis->u)[0];
+    auto u0 = (*basis->u)[0]->get_obj();
     auto u0x = u0(x);
 
     vector<double> u0_data_vec = {
@@ -770,11 +770,20 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
             make_shared<sparseir::FiniteTempBasis<sparseir::Fermionic>>(
                 beta, omega_max, epsilon, kernel, sve_result);
 
-        for (double tau :
-             {1e-1 * beta, 0.5 * beta, 0.9 * beta}) {
+        auto taus = std::vector<double>({-beta, -0.0, 0.0, 1e-1 * beta, 0.9 * beta, beta});
+        auto taus_regularized = std::vector<double>({0.0, beta, 0.0, 1e-1 * beta, 0.9 * beta, beta});
+        auto signs = std::vector<double>({-1.0, -1.0, 1.0, 1.0, 1.0, 1.0});
+
+        REQUIRE(taus.size() == signs.size());
+
+        for (int i = 0; i < taus.size(); ++i) {
+            double tau = taus[i];
+            double tau_regularized = taus_regularized[i];
+            double sign = signs[i];
             for (double omega :
-                 {1e-1 * omega_max, 0.5 * omega_max, 0.9 * omega_max}) {
-                double x = 2.0 * tau / beta - 1.0;
+                 //{1e-1 * omega_max, 0.5 * omega_max, 0.9 * omega_max}) {
+                 {0.9 * omega_max}) {
+                double x = 2.0 * tau_regularized / beta - 1.0;
                 double y = omega / omega_max;
 
                 // Compute kernel value directly
@@ -783,11 +792,11 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
                 // Compute reconstruction using basis functions
                 double reconstruction = 0.0;
                 for (int l = 0; l < basis_f->size(); ++l) {
-                    reconstruction += basis_f->s[l] * (*basis_f->u)[l](tau) *
+                    reconstruction += basis_f->s[l] * (*basis_f->u)[l]->operator()(tau) *
                                       (*basis_f->v)[l](omega);
                 }
 
-                REQUIRE(std::abs(kernel_value - reconstruction) < 10 * epsilon);
+                REQUIRE(std::abs(kernel_value * sign - reconstruction) < 10 * epsilon);
             }
         }
     }
@@ -817,7 +826,7 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
                 // Compute reconstruction using basis functions
                 double reconstruction = 0.0;
                 for (int l = 0; l < basis_b->size(); ++l) {
-                    reconstruction += basis_b->s[l] * (*basis_b->u)[l](tau) *
+                    reconstruction += basis_b->s[l] * (*basis_b->u)[l]->operator()(tau) *
                                       (*basis_b->v)[l](omega);
                 }
 

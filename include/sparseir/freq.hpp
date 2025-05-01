@@ -149,6 +149,16 @@ inline int sign(const MatsubaraFreq<S> &a)
 }
 
 template <typename S>
+int fermionic_sign()
+{
+    if (std::is_same<S, sparseir::Fermionic>::value) {
+        return -1;
+    }
+    return 1;
+}
+
+
+template <typename S>
 inline BosonicFreq zero()
 {
     return BosonicFreq(0);

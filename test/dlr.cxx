@@ -6,8 +6,17 @@
 #include <memory>
 #include <random>
 #include <sparseir/sparseir.hpp>
+#include "xprec/ddouble-header-only.hpp"
 
 using Catch::Approx;
+
+double dlr_basis_func_logistic(double beta, double tau, double omega) {
+    using std::exp;
+    xprec::DDouble beta_d(beta);
+    xprec::DDouble tau_d(tau);
+    xprec::DDouble omega_d(omega);
+    return -static_cast<double>(exp(-tau_d * omega_d) / (1.0 + exp(-beta_d * omega_d)));
+}
 
 TEST_CASE("DLR Tests", "[dlr]")
 {
@@ -70,6 +79,90 @@ TEST_CASE("DLR Tests", "[dlr]")
 
         test_statistics(sparseir::Fermionic{});
         test_statistics(sparseir::Bosonic{});
+    }
+
+    SECTION("DLR basis function tests (fermionic)")
+    {
+        double beta = 1e+2;
+        double omega_max = 2.0;
+        double epsilon = 1e-7;
+        auto kernel = sparseir::LogisticKernel(beta * omega_max);
+        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
+        auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic>(beta, omega_max, epsilon, kernel, sve_result);
+        auto dlr = sparseir::DiscreteLehmannRepresentation<sparseir::Fermionic>(basis);
+        auto size_dlr = dlr.size();
+        auto poles = dlr.poles;
+
+        auto u0 = *((*dlr.u)[0]);
+        auto u1 = *((*dlr.u)[size_dlr - 1]);
+
+        double delta = beta * 1e-13;
+
+
+        REQUIRE(std::abs(u0(-0.0) - (-1 * u0(beta)) ) < 1e-8);
+        REQUIRE(std::abs(u1(-0.0) - (-1 * u1(beta)) ) < 1e-8);
+
+        REQUIRE(std::abs(u0(0.0) - (u0(delta)) ) < 1e-8);
+        REQUIRE(std::abs(u1(0.0) - (u1(delta)) ) < 1e-8);
+
+        for (double tau: std::vector<double>{0.0, 1e-3*beta, 1e-2*beta, 1e-1*beta, (1-1e-3)*beta, beta}) {
+            REQUIRE(std::abs(u0(tau) - dlr_basis_func_logistic(beta, tau, poles[0])) < 1e-13);
+            REQUIRE(std::abs(u1(tau) - dlr_basis_func_logistic(beta, tau, poles[size_dlr - 1])) < 1e-13);
+        }
+
+        // corner 
+        auto taus = std::vector<double>({-beta, -0.0, 0.0, beta});
+        auto taus_regularized = std::vector<double>({0.0, beta, 0.0, beta});
+        auto signs = std::vector<double>({-1.0, -1.0, 1.0, 1.0});
+
+        for (int i = 0; i < taus.size(); ++i) {
+            double tau = taus[i];
+            double tau_regularized = taus_regularized[i];
+            double sign = signs[i];
+            double u0_tau = u0(tau);
+            double u0_ref = sign * dlr_basis_func_logistic(beta, tau_regularized, poles[0]);
+            double u1_tau = u1(tau);
+            double u1_ref = sign * dlr_basis_func_logistic(beta, tau_regularized, poles[size_dlr - 1]);
+            REQUIRE(std::abs(u0_tau - u0_ref) < 1e-13);
+            REQUIRE(std::abs(u1_tau - u1_ref) < 1e-13);
+        }
+    }
+
+    SECTION("DLR basis function tests (bosonic)")
+    {
+        std::cout << "DLR basis function tests (bosonic)" << std::endl;
+        //double beta = 1e+2;
+        //double omega_max = 2.0;
+        double beta = 1e+2;
+        double omega_max = 1.0;
+        double epsilon = 1e-7;
+        auto kernel = sparseir::LogisticKernel(beta * omega_max);
+        auto sve_result = SVECache::get_sve_result(kernel, epsilon);
+        auto basis = sparseir::FiniteTempBasis<sparseir::Bosonic>(beta, omega_max, epsilon, kernel, sve_result);
+        auto dlr = sparseir::DiscreteLehmannRepresentation<sparseir::Bosonic>(basis);
+        auto size_dlr = dlr.size();
+        auto poles = dlr.poles;
+
+        auto u0 = *((*dlr.u)[0]);
+        auto u1 = *((*dlr.u)[size_dlr - 1]);
+
+        double delta = beta * 1e-13;
+
+        REQUIRE(std::abs(u0(-0.0) - u0(beta) ) < 1e-8);
+        REQUIRE(std::abs(u1(-0.0) - u1(beta) ) < 1e-8);
+
+        REQUIRE(std::abs(u0(0.0) - u0(delta) ) < 1e-8);
+        REQUIRE(std::abs(u1(0.0) - u1(delta) ) < 1e-8);
+
+        for (double tau: std::vector<double>{0.0, 1e-3*beta, 1e-2*beta, 1e-1*beta, (1-1e-3)*beta, beta}) {
+            double u0_tau = u0(tau);
+            double u0_ref = dlr_basis_func_logistic(beta, tau, poles[0]);
+            REQUIRE(std::abs(u0_tau - u0_ref) < 1e-13);
+
+            double u1_tau = u1(tau);
+            double u1_ref = dlr_basis_func_logistic(beta, tau, poles[size_dlr - 1]);
+            REQUIRE(std::abs(u1_tau - u1_ref) < 1e-13);
+        }
     }
 
     SECTION("Boson Specific Tests")

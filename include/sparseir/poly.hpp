@@ -158,6 +158,8 @@ public:
     // Accessor functions
     double get_xmin() const { return xmin; }
     double get_xmax() const { return xmax; }
+    int get_l() const { return l; }
+    std::pair<double, double> get_domain() const { return std::make_pair(xmin, xmax); }
     const Eigen::VectorXd &get_knots() const { return knots; }
     const Eigen::VectorXd &get_delta_x() const { return delta_x; }
     int get_symm() const { return symm; }
@@ -181,6 +183,9 @@ shift_xmid(const std::vector<double> &knots,
            const std::vector<double> &delta_x);
 
 Eigen::VectorXcd phase_stable(const PiecewiseLegendrePoly &poly, int wn);
+
+
+
 
 class PiecewiseLegendrePolyVector {
 public:
@@ -378,6 +383,31 @@ public:
         return results;
     }
 };
+
+
+inline
+std::vector<std::shared_ptr<PiecewiseLegendrePoly>>
+make_polyvec(const PiecewiseLegendrePolyVector &polys,
+                            const Eigen::VectorXd &knots,
+                                const Eigen::VectorXd &Δx,
+                                const Eigen::VectorXi &symm = Eigen::VectorXi())
+{
+    std::vector<std::shared_ptr<PiecewiseLegendrePoly>> polyvec(polys.size());
+    if (polys.size() != static_cast<size_t>(symm.size())) {
+        throw std::invalid_argument("Sizes of polys and symm don't match " +
+                                    std::to_string(polys.size()) + " " +
+                                        std::to_string(symm.size()));
+    }
+    for (size_t i = 0; i < polys.size(); ++i) {
+        Eigen::MatrixXd data = polys[i].get_data();
+        Eigen::VectorXd knots_copy = knots;
+        Eigen::VectorXd delta_x_copy = Δx;
+        polyvec[i] = std::make_shared<PiecewiseLegendrePoly>(data, knots_copy,
+                                               polys[i].l, delta_x_copy, symm(i));
+    }
+    return polyvec;
+}
+
 
 // Forward declarations
 class PiecewiseLegendrePoly;

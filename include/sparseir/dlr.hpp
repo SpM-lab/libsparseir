@@ -80,88 +80,62 @@ public:
     }
 };
 
+
+
 template <typename S>
-class TauPoles {
+class DLRBasisFunction {
 public:
     double beta;
-    Eigen::VectorXd poles;
+    double pole;
     double wmax;
-    std::vector<double> weights;
+    double weight;
 
-    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
-        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+    DLRBasisFunction(double beta, double pole, double wmax, double weight)
+        : beta(beta), pole(pole), wmax(wmax), weight(weight)
     {
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            weights[i] = weight_func(beta, poles(i));
-        }
     }
 
     template <typename T = S>
-    TauPoles(double beta, const Eigen::VectorXd &poles, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
-        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+    DLRBasisFunction(double beta, double pole, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
+        : beta(beta), pole(pole), wmax(wmax), weight(1.0)
     {
     }
-
-
-    // Return the size of the poles vector
-    std::size_t size() const { return poles.size(); }
 
     // Evaluate at tau points
     template <typename T = S,
               typename std::enable_if<std::is_same<T, Fermionic>::value, int>::type = 0>
-    Eigen::VectorXd operator()(double tau) const
+    double operator()(double tau) const
     {
         auto kernel = LogisticKernel(beta * wmax); // k(x, y)
-        Eigen::VectorXd result(poles.size());
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            //double x = poles(i);
-            //double xtau = x * tau;
-            //result(i) = -std::exp(-xtau) / (1.0 + std::exp(-beta * x)) / weights[i];
-            double x = 2 * tau / beta - 1.0;
-            double y = poles(i) / wmax;
-            result(i) = - kernel.compute(x, y) / weights[i];
-        }
-        return result;
+        double x = 2 * tau / beta - 1.0;
+        double y = pole / wmax;
+        return - kernel.compute(x, y) / weight;
     }
 
     template <typename T = S,
               typename std::enable_if<std::is_same<T, Bosonic>::value, int>::type = 0>
-    Eigen::VectorXd operator()(double tau) const
+    double operator()(double tau) const
     {
-        Eigen::VectorXd result(poles.size());
-
         // k(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
         auto kernel = RegularizedBoseKernel(beta * wmax); // k(x, y)
-
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            double w = poles(i);
-            double x = 2.0 * tau / beta - 1.0;
-            double y = w / wmax;
-            double xtau = w * tau;
-
-            // k(τ, ω) = ωmax * k(2τ/β - 1, ω/ωmax) = ω * exp(- τ * ω) / (1 - exp(-beta * ω))
-            double k_tau_omega = wmax * kernel.compute(x, y);
-
-            // FIXME: accuracy is not good for beta * x ~ 0.0
-            //result(i) = -std::exp(-xtau) / (1.0 - std::exp(-beta * w)) / weights[i];
-            std::cout << "k_tau_omega: " << k_tau_omega << std::endl;
-            std::cout << "w: " << w << std::endl;
-            std::cout << "weights[i]: " << weights[i] << std::endl;
-            result(i) = - k_tau_omega / (w * weights[i]);
-        }
-        return result;
+        double x = 2.0 * tau / beta - 1.0;
+        double y = pole / wmax;
+        double xtau = pole * tau;
+        double k_tau_omega = kernel.compute(x, y);
+        return - k_tau_omega / (y * weight);
     }
 
     // For vector of tau points
-    Eigen::MatrixXd operator()(const Eigen::VectorXd &tau) const
+    Eigen::VectorXd operator()(const Eigen::VectorXd &tau) const
     {
-        Eigen::MatrixXd result(poles.size(), tau.size());
+        Eigen::VectorXd result(tau.size());
         for (Eigen::Index i = 0; i < tau.size(); ++i) {
-            result.col(i) = (*this)(tau(i));
+            result(i) = (*this)(tau(i));
         }
         return result;
     }
 };
+
 
 template <typename S>
 Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
@@ -197,30 +171,51 @@ Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
     return basis.get_wmax() * y_new;
 }
 
+
+template<typename S>
+using DLRTauFuncsType = TauFunctions<S, DLRBasisFunction<S>>;
+
 template <typename S>
 class DiscreteLehmannRepresentation : public AbstractBasis<S> {
 public:
-    FiniteTempBasis<S> basis;
     Eigen::VectorXd poles;
+    double beta;
     double wmax;
-    std::shared_ptr<TauPoles<S>> u;
+    double accuracy;
+    std::shared_ptr<DLRTauFuncsType<S>> u;
     std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
     Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
     std::function<double(double, double)> weight_func;
+    Eigen::VectorXd _ir_default_tau_sampling_points;
+
 
     // Constructor with basis and poles
     DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b,
                                   const Eigen::VectorXd &poles)
-        : basis(b),
-          poles(poles),
-          u(std::make_shared<TauPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func)),
-          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, basis.get_wmax(), basis.weight_func))
+        : beta(b.get_beta()), wmax(b.get_wmax()), poles(poles), accuracy(b.get_accuracy()),
+          u(nullptr),
+          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
+          _ir_default_tau_sampling_points(b.default_tau_sampling_points())
     {
+        // initialize u
+        std::vector<std::shared_ptr<TauFunction<S, DLRBasisFunction<S>>>> u_funcs;
+        for (int i = 0; i < poles.size(); ++i) {
+            u_funcs.push_back(
+                std::make_shared<TauFunction<S, DLRBasisFunction<S>>>(
+                    std::make_shared<DLRBasisFunction<S>>(
+                        b.get_beta(), poles[i], b.get_wmax(), b.weight_func(beta, poles[i])
+                    ),
+                    b.get_beta()
+                )
+            );
+        }
+        this->u = std::make_shared<DLRTauFuncsType<S>>(u_funcs, b.get_beta());
+
         // Fitting matrix from IR
-        Eigen::MatrixXd A = (*basis.v)(poles);
+        Eigen::MatrixXd A = (*b.v)(poles);
         Eigen::ArrayXXd A_array = A.array();
-        Eigen::ArrayXd s_array = basis.s.array();
+        Eigen::ArrayXd s_array = b.s.array();
 
         // Perform element-wise multiplication
         // size: (size of basis, size of poles)
@@ -228,8 +223,8 @@ public:
 
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-        weight_func = basis.weight_func;
-        wmax = basis.get_wmax();
+        weight_func = b.weight_func;
+        wmax = b.get_wmax();
     }
 
     // Constructor with just basis
@@ -244,18 +239,24 @@ public:
     {
         return Eigen::VectorXd::Ones(size());
     }
-    double get_accuracy() const override { return basis.get_accuracy(); }
-    double get_wmax() const override { return basis.get_wmax(); }
+    double get_accuracy() const override { return accuracy; }
     Eigen::VectorXd default_tau_sampling_points() const override
     {
-        return basis.default_tau_sampling_points();
+        throw std::runtime_error("default_tau_sampling_points is not implemented for DiscreteLehmannRepresentation");
+        // return length 0 vector
+        return Eigen::VectorXd::Zero(0);
     }
+
+    double get_wmax() const override { return wmax; }
+    double get_beta() const override { return beta; }
 
     std::vector<MatsubaraFreq<S>>
     default_matsubara_sampling_points(int L, bool fence = false,
                                       bool positive_only = false) const override
     {
-        return basis.default_matsubara_sampling_points(L, fence, positive_only);
+        throw std::runtime_error("default_matsubara_sampling_points is not implemented for DiscreteLehmannRepresentation");
+        return std::vector<MatsubaraFreq<S>>();
+        //return basis.default_matsubara_sampling_points(L, fence, positive_only);
     }
 
     template <typename T, int N>
@@ -325,8 +326,6 @@ public:
         return fitmat_as_tensor.contract(g_dlr, contraction_pairs);
     }
 
-    double beta() const { return basis.beta; }
-    double Lambda() const { return basis.Lambda(); }
 };
 
 } // namespace sparseir

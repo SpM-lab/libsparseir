@@ -15,9 +15,10 @@ cmake .. \
   -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=ON \
   -DBUILD_TESTING=ON
-   #-DCMAKE_C_FLAGS="-fsanitize=address -g" \
-   #-DCMAKE_CXX_FLAGS="-fsanitize=address -g" \
-   #-DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
+
+#   -DCMAKE_C_FLAGS="-w -fsanitize=address -g" \
+#   -DCMAKE_CXX_FLAGS="-w -fsanitize=address -g" \
+#   -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
 
 # Build (including tests)
 cmake --build . --config Release -j 4
