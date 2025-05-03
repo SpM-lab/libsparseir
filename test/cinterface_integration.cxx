@@ -330,7 +330,7 @@ void integration_test(double beta, double wmax, double epsilon,
         extra_dims.begin(), extra_dims.end(), 1, std::multiplies<>());
     // Generate random DLR coefficients
     Eigen::Tensor<double, ndim, ORDER> coeffs_targetdim0(
-        _get_dims<ndim>(npoles, extra_dims, target_dim));
+        _get_dims<ndim>(npoles, extra_dims, 0));
     std::mt19937 gen(982743);
     std::uniform_real_distribution<> dis(0.0, 1.0);
     {
