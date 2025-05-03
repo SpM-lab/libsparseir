@@ -78,8 +78,10 @@ void test_finite_temp_basis_dlr()
 
     double *Gl = (double *)malloc(basis_size * sizeof(double));
     int32_t to_ir_input_dims[1] = {npoles};
+    int32_t ndim = 1;
+    int32_t target_dim = 0;
     int status_to_IR = spir_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR,
-                                      1, to_ir_input_dims, 0, coeffs.data(), Gl);
+                                      ndim, to_ir_input_dims, target_dim, coeffs.data(), Gl);
 
     REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
     double *g_dlr = (double *)malloc(num_poles * sizeof(double));

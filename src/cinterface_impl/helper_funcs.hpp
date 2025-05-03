@@ -157,14 +157,14 @@ spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 
 template <typename S>
 int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
-                       int32_t *input_dims, const double *input, double *out)
+                       int32_t *input_dims, int32_t target_dim, const double *input, double *out)
 {
     std::shared_ptr<_DLR<S>> impl =
         std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
+    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, target_dim);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_2d.begin(), input_dims_2d.end());
     }
