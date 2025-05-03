@@ -286,13 +286,6 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
                        int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out)
 {
-    /*
-    if (target_dim != 0) {
-        std::cerr << "target_dim must be 0" << std::endl;
-        return SPIR_INVALID_ARGUMENT;
-    }
-    */
-
     auto impl = get_impl_dlr(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
