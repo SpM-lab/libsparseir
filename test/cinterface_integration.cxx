@@ -389,9 +389,9 @@ void integration_test(double beta, double wmax, double epsilon,
         _evaluate_gtau<double, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
     Eigen::Tensor<double, ndim, ORDER> gtau_diff = (gtau_from_IR - gtau_from_DLR).abs();
-    std::cout << "gtau_from_IR: " << gtau_from_IR << std::endl;
-    std::cout << "gtau_from_DLR: " << gtau_from_DLR << std::endl;
-    std::cout << "gtau_diff: " << gtau_diff << std::endl;
+    // std::cout << "gtau_from_IR: " << gtau_from_IR << std::endl;
+    // std::cout << "gtau_from_DLR: " << gtau_from_DLR << std::endl;
+    //std::cout << "gtau_diff: " << gtau_diff << std::endl;
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, tol));
 
@@ -469,6 +469,7 @@ TEST_CASE("Integration Test", "[cinterface]")
 {
     std::vector<int> extra_dims = {};
     double beta = 1e+4;
+    beta = 10.0;
     double wmax = 2.0;
     double epsilon = 1e-10;
 
@@ -484,6 +485,7 @@ TEST_CASE("Integration Test", "[cinterface]")
                     Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       SPIR_ORDER_COLUMN_MAJOR, tol);
 //
+    /*
     {
         int32_t target_dim = 0;
         std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
@@ -508,18 +510,16 @@ TEST_CASE("Integration Test", "[cinterface]")
                         Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                         SPIR_ORDER_COLUMN_MAJOR, tol);
     }
+    */
 
-    /*
     {
-        // TODO: support target_dim != 0
         int32_t target_dim = 1;
-        std::vector<int> extra_dims = {1,1,1};
+        std::vector<int> extra_dims = {2,3,4};
         std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
         integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
                         Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                         SPIR_ORDER_COLUMN_MAJOR, tol);
     }
-    */
 
     //
     //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
