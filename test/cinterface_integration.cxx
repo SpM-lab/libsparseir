@@ -329,13 +329,13 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Index extra_size = std::accumulate(
         extra_dims.begin(), extra_dims.end(), 1, std::multiplies<>());
     // Generate random DLR coefficients
-    Eigen::Tensor<double, ndim, ORDER> coeffs(
-        _get_dims<ndim>(npoles, extra_dims, target_dim));
+    Eigen::Tensor<double, ndim, ORDER> coeffs_targetdim0(
+        _get_dims<ndim>(npoles, extra_dims, 0));
     std::mt19937 gen(982743);
     std::uniform_real_distribution<> dis(0.0, 1.0);
     {
         Eigen::TensorMap<Eigen::Tensor<double, 2, ORDER>> coeffs_2d(
-            coeffs.data(), npoles, extra_size);
+            coeffs_targetdim0.data(), npoles, extra_size);
         for (Eigen::Index i = 0; i < npoles; ++i) {
             for (Eigen::Index j = 0; j < extra_size; ++j) {
                 coeffs_2d(i, j) =
@@ -348,6 +348,8 @@ void integration_test(double beta, double wmax, double epsilon,
         }
 
     }
+    Eigen::Tensor<double, ndim, ORDER> coeffs =
+        sparseir::movedim(coeffs_targetdim0, 0, target_dim);
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
     //std::cout << "poles: " << poles << std::endl;
 
@@ -465,7 +467,8 @@ void integration_test(double beta, double wmax, double epsilon,
 TEST_CASE("Integration Test", "[cinterface]")
 {
     std::vector<int> extra_dims = {};
-    double beta = 1e+4;
+    // double beta = 1e+4;
+    double beta = 10.0;
     double wmax = 2.0;
     double epsilon = 1e-10;
 
@@ -508,8 +511,8 @@ TEST_CASE("Integration Test", "[cinterface]")
 
     {
         // TODO: support target_dim != 0
-        std::vector<int> extra_dims = {1,1,1};
         int32_t target_dim = 2;
+        std::vector<int> extra_dims = {1,1,1};
         std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
         integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
                         Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
