@@ -510,8 +510,8 @@ TEST_CASE("Integration Test", "[cinterface]")
     }
 
     {
-        // TODO: support target_dim != 0
         int32_t target_dim = 2;
+        // TODO: support extra_dims != {1,1,1}
         std::vector<int> extra_dims = {1,1,1};
         std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
         integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
