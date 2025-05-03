@@ -226,10 +226,6 @@ void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
                       const spir_order_type order, double tol)
 {
-    if (target_dim != 0) {
-        std::cerr << "target_dim must be 0" << std::endl;
-        return;
-    }
     if (ndim != 1 + extra_dims.size()) {
         std::cerr << "ndim must be 1 + extra_dims.size()" << std::endl;
     }
