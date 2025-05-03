@@ -50,7 +50,7 @@ std::array<IntType, ndim> _get_dims(int target_dim_size,
         if (i == target_dim) {
             continue;
         }
-        dims[pos] = static_cast<IntType>(extra_dims[i]);
+        dims[i] = static_cast<IntType>(extra_dims[pos]);
         ++pos;
     }
     return dims;
