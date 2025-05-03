@@ -15,7 +15,7 @@ public:
     double wmax;
     std::vector<double> weights;
 
-    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)   
+    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
         : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
     {
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
@@ -141,33 +141,33 @@ template <typename S>
 Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
 {
     Eigen::VectorXd y = default_sampling_points(*(basis.sve_result->v), basis.size());
-    
+
     // If the number of points is even, return as is
     if (y.size() % 2 == 0) {
         return basis.get_wmax() * y;
     }
-    
+
     // For odd number of points, we need to handle the symmetry
     int n = y.size();
     int n_half = (n - 1) / 2;  // number of positive frequencies excluding zero
-    
+
     // Create a new vector with 2*n_half + 2 elements
     Eigen::VectorXd y_new(2*n_half + 2);
-    
+
     // Copy positive frequencies (excluding zero)
     y_new.head(n_half) = y.tail(n_half);
-    
+
     // Add the new points (half of the smallest positive frequency)
     double min_pos = y_new(0);  // smallest positive frequency
     y_new(n_half) = min_pos/2.0;
     y_new(n_half+1) = -min_pos/2.0;
-    
+
     // Copy positive frequencies to negative side
     y_new.tail(n_half) = -y_new.head(n_half);
-    
+
     // Sort the frequencies
     std::sort(y_new.data(), y_new.data() + y_new.size());
-    
+
     return basis.get_wmax() * y_new;
 }
 

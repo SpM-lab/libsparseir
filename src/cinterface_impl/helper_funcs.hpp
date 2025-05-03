@@ -69,7 +69,6 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
             input, input_dims_3d);
         Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
             out, output_dims_3d);
-        // Convert to column-major order for Eigen
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     } else {
         std::array<int32_t, 3> input_dims_3d = dims_3d;
@@ -81,7 +80,6 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
             input, input_dims_3d);
         Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
             out, output_dims_3d);
-
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     }
 }
