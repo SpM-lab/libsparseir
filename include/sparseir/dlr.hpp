@@ -316,13 +316,13 @@ public:
 
     // Convert from DLR to IR
     template <typename T, int N>
-    Eigen::Tensor<T, N> to_IR(const Eigen::Tensor<T, N> &g_dlr) const
+    Eigen::Tensor<T, N> to_IR(const Eigen::Tensor<T, N> &g_dlr, int target_dim=0) const
     {
         // fitmat is a matrix, so we need to convert it to a tensor
         Eigen::TensorMap<Eigen::Tensor<const double, 2>> fitmat_as_tensor(
             fitmat.data(), fitmat.rows(), fitmat.cols());
         std::array<Eigen::IndexPair<int>, 1> contraction_pairs = {
-            Eigen::IndexPair<int>(1, 0)};
+            Eigen::IndexPair<int>(1, target_dim)};
         return fitmat_as_tensor.contract(g_dlr, contraction_pairs);
     }
 
