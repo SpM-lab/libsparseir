@@ -46,7 +46,7 @@ std::array<IntType, ndim> _get_dims(int target_dim_size,
     std::array<IntType, ndim> dims;
     dims[target_dim] = static_cast<IntType>(target_dim_size);
     int pos = 0;
-    for (int i = 0; i < extra_dims.size(); ++i) {
+    for (int i = 0; i < ndim; ++i) {
         if (i == target_dim) {
             continue;
         }
@@ -207,7 +207,7 @@ spir_kernel* _kernel_new(double lambda);
 
 template <>
 spir_kernel* _kernel_new<sparseir::LogisticKernel>(double lambda)
-{  
+{
     return spir_logistic_kernel_new(lambda);
 }
 
@@ -288,11 +288,9 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::VectorXd poles(npoles);
     status = spir_dlr_get_poles(dlr, poles.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
     // Calculate total size of extra dimensions
     Eigen::Index extra_size = std::accumulate(
         extra_dims.begin(), extra_dims.end(), 1, std::multiplies<>());
-
     // Generate random DLR coefficients
     Eigen::Tensor<double, ndim, ORDER> coeffs_targetdim0(
         _get_dims<ndim>(npoles, extra_dims, target_dim));
@@ -319,7 +317,6 @@ void integration_test(double beta, double wmax, double epsilon,
     // Move the axis for the poles from the first to the target dimension
     Eigen::Tensor<double, ndim, ORDER> coeffs =
         sparseir::movedim(coeffs_targetdim0, 0, target_dim);
-
     // Convert DLR coefficients to IR coefficients
     // TODO: Extend to Tensor
     Eigen::Tensor<double, ndim, ORDER> g_IR(
