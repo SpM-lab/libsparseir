@@ -56,6 +56,17 @@ std::array<IntType, ndim> _get_dims(int target_dim_size,
     return dims;
 }
 
+TEST_CASE("Test _get_dims", "[cinterface]")
+{
+    std::vector<int> extra_dims = {2,3,4};
+    int32_t target_dim = 2;
+    auto dims = _get_dims<3>(100, extra_dims, target_dim);
+    REQUIRE(dims[0] == 2);
+    REQUIRE(dims[1] == 3);
+    REQUIRE(dims[2] == 100);
+    REQUIRE(dims[3] == 4);
+}
+
 // Helper function to evaluate basis functions at multiple points
 template <typename T, Eigen::StorageOptions ORDER>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>
