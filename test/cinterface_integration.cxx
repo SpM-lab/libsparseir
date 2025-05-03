@@ -329,13 +329,13 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Index extra_size = std::accumulate(
         extra_dims.begin(), extra_dims.end(), 1, std::multiplies<>());
     // Generate random DLR coefficients
-    Eigen::Tensor<double, ndim, ORDER> coeffs_targetdim0(
+    Eigen::Tensor<double, ndim, ORDER> coeffs(
         _get_dims<ndim>(npoles, extra_dims, target_dim));
     std::mt19937 gen(982743);
     std::uniform_real_distribution<> dis(0.0, 1.0);
     {
         Eigen::TensorMap<Eigen::Tensor<double, 2, ORDER>> coeffs_2d(
-            coeffs_targetdim0.data(), npoles, extra_size);
+            coeffs.data(), npoles, extra_size);
         for (Eigen::Index i = 0; i < npoles; ++i) {
             for (Eigen::Index j = 0; j < extra_size; ++j) {
                 coeffs_2d(i, j) =
@@ -351,9 +351,6 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
     //std::cout << "poles: " << poles << std::endl;
 
-    // Move the axis for the poles from the first to the target dimension
-    Eigen::Tensor<double, ndim, ORDER> coeffs =
-        sparseir::movedim(coeffs_targetdim0, 0, target_dim);
     // Convert DLR coefficients to IR coefficients
     // TODO: Extend to Tensor
     Eigen::Tensor<double, ndim, ORDER> g_IR(
@@ -509,17 +506,15 @@ TEST_CASE("Integration Test", "[cinterface]")
                                         SPIR_ORDER_COLUMN_MAJOR, tol);
     }
 
-    /*
     {
         // TODO: support target_dim != 0
-        int32_t target_dim = 1;
         std::vector<int> extra_dims = {1,1,1};
+        int32_t target_dim = 2;
         std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
         integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
                         Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                         SPIR_ORDER_COLUMN_MAJOR, tol);
     }
-    */
 
     //
     //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
