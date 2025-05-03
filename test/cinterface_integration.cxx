@@ -46,14 +46,51 @@ std::array<IntType, ndim> _get_dims(int target_dim_size,
     std::array<IntType, ndim> dims;
     dims[target_dim] = static_cast<IntType>(target_dim_size);
     int pos = 0;
-    for (int i = 0; i < extra_dims.size(); ++i) {
+    for (int i = 0; i < ndim; ++i) {
         if (i == target_dim) {
             continue;
         }
-        dims[pos] = static_cast<IntType>(extra_dims[i]);
+        dims[i] = static_cast<IntType>(extra_dims[pos]);
         ++pos;
     }
     return dims;
+}
+
+TEST_CASE("Test _get_dims", "[cinterface]")
+{
+    std::vector<int> extra_dims = {2,3,4};
+    {
+        int32_t target_dim = 0;
+        auto dims = _get_dims<4>(100, extra_dims, target_dim);
+        REQUIRE(dims[0] == 100);
+        REQUIRE(dims[1] == 2);
+        REQUIRE(dims[2] == 3);
+        REQUIRE(dims[3] == 4);
+    }
+    {
+        int32_t target_dim = 1;
+        auto dims = _get_dims<4>(100, extra_dims, target_dim);
+        REQUIRE(dims[0] == 2);
+        REQUIRE(dims[1] == 100);
+        REQUIRE(dims[2] == 3);
+        REQUIRE(dims[3] == 4);
+    }
+    {
+        int32_t target_dim = 2;
+        auto dims = _get_dims<4>(100, extra_dims, target_dim);
+        REQUIRE(dims[0] == 2);
+        REQUIRE(dims[1] == 3);
+        REQUIRE(dims[2] == 100);
+        REQUIRE(dims[3] == 4);
+    }
+    {
+        int32_t target_dim = 3;
+        auto dims = _get_dims<4>(100, extra_dims, target_dim);
+        REQUIRE(dims[0] == 2);
+        REQUIRE(dims[1] == 3);
+        REQUIRE(dims[2] == 4);
+        REQUIRE(dims[3] == 100);
+    }
 }
 
 // Helper function to evaluate basis functions at multiple points
@@ -207,7 +244,7 @@ spir_kernel* _kernel_new(double lambda);
 
 template <>
 spir_kernel* _kernel_new<sparseir::LogisticKernel>(double lambda)
-{  
+{
     return spir_logistic_kernel_new(lambda);
 }
 
@@ -226,10 +263,6 @@ void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
                       const spir_order_type order, double tol)
 {
-    if (target_dim != 0) {
-        std::cerr << "target_dim must be 0" << std::endl;
-        return;
-    }
     if (ndim != 1 + extra_dims.size()) {
         std::cerr << "ndim must be 1 + extra_dims.size()" << std::endl;
     }
@@ -292,11 +325,9 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::VectorXd poles(npoles);
     status = spir_dlr_get_poles(dlr, poles.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
     // Calculate total size of extra dimensions
     Eigen::Index extra_size = std::accumulate(
         extra_dims.begin(), extra_dims.end(), 1, std::multiplies<>());
-
     // Generate random DLR coefficients
     Eigen::Tensor<double, ndim, ORDER> coeffs_targetdim0(
         _get_dims<ndim>(npoles, extra_dims, target_dim));
@@ -323,7 +354,6 @@ void integration_test(double beta, double wmax, double epsilon,
     // Move the axis for the poles from the first to the target dimension
     Eigen::Tensor<double, ndim, ORDER> coeffs =
         sparseir::movedim(coeffs_targetdim0, 0, target_dim);
-
     // Convert DLR coefficients to IR coefficients
     // TODO: Extend to Tensor
     Eigen::Tensor<double, ndim, ORDER> g_IR(
@@ -454,6 +484,44 @@ TEST_CASE("Integration Test", "[cinterface]")
                     Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       SPIR_ORDER_COLUMN_MAJOR, tol);
 //
+    {
+        int32_t target_dim = 0;
+        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
+        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                        Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                        SPIR_ORDER_COLUMN_MAJOR, tol);
+    }
+
+    {
+        int32_t target_dim = 0;
+        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
+        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                        Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                        SPIR_ORDER_ROW_MAJOR, tol);
+    }
+
+    {
+        int32_t target_dim = 0;
+        std::vector<int> extra_dims = {2,3,4};
+        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
+        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
+                        Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                        SPIR_ORDER_COLUMN_MAJOR, tol);
+    }
+
+    /*
+    {
+        // TODO: support target_dim != 0
+        int32_t target_dim = 1;
+        std::vector<int> extra_dims = {1,1,1};
+        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
+        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
+                        Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                        SPIR_ORDER_COLUMN_MAJOR, tol);
+    }
+    */
+
+    //
     //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
     //integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
