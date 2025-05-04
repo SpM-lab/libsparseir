@@ -376,7 +376,7 @@ void integration_test(double beta, double wmax, double epsilon,
     // TODO: Extend to Tensor
     Eigen::Tensor<double, ndim, ORDER> g_IR(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
-    status = spir_dlr_to_IR(dlr, order, ndim,
+    status = spir_dlr_to_IR_dd(dlr, order, ndim,
                             _get_dims<ndim, int32_t>(npoles, extra_dims, target_dim).data(), target_dim,
                             coeffs.data(), g_IR.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
