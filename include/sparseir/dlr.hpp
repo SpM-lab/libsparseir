@@ -323,7 +323,7 @@ public:
             fitmat.data(), fitmat.rows(), fitmat.cols());
         std::array<Eigen::IndexPair<int>, 1> contraction_pairs = {
             Eigen::IndexPair<int>(1, target_dim)};
-        return fitmat_as_tensor.contract(g_dlr, contraction_pairs);
+        return movedim<T, N>(fitmat_as_tensor.contract(g_dlr, contraction_pairs), 0, target_dim);
     }
 
 };
