@@ -153,9 +153,9 @@ spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
         std::make_shared<OmegaFunctions<InternalType>>(impl)));
 }
 
-template <typename S>
+template <typename S, typename T>
 int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
-                       int32_t *input_dims, int32_t target_dim, const double *input, double *out)
+                       int32_t *input_dims, int32_t target_dim, const T *input, T *out)
 {
     std::shared_ptr<_DLR<S>> impl =
         std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
@@ -166,12 +166,12 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
-    Eigen::Tensor<double, 3> input_tensor(input_dims_3d[0], input_dims_3d[1], input_dims_3d[2]);
+    Eigen::Tensor<T, 3> input_tensor(input_dims_3d[0], input_dims_3d[1], input_dims_3d[2]);
     size_t total_input_size = input_dims_3d[0] * input_dims_3d[1] * input_dims_3d[2];
     for (size_t i = 0; i < total_input_size; i++) {
         input_tensor.data()[i] = input[i];
     }
-    Eigen::Tensor<double, 3> out_tensor = impl->get_impl()->to_IR(input_tensor, 1);
+    Eigen::Tensor<T, 3> out_tensor = impl->get_impl()->to_IR(input_tensor, 1);
     size_t total_output_size =
         out_tensor.dimension(0) * out_tensor.dimension(1) * out_tensor.dimension(2);
     for (std::size_t i = 0; i < total_output_size; i++) {

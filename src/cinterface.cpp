@@ -316,7 +316,7 @@ int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_IR_dd(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
                        int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out)
 {
@@ -325,11 +325,31 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
         return SPIR_GET_IMPL_FAILED;
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_dlr_to_IR<sparseir::Fermionic>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr_to_IR<sparseir::Fermionic, double>(dlr, order, ndim, input_dims, target_dim,
                                                    input, out);
     } else {
-        return spir_dlr_to_IR<sparseir::Bosonic>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr_to_IR<sparseir::Bosonic, double>(dlr, order, ndim, input_dims, target_dim,
                                                  input, out);
+    }
+}
+
+int32_t spir_dlr_to_IR_zz(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+                       int32_t *input_dims, int32_t target_dim,
+                       const c_complex *input, c_complex *out)
+{
+    auto impl = get_impl_dlr(dlr);
+    if (!impl)
+        return SPIR_GET_IMPL_FAILED;
+
+    std::complex<double> *cpp_input = (std::complex<double> *)(input);
+    std::complex<double> *cpp_out = (std::complex<double> *)(out);
+
+    if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+        return spir_dlr_to_IR<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
+                                                   cpp_input, cpp_out);
+    } else {
+        return spir_dlr_to_IR<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
+                                                 cpp_input, cpp_out);
     }
 }
 
