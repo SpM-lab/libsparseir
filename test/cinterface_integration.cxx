@@ -469,7 +469,6 @@ TEST_CASE("Integration Test", "[cinterface]")
 {
     std::vector<int> extra_dims = {};
     double beta = 1e+4;
-    beta = 10.0;
     double wmax = 2.0;
     double epsilon = 1e-10;
 
