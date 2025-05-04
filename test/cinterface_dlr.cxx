@@ -82,7 +82,7 @@ void test_finite_temp_basis_dlr()
     int32_t to_ir_input_dims[1] = {npoles};
     int32_t ndim = 1;
     int32_t target_dim = 0;
-    int status_to_IR = spir_dlr_to_IR(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR,
+    int status_to_IR = spir_dlr_to_IR_dd(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR,
                                       ndim, to_ir_input_dims, target_dim, coeffs.data(), Gl);
 
     REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);

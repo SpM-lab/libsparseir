@@ -528,6 +528,7 @@ int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
 /**
  * @brief Transforms a given input array from the Intermediate Representation (IR)
  * to the Discrete Lehmann Representation (DLR) using the specified DLR object.
+ * This version handles real (double precision) input and output arrays.
  *
  * @param dlr Pointer to the fermionic DLR object
  * @param order Order type (C or Fortran)
@@ -547,7 +548,8 @@ int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
  *       specified order type. The output array will be in the specified order
  *       type.
  *
- * @see spir_dlr_to_IR
+ * @see spir_dlr_from_IR
+ * @see spir_dlr_to_IR_dd
  */
 int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
                          int32_t ndim, int32_t *input_dims, int32_t target_dim,
@@ -586,9 +588,48 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
  *
  * @see spir_dlr_from_IR
  */
-int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_IR_dd(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
                        int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out);
+
+/**
+ * @brief Transforms coefficients from DLR basis to IR representation.
+ * This version handles complex input and output arrays.
+ *
+ * This function converts expansion coefficients from the Discrete Lehmann
+ * Representation (DLR) basis to the Intermediate Representation (IR) basis.
+ * The transformation is performed using the fitting matrix:
+ *
+ * g_IR = fitmat * g_DLR
+ *
+ * where:
+ * - g_IR are the coefficients in the IR basis
+ * - g_DLR are the coefficients in the DLR basis
+ * - fitmat is the transformation matrix
+ *
+ * @param dlr Pointer to the DLR object
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param ndim Number of dimensions in the input/output arrays
+ * @param input_dims Array of dimension sizes
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input array of DLR coefficients (complex)
+ * @param out Output array for the IR coefficients (complex)
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The output array must be pre-allocated with the correct size
+ * @note The input and output arrays must be contiguous in memory
+ * @note The transformation is a direct matrix multiplication, which is
+ *       typically faster than the inverse transformation
+ *
+ * @see spir_dlr_from_IR_zz
+ * @see spir_dlr_to_IR_dd
+ */
+int32_t spir_dlr_to_IR_zz(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+                       int32_t *input_dims, int32_t target_dim,
+                       const c_complex *input, c_complex *out);
 
 /**
  * @brief Gets the basis functions of a DLR.
