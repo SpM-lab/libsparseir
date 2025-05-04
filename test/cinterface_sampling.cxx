@@ -799,6 +799,10 @@ void test_matsubara_sampling_constructor()
 
     auto sampling = spir_matsubara_sampling_new(basis);
     REQUIRE(sampling != nullptr);
+
+    auto sampling_positive_only = spir_matsubara_sampling_positive_only_new(basis);
+    REQUIRE(sampling_positive_only != nullptr);
+
     // Clean up
     spir_destroy_sampling(sampling);
     spir_destroy_finite_temp_basis(basis);
