@@ -225,7 +225,7 @@ int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_ba
     }
 }
 
-int32_t spir_matsubara_sampling_new_positive_only(spir_sampling** s, const spir_finite_temp_basis *b)
+int32_t spir_matsubara_sampling_positive_only_new(spir_sampling** s, const spir_finite_temp_basis *b)
 {
     spir_statistics_type stat;
     int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
