@@ -204,35 +204,13 @@ int32_t spir_tau_sampling_new(spir_sampling** s, const spir_finite_temp_basis *b
     }
 }
 
-int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_basis *b)
+int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_basis *b, bool positive_only)
 {
     spir_statistics_type stat;
     int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
     if (status != SPIR_COMPUTATION_SUCCESS) {
         return SPIR_GET_IMPL_FAILED;
     }
-    bool positive_only = false;
-    if (stat == SPIR_STATISTICS_FERMIONIC) {
-        *s = _spir_matsubara_sampling_new<
-            sparseir::Fermionic,
-            sparseir::MatsubaraSampling<sparseir::Fermionic>>(b, positive_only);
-        return SPIR_COMPUTATION_SUCCESS;
-    } else {
-        *s = _spir_matsubara_sampling_new<
-            sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            b, positive_only);
-        return SPIR_COMPUTATION_SUCCESS;
-    }
-}
-
-int32_t spir_matsubara_sampling_positive_only_new(spir_sampling** s, const spir_finite_temp_basis *b)
-{
-    spir_statistics_type stat;
-    int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
-    if (status != SPIR_COMPUTATION_SUCCESS) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-    bool positive_only = true;
     if (stat == SPIR_STATISTICS_FERMIONIC) {
         *s = _spir_matsubara_sampling_new<
             sparseir::Fermionic,

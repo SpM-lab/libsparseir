@@ -797,10 +797,10 @@ void test_matsubara_sampling_constructor()
     auto basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15);
     REQUIRE(basis != nullptr);
 
-    auto sampling = spir_matsubara_sampling_new(basis);
+    auto sampling = spir_matsubara_sampling_new(basis, false);
     REQUIRE(sampling != nullptr);
 
-    auto sampling_positive_only = spir_matsubara_sampling_positive_only_new(basis);
+    auto sampling_positive_only = spir_matsubara_sampling_new(basis, true);
     REQUIRE(sampling_positive_only != nullptr);
 
     // Clean up
@@ -813,6 +813,7 @@ void test_matsubara_sampling_evaluation_4d_column_major()
 {
     double beta = 1.0;
     double wmax = 10.0;
+    bool positive_only = false;
 
     auto stat = get_stat<S>();
 
@@ -824,7 +825,7 @@ void test_matsubara_sampling_evaluation_4d_column_major()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -920,7 +921,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 {
     double beta = 1.0;
     double wmax = 10.0;
-
+    bool positive_only = false;
     auto stat = get_stat<S>();
 
     // Create basis
@@ -931,7 +932,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -1026,7 +1027,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 {
     double beta = 1.0;
     double wmax = 10.0;
-
+    bool positive_only = false;
     auto stat = get_stat<S>();
 
     // Create basis
@@ -1037,7 +1038,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -1158,6 +1159,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 {
     double beta = 1.0;
     double wmax = 10.0;
+    bool positive_only = false;
 
     auto stat = get_stat<S>();
 
@@ -1168,7 +1170,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -1295,6 +1297,7 @@ void test_matsubara_sampling_error_status()
 {
     double beta = 1.0;
     double wmax = 10.0;
+    bool positive_only = false;
 
     auto stat = get_stat<S>();
 
@@ -1305,7 +1308,7 @@ void test_matsubara_sampling_error_status()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 

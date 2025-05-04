@@ -315,11 +315,8 @@ void integration_test(double beta, double wmax, double epsilon,
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;
     spir_sampling *matsubara_sampling;
-    if (positive_only) {
-        status = spir_matsubara_sampling_positive_only_new(&matsubara_sampling, basis);
-    } else {
-        status = spir_matsubara_sampling_new(&matsubara_sampling, basis);
-    }
+    status = spir_matsubara_sampling_new(&matsubara_sampling, basis, positive_only);
+
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(matsubara_sampling != nullptr);
 

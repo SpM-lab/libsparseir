@@ -275,11 +275,7 @@ int32_t spir_tau_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b
  *       longer needed
  * @see spir_destroy_sampling
  */
-int32_t spir_matsubara_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b);
-
-
-int32_t spir_matsubara_sampling_positive_only_new(spir_sampling **s, const spir_finite_temp_basis *b);
-
+int32_t spir_matsubara_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b, bool positive_only);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
