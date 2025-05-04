@@ -809,11 +809,10 @@ void test_matsubara_sampling_constructor()
 }
 
 template <typename S>
-void test_matsubara_sampling_evaluation_4d_column_major()
+void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 {
     double beta = 1.0;
     double wmax = 10.0;
-    bool positive_only = false;
 
     auto stat = get_stat<S>();
 
@@ -1425,7 +1424,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
     SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
             "(bosonic)")
     {
-        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>();
+        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>(false);
+        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>(true);
     }
 
     /*
