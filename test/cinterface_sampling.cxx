@@ -32,28 +32,31 @@ void test_tau_sampling()
 
     auto stat = get_stat<S>();
 
-    auto basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-15);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
-    auto sampling = spir_tau_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_tau_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Test getting sampling points
     double *tau_points = (double *)malloc(n_points * sizeof(double));
-    int status_get_tau_points =
-        spir_sampling_get_tau_points(sampling, tau_points);
-    REQUIRE(status_get_tau_points == SPIR_COMPUTATION_SUCCESS);
+    int tau_status = spir_sampling_get_tau_points(sampling, tau_points);
+    REQUIRE(tau_status == SPIR_COMPUTATION_SUCCESS);
     free(tau_points);
 
     int *matsubara_points = (int *)malloc(n_points * sizeof(int));
-    status = spir_sampling_get_matsubara_points(sampling, matsubara_points);
-    REQUIRE(status == SPIR_NOT_SUPPORTED);
+    int matsubara_status = spir_sampling_get_matsubara_points(sampling, matsubara_points);
+    REQUIRE(matsubara_status == SPIR_NOT_SUPPORTED);
     free(matsubara_points);
 
     // Clean up
@@ -70,18 +73,21 @@ void test_tau_sampling_evaluation_1d_column_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_tau_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_tau_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -156,18 +162,21 @@ void test_tau_sampling_evaluation_4d_row_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_tau_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_tau_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -236,13 +245,13 @@ void test_tau_sampling_evaluation_4d_row_major()
             sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
             gl_cpp_rowmajor.data(), evaluate_output);
 
-        REQUIRE(evaluate_status == 0);
+        REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
 
         int fit_status =
             spir_sampling_fit_dd(sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims,
                                  target_dim, evaluate_output, fit_output);
 
-        REQUIRE(fit_status == 0);
+        REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare results
         // Note that we need to specify Eigen::RowMajor here
@@ -287,18 +296,21 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_tau_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_tau_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -426,18 +438,21 @@ void test_tau_sampling_evaluation_4d_column_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_tau_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_tau_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -524,18 +539,21 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_tau_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_tau_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -665,18 +683,21 @@ TEST_CASE("TauSampling", "[cinterface]")
         double wmax = 10.0;
 
         // Create basis
-        spir_finite_temp_basis *basis = spir_finite_temp_basis_new(
-            SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10);
+        spir_finite_temp_basis *basis;
+        int basis_status = spir_finite_temp_basis_new(&basis, SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10);
+        REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
 
         // Create sampling
-        spir_sampling *sampling = spir_tau_sampling_new(basis);
+        spir_sampling *sampling;
+        int sampling_status = spir_tau_sampling_new(&sampling, basis);
+        REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
         int n_points;
-        int status = spir_sampling_get_num_points(sampling, &n_points);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        int points_status = spir_sampling_get_num_points(sampling, &n_points);
+        REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
         // Create equivalent C++ objects for comparison
@@ -792,18 +813,21 @@ void test_matsubara_sampling_evaluation_4d_column_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_matsubara_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -896,18 +920,21 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_matsubara_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -999,18 +1026,21 @@ void test_matsubara_sampling_evaluation_4d_row_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_matsubara_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -1133,13 +1163,15 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_matsubara_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -1268,13 +1300,15 @@ void test_matsubara_sampling_error_status()
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling = spir_matsubara_sampling_new(basis);
+    spir_sampling *sampling;
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
     int n_points;
-    int status = spir_sampling_get_num_points(sampling, &n_points);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison

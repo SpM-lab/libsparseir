@@ -70,7 +70,26 @@ DECLARE_OPAQUE_TYPE(dlr);
  * @return A pointer to the newly created kernel object, or NULL if creation
  * fails
  */
-spir_kernel *spir_logistic_kernel_new(double lambda);
+int32_t spir_logistic_kernel_new(spir_kernel **kernel, double lambda);
+/**
+ * @brief Creates a new regularized bosonic kernel for analytical continuation.
+ *
+ * This function constructs a regularized bosonic kernel object for use in
+ * analytical continuation problems. The kernel is designed to handle bosonic
+ * correlation functions with proper regularization for numerical stability.
+ *
+ * @param kernel Pointer to a pointer that will store the newly created kernel object.
+ *               On successful creation, this will point to the new kernel.
+ *               If creation fails, this will be set to NULL.
+ * @param lambda The cutoff parameter Λ for the kernel. Must be non-negative.
+ *               Controls the frequency range of the kernel.
+ *
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on successful creation of the kernel.
+ *         - A non-zero error code if creation fails (e.g., due to invalid input
+ *           or memory allocation failure).
+ */
+int32_t spir_regularized_bose_kernel_new(spir_kernel **kernel, double lambda);
 
 /**
  * @brief Creates a new regularized bosonic kernel for analytical continuation.
@@ -91,7 +110,7 @@ spir_kernel *spir_logistic_kernel_new(double lambda);
  * @note This kernel is specifically designed for bosonic correlation functions
  *       and should not be used for fermionic cases.
  */
-spir_kernel *spir_regularized_bose_kernel_new(double lambda);
+int32_t spir_regularized_bose_kernel_new(spir_kernel **kernel, double lambda);
 
 /**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
@@ -127,7 +146,7 @@ spir_kernel *spir_regularized_bose_kernel_new(double lambda);
  * longer needed
  * @see spir_destroy_sve_result
  */
-spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon);
+int32_t spir_sve_result_new(spir_sve_result **sve, const spir_kernel *k, double epsilon);
 
 /**
  * @brief Retrieves the domain boundaries of a kernel function.
@@ -136,14 +155,13 @@ spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon);
  * variables of the specified kernel function. The kernel domain is typically
  * defined as a rectangle in the (x,y) plane.
  *
- * @param k Pointer to the kernel object whose domain is to be retrieved
- * @param xmin Pointer to store the minimum value of the x-range
- * @param xmax Pointer to store the maximum value of the x-range
- * @param ymin Pointer to store the minimum value of the y-range
- * @param ymax Pointer to store the maximum value of the y-range
+ * @param k Pointer to the kernel object whose domain is to be retrieved.
+ * @param xmin Pointer to store the minimum value of the x-range.
+ * @param xmax Pointer to store the maximum value of the x-range.
+ * @param ymin Pointer to store the minimum value of the y-range.
+ * @param ymax Pointer to store the maximum value of the y-range.
  *
- * @return 0 on success, -1 on failure (if the kernel is invalid or an exception
- * occurs)
+ * @return An integer status code: 0 for success, non-zero for failure.
  */
 int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax);
@@ -207,7 +225,7 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_tau_sampling_new(const spir_finite_temp_basis *b);
+int32_t spir_tau_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b);
 
 /**
  * @brief Creates a new Matsubara sampling object for sparse sampling
@@ -235,7 +253,7 @@ spir_sampling *spir_tau_sampling_new(const spir_finite_temp_basis *b);
  * longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_matsubara_sampling_new(const spir_finite_temp_basis *b);
+int32_t spir_matsubara_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
@@ -275,7 +293,7 @@ spir_sampling *spir_matsubara_sampling_new(const spir_finite_temp_basis *b);
  * which differs from the original DLR method that uses rank-revealing
  * decomposition
  */
-spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
+int32_t spir_dlr_new(spir_dlr **dlr, const spir_finite_temp_basis *b);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) with
@@ -294,7 +312,7 @@ spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
  * @see spir_dlr_new
  * @see spir_destroy_dlr
  */
-spir_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b,
+int32_t spir_dlr_new_with_poles(spir_dlr **dlr, const spir_finite_temp_basis *b,
                                   const int npoles, const double *poles);
 
 /**
@@ -568,8 +586,7 @@ int32_t spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat);
  *         or NULL if creation fails
  * @see spir_finite_temp_basis_new_with_kernel
  */
-spir_finite_temp_basis *
-spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
+int32_t spir_finite_temp_basis_new(spir_finite_temp_basis **b, spir_statistics_type statistics, double beta,
                            double omega_max, double epsilon);
 
 /**
@@ -596,8 +613,8 @@ spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
  * @see spir_sve_result_new
  * @see spir_destroy_finite_temp_basis
  */
-spir_finite_temp_basis *spir_finite_temp_basis_new_with_sve(
-    spir_statistics_type statistics, double beta, double omega_max,
+int32_t spir_finite_temp_basis_new_with_sve(
+    spir_finite_temp_basis **b, spir_statistics_type statistics, double beta, double omega_max,
     const spir_kernel *k, const spir_sve_result *sve);
 
 /**

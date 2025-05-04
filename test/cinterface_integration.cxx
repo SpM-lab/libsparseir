@@ -245,13 +245,17 @@ spir_kernel* _kernel_new(double lambda);
 template <>
 spir_kernel* _kernel_new<sparseir::LogisticKernel>(double lambda)
 {
-    return spir_logistic_kernel_new(lambda);
+    spir_kernel* kernel;
+    int32_t status = spir_logistic_kernel_new(&kernel, lambda);
+    return kernel;
 }
 
 template <>
 spir_kernel* _kernel_new<sparseir::RegularizedBoseKernel>(double lambda)
 {
-    return spir_regularized_bose_kernel_new(lambda);
+    spir_kernel* kernel;
+    int32_t status = spir_regularized_bose_kernel_new(&kernel, lambda);
+    return kernel;
 }
 
 /*
@@ -279,18 +283,27 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // IR basis
     spir_kernel* kernel = _kernel_new<K>(beta * wmax);
-    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
-    spir_finite_temp_basis* basis = spir_finite_temp_basis_new_with_sve(stat, beta, wmax, kernel, sve);
+    spir_sve_result* sve;
+    status = spir_sve_result_new(&sve, kernel, epsilon);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(sve != nullptr);
 
+    spir_finite_temp_basis* basis;
+    status = spir_finite_temp_basis_new_with_sve(&basis, stat, beta, wmax, kernel, sve);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
+
     int32_t basis_size;
     status = spir_finite_temp_basis_get_size(basis, &basis_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Tau Sampling
     std::cout << "Tau sampling" << std::endl;
-    spir_sampling *tau_sampling = spir_tau_sampling_new(basis);
+    spir_sampling *tau_sampling;
+    status = spir_tau_sampling_new(&tau_sampling, basis);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(tau_sampling != nullptr);
+
     int32_t num_tau_points;
     status = spir_sampling_get_num_points(tau_sampling, &num_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
@@ -301,8 +314,11 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;
-    spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis);
+    spir_sampling *matsubara_sampling;
+    status = spir_matsubara_sampling_new(&matsubara_sampling, basis);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(matsubara_sampling != nullptr);
+
     int32_t num_matsubara_points;
     status =
         spir_sampling_get_num_points(matsubara_sampling, &num_matsubara_points);
@@ -316,7 +332,9 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // DLR
     std::cout << "DLR" << std::endl;
-    spir_dlr *dlr = spir_dlr_new(basis);
+    spir_dlr *dlr;
+    status = spir_dlr_new(&dlr, basis);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr != nullptr);
     int32_t npoles;
     status = spir_dlr_get_num_poles(dlr, &npoles);
