@@ -66,11 +66,19 @@ DECLARE_OPAQUE_TYPE(dlr);
  *
  * where ρ'(y) = w(y)ρ(y) and the weight function w(y) = 1/tanh(Λy/2)
  *
+ * @param kernel Pointer to a pointer that will store the newly created kernel object.
+ *               On successful creation, this will point to the new kernel.
+ *               If creation fails, this will be set to NULL.
  * @param lambda The cutoff parameter Λ (must be non-negative)
- * @return A pointer to the newly created kernel object, or NULL if creation
- * fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on successful creation of the kernel.
+ *         - A non-zero error code if creation fails (e.g., due to invalid input
+ *           or memory allocation failure).
+ *
+ * @note The kernel is implemented using piecewise Legendre polynomial expansion
+ *       for numerical stability and accuracy.
  */
-spir_kernel *spir_logistic_kernel_new(double lambda);
+int32_t spir_logistic_kernel_new(spir_kernel **kernel, double lambda);
 
 /**
  * @brief Creates a new regularized bosonic kernel for analytical continuation.
@@ -84,14 +92,21 @@ spir_kernel *spir_logistic_kernel_new(double lambda);
  * the singularity. The kernel is specifically designed for bosonic functions
  * and includes proper regularization to handle numerical stability issues.
  *
+ * @param kernel Pointer to a pointer that will store the newly created kernel object.
+ *               On successful creation, this will point to the new kernel.
+ *               If creation fails, this will be set to NULL.
  * @param lambda The cutoff parameter Λ (must be non-negative)
- * @return A pointer to the newly created kernel object, or NULL if creation
- * fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on successful creation of the kernel.
+ *         - A non-zero error code if creation fails (e.g., due to invalid input
+ *           or memory allocation failure).
  *
  * @note This kernel is specifically designed for bosonic correlation functions
  *       and should not be used for fermionic cases.
+ * @note The kernel is implemented using piecewise Legendre polynomial expansion
+ *       for numerical stability and accuracy.
  */
-spir_kernel *spir_regularized_bose_kernel_new(double lambda);
+int32_t spir_regularized_bose_kernel_new(spir_kernel **kernel, double lambda);
 
 /**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
@@ -109,25 +124,33 @@ spir_kernel *spir_regularized_bose_kernel_new(double lambda);
  * [ymin, ymax]
  *
  * The SVE is computed by mapping it onto a singular value decomposition (SVD)
- * of a matrix using piecewise Legendre polynomial expansion.
+ * of a matrix using piecewise Legendre polynomial expansion. The accuracy of
+ * the computation is controlled by the epsilon parameter, which determines:
+ * - The relative magnitude of included singular values
+ * - The accuracy of computed singular values and vectors
  *
+ * @param sve Pointer to a pointer that will store the newly created SVE result.
+ *            On successful creation, this will point to the new SVE result.
+ *            If creation fails, this will be set to NULL.
  * @param k Pointer to the kernel object for which to compute SVE
  * @param epsilon Accuracy target for the basis. Determines:
  *               - The relative magnitude of included singular values
  *               - The accuracy of computed singular values and vectors
- *
- * @return A pointer to the newly created SVE result object containing the
- * truncated singular value expansion, or NULL if creation fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on successful creation.
+ *         - A non-zero error code if creation fails.
  *
  * @note The computation automatically uses optimized strategies:
  *       - For centrosymmetric kernels, specialized algorithms are employed
  *       - The working precision is adjusted to meet accuracy requirements
+ *       - If epsilon is below √ε (where ε is machine epsilon), a warning is
+ *         issued and higher precision arithmetic is used
  *
  * @note The returned object must be freed using spir_destroy_sve_result when no
  * longer needed
  * @see spir_destroy_sve_result
  */
-spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon);
+int32_t spir_sve_result_new(spir_sve_result **sve, const spir_kernel *k, double epsilon);
 
 /**
  * @brief Retrieves the domain boundaries of a kernel function.
@@ -136,14 +159,17 @@ spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon);
  * variables of the specified kernel function. The kernel domain is typically
  * defined as a rectangle in the (x,y) plane.
  *
- * @param k Pointer to the kernel object whose domain is to be retrieved
- * @param xmin Pointer to store the minimum value of the x-range
- * @param xmax Pointer to store the maximum value of the x-range
- * @param ymin Pointer to store the minimum value of the y-range
- * @param ymax Pointer to store the maximum value of the y-range
+ * @param k Pointer to the kernel object whose domain is to be retrieved.
+ * @param xmin Pointer to store the minimum value of the x-range.
+ * @param xmax Pointer to store the maximum value of the x-range.
+ * @param ymin Pointer to store the minimum value of the y-range.
+ * @param ymax Pointer to store the maximum value of the y-range.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
- * @return 0 on success, -1 on failure (if the kernel is invalid or an exception
- * occurs)
+ * @note For the logistic and regularized bosonic kernels, the domain is
+ *       typically [-1, 1] × [-1, 1] in dimensionless variables.
  */
 int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax);
@@ -158,10 +184,13 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  *
  * @param b Pointer to the finite temperature basis object
  * @param size Pointer to store the number of basis functions
- * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The size is determined automatically during basis construction based on
- *       the specified parameters (β, ωmax, ε)
+ *       the specified parameters (β, ωmax, ε) and the kernel's singular value
+ *       expansion.
  */
 int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
                                         int *size);
@@ -177,10 +206,14 @@ int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
  * @param b Pointer to the finite temperature basis object
  * @param statistics Pointer to store the statistics type
  * (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
- * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The statistics type is determined during basis construction and cannot
  * be changed
+ * @note The statistics type affects the form of the basis functions and the
+ *       sampling points used for evaluation.
  */
 int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
                                               spir_statistics_type *statistics);
@@ -195,19 +228,23 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
  * imaginary time, which provides near-optimal conditioning for the given basis
  * size.
  *
+ * @param s Pointer to a pointer that will store the newly created sampling object.
+ *          On successful creation, this will point to the new sampling object.
+ *          If creation fails, this will be set to NULL.
  * @param b Pointer to a finite temperature basis object
- * @return A pointer to the newly created sampling object, or NULL if creation
- * fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The sampling points are chosen to optimize numerical stability and
- * accuracy
+ *       accuracy
  * @note The sampling matrix is automatically factorized using SVD for efficient
- * transformations
+ *       transformations
  * @note The returned object must be freed using spir_destroy_sampling when no
- * longer needed
+ *       longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_tau_sampling_new(const spir_finite_temp_basis *b);
+int32_t spir_tau_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b);
 
 /**
  * @brief Creates a new Matsubara sampling object for sparse sampling
@@ -219,23 +256,26 @@ spir_sampling *spir_tau_sampling_new(const spir_finite_temp_basis *b);
  * highest-order basis function in Matsubara frequencies, which provides
  * near-optimal conditioning for the given basis size.
  *
- *
+ * @param s Pointer to a pointer that will store the newly created sampling object.
+ *          On successful creation, this will point to the new sampling object.
+ *          If creation fails, this will be set to NULL.
  * @param b Pointer to a finite temperature basis object
- * @return A pointer to the newly created sampling object, or NULL if creation
- * fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The sampling points are chosen to optimize numerical stability and
- * accuracy
+ *       accuracy
  * @note The sampling matrix is automatically factorized using SVD for efficient
- * transformations
+ *       transformations
  * @note The sampling frequencies are stored in the sampling object as integers,
- * i.e, ωn = nπ/β. n are even for bosonic frequencies and odd for fermionic
- * frequencies.
+ *       i.e, ωn = nπ/β. n are even for bosonic frequencies and odd for fermionic
+ *       frequencies.
  * @note The returned object must be freed using spir_destroy_sampling when no
- * longer needed
+ *       longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_matsubara_sampling_new(const spir_finite_temp_basis *b);
+int32_t spir_matsubara_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
@@ -261,40 +301,51 @@ spir_sampling *spir_matsubara_sampling_new(const spir_finite_temp_basis *b);
  * frequencies.
  * - iν are Matsubara frequencies
  *
+ * @param dlr Pointer to a pointer that will store the newly created DLR object.
+ *            On successful creation, this will point to the new DLR object.
+ *            If creation fails, this will be set to NULL.
  * @param b Pointer to a finite temperature basis object
- * @return A pointer to the newly created DLR object, or NULL if creation fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The poles on the real-frequency axis are selected based on the zeros of
  *       the IR basis functions on the real axis
  * @note The returned object must be freed using spir_destroy_dlr when
- * no longer needed
+ *       no longer needed
  * @see spir_destroy_dlr
  * @see spir_dlr_new_with_poles
  *
  * @warning This implementation uses a heuristic approach for pole selection,
- * which differs from the original DLR method that uses rank-revealing
- * decomposition
+ *          which differs from the original DLR method that uses rank-revealing
+ *          decomposition
  */
-spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b);
+int32_t spir_dlr_new(spir_dlr **dlr, const spir_finite_temp_basis *b);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) with
  * custom poles.
  *
+ * This function creates a DLR basis with user-specified pole locations on the
+ * real-frequency axis. This allows for more control over the pole selection
+ * compared to the automatic pole selection in spir_dlr_new.
  *
+ * @param dlr Pointer to a pointer that will store the newly created DLR object.
+ *            On successful creation, this will point to the new DLR object.
+ *            If creation fails, this will be set to NULL.
  * @param b Pointer to a finite temperature basis object
  * @param npoles Number of poles to use in the representation
  * @param poles Array of pole locations on the real-frequency axis
- *
- * @return A pointer to the newly created DLR object with custom poles, or NULL
- * if creation fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note This function allows for more control over the pole selection compared
- * to the automatic pole selection in spir_dlr_new
+ *       to the automatic pole selection in spir_dlr_new
  * @see spir_dlr_new
  * @see spir_destroy_dlr
  */
-spir_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b,
+int32_t spir_dlr_new_with_poles(spir_dlr **dlr, const spir_finite_temp_basis *b,
                                   const int npoles, const double *poles);
 
 /**
@@ -305,7 +356,9 @@ spir_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b,
  *
  * @param dlr Pointer to the DLR object
  * @param statistics Pointer to store the statistics type
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @see spir_statistics_type
  */
@@ -328,14 +381,17 @@ int32_t spir_dlr_get_statistics(const spir_dlr *dlr,
  * @param target_dim Target dimension for the transformation (0-based)
  * @param input Input array of basis coefficients
  * @param out Output array for the evaluated values at sampling points
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note For optimal performance, the target dimension should be either the
- * first (0) or the last (ndim-1) dimension to avoid large temporary array
- * allocations
+ *       first (0) or the last (ndim-1) dimension to avoid large temporary array
+ *       allocations
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
+ * @note The transformation is performed using a pre-computed sampling matrix
+ *       that is factorized using SVD for efficiency
  *
  * @see spir_sampling_evaluate_dz
  * @see spir_sampling_evaluate_zz
@@ -400,12 +456,15 @@ spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
  * @param target_dim Target dimension for the transformation (0-based)
  * @param input Input array of values at sampling points
  * @param out Output array for the fitted basis coefficients
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The output array must be pre-allocated with the correct size
  * @note This function performs the inverse operation of
- * spir_sampling_evaluate_dd
+ *       spir_sampling_evaluate_dd
+ * @note The transformation is performed using a pre-computed sampling matrix
+ *       that is factorized using SVD for efficiency
  *
  * @see spir_sampling_evaluate_dd
  * @see spir_sampling_fit_zz
@@ -443,7 +502,9 @@ int spir_sampling_fit_zz(const spir_sampling *s, // Sampling object
  *
  * @param dlr Pointer to the DLR object
  * @param num_poles Pointer to store the number of poles
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @see spir_dlr_get_poles
  */
@@ -456,14 +517,16 @@ int32_t spir_dlr_get_num_poles(const spir_dlr *dlr, int32_t *num_poles);
  *
  * @param dlr Pointer to the DLR object
  * @param poles Pointer to store the poles
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @see spir_dlr_get_num_poles
  */
 int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
 
 /**
- * Transforms a given input array from the Intermediate Representation (IR)
+ * @brief Transforms a given input array from the Intermediate Representation (IR)
  * to the Discrete Lehmann Representation (DLR) using the specified DLR object.
  *
  * @param dlr Pointer to the fermionic DLR object
@@ -473,14 +536,16 @@ int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
  * @param target_dim Target dimension for the transformation (0-based)
  * @param input Input coefficients array in IR
  * @param out Output array in DLR
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The input and output arrays must be allocated with sufficient memory.
  *       The size of the input and output arrays should match the dimensions
- * specified. The order type determines the memory layout of the input and
- * output arrays. The function assumes that the input array is in the specified
- * order type. The output array will be in the specified order type.
+ *       specified. The order type determines the memory layout of the input and
+ *       output arrays. The function assumes that the input array is in the
+ *       specified order type. The output array will be in the specified order
+ *       type.
  *
  * @see spir_dlr_to_IR
  */
@@ -510,9 +575,9 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
  * @param target_dim Target dimension for the transformation (0-based)
  * @param input Input array of DLR coefficients (double precision)
  * @param out Output array for the IR coefficients (double precision)
- *
- * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED on failure
- *         (if the DLR object is invalid or an error occurs)
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The output array must be pre-allocated with the correct size
  * @note The input and output arrays must be contiguous in memory
@@ -533,7 +598,9 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
  *
  * @param dlr Pointer to the DLR object
  * @param u Pointer to store the basis functions
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  * @see spir_destroy_funcs
  */
 int32_t spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u);
@@ -546,7 +613,9 @@ int32_t spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u);
  *
  * @param dlr Pointer to the DLR object
  * @param uhat Pointer to store the basis functions
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  */
 int32_t spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat);
 
@@ -558,18 +627,20 @@ int32_t spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat);
  * the given beta (inverse temperature), omega_max (frequency cutoff), and
  * epsilon (accuracy target).
  *
+ * @param b Pointer to a pointer that will store the newly created basis object.
+ *          On successful creation, this will point to the new basis object.
+ *          If creation fails, this will be set to NULL.
  * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
  * SPIR_STATISTICS_BOSONIC)
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param epsilon Accuracy target for the basis
- *
- * @return A pointer to the newly created finite temperature IR basis
- *         or NULL if creation fails
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  * @see spir_finite_temp_basis_new_with_kernel
  */
-spir_finite_temp_basis *
-spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
+int32_t spir_finite_temp_basis_new(spir_finite_temp_basis **b, spir_statistics_type statistics, double beta,
                            double omega_max, double epsilon);
 
 /**
@@ -581,23 +652,26 @@ spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
  * reusing an existing SVE computation, which can be more efficient than
  * recomputing it.
  *
+ * @param b Pointer to a pointer that will store the newly created basis object.
+ *          On successful creation, this will point to the new basis object.
+ *          If creation fails, this will be set to NULL.
  * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
  * SPIR_STATISTICS_BOSONIC)
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param k Pointer to the kernel object used for the basis construction
  * @param sve Pointer to a pre-computed SVE result for the kernel
- *
- * @return A pointer to the newly created finite temperature basis
- * object, or NULL if creation fails (invalid inputs or exception occurs)
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note Using a pre-computed SVE can significantly improve performance when
- * creating multiple basis objects with the same kernel
+ *       creating multiple basis objects with the same kernel
  * @see spir_sve_result_new
  * @see spir_destroy_finite_temp_basis
  */
-spir_finite_temp_basis *spir_finite_temp_basis_new_with_sve(
-    spir_statistics_type statistics, double beta, double omega_max,
+int32_t spir_finite_temp_basis_new_with_sve(
+    spir_finite_temp_basis **b, spir_statistics_type statistics, double beta, double omega_max,
     const spir_kernel *k, const spir_sve_result *sve);
 
 /**
@@ -608,7 +682,9 @@ spir_finite_temp_basis *spir_finite_temp_basis_new_with_sve(
  *
  * @param b Pointer to the finite temperature basis object
  * @param u Pointer to store the basis functions
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
@@ -625,7 +701,9 @@ int32_t spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
  *
  * @param b Pointer to the finite temperature basis object
  * @param v Pointer to store the basis functions
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
@@ -643,7 +721,9 @@ int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
  *
  * @param b Pointer to the finite temperature basis object
  * @param uhat Pointer to store the basis functions
- * @return SPIR_COMPUTATION_SUCCESS on success, non-zero on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The returned object must be freed using spir_destroy_matsubara_funcs
  *       when no longer needed
@@ -661,7 +741,9 @@ int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
  *
  * @param funcs Pointer to the functions object
  * @param size Pointer to store the number of functions
- * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  */
 int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size);
 
@@ -677,10 +759,12 @@ int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size);
  * @param uv Pointer to a functions object
  * @param x Point at which to evaluate the functions
  * @param out Pre-allocated array to store the evaluation results.
- * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The output array must be pre-allocated with sufficient size to store
- * all function values
+ *       all function values
  */
 int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out);
 
@@ -700,12 +784,14 @@ int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out);
  * @param matsubara_freq_indices Array of Matsubara frequency indices
  * @param out Pre-allocated array to store the evaluation results. The results
  * are stored as a 2D array of size num_freqs x n_funcs.
- * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The output array must be pre-allocated with sufficient size to store
- * all function values at all requested frequencies. Indices n correspond to ωn
- * = nπ/β, where n are odd for fermionic frequencies and even for bosonic
- * frequencies.
+ *       all function values at all requested frequencies. Indices n correspond to
+ *       ωn = nπ/β, where n are odd for fermionic frequencies and even for
+ *       bosonic frequencies.
  */
 int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
                                       spir_order_type order, int32_t num_freqs,
@@ -721,8 +807,9 @@ int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
  *
  * @param s Pointer to the sampling object
  * @param num_points Pointer to store the number of sampling points
- * @return SPIR_COMPUTATION_SUCCESS on success, SPIR_GET_IMPL_FAILED if the
- * sampling object is invalid
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @see spir_sampling_get_tau_points
  * @see spir_sampling_get_matsubara_points
@@ -740,12 +827,12 @@ int32_t spir_sampling_get_num_points(const spir_sampling *s,
  *
  * @param s Pointer to the sampling object
  * @param points Pre-allocated array to store the τ sampling points
- * @return SPIR_COMPUTATION_SUCCESS on success
- *         SPIR_GET_IMPL_FAILED if s is invalid
- *         SPIR_NOT_SUPPORTED if the sampling object is not for τ sampling
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The array must be pre-allocated with size >=
- * spir_sampling_get_num_points(s)
+ *       spir_sampling_get_num_points(s)
  * @see spir_sampling_get_num_points
  */
 int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
@@ -761,13 +848,12 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  *
  * @param s Pointer to the sampling object
  * @param points Pre-allocated array to store the Matsubara frequency indices
- * @return SPIR_COMPUTATION_SUCCESS on success
- *         SPIR_GET_IMPL_FAILED if s is invalid
- *         SPIR_NOT_SUPPORTED if the sampling object is not for Matsubara
- * sampling
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  *
  * @note The array must be pre-allocated with size >=
- * spir_sampling_get_num_points(s)
+ *       spir_sampling_get_num_points(s)
  * @note For fermionic case, the indices n give frequencies ωn = (2n + 1)π/β
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
  * @see spir_sampling_get_num_points
@@ -784,7 +870,9 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
  *
  * @param funcs Pointer to the Matsubara functions object
  * @param size Pointer to store the number of functions
- * @return SPIR_COMPUTATION_SUCCESS on success, error code on failure
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
  */
 int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs *funcs,
                                       int32_t *size);

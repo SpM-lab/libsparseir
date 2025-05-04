@@ -132,17 +132,25 @@ double omega_max = 10.0;   // Ultraviolet cutoff
 double epsilon = 1e-8;     // Accuracy target
 
 // Create a logistic kernel
-spir_kernel* kernel = spir_logistic_kernel_new(beta * omega_max);
+spir_kernel* kernel;
+status = spir_logistic_kernel_new(&kernel, beta * omega_max);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(kernel != NULL);
 
 // Create a pre-computed SVE result
-spir_sve_result* sve = spir_sve_result_new(kernel, epsilon);
+spir_sve_result* sve;
+status = spir_sve_result_new(&sve, kernel, epsilon);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(sve != NULL);
 
 // Create a fermionic finite temperature basis with pre-computed SVE result
 // Use SPIR_STATISTICS_BOSONIC for bosonic basis
-spir_finite_temp_basis* basis =
-    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_FERMIONIC, beta, omega_max, kernel, sve);
+spir_finite_temp_basis* basis;
+status = spir_finite_temp_basis_new_with_sve(&basis, SPIR_STATISTICS_FERMIONIC, beta, omega_max, kernel, sve);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(basis != NULL);
 
-int n_basis;
+int32_t n_basis;
 status = spir_finite_temp_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -150,6 +158,8 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 spir_funcs* u;
 status = spir_finite_temp_basis_get_u(basis, &u);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(u != NULL);
+
 double tau = 0.5 * beta;
 double* uval = (double*)malloc(n_basis * sizeof(double));
 status = spir_evaluate_funcs(u, tau, uval);
@@ -162,6 +172,8 @@ for (int i = 0; i < n_basis; ++i) {
 spir_funcs* v;
 status = spir_finite_temp_basis_get_v(basis, &v);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(v != NULL);
+
 double omega = 0.5 * omega_max;
 double* vval = (double*)malloc(n_basis * sizeof(double));
 status = spir_evaluate_funcs(v, omega, vval);
@@ -172,7 +184,7 @@ for (int i = 0; i < n_basis; ++i) {
 
 // Evaluate the basis functions at given Matsubara frequencies
 int n_freqs = 10;
-int* matsubara_freq_indices = (int*)malloc(n_freqs * sizeof(int));
+int32_t* matsubara_freq_indices = (int32_t*)malloc(n_freqs * sizeof(int32_t));
 for (int i = 0; i < n_freqs; ++i) {
     matsubara_freq_indices[i] = 2 * i + 1; // fermionic Matsubara frequency
 }
@@ -181,16 +193,22 @@ c_complex* uhat_val = (c_complex*)malloc(n_basis * n_freqs * sizeof(c_complex));
 spir_matsubara_funcs* uhat;
 status = spir_finite_temp_basis_get_uhat(basis, &uhat);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(uhat != NULL);
+
 status = spir_evaluate_matsubara_funcs(uhat, SPIR_ORDER_COLUMN_MAJOR, n_freqs, matsubara_freq_indices, uhat_val);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Clean up (in arbitrary order)
 free(uval);
 free(vval);
+free(matsubara_freq_indices);
+free(uhat_val);
 spir_destroy_funcs(u);
 spir_destroy_funcs(v);
 spir_destroy_matsubara_funcs(uhat);
 spir_destroy_finite_temp_basis(basis);
+spir_destroy_sve_result(sve);
+spir_destroy_kernel(kernel);
 ```
 
 ### Bosonic basis
@@ -217,23 +235,43 @@ double omega_max = 10.0;   // Ultraviolet cutoff
 double epsilon = 1e-8;     // Accuracy target
 
 // Create a logistic kernel
-spir_kernel* logistic_kernel = spir_logistic_kernel_new(beta * omega_max);
+spir_kernel* logistic_kernel;
+status = spir_logistic_kernel_new(&logistic_kernel, beta * omega_max);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(logistic_kernel != NULL);
 
 // Create a pre-computed SVE result
-spir_sve_result* sve_logistic = spir_sve_result_new(logistic_kernel, epsilon);
+spir_sve_result* sve_logistic;
+status = spir_sve_result_new(&sve_logistic, logistic_kernel, epsilon);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(sve_logistic != NULL);
 
 // Create fermionic and bosonic finite temperature bases with pre-computed SVE result
-spir_finite_temp_basis* basis_fermionic =
-    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_FERMIONIC, beta, omega_max, logistic_kernel, sve_logistic);
+spir_finite_temp_basis* basis_fermionic;
+status = spir_finite_temp_basis_new_with_sve(&basis_fermionic, SPIR_STATISTICS_FERMIONIC, beta, omega_max, logistic_kernel, sve_logistic);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(basis_fermionic != NULL);
 
-spir_finite_temp_basis* basis_bosonic =
-    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_BOSONIC, beta, omega_max, logistic_kernel, sve_logistic);
+spir_finite_temp_basis* basis_bosonic;
+status = spir_finite_temp_basis_new_with_sve(&basis_bosonic, SPIR_STATISTICS_BOSONIC, beta, omega_max, logistic_kernel, sve_logistic);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(basis_bosonic != NULL);
 
 // Create a regularized bosonic basis
-spir_kernel* regularized_kernel = spir_regularized_bose_kernel_new(beta * omega_max);
-spir_sve_result* sve_regularized = spir_sve_result_new(regularized_kernel, epsilon);
-spir_finite_temp_basis* basis_regularized =
-    spir_finite_temp_basis_new_with_sve(SPIR_STATISTICS_BOSONIC, beta, omega_max, regularized_kernel, sve_regularized);
+spir_kernel* regularized_kernel;
+status = spir_regularized_bose_kernel_new(&regularized_kernel, beta * omega_max);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(regularized_kernel != NULL);
+
+spir_sve_result* sve_regularized;
+status = spir_sve_result_new(&sve_regularized, regularized_kernel, epsilon);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(sve_regularized != NULL);
+
+spir_finite_temp_basis* basis_regularized;
+status = spir_finite_temp_basis_new_with_sve(&basis_regularized, SPIR_STATISTICS_BOSONIC, beta, omega_max, regularized_kernel, sve_regularized);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(basis_regularized != NULL);
 
 // Clean up (in arbitrary order)
 spir_destroy_kernel(logistic_kernel);
@@ -270,20 +308,30 @@ typedef double _Complex c_complex;
 double beta = 10.0;        // Inverse temperature
 double omega_max = 10.0;   // Ultraviolet cutoff
 double epsilon = 1e-8;     // Accuracy target
-spir_finite_temp_basis* basis =
-    spir_finite_temp_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon); // default choice of kernel is logistic kernel
+
+spir_finite_temp_basis* basis;
+int32_t status = spir_finite_temp_basis_new(&basis, SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon); // default choice of kernel is logistic kernel
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(basis != NULL);
 
 // Create sampling objects for imaginary-time and Matsubara domains
-spir_sampling* tau_sampling = spir_tau_sampling_new(basis);
-spir_sampling* matsubara_sampling = spir_matsubara_sampling_new(basis);
+spir_sampling* tau_sampling;
+status = spir_tau_sampling_new(&tau_sampling, basis);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(tau_sampling != NULL);
+
+spir_sampling* matsubara_sampling;
+status = spir_matsubara_sampling_new(&matsubara_sampling, basis);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(matsubara_sampling != NULL);
 
 // Create Green's function with a pole at 0.5*omega_max
-int n_matsubara;
-int status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
+int32_t n_matsubara;
+status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
-int* matsubara_indices = (int*)malloc(n_matsubara * sizeof(int));
+int32_t* matsubara_indices = (int32_t*)malloc(n_matsubara * sizeof(int32_t));
 
 // Get Matsubara frequency indices
 status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indices);
@@ -299,23 +347,26 @@ for (int i = 0; i < n_matsubara; ++i) {
     g_matsubara[i] = 1.0 / (I * matsubara_indices[i] * M_PI / beta - pole_position);
 }
 
-int target_dim = 0; // target dimension for evaluation and fit
+int32_t target_dim = 0; // target dimension for evaluation and fit
 
 // Matsubara sampling points to basis coefficients
-int n_basis;
+int32_t n_basis;
 status = spir_finite_temp_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+
 c_complex* g_fit = (c_complex*)malloc(n_basis * sizeof(c_complex));
-int dims[1] = {n_matsubara};
+int32_t dims[1] = {n_matsubara};
 status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
                              1, dims, target_dim, g_matsubara, g_fit);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Basis coefficients to imaginary-time sampling points
-int n_tau;
+int32_t n_tau;
 status = spir_sampling_get_num_points(tau_sampling, &n_tau);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+
 c_complex* g_tau = (c_complex*)malloc(n_tau * sizeof(c_complex));
+dims[0] = n_basis;
 status = spir_sampling_evaluate_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit, g_tau);
 assert(status == SPIR_COMPUTATION_SUCCESS);
@@ -325,6 +376,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 double* tau_points = (double*)malloc(n_tau * sizeof(double));
 status = spir_sampling_get_tau_points(tau_sampling, tau_points);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+
 for (int i = 0; i < n_tau; ++i) {
     double tau = tau_points[i];
     double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
@@ -334,15 +386,18 @@ for (int i = 0; i < n_tau; ++i) {
 
 // Imaginary-time sampling points to basis coefficients
 c_complex* g_fit2 = (c_complex*)malloc(n_basis * sizeof(c_complex));
+dims[0] = n_tau;
 status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
                               1, dims, target_dim, g_tau, g_fit2);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Basis coefficients to Matsubara Green's function
 c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+dims[0] = n_basis;
 status = spir_sampling_evaluate_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit2, g_matsubara_reconstructed);
 assert(status == SPIR_COMPUTATION_SUCCESS);
+
 for (int i = 0; i < n_matsubara; ++i) {
     assert(fabs(creal(g_matsubara_reconstructed[i]) - creal(g_matsubara[i])) < epsilon);
     assert(fabs(cimag(g_matsubara_reconstructed[i]) - cimag(g_matsubara[i])) < epsilon);
@@ -354,6 +409,8 @@ free(g_matsubara);
 free(g_fit);
 free(g_fit2);
 free(g_tau);
+free(tau_points);
+free(g_matsubara_reconstructed);
 spir_destroy_finite_temp_basis(basis);
 spir_destroy_sampling(tau_sampling);
 spir_destroy_sampling(matsubara_sampling);

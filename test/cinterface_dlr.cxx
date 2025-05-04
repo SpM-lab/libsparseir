@@ -26,38 +26,39 @@ spir_statistics_type get_stat()
 }
 
 
-template <typename S>
+template <typename Statistics>
 void test_finite_temp_basis_dlr()
 {
     const double beta = 10000.0;
+    const auto stat = get_stat<Statistics>();
     const double wmax = 1.0;
     const double epsilon = 1e-12;
 
-    auto stat = get_stat<S>();
-    int32_t status;
-
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, epsilon);
+    spir_finite_temp_basis *basis;
+    int32_t basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, epsilon);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
     int32_t basis_size;
-    status = spir_finite_temp_basis_get_size(basis, &basis_size);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    basis_status = spir_finite_temp_basis_get_size(basis, &basis_size);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis_size >= 0);
 
 
-    spir_dlr *dlr = spir_dlr_new(basis);
+    spir_dlr *dlr;
+    int32_t dlr_status = spir_dlr_new(&dlr, basis);
+    REQUIRE(dlr_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr != nullptr);
 
     int32_t num_poles;
-    status = spir_dlr_get_num_poles(dlr, &num_poles);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    dlr_status = spir_dlr_get_num_poles(dlr, &num_poles);
+    REQUIRE(dlr_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_poles >= 0);
     REQUIRE(num_poles >= basis_size);
 
     {
         double *poles = (double *)malloc(num_poles * sizeof(double));
-        status = spir_dlr_get_poles(dlr, poles);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        dlr_status = spir_dlr_get_poles(dlr, poles);
+        REQUIRE(dlr_status == SPIR_COMPUTATION_SUCCESS);
         free(poles);
     }
 
@@ -72,8 +73,9 @@ void test_finite_temp_basis_dlr()
     }
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
 
-    spir_dlr *dlr_with_poles =
-        spir_dlr_new_with_poles(basis, npoles, poles.data());
+    spir_dlr *dlr_with_poles;
+    int32_t poles_status = spir_dlr_new_with_poles(&dlr_with_poles, basis, npoles, poles.data());
+    REQUIRE(poles_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr_with_poles != nullptr);
 
     double *Gl = (double *)malloc(basis_size * sizeof(double));
