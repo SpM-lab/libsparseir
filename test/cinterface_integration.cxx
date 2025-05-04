@@ -389,9 +389,9 @@ void integration_test(double beta, double wmax, double epsilon,
         _evaluate_gtau<double, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
     Eigen::Tensor<double, ndim, ORDER> gtau_diff = (gtau_from_IR - gtau_from_DLR).abs();
-    // std::cout << "gtau_from_IR: " << gtau_from_IR << std::endl;
-    // std::cout << "gtau_from_DLR: " << gtau_from_DLR << std::endl;
-    //std::cout << "gtau_diff: " << gtau_diff << std::endl;
+    std::cout << "gtau_from_IR: " << gtau_from_IR << std::endl;
+    std::cout << "gtau_from_DLR: " << gtau_from_DLR << std::endl;
+    std::cout << "gtau_diff: " << gtau_diff << std::endl;
     REQUIRE(compare_tensors_with_relative_error<double, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, tol));
 
