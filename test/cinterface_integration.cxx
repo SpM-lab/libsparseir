@@ -332,7 +332,11 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_sampling_get_matsubara_points(matsubara_sampling,
                                                 matsubara_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(num_matsubara_points >= basis_size);
+    if (positive_only) {
+        REQUIRE(num_matsubara_points >= basis_size / 2);
+    } else {
+        REQUIRE(num_matsubara_points >= basis_size);
+    }
 
     // DLR
     std::cout << "DLR" << std::endl;
