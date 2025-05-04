@@ -484,10 +484,9 @@ TEST_CASE("Integration Test", "[cinterface]")
                     Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       SPIR_ORDER_COLUMN_MAJOR, tol);
 //
-    /*
     {
         int32_t target_dim = 0;
-        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
+        std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
         integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
                         Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                         SPIR_ORDER_COLUMN_MAJOR, tol);
@@ -495,31 +494,27 @@ TEST_CASE("Integration Test", "[cinterface]")
 
     {
         int32_t target_dim = 0;
-        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
+        std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
         integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
                         Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                         SPIR_ORDER_ROW_MAJOR, tol);
     }
 
-    {
-        int32_t target_dim = 0;
+    for (int target_dim = 0; target_dim < 4; ++target_dim) {
         std::vector<int> extra_dims = {2,3,4};
-        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
-        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
-                        Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                        SPIR_ORDER_COLUMN_MAJOR, tol);
-    }
-    */
-
-    {
-        int32_t target_dim = 1;
-        std::vector<int> extra_dims = {2,3,4};
-        std::cout << "Integration test for bosonic LogisticKernel, target_dim = " << target_dim << std::endl;
+        std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
         integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
                         Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                         SPIR_ORDER_COLUMN_MAJOR, tol);
     }
 
+    for (int target_dim = 0; target_dim < 4; ++target_dim) {
+        std::vector<int> extra_dims = {2,3,4};
+        std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
+        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
+                        Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                        SPIR_ORDER_ROW_MAJOR, tol);
+    }
     //
     //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
     //integration_test<sparseir::Bosonic, sparseir::RegularizedBoseKernel, 1,
