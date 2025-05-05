@@ -61,9 +61,12 @@ TEST_CASE("DLR Tests", "[dlr]")
             for (int i = 0; i < coeffs.size(); ++i) {
                 coeffs_as_tensor(i) = coeffs(i);
             }
+            std::cout << "dlr_poles.fitmat.rows() = " << dlr_poles.fitmat.rows() << std::endl;
+            std::cout << "dlr_poles.fitmat.cols() = " << dlr_poles.fitmat.cols() << std::endl;
             Eigen::Tensor<double, 1> Gl_tensor =
                 dlr_poles.to_IR(coeffs_as_tensor);
-            auto g_dlr_tensor = dlr.from_IR(Gl_tensor);
+            Eigen::Tensor<double, 1> g_dlr_tensor = dlr.from_IR(Gl_tensor);
+            std::cout << "g_dlr_tensor.dimension(0) = " << g_dlr_tensor.dimension(0) << std::endl;
 
             auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
             auto smpl_points = smpl.sampling_points();
@@ -110,7 +113,7 @@ TEST_CASE("DLR Tests", "[dlr]")
             REQUIRE(std::abs(u1(tau) - dlr_basis_func_logistic(beta, tau, poles[size_dlr - 1])) < 1e-13);
         }
 
-        // corner 
+        // corner
         auto taus = std::vector<double>({-beta, -0.0, 0.0, beta});
         auto taus_regularized = std::vector<double>({0.0, beta, 0.0, beta});
         auto signs = std::vector<double>({-1.0, -1.0, 1.0, 1.0});
