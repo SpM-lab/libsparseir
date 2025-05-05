@@ -836,7 +836,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 
     // Create equivalent C++ objects for comparison
     sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, 1e-10);
-    sparseir::MatsubaraSampling<S> cpp_sampling(cpp_basis);
+    sparseir::MatsubaraSampling<S> cpp_sampling(cpp_basis, positive_only);
 
     int basis_size = cpp_basis.size();
 
