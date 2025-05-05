@@ -79,18 +79,30 @@ void test_finite_temp_basis_dlr()
     REQUIRE(dlr_with_poles != nullptr);
 
     double *Gl = (double *)malloc(basis_size * sizeof(double));
+    std::cout << "basis_size = " << basis_size << std::endl;
     int32_t to_ir_input_dims[1] = {npoles};
     int32_t ndim = 1;
     int32_t target_dim = 0;
     int status_to_IR = spir_dlr_to_IR_dd(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR,
                                       ndim, to_ir_input_dims, target_dim, coeffs.data(), Gl);
 
+    for (int i = 0; i < basis_size; i++) {
+        std::cout << "Gl[" << i << "] = " << Gl[i] << std::endl;
+    }
+
     REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
-    double *g_dlr = (double *)malloc(num_poles * sizeof(double));
-    int32_t from_ir_input_dims[1] = {static_cast<int32_t>(num_poles)};
+    double *g_dlr = (double *)malloc(basis_size * sizeof(double));
+    int32_t from_ir_input_dims[1] = {static_cast<int32_t>(basis_size)};
     int status_from_IR = spir_dlr_from_IR(dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
                                           from_ir_input_dims, target_dim, Gl, g_dlr);
     REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
+
+    std::cout << "npoles = " << npoles << std::endl;
+    for (int i = 0; i < basis_size; i++) {
+        std::cout << "g_dlr[" << i << "] = " << g_dlr[i] << std::endl;
+        std::cout << "coeffs[" << i << "] = " << coeffs(i) << std::endl;
+    }
+    REQUIRE(g_dlr[0] == Approx(coeffs(0)));
 
     free(Gl);
     free(g_dlr);
