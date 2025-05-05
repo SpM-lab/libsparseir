@@ -554,6 +554,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     int n_points;
     int points_status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "n_points" << n_points << std::endl;
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -797,15 +798,19 @@ void test_matsubara_sampling_constructor()
     auto basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15);
     REQUIRE(basis != nullptr);
 
-    auto sampling = spir_matsubara_sampling_new(basis);
+    auto sampling = spir_matsubara_sampling_new(basis, false);
     REQUIRE(sampling != nullptr);
+
+    auto sampling_positive_only = spir_matsubara_sampling_new(basis, true);
+    REQUIRE(sampling_positive_only != nullptr);
+
     // Clean up
     spir_destroy_sampling(sampling);
     spir_destroy_finite_temp_basis(basis);
 }
 
 template <typename S>
-void test_matsubara_sampling_evaluation_4d_column_major()
+void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 {
     double beta = 1.0;
     double wmax = 10.0;
@@ -820,7 +825,7 @@ void test_matsubara_sampling_evaluation_4d_column_major()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -828,11 +833,13 @@ void test_matsubara_sampling_evaluation_4d_column_major()
     int n_points;
     int points_status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "n_points" << n_points << std::endl;
     REQUIRE(n_points > 0);
+
 
     // Create equivalent C++ objects for comparison
     sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, 1e-10);
-    sparseir::MatsubaraSampling<S> cpp_sampling(cpp_basis);
+    sparseir::MatsubaraSampling<S> cpp_sampling(cpp_basis, positive_only);
 
     int basis_size = cpp_basis.size();
 
@@ -895,10 +902,16 @@ void test_matsubara_sampling_evaluation_4d_column_major()
                                  target_dim, evaluate_output, fit_output);
         REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
+        std::cout << basis_size << ", " << d1 << ", " << d2 << ", " << d3 << std::endl;
+        std::cout << gtau_cpp.dimension(0) << ", " << gtau_cpp.dimension(1) << ", " << gtau_cpp.dimension(2) << ", " << gtau_cpp.dimension(3) << std::endl;
         // Compare with C++ implementation
-        for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
+        for (int i = 0; i < n_points * d1 * d2 * d3; ++i) {
+            std::cout << (__real__ evaluate_output[i]) << ", " << gtau_cpp(i).real() << std::endl;
             REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
             REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
+        }
+
+        for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
             REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
             REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
         }
@@ -916,7 +929,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 {
     double beta = 1.0;
     double wmax = 10.0;
-
+    bool positive_only = false;
     auto stat = get_stat<S>();
 
     // Create basis
@@ -927,7 +940,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -1022,7 +1035,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 {
     double beta = 1.0;
     double wmax = 10.0;
-
+    bool positive_only = false;
     auto stat = get_stat<S>();
 
     // Create basis
@@ -1033,7 +1046,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -1154,6 +1167,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 {
     double beta = 1.0;
     double wmax = 10.0;
+    bool positive_only = false;
 
     auto stat = get_stat<S>();
 
@@ -1164,7 +1178,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -1291,6 +1305,7 @@ void test_matsubara_sampling_error_status()
 {
     double beta = 1.0;
     double wmax = 10.0;
+    bool positive_only = false;
 
     auto stat = get_stat<S>();
 
@@ -1301,7 +1316,7 @@ void test_matsubara_sampling_error_status()
 
     // Create sampling
     spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis);
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -1418,7 +1433,8 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
     SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
             "(bosonic)")
     {
-        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>();
+        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>(false);
+        test_matsubara_sampling_evaluation_4d_column_major<sparseir::Bosonic>(true);
     }
 
     /*

@@ -321,7 +321,8 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(tau_sampling != NULL);
 
 spir_sampling* matsubara_sampling;
-status = spir_matsubara_sampling_new(&matsubara_sampling, basis);
+bool positive_only = false;
+status = spir_matsubara_sampling_new(&matsubara_sampling, basis, positive_only);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(matsubara_sampling != NULL);
 

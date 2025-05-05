@@ -260,6 +260,7 @@ int32_t spir_tau_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b
  *          On successful creation, this will point to the new sampling object.
  *          If creation fails, this will be set to NULL.
  * @param b Pointer to a finite temperature basis object
+ * @param positive_only If true, only positive Matsubara frequencies are considered.
  * @return An integer status code:
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
  *         - A non-zero error code on failure
@@ -275,7 +276,7 @@ int32_t spir_tau_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b
  *       longer needed
  * @see spir_destroy_sampling
  */
-int32_t spir_matsubara_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b);
+int32_t spir_matsubara_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b, bool positive_only);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.

@@ -223,6 +223,21 @@ spir_sampling *_spir_sampling_new(const spir_finite_temp_basis *b)
         std::make_shared<SMPL>(impl_finite_temp_basis)));
 }
 
+
+template <typename S, typename SMPL>
+spir_sampling *_spir_matsubara_sampling_new(const spir_finite_temp_basis *b, bool positive_only)
+{
+    std::shared_ptr<AbstractFiniteTempBasis> impl =
+        get_impl_finite_temp_basis(b);
+    if (!impl)
+        return nullptr;
+
+    auto impl_finite_temp_basis =
+        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
+        std::make_shared<SMPL>(impl_finite_temp_basis, positive_only)));
+}
+
 template <typename S>
 spir_dlr *_spir_dlr_new(const spir_finite_temp_basis *b)
 {

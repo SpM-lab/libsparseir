@@ -204,23 +204,22 @@ int32_t spir_tau_sampling_new(spir_sampling** s, const spir_finite_temp_basis *b
     }
 }
 
-int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_basis *b)
+int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_basis *b, bool positive_only)
 {
     spir_statistics_type stat;
     int32_t status = spir_finite_temp_basis_get_statistics(b, &stat);
     if (status != SPIR_COMPUTATION_SUCCESS) {
         return SPIR_GET_IMPL_FAILED;
     }
-
     if (stat == SPIR_STATISTICS_FERMIONIC) {
-        *s = _spir_sampling_new<
+        *s = _spir_matsubara_sampling_new<
             sparseir::Fermionic,
-            sparseir::MatsubaraSampling<sparseir::Fermionic>>(b);
+            sparseir::MatsubaraSampling<sparseir::Fermionic>>(b, positive_only);
         return SPIR_COMPUTATION_SUCCESS;
     } else {
-        *s = _spir_sampling_new<
+        *s = _spir_matsubara_sampling_new<
             sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            b);
+            b, positive_only);
         return SPIR_COMPUTATION_SUCCESS;
     }
 }
@@ -276,6 +275,7 @@ int32_t spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
 int32_t spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
                                   int32_t ndim, int32_t *input_dims,
                                   int32_t target_dim, const double *input,
+
                                   c_complex *out)
 {
     std::complex<double> *cpp_out = (std::complex<double> *)(out);

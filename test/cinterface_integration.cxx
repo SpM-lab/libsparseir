@@ -265,7 +265,7 @@ TODO: we need to test positive only mode. A different function is needed?
 template <typename S, typename K, int ndim, Eigen::StorageOptions ORDER>
 void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
-                      const spir_order_type order, double tol)
+                      const spir_order_type order, double tol, bool positive_only)
 {
     if (ndim != 1 + extra_dims.size()) {
         std::cerr << "ndim must be 1 + extra_dims.size()" << std::endl;
@@ -315,7 +315,8 @@ void integration_test(double beta, double wmax, double epsilon,
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;
     spir_sampling *matsubara_sampling;
-    status = spir_matsubara_sampling_new(&matsubara_sampling, basis);
+    status = spir_matsubara_sampling_new(&matsubara_sampling, basis, positive_only);
+
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(matsubara_sampling != nullptr);
 
@@ -328,7 +329,11 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_sampling_get_matsubara_points(matsubara_sampling,
                                                 matsubara_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(num_matsubara_points >= basis_size);
+    if (positive_only) {
+        REQUIRE(num_matsubara_points >= basis_size / 2);
+    } else {
+        REQUIRE(num_matsubara_points >= basis_size);
+    }
 
     // DLR
     std::cout << "DLR" << std::endl;
@@ -483,9 +488,7 @@ void integration_test(double beta, double wmax, double epsilon,
     spir_destroy_sampling(tau_sampling);
 }
 
-TEST_CASE("Integration Test", "[cinterface]")
-{
-    std::vector<int> extra_dims = {};
+TEST_CASE("Integration Test", "[cinterface]") {
     double beta = 1e+4;
     double wmax = 2.0;
     double epsilon = 1e-10;
@@ -497,41 +500,50 @@ TEST_CASE("Integration Test", "[cinterface]")
                     //Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                       //SPIR_ORDER_COLUMN_MAJOR, tol);
 
-    std::cout << "Integration test for bosonic LogisticKernel" << std::endl;
-    integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                    Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                      SPIR_ORDER_COLUMN_MAJOR, tol);
-//
-    {
-        int32_t target_dim = 0;
-        std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
-        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                        Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                        SPIR_ORDER_COLUMN_MAJOR, tol);
-    }
+    for (bool positive_only : {false, true}) {
+        std::cout << "positive_only = " << positive_only << std::endl;
+        {
+            std::vector<int> extra_dims = {};
+            std::cout << "Integration test for bosonic LogisticKernel" << std::endl;
+            integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                           Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                          SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+        }
 
-    {
-        int32_t target_dim = 0;
-        std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
-        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                        Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                        SPIR_ORDER_ROW_MAJOR, tol);
-    }
+        {
+            int32_t target_dim = 0;
+            std::vector<int> extra_dims = {};
+            std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
+            integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                           Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+        }
 
-    for (int target_dim = 0; target_dim < 4; ++target_dim) {
-        std::vector<int> extra_dims = {2,3,4};
-        std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
-        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
-                        Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                        SPIR_ORDER_COLUMN_MAJOR, tol);
-    }
+        {
+            int32_t target_dim = 0;
+            std::vector<int> extra_dims = {};
+            std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
+            integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                           Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_ROW_MAJOR, tol, positive_only);
+        }
 
-    for (int target_dim = 0; target_dim < 4; ++target_dim) {
-        std::vector<int> extra_dims = {2,3,4};
-        std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
-        integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
-                        Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                        SPIR_ORDER_ROW_MAJOR, tol);
+        // extra dims = {2,3,4}
+        for (int target_dim = 0; target_dim < 4; ++target_dim) {
+            std::vector<int> extra_dims = {2,3,4};
+            std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
+            integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
+                           Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+        }
+
+        for (int target_dim = 0; target_dim < 4; ++target_dim) {
+            std::vector<int> extra_dims = {2,3,4};
+            std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
+            integration_test<sparseir::Bosonic, sparseir::LogisticKernel, 4,
+                           Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_ROW_MAJOR, tol, positive_only);
+        }
     }
     //
     //std::cout << "Integration test for bosonic RegularizedBoseKernel" << std::endl;
