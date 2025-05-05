@@ -68,6 +68,9 @@ TEST_CASE("DLR Tests", "[dlr]")
             Eigen::Tensor<double, 1> g_dlr_tensor = dlr.from_IR(Gl_tensor);
             std::cout << "g_dlr_tensor.dimension(0) = " << g_dlr_tensor.dimension(0) << std::endl;
 
+            for (int i = 0; i < g_dlr_tensor.dimension(0); ++i) {
+                std::cout << "g_dlr_tensor[" << i << "] = " << g_dlr_tensor(i) << std::endl;
+            }
             auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
             auto smpl_points = smpl.sampling_points();
             auto smpl_for_dlr =
