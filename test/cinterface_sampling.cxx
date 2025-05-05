@@ -554,6 +554,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     int n_points;
     int points_status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "n_points" << n_points << std::endl;
     REQUIRE(n_points > 0);
 
     // Create equivalent C++ objects for comparison
@@ -832,7 +833,9 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
     int n_points;
     int points_status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "n_points" << n_points << std::endl;
     REQUIRE(n_points > 0);
+
 
     // Create equivalent C++ objects for comparison
     sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, 1e-10);
@@ -899,10 +902,16 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
                                  target_dim, evaluate_output, fit_output);
         REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
+        std::cout << basis_size << ", " << d1 << ", " << d2 << ", " << d3 << std::endl;
+        std::cout << gtau_cpp.dimension(0) << ", " << gtau_cpp.dimension(1) << ", " << gtau_cpp.dimension(2) << ", " << gtau_cpp.dimension(3) << std::endl;
         // Compare with C++ implementation
-        for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
+        for (int i = 0; i < n_points * d1 * d2 * d3; ++i) {
+            std::cout << (__real__ evaluate_output[i]) << ", " << gtau_cpp(i).real() << std::endl;
             REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
             REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
+        }
+
+        for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
             REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
             REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
         }
