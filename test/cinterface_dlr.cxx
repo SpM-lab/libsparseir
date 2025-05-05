@@ -107,17 +107,38 @@ void test_finite_temp_basis_dlr()
     int32_t smpl_status = spir_matsubara_sampling_new(&smpl, basis, positive_only);
     REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(smpl != nullptr);
-    double *g_dlr_smpl = (double *)malloc(basis_size * sizeof(double));
+
+    c_complex *giv_ref = (c_complex *)malloc(basis_size * sizeof(c_complex));
+
     int32_t smpl_input_dims[1] = {basis_size};
-    int32_t status_eval = spir_sampling_evaluate_dd(smpl, SPIR_ORDER_COLUMN_MAJOR, ndim, smpl_input_dims, target_dim, g_dlr, g_dlr_smpl);
+    int32_t status_eval = spir_sampling_evaluate_dz(
+        smpl, SPIR_ORDER_COLUMN_MAJOR, ndim,
+        smpl_input_dims, target_dim, Gl, giv_ref
+    );
     REQUIRE(status_eval == SPIR_COMPUTATION_SUCCESS);
 
+    spir_sampling *smpl_for_dlr;
+    //int32_t smpl_for_dlr_status = spir_matsubara_sampling_new(&smpl_for_dlr, dlr, positive_only);
+    //REQUIRE(smpl_for_dlr_status == SPIR_COMPUTATION_SUCCESS);
+    //REQUIRE(smpl_for_dlr != nullptr);
+
+    int32_t smpl_for_dlr_input_dims[1] = {basis_size};
+    c_complex *giv = (c_complex *)malloc(basis_size * sizeof(c_complex));
+    //int32_t status_eval_for_dlr = spir_sampling_evaluate_dz(
+    //    smpl_for_dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
+    //    smpl_for_dlr_input_dims, target_dim, g_dlr, giv
+    //);
+    //REQUIRE(status_eval_for_dlr == SPIR_COMPUTATION_SUCCESS);
+
     for (int i = 0; i < basis_size; i++) {
-        std::cout << "g_dlr_smpl[" << i << "] = " << g_dlr_smpl[i] << std::endl;
+        std::cout << "giv_ref[" << i << "] = " << __real__(giv_ref[i]) << " " << __imag__(giv_ref[i]) << std::endl;
+        //std::cout << "giv[" << i << "] = " << __real__(giv[i]) << " " << __imag__(giv[i]) << std::endl;
     }
 
     free(Gl);
     free(g_dlr);
+    free(giv_ref);
+    free(giv);
 
     spir_destroy_finite_temp_basis(basis);
     spir_destroy_dlr(dlr);
