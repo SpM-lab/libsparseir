@@ -182,29 +182,46 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
 
 template <typename S>
 int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
-                         int32_t ndim, int32_t *input_dims, const double *input,
-                         double *out)
+                         int32_t ndim, int32_t *input_dims, int32_t target_dim,
+                         const double *input, double *out)
 {
     std::shared_ptr<_DLR<S>> impl =
         std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int32_t, 2> input_dims_2d = collapse_to_2d(ndim, input_dims, 0);
-    Eigen::Tensor<double, 2> input_tensor(input_dims_2d[0], input_dims_2d[1]);
-    std::size_t total_input_size = input_dims_2d[0] * input_dims_2d[1];
-    for (std::size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
+    std::array<int32_t, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
 
-    Eigen::Tensor<double, 2> out_tensor =
-        impl->get_impl()->from_IR(input_tensor);
+    std::cout << "input_dims_3d[0] = " << input_dims_3d[0] << std::endl;
+    std::cout << "input_dims_3d[1] = " << input_dims_3d[1] << std::endl;
+    std::cout << "input_dims_3d[2] = " << input_dims_3d[2] << std::endl;
+
+    Eigen::Tensor<double, 3> input_tensor_3d(input_dims_3d[0], input_dims_3d[1], input_dims_3d[2]);
+    std::size_t total_input_size = input_dims_3d[0] * input_dims_3d[1] * input_dims_3d[2];
+    for (std::size_t i = 0; i < total_input_size; i++) {
+        input_tensor_3d.data()[i] = input[i];
+    }
+    // move the target dimension to the first dimension
+    input_tensor_3d = sparseir::movedim(input_tensor_3d, 1, 0);
+    // reshape to 2D
+    Eigen::array<Eigen::Index, 2> input2d_dims{input_dims_3d[1], input_dims_3d[0] * input_dims_3d[2]};
+    Eigen::Tensor<double, 2> input_tensor_2d = input_tensor_3d.reshape(input2d_dims);
+    Eigen::Tensor<double, 2> out_tensor_2d = impl->get_impl()->from_IR(input_tensor_2d);
+    // move the target dimension to the last dimension
+    // reshape to 3D
+    Eigen::array<Eigen::Index, 3> out3d_dims{out_tensor_2d.dimension(0), input_dims_3d[0], input_dims_3d[2]};
+
+    Eigen::Tensor<double, 3> out_tensor_3d_ = out_tensor_2d.reshape(out3d_dims);
+    Eigen::Tensor<double, 3> out_tensor_3d = sparseir::movedim(out_tensor_3d_, 0, 1);
 
     // pass data to out
     std::size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1);
+        out_tensor_3d.dimension(0) * out_tensor_3d.dimension(1) * out_tensor_3d.dimension(2);
     for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
+        out[i] = out_tensor_3d.data()[i];
     }
     return SPIR_COMPUTATION_SUCCESS;
 }
