@@ -118,21 +118,30 @@ void test_finite_temp_basis_dlr()
     REQUIRE(status_eval == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *smpl_for_dlr;
-    //int32_t smpl_for_dlr_status = spir_matsubara_sampling_new(&smpl_for_dlr, dlr, positive_only);
-    //REQUIRE(smpl_for_dlr_status == SPIR_COMPUTATION_SUCCESS);
-    //REQUIRE(smpl_for_dlr != nullptr);
+    std::cout << "spir_matsubara_sampling_dlr_new" << std::endl;
+    // get sampling_points from smpl in C++
+    auto smpl_points = smpl->get_sampling_points();
+    int32_t n_smpl_points = smpl_points.size();
+    double *smpl_points_c = (double *)malloc(n_smpl_points * sizeof(double));
+    for (int32_t i = 0; i < n_smpl_points; i++) {
+        smpl_points_c[i] = smpl_points[i];
+    }
+    int32_t smpl_for_dlr_status = spir_matsubara_sampling_dlr_new(&smpl_for_dlr, dlr, n_smpl_points, smpl_points_c, positive_only);
+    std::cout << "smpl_for_dlr_status = " << smpl_for_dlr_status << std::endl;
+    REQUIRE(smpl_for_dlr_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(smpl_for_dlr != nullptr);
 
     int32_t smpl_for_dlr_input_dims[1] = {basis_size};
     c_complex *giv = (c_complex *)malloc(basis_size * sizeof(c_complex));
-    //int32_t status_eval_for_dlr = spir_sampling_evaluate_dz(
-    //    smpl_for_dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
-    //    smpl_for_dlr_input_dims, target_dim, g_dlr, giv
-    //);
-    //REQUIRE(status_eval_for_dlr == SPIR_COMPUTATION_SUCCESS);
+    int32_t status_eval_for_dlr = spir_sampling_evaluate_dz(
+        smpl_for_dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
+        smpl_for_dlr_input_dims, target_dim, g_dlr, giv
+    );
+    REQUIRE(status_eval_for_dlr == SPIR_COMPUTATION_SUCCESS);
 
     for (int i = 0; i < basis_size; i++) {
         std::cout << "giv_ref[" << i << "] = " << __real__(giv_ref[i]) << " " << __imag__(giv_ref[i]) << std::endl;
-        //std::cout << "giv[" << i << "] = " << __real__(giv[i]) << " " << __imag__(giv[i]) << std::endl;
+        std::cout << "giv[" << i << "] = " << __real__(giv[i]) << " " << __imag__(giv[i]) << std::endl;
     }
 
     free(Gl);

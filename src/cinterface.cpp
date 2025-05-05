@@ -224,6 +224,26 @@ int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_ba
     }
 }
 
+int32_t spir_matsubara_sampling_dlr_new(spir_sampling** s, const spir_dlr *dlr, int32_t n_smpl_points, const double *smpl_points, bool positive_only)
+{
+    spir_statistics_type stat;
+    int32_t status = spir_dlr_get_statistics(dlr, &stat);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+    if (stat == SPIR_STATISTICS_FERMIONIC) {
+        *s = _spir_matsubara_sampling_dlr_new<
+            sparseir::Fermionic,
+            sparseir::MatsubaraSampling<sparseir::Fermionic>>(dlr, n_smpl_points, smpl_points, positive_only);
+        return SPIR_COMPUTATION_SUCCESS;
+    } else {
+        *s = _spir_matsubara_sampling_dlr_new<
+            sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+            dlr, n_smpl_points, smpl_points, positive_only);
+        return SPIR_COMPUTATION_SUCCESS;
+    }
+}
+
 int32_t spir_dlr_new(spir_dlr** dlr, const spir_finite_temp_basis *b)
 {
     spir_statistics_type stat;
