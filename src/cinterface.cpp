@@ -224,6 +224,7 @@ int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_ba
     }
 }
 
+/*
 int32_t spir_matsubara_sampling_dlr_new(spir_sampling** s, const spir_dlr *dlr, int32_t n_smpl_points, const double *smpl_points, bool positive_only)
 {
     spir_statistics_type stat;
@@ -243,6 +244,7 @@ int32_t spir_matsubara_sampling_dlr_new(spir_sampling** s, const spir_dlr *dlr, 
         return SPIR_COMPUTATION_SUCCESS;
     }
 }
+*/
 
 int32_t spir_dlr_new(spir_dlr** dlr, const spir_finite_temp_basis *b)
 {

@@ -255,19 +255,6 @@ spir_sampling *_spir_matsubara_sampling_new(const spir_finite_temp_basis *b, boo
         std::make_shared<SMPL>(impl_finite_temp_basis, positive_only)));
 }
 
-template <typename S, typename SMPL>
-spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_smpl_points, const double *smpl_points, bool positive_only)
-{
-    std::shared_ptr<AbstractDLR> impl = get_impl_dlr(dlr);
-    if (!impl)
-        return nullptr;
-
-    auto impl_dlr = std::static_pointer_cast<_DLR<S>>(impl)->get_impl();
-    Eigen::VectorXd cpp_smpl_points(smpl_points, smpl_points + n_smpl_points);
-    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
-        std::make_shared<SMPL>(impl_dlr, cpp_smpl_points, positive_only)));
-}
-
 
 template <typename S>
 spir_dlr *_spir_dlr_new(const spir_finite_temp_basis *b)
