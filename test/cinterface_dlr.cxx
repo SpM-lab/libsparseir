@@ -90,10 +90,8 @@ void test_finite_temp_basis_dlr()
     REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
     double *g_dlr = (double *)malloc(basis_size * sizeof(double));
     int32_t from_ir_input_dims[1] = {static_cast<int32_t>(basis_size)};
-    std::cout << "spir_dlr_from_IR_dd" << std::endl;
     int status_from_IR = spir_dlr_from_IR_dd(dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
                                           from_ir_input_dims, target_dim, Gl, g_dlr);
-    std::cout << "status_from_IR " << status_from_IR << std::endl;
     REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *smpl;
@@ -140,15 +138,22 @@ void test_finite_temp_basis_dlr()
         double dz = std::sqrt(dzr * dzr + dzi * dzi);
         REQUIRE(dz < 300 * epsilon);
     }
-
+    std::cout << "freeing memory" << std::endl;
+    std::cout << "freeing Gl" << std::endl;
     free(Gl);
+    std::cout << "freeing g_dlr" << std::endl;
     free(g_dlr);
+    std::cout << "freeing giv_ref" << std::endl;
     free(giv_ref);
+    std::cout << "freeing giv" << std::endl;
     free(giv);
-
+    std::cout << "freeing memory done" << std::endl;
     spir_destroy_finite_temp_basis(basis);
+    std::cout << "freeing basis done" << std::endl;
     spir_destroy_dlr(dlr);
+    std::cout << "freeing dlr done" << std::endl;
     spir_destroy_dlr(dlr_with_poles);
+    std::cout << "freeing dlr_with_poles done" << std::endl;
 }
 
 TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
