@@ -87,20 +87,12 @@ void test_finite_temp_basis_dlr()
     int status_to_IR = spir_dlr_to_IR_dd(dlr_with_poles, SPIR_ORDER_COLUMN_MAJOR,
                                       ndim, to_ir_input_dims, target_dim, coeffs.data(), Gl);
 
-    for (int i = 0; i < basis_size; i++) {
-        std::cout << "Gl[" << i << "] = " << Gl[i] << std::endl;
-    }
-
     REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
     double *g_dlr = (double *)malloc(basis_size * sizeof(double));
     int32_t from_ir_input_dims[1] = {static_cast<int32_t>(basis_size)};
     int status_from_IR = spir_dlr_from_IR_dd(dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
                                           from_ir_input_dims, target_dim, Gl, g_dlr);
     REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
-
-    for (int i = 0; i < basis_size; i++) {
-        std::cout << "g_dlr[" << i << "] = " << g_dlr[i] << std::endl;
-    }
 
     spir_sampling *smpl;
     bool positive_only = false;
