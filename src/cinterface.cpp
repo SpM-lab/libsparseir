@@ -239,10 +239,10 @@ int32_t spir_matsubara_sampling_get_sampling_points(const spir_sampling *s, int3
             return SPIR_INVALID_ARGUMENT;
 
         std::vector<int> smpl_points_vec;
-        for (int32_t i = 0; i < smpl_points.size(); i++) {
+        for (int32_t i = 0; i < n_points; i++) {
             smpl_points_vec.push_back(smpl_points[i].get_n());
         }
-        for (int32_t i = 0; i < smpl_points_vec.size(); i++) {
+        for (int32_t i = 0; i < n_points; i++) {
             points[i] = smpl_points_vec[i];
         }
     } else {
@@ -252,10 +252,10 @@ int32_t spir_matsubara_sampling_get_sampling_points(const spir_sampling *s, int3
             return SPIR_INVALID_ARGUMENT;
 
         std::vector<int> smpl_points_vec;
-        for (int32_t i = 0; i < smpl_points.size(); i++) {
+        for (int32_t i = 0; i < n_points; i++) {
             smpl_points_vec.push_back(smpl_points[i].get_n());
         }
-        for (int32_t i = 0; i < smpl_points_vec.size(); i++) {
+        for (int32_t i = 0; i < n_points; i++) {
             points[i] = smpl_points_vec[i];
         }
     }

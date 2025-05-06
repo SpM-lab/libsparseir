@@ -155,4 +155,50 @@ inline xprec::DDouble exp_impl(const xprec::DDouble &x)
     return xprec::exp(x);
 }
 
+template <int N>
+Eigen::array<int, N> getperm(int src, int dst)
+{
+    Eigen::array<int, N> perm;
+    if (src == dst) {
+        for (int i = 0; i < N; ++i) {
+            perm[i] = i;
+        }
+        return perm;
+    }
+
+    int pos = 0;
+    for (int i = 0; i < N; ++i) {
+        if (i == dst) {
+            perm[i] = src;
+        } else {
+            // Skip src position
+            if (pos == src)
+                ++pos;
+            perm[i] = pos;
+            ++pos;
+        }
+    }
+    return perm;
+}
+
+template <typename T, int N>
+Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N> &arr, int src, int dst)
+{
+    if (src == dst) {
+        return arr;
+    }
+    auto perm = getperm<N>(src, dst);
+    return arr.shuffle(perm);
+}
+
+template <typename T, int N, int Options>
+Eigen::Tensor<T, N, Options> movedim(const Eigen::Tensor<T, N, Options> &arr, int src, int dst)
+{
+    if (src == dst) {
+        return arr;
+    }
+    auto perm = getperm<N>(src, dst);
+    return arr.shuffle(perm);
+}
+
 } // namespace sparseir
