@@ -114,7 +114,7 @@ void test_finite_temp_basis_dlr()
     REQUIRE(smpl_for_dlr_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(smpl_for_dlr != nullptr);
 
-    c_complex *giv_ref = (c_complex *)malloc(basis_size * sizeof(c_complex));
+    c_complex *giv_ref = (c_complex *)malloc(n_smpl_points * sizeof(c_complex));
     int32_t smpl_input_dims[1] = {basis_size};
     int32_t status_eval = spir_sampling_evaluate_dz(
         smpl, SPIR_ORDER_COLUMN_MAJOR, ndim,
@@ -124,36 +124,28 @@ void test_finite_temp_basis_dlr()
 
     int32_t smpl_for_dlr_input_dims[1] = {basis_size};
 
-    c_complex *giv = (c_complex *)malloc(basis_size * sizeof(c_complex));
+    c_complex *giv = (c_complex *)malloc(n_smpl_points * sizeof(c_complex));
     int32_t status_eval_for_dlr = spir_sampling_evaluate_dz(
         smpl_for_dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
         smpl_for_dlr_input_dims, target_dim, g_dlr, giv
     );
     REQUIRE(status_eval_for_dlr == SPIR_COMPUTATION_SUCCESS);
 
-    for (int i = 0; i < basis_size; i++) {
+    for (int i = 0; i < n_smpl_points; i++) {
         // Compare real and imaginary parts with appropriate tolerance
         double dzr = (__real__(giv_ref[i]) - __real__(giv[i]));
         double dzi = (__imag__(giv_ref[i]) - __imag__(giv[i]));
         double dz = std::sqrt(dzr * dzr + dzi * dzi);
         REQUIRE(dz < 300 * epsilon);
     }
-    std::cout << "freeing memory" << std::endl;
-    std::cout << "freeing Gl" << std::endl;
     free(Gl);
-    std::cout << "freeing g_dlr" << std::endl;
     free(g_dlr);
-    std::cout << "freeing giv_ref" << std::endl;
     free(giv_ref);
-    std::cout << "freeing giv" << std::endl;
     free(giv);
-    std::cout << "freeing memory done" << std::endl;
+    free(smpl_points);
     spir_destroy_finite_temp_basis(basis);
-    std::cout << "freeing basis done" << std::endl;
     spir_destroy_dlr(dlr);
-    std::cout << "freeing dlr done" << std::endl;
     spir_destroy_dlr(dlr_with_poles);
-    std::cout << "freeing dlr_with_poles done" << std::endl;
 }
 
 TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
