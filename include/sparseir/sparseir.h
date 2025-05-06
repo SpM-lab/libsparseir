@@ -218,6 +218,9 @@ int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
 int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
                                               spir_statistics_type *statistics);
 
+int32_t spir_sampling_get_statistics(const spir_sampling *s,
+                                     spir_statistics_type *statistics);
+
 /**
  * @brief Creates a new tau sampling object for sparse sampling in
  * imaginary time.
@@ -278,7 +281,11 @@ int32_t spir_tau_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b
  */
 int32_t spir_matsubara_sampling_new(spir_sampling **s, const spir_finite_temp_basis *b, bool positive_only);
 
-int32_t spir_matsubara_sampling_dlr_new(spir_sampling **s, const spir_dlr *dlr, int32_t n_smpl_points, const double *smpl_points, bool positive_only);
+int32_t spir_matsubara_sampling_dlr_new(spir_sampling **s, const spir_dlr *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only);
+
+int32_t spir_matsubara_sampling_get_sampling_points(const spir_sampling *s, int32_t n_points, int32_t *points);
+
+int32_t spir_matsubara_sampling_get_num_points(const spir_sampling *s, int32_t *n_points);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.

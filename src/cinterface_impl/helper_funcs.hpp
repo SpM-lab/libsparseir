@@ -255,6 +255,25 @@ spir_sampling *_spir_matsubara_sampling_new(const spir_finite_temp_basis *b, boo
         std::make_shared<SMPL>(impl_finite_temp_basis, positive_only)));
 }
 
+template <typename S, typename SMPL>
+spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only)
+{
+    auto impl = get_impl_dlr(dlr);
+    if (!impl)
+        return nullptr;
+
+    std::vector<sparseir::MatsubaraFreq<S>> smpl_points_vec;
+    smpl_points_vec.reserve(n_smpl_points);
+    for (int32_t i = 0; i < n_smpl_points; ++i) {
+        smpl_points_vec.emplace_back(smpl_points[i]);
+    }
+
+    auto dlr_impl = std::static_pointer_cast<_DLR<S>>(impl)->get_impl();
+    auto sampling = std::make_shared<SMPL>(dlr_impl, smpl_points_vec, positive_only);
+    return create_sampling(sampling);
+}
+
+
 
 template <typename S>
 spir_dlr *_spir_dlr_new(const spir_finite_temp_basis *b)

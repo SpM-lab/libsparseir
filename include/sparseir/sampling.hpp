@@ -320,7 +320,8 @@ public:
     virtual ~AbstractSampling() = default;
 
     // Return number of sampling points
-    virtual std::size_t n_sampling_points() const = 0;
+    virtual int32_t n_sampling_points() const = 0;
+    virtual spir_statistics_type get_statistics() const = 0;
 
     // Return basis size
     virtual std::size_t basis_size() const = 0;
@@ -512,11 +513,19 @@ private:
 
 public:
     // Implement the pure virtual method from AbstractSampling
-    std::size_t n_sampling_points() const override
+    int32_t n_sampling_points() const override
     {
         return sampling_points_.size();
     }
 
+    spir_statistics_type get_statistics() const override
+    {
+        if (std::is_same<S, sparseir::Fermionic>::value) {
+            return SPIR_STATISTICS_FERMIONIC;
+        } else {
+            return SPIR_STATISTICS_BOSONIC;
+        }
+    }
     // Implement the pure virtual method from AbstractSampling
     std::size_t basis_size() const override
     {
@@ -716,9 +725,18 @@ private:
 
 public:
     // Implement the pure virtual method from AbstractSampling
-    std::size_t n_sampling_points() const override
+    int32_t n_sampling_points() const override
     {
         return sampling_points_.size();
+    }
+
+    spir_statistics_type get_statistics() const override
+    {
+        if (std::is_same<S, sparseir::Fermionic>::value) {
+            return SPIR_STATISTICS_FERMIONIC;
+        } else {
+            return SPIR_STATISTICS_BOSONIC;
+        }
     }
 
     std::size_t basis_size() const override
