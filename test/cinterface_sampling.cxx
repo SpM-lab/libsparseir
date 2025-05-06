@@ -859,7 +859,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
     int n_points;
     int points_status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
-    std::cout << "n_points" << n_points << std::endl;
+    std::cout << "n_points " << n_points << std::endl;
     REQUIRE(n_points > 0);
 
 

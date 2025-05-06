@@ -90,8 +90,10 @@ void test_finite_temp_basis_dlr()
     REQUIRE(status_to_IR == SPIR_COMPUTATION_SUCCESS);
     double *g_dlr = (double *)malloc(basis_size * sizeof(double));
     int32_t from_ir_input_dims[1] = {static_cast<int32_t>(basis_size)};
+    std::cout << "spir_dlr_from_IR_dd" << std::endl;
     int status_from_IR = spir_dlr_from_IR_dd(dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
                                           from_ir_input_dims, target_dim, Gl, g_dlr);
+    std::cout << "status_from_IR " << status_from_IR << std::endl;
     REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *smpl;
