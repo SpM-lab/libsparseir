@@ -50,7 +50,7 @@ int main() {
 
 def main():
     # Set paths
-    readme_path = Path("../README.md")
+    readme_path = Path("./sample_c.md")
 
     print("Debug information:")
     print(f"  README path: {readme_path}")

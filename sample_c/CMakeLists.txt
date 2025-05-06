@@ -17,13 +17,13 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
 endforeach()
 
 # Create a custom target to run all tests
-add_custom_target(run_all_tests
+add_custom_target(test
     DEPENDS ${TEST_NAMES}
     COMMENT "Running all test samples"
 )
 
 # Add initial message
-add_custom_command(TARGET run_all_tests
+add_custom_command(TARGET test
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "Running all tests..."
     COMMAND ${CMAKE_COMMAND} -E echo "----------------------------------------"
@@ -31,7 +31,7 @@ add_custom_command(TARGET run_all_tests
 
 # Add commands for each test in sorted order
 foreach(TEST_NAME ${TEST_NAMES})
-    add_custom_command(TARGET run_all_tests
+    add_custom_command(TARGET test
         POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E echo "Running ${TEST_NAME}..."
         COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${TEST_NAME}
@@ -40,7 +40,7 @@ foreach(TEST_NAME ${TEST_NAMES})
 endforeach()
 
 # Add final message
-add_custom_command(TARGET run_all_tests
+add_custom_command(TARGET test
     POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E echo "All tests completed!"
 ) 
