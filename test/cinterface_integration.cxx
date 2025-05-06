@@ -378,13 +378,21 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<double, ndim, ORDER> coeffs =
         sparseir::movedim(coeffs_targetdim0, 0, target_dim);
     // Convert DLR coefficients to IR coefficients
-    // TODO: Extend to Tensor
     Eigen::Tensor<double, ndim, ORDER> g_IR(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
     status = spir_dlr_to_IR_dd(dlr, order, ndim,
                             _get_dims<ndim, int32_t>(npoles, extra_dims, target_dim).data(), target_dim,
                             coeffs.data(), g_IR.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    // From_IR C API
+    Eigen::Tensor<double, ndim, ORDER> g_dlr(
+        _get_dims<ndim>(basis_size, extra_dims, target_dim));
+    status = spir_dlr_from_IR_dd(dlr, order, ndim,
+                            _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
+                            g_IR.data(), g_dlr.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "g_dlr: " << g_dlr << std::endl;
 
     // DLR basis functions
     spir_funcs *dlr_u;
@@ -490,6 +498,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
 TEST_CASE("Integration Test", "[cinterface]") {
     double beta = 1e+4;
+    beta = 10.0;
     double wmax = 2.0;
     double epsilon = 1e-10;
 

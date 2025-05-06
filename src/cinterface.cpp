@@ -608,6 +608,7 @@ int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
     }
 }
 
+// TODO: USE THIS
 int32_t spir_sampling_get_num_points(const spir_sampling *s,
                                      int32_t *num_points)
 {
@@ -658,6 +659,7 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points)
     }
 }
 
+// TODO: USE THIS
 int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
                                            int32_t *points)
 {
