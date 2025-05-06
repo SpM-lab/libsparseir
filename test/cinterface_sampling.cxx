@@ -824,17 +824,9 @@ void test_matsubara_sampling_constructor()
     status = spir_matsubara_sampling_get_sampling_points(sampling, n_points, smpl_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    for (int32_t i = 0; i < n_points; i++) {
-        std::cout << smpl_points[i] << std::endl;
-    }
-
     int32_t *smpl_points_positive_only = (int32_t *)malloc(n_points_positive_only * sizeof(int32_t));
     status = spir_matsubara_sampling_get_sampling_points(sampling_positive_only, n_points_positive_only, smpl_points_positive_only);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-
-    for (int32_t i = 0; i < n_points_positive_only; i++) {
-        std::cout << smpl_points_positive_only[i] << std::endl;
-    }
 
     // Clean up
     spir_destroy_sampling(sampling);
