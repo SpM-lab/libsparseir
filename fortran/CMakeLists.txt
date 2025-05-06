@@ -19,7 +19,10 @@ add_library(SparseIR::sparseir_fortran ALIAS sparseir_fortran)
 
 # Install Fortran library
 install(TARGETS sparseir_fortran
-    DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+    EXPORT sparseirTargets
+    LIBRARY DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${SPARSEIR_INSTALL_BINDIR}"
     COMPONENT sparseir
 )
 

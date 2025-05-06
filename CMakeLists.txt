@@ -189,6 +189,20 @@ configure_package_config_file(
     INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
 )
 
+# Configure and install Fortran config files
+if(SPARSEIR_BUILD_FORTRAN)
+    configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sparseir-fortran-config.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
+        INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+    )
+
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
+        DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+    )
+endif()
+
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfigVersion.cmake"

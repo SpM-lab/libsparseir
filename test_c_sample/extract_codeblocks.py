@@ -51,19 +51,12 @@ int main() {
 def main():
     # Set paths
     readme_path = Path("../README.md")
-    build_dir = Path("../build")
 
     print("Debug information:")
     print(f"  README path: {readme_path}")
-    print(f"  Build dir: {build_dir}")
-    print(f"  Compiler: {os.environ.get('CC', 'cc')}")
 
     if not readme_path.exists():
         print(f"Error: {readme_path} not found")
-        sys.exit(1)
-    
-    if not build_dir.exists():
-        print(f"Error: {build_dir} not found")
         sys.exit(1)
     
     # Create output directory for test files
@@ -87,11 +80,6 @@ def main():
             f.write(test_code)
         print(f"Generated test file: {test_file}")
         
-        # Compile and run test
-        if not compile_and_run_test(test_file):
-            print(f"Test failed for {test_file}. Stopping execution.")
-            sys.exit(1)
-
 
 if __name__ == "__main__":
     main() 

@@ -380,7 +380,12 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 
 for (int i = 0; i < n_tau; ++i) {
     double tau = tau_points[i];
-    double expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
+    double expected;
+    if (tau >= 0.0) {
+        expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
+    } else {
+        expected = +exp(-(tau + beta) * pole_position) / (1.0 + exp(-beta * pole_position));
+    }
     assert(fabs(creal(g_tau[i]) - expected) < epsilon);
     assert(fabs(cimag(g_tau[i])) < epsilon);
 }
