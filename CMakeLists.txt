@@ -153,7 +153,10 @@ set(SPARSEIR_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}"
 
 # Install only the C API library and headers
 install(TARGETS sparseir
-    DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+    EXPORT sparseirTargets
+    LIBRARY DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${SPARSEIR_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${SPARSEIR_INSTALL_BINDIR}"
     COMPONENT sparseir
 )
 
@@ -161,6 +164,33 @@ install(TARGETS sparseir
 install(FILES
     include/sparseir/sparseir.h
     include/sparseir/version.h
+    include/sparseir/spir_status.h
     DESTINATION "${SPARSEIR_INSTALL_INCLUDEDIR}/sparseir"
     COMPONENT sparseir
+)
+
+# Install CMake config files
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+install(EXPORT sparseirTargets
+    FILE SparseIRTargets.cmake
+    NAMESPACE SparseIR::
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sparseirConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfig.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+)
+
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
 )

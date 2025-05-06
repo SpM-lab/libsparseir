@@ -48,46 +48,6 @@ int main() {
     return c_code
 
 
-def compile_and_run_test(test_file):
-    """Compile and run a test file."""
-    # Get compiler from environment variable
-    compiler = os.environ.get('CC', 'cc')
-    
-    # Set paths
-    include_dir = Path("../include")
-    build_dir = Path("../build")
-    
-    # Compile
-    compile_cmd = [
-        compiler,
-        "-o",
-        str(test_file.with_suffix('')),
-        "-g",
-        str(test_file),
-        f"-I{include_dir}",
-        f"-L{build_dir}",
-        f"-Wl,-rpath,{build_dir}",  # Add rpath for macOS
-        "-lsparseir"
-    ]
-    
-    print(f"Compile command: {' '.join(compile_cmd)}")
-    print(f"Compiling {test_file}...")
-    result = subprocess.run(compile_cmd)
-    if result.returncode != 0:
-        print(f"Compilation failed for {test_file}")
-        return False
-    
-    # Run
-    exe_path = str(test_file.with_suffix(''))
-    print(f"Running {exe_path}...")
-    result = subprocess.run([exe_path])
-    if result.returncode != 0:
-        print(f"Test failed for {test_file}")
-        return False
-    
-    return True
-
-
 def main():
     # Set paths
     readme_path = Path("../README.md")
