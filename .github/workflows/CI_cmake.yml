@@ -51,7 +51,7 @@ jobs:
 
     - name: Run test samples
       run: |
-        cd testsample
+        cd test_c_sample
         python extract_codeblocks.py
         cmake -B build -DSparseIR_DIR=${{env.INSTALL_PREFIX}}/share/cmake/SparseIR
         cmake --build build
