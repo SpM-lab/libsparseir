@@ -6,7 +6,7 @@
 	"image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
 	"features": {
 	    "ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {
-			"packages": "nano,git,tig,openssh-server,build-essential,libeigen3-dev,libmpfr-dev,catch2,cmake"
+			"packages": "nano,git,tig,gfortran,openssh-server,build-essential,libeigen3-dev,libmpfr-dev,catch2,cmake"
 		},
 		"ghcr.io/julialang/devcontainer-features/julia:1": {
 			"channel": "release"

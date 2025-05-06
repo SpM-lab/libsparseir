@@ -795,18 +795,44 @@ void test_matsubara_sampling_constructor()
 
     auto stat = get_stat<S>();
 
-    auto basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15);
+    spir_finite_temp_basis *basis;
+    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
-    auto sampling = spir_matsubara_sampling_new(basis, false);
+    spir_sampling *sampling;
+    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, false);
+    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
-    auto sampling_positive_only = spir_matsubara_sampling_new(basis, true);
+    spir_sampling *sampling_positive_only;
+    int sampling_positive_only_status = spir_matsubara_sampling_new(&sampling_positive_only, basis, true);
+    REQUIRE(sampling_positive_only_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling_positive_only != nullptr);
+
+    int32_t n_points;
+    int32_t status = spir_matsubara_sampling_get_num_points(sampling, &n_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_points > 0);
+
+    int32_t n_points_positive_only;
+    status = spir_matsubara_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_points_positive_only > 0);
+
+    int32_t *smpl_points = (int32_t *)malloc(n_points * sizeof(int32_t));
+    status = spir_matsubara_sampling_get_sampling_points(sampling, n_points, smpl_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    int32_t *smpl_points_positive_only = (int32_t *)malloc(n_points_positive_only * sizeof(int32_t));
+    status = spir_matsubara_sampling_get_sampling_points(sampling_positive_only, n_points_positive_only, smpl_points_positive_only);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Clean up
     spir_destroy_sampling(sampling);
     spir_destroy_finite_temp_basis(basis);
+    free(smpl_points);
+    free(smpl_points_positive_only);
 }
 
 template <typename S>
@@ -833,7 +859,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
     int n_points;
     int points_status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
-    std::cout << "n_points" << n_points << std::endl;
+    std::cout << "n_points " << n_points << std::endl;
     REQUIRE(n_points > 0);
 
 
@@ -902,11 +928,8 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
                                  target_dim, evaluate_output, fit_output);
         REQUIRE(fit_status == SPIR_COMPUTATION_SUCCESS);
 
-        std::cout << basis_size << ", " << d1 << ", " << d2 << ", " << d3 << std::endl;
-        std::cout << gtau_cpp.dimension(0) << ", " << gtau_cpp.dimension(1) << ", " << gtau_cpp.dimension(2) << ", " << gtau_cpp.dimension(3) << std::endl;
         // Compare with C++ implementation
         for (int i = 0; i < n_points * d1 * d2 * d3; ++i) {
-            std::cout << (__real__ evaluate_output[i]) << ", " << gtau_cpp(i).real() << std::endl;
             REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
             REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
         }
@@ -1411,7 +1434,6 @@ void test_matsubara_sampling_error_status()
 
 TEST_CASE("MatsubaraSampling", "[cinterface]")
 {
-    /*
     SECTION("MatsubaraSampling Constructor (fermionic)")
     {
         test_matsubara_sampling_constructor<sparseir::Fermionic>();
@@ -1422,6 +1444,7 @@ TEST_CASE("MatsubaraSampling", "[cinterface]")
         test_matsubara_sampling_constructor<sparseir::Bosonic>();
     }
 
+    /*
     SECTION("MatsubaraSampling Evaluation 4-dimensional input COLUMN-MAJOR "
             "(fermionic)")
     {
