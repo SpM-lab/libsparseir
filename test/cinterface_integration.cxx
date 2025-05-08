@@ -297,6 +297,23 @@ int32_t dlr_to_IR(spir_dlr* dlr, spir_order_type order, int32_t ndim,
     return SPIR_INVALID_ARGUMENT;
 }
 
+
+template <typename T>
+int32_t dlr_from_IR(spir_dlr* dlr, spir_order_type order, int32_t ndim,
+                  const int32_t* dims, int32_t target_dim,
+                  const T* coeffs, T* g_IR) {
+    if (std::is_same<T, double>::value) {
+        return spir_dlr_from_IR_dd(dlr, order, ndim, dims, target_dim,
+                                reinterpret_cast<const double*>(coeffs),
+                                reinterpret_cast<double*>(g_IR));
+    } else if (std::is_same<T, std::complex<double>>::value) {
+        return spir_dlr_from_IR_zz(dlr, order, ndim, dims, target_dim,
+                                reinterpret_cast<const c_complex*>(coeffs),
+                                reinterpret_cast<c_complex*>(g_IR));
+    }
+    return SPIR_INVALID_ARGUMENT;
+}
+
 /*
 T: double or std::complex<double>, scalar type of coeffs
 TODO: we need to test positive only mode. A different function is needed?
@@ -306,10 +323,9 @@ void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
                       const spir_order_type order, double tol, bool positive_only)
 {
-    if (std::is_same<T, std::complex<double>>::value && positive_only) {
-        std::cerr << "positive_only is not supported for complex numbers" << std::endl;
-        return;
-    }
+    // positive_only is not supported for complex numbers
+    REQUIRE (!(std::is_same<T, std::complex<double>>::value && positive_only));
+
     if (ndim != 1 + extra_dims.size()) {
         std::cerr << "ndim must be 1 + extra_dims.size()" << std::endl;
     }
@@ -422,6 +438,14 @@ void integration_test(double beta, double wmax, double epsilon,
                       coeffs.data(), g_IR.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
+    // Convert IR coefficients to DLR coefficients
+    Eigen::Tensor<T, ndim, ORDER> g_DLR_reconst(
+        _get_dims<ndim>(basis_size, extra_dims, target_dim));
+    status = dlr_from_IR(dlr, order, ndim,
+                        _get_dims<ndim, int32_t>(npoles, extra_dims, target_dim).data(), target_dim,
+                        g_IR.data(), g_DLR_reconst.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
     // DLR basis functions
     spir_funcs *dlr_u;
     status = spir_dlr_get_u(dlr, &dlr_u);
@@ -447,9 +471,13 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<T, ndim, ORDER> gtau_from_DLR =
         _evaluate_gtau<T, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
-    //Eigen::Tensor<double, ndim, ORDER> gtau_diff = (gtau_from_IR - gtau_from_DLR).abs();
+    Eigen::Tensor<T, ndim, ORDER> gtau_from_DLR_reconst =
+        _evaluate_gtau<T, ndim, ORDER>(g_DLR_reconst, dlr_u, target_dim,
+                                            tau_points);
     REQUIRE(compare_tensors_with_relative_error<T, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR, tol));
+    REQUIRE(compare_tensors_with_relative_error<T, ndim, ORDER>(
+        gtau_from_IR, gtau_from_DLR_reconst, tol));
 
     // Compare the Greens function at all Matsubara frequencies between IR and
     // DLR
@@ -535,9 +563,11 @@ TEST_CASE("Integration Test", "[cinterface]") {
                            Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
                                           SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
 
-            integration_test<std::complex<double>, sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                           Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                          SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+            if (!positive_only) {
+                integration_test<std::complex<double>, sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                               Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                              SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+            }
         }
 
         {
@@ -547,6 +577,11 @@ TEST_CASE("Integration Test", "[cinterface]") {
             integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 1,
                            Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                           SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+            if (!positive_only) {
+                integration_test<std::complex<double>, sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                               Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                              SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+            }
         }
 
         {
@@ -556,6 +591,11 @@ TEST_CASE("Integration Test", "[cinterface]") {
             integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 1,
                            Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
                                           SPIR_ORDER_ROW_MAJOR, tol, positive_only);
+            if (!positive_only) {
+                integration_test<std::complex<double>, sparseir::Bosonic, sparseir::LogisticKernel, 1,
+                               Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                              SPIR_ORDER_ROW_MAJOR, tol, positive_only);
+            }
         }
 
         // extra dims = {2,3,4}
