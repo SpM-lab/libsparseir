@@ -338,7 +338,7 @@ int32_t spir_dlr_new_with_poles(spir_dlr** dlr, const spir_finite_temp_basis *b,
 }
 
 int32_t spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
-                                  int32_t ndim, int32_t *input_dims,
+                                  int32_t ndim, const int32_t *input_dims,
                                   int32_t target_dim, const double *input,
                                   double *out)
 {
@@ -347,7 +347,7 @@ int32_t spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
 }
 
 int32_t spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
-                                  int32_t ndim, int32_t *input_dims,
+                                  int32_t ndim, const int32_t *input_dims,
                                   int32_t target_dim, const double *input,
 
                                   c_complex *out)
@@ -358,7 +358,7 @@ int32_t spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
 }
 
 int32_t spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
-                                  int32_t ndim, int32_t *input_dims,
+                                  int32_t ndim, const int32_t *input_dims,
                                   int32_t target_dim, const c_complex *input,
                                   c_complex *out)
 {
@@ -371,7 +371,7 @@ int32_t spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
 }
 
 int32_t spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
-                             int32_t ndim, int32_t *input_dims,
+                             int32_t ndim, const int32_t *input_dims,
                              int32_t target_dim, const double *input,
                              double *out)
 {
@@ -380,7 +380,7 @@ int32_t spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
 }
 
 int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
-                             int32_t ndim, int32_t *input_dims,
+                             int32_t ndim, const int32_t *input_dims,
                              int32_t target_dim, const c_complex *input,
                              c_complex *out)
 {

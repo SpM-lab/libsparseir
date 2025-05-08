@@ -314,9 +314,70 @@ int32_t dlr_from_IR(spir_dlr* dlr, spir_order_type order, int32_t ndim,
     return SPIR_INVALID_ARGUMENT;
 }
 
+template <typename T>
+int32_t _tau_sampling_evaluate(spir_sampling* sampling, spir_order_type order, int32_t ndim,
+                         const int32_t* dims, int32_t target_dim,
+                         const T* gIR, T* gtau) {
+    if (std::is_same<T, double>::value) {
+        return spir_sampling_evaluate_dd(sampling, order, ndim, dims, target_dim,
+                                       reinterpret_cast<const double*>(gIR),
+                                       reinterpret_cast<double*>(gtau));
+    } else if (std::is_same<T, std::complex<double>>::value) {
+        return spir_sampling_evaluate_zz(sampling, order, ndim, dims, target_dim,
+                                       reinterpret_cast<const c_complex*>(gIR),
+                                       reinterpret_cast<c_complex*>(gtau));
+    }
+    return SPIR_INVALID_ARGUMENT;
+}
+
+template <typename T>
+int32_t _tau_sampling_fit(spir_sampling* sampling, spir_order_type order, int32_t ndim,
+                         const int32_t* dims, int32_t target_dim,
+                         const T* gtau, T* gIR) {
+    if (std::is_same<T, double>::value) {
+        return spir_sampling_fit_dd(sampling, order, ndim, dims, target_dim,
+                                  reinterpret_cast<const double*>(gtau),
+                                  reinterpret_cast<double*>(gIR));
+    } else if (std::is_same<T, std::complex<double>>::value) {
+        return spir_sampling_fit_zz(sampling, order, ndim, dims, target_dim,
+                                  reinterpret_cast<const c_complex*>(gtau),
+                                  reinterpret_cast<c_complex*>(gIR));
+    }
+    return SPIR_INVALID_ARGUMENT;
+}
+
+template <typename T>
+int32_t _matsubara_sampling_evaluate(spir_sampling* sampling, spir_order_type order, int32_t ndim,
+                                   const int32_t* dims, int32_t target_dim,
+                                   const T* gIR, std::complex<double>* giw) {
+    if (std::is_same<T, double>::value) {
+        return spir_sampling_evaluate_dz(sampling, order, ndim, dims, target_dim,
+                                       reinterpret_cast<const double*>(gIR),
+                                       reinterpret_cast<c_complex*>(giw));
+    } else if (std::is_same<T, std::complex<double>>::value) {
+        return spir_sampling_evaluate_zz(sampling, order, ndim, dims, target_dim,
+                                       reinterpret_cast<const c_complex*>(gIR),
+                                       reinterpret_cast<c_complex*>(giw));
+    }
+    return SPIR_INVALID_ARGUMENT;
+}
+
+template <typename T, int ndim, Eigen::StorageOptions ORDER>
+struct tensor_converter {
+    static void convert(const Eigen::Tensor<std::complex<double>, ndim, ORDER>& src, Eigen::Tensor<T, ndim, ORDER>& dst) {
+        dst = src.template cast<T>();
+    }
+};
+
+template <int ndim, Eigen::StorageOptions ORDER>
+struct tensor_converter<double, ndim, ORDER> {
+    static void convert(const Eigen::Tensor<std::complex<double>, ndim, ORDER>& src, Eigen::Tensor<double, ndim, ORDER>& dst) {
+        dst = src.real();
+    }
+};
+
 /*
 T: double or std::complex<double>, scalar type of coeffs
-TODO: we need to test positive only mode. A different function is needed?
 */
 template <typename T, typename S, typename K, int ndim, Eigen::StorageOptions ORDER>
 void integration_test(double beta, double wmax, double epsilon,
@@ -497,42 +558,44 @@ void integration_test(double beta, double wmax, double epsilon,
     auto dims_tau =
         _get_dims<ndim, int32_t>(num_tau_points, extra_dims, target_dim);
 
-    Eigen::Tensor<std::complex<double>, ndim, ORDER> gIR(
+    Eigen::Tensor<T, ndim, ORDER> gIR(
         _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
-    Eigen::Tensor<std::complex<double>, ndim, ORDER> gIR2(
+    Eigen::Tensor<T, ndim, ORDER> gIR2(
         _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
-    Eigen::Tensor<std::complex<double>, ndim, ORDER> gtau(
+    Eigen::Tensor<T, ndim, ORDER> gtau(
         _get_dims<ndim, Eigen::Index>(num_tau_points, extra_dims, target_dim));
     Eigen::Tensor<std::complex<double>, ndim, ORDER> giw_reconst(
         _get_dims<ndim, Eigen::Index>(num_matsubara_points, extra_dims,
                                       target_dim));
 
     // Matsubara -> IR
-    status = spir_sampling_fit_zz(
-        matsubara_sampling, order, ndim, dims_matsubara.data(), target_dim,
-        reinterpret_cast<const c_complex *>(giw_from_DLR.data()),
-        reinterpret_cast<c_complex *>(gIR.data()));
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    {
+        Eigen::Tensor<std::complex<double>, ndim, ORDER>
+            gIR_work( _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
+        status = spir_sampling_fit_zz(
+            matsubara_sampling, order, ndim, dims_matsubara.data(), target_dim,
+            reinterpret_cast<const c_complex *>(giw_from_DLR.data()),
+            reinterpret_cast<c_complex *>(gIR_work.data()));
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        tensor_converter<T, ndim, ORDER>::convert(gIR_work, gIR);
+    }
 
     // IR -> tau
-    status = spir_sampling_evaluate_zz(
+    status = _tau_sampling_evaluate<T>(
         tau_sampling, order, ndim, dims_IR.data(), target_dim,
-        reinterpret_cast<const c_complex *>(gIR.data()),
-        reinterpret_cast<c_complex *>(gtau.data()));
+        gIR.data(), gtau.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // tau -> IR
-    status = spir_sampling_fit_zz(
+    status = _tau_sampling_fit<T>(
         tau_sampling, order, ndim, dims_tau.data(), target_dim,
-        reinterpret_cast<const c_complex *>(gtau.data()),
-        reinterpret_cast<c_complex *>(gIR2.data()));
+        gtau.data(), gIR2.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // IR -> Matsubara
-    status = spir_sampling_evaluate_zz(
+    status = _matsubara_sampling_evaluate<T>(
         matsubara_sampling, order, ndim, dims_IR.data(), target_dim,
-        reinterpret_cast<const c_complex *>(gIR2.data()),
-        reinterpret_cast<c_complex *>(giw_reconst.data()));
+        gIR2.data(), giw_reconst.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     REQUIRE(

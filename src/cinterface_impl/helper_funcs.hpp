@@ -87,7 +87,7 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
 template <typename InputScalar, typename OutputScalar>
 static int
 fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
-         int32_t *input_dims, int32_t target_dim, const InputScalar *input,
+         const int32_t *input_dims, int32_t target_dim, const InputScalar *input,
          OutputScalar *out,
          int (sparseir::AbstractSampling::*eval_func)(
              const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &, int,
