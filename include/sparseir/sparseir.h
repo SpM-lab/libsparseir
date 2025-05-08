@@ -410,7 +410,7 @@ int32_t
 spir_sampling_evaluate_dd(const spir_sampling *s, // Sampling object
                           spir_order_type order,  // Order type (C or Fortran)
                           int32_t ndim,           // Number of dimensions
-                          int32_t *input_dims,    // Array of dimensions
+                          const int32_t *input_dims,    // Array of dimensions
                           int32_t target_dim, // Target dimension for evaluation
                           const double *input, // Input coefficients array
                           double *out          // Output array
@@ -427,7 +427,7 @@ int32_t
 spir_sampling_evaluate_dz(const spir_sampling *s, // Sampling object
                           spir_order_type order,  // Order type (C or Fortran)
                           int32_t ndim,           // Number of dimensions
-                          int32_t *input_dims,    // Array of dimensions
+                          const int32_t *input_dims,    // Array of dimensions
                           int32_t target_dim, // Target dimension for evaluation
                           const double *input, // Input coefficients array
                           c_complex *out       // Output array
@@ -444,7 +444,7 @@ int32_t
 spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
                           spir_order_type order,  // Order type (C or Fortran)
                           int32_t ndim,           // Number of dimensions
-                          int32_t *input_dims,    // Array of dimensions
+                          const int32_t *input_dims,    // Array of dimensions
                           int32_t target_dim, // Target dimension for evaluation
                           const c_complex *input, // Input coefficients array
                           c_complex *out          // Output array
@@ -483,7 +483,7 @@ int32_t
 spir_sampling_fit_dd(const spir_sampling *s, // Sampling object
                      spir_order_type order,  // Order type (C or Fortran)
                      int32_t ndim,           // Number of dimensions
-                     int32_t *input_dims,    // Array of dimensions
+                     const int32_t *input_dims,    // Array of dimensions
                      int32_t target_dim,     // Target dimension for evaluation
                      const double *input,    // Input coefficients array
                      double *out             // Output array
@@ -499,7 +499,7 @@ spir_sampling_fit_dd(const spir_sampling *s, // Sampling object
 int spir_sampling_fit_zz(const spir_sampling *s, // Sampling object
                          spir_order_type order,  // Order type (C or Fortran)
                          int32_t ndim,           // Number of dimensions
-                         int32_t *input_dims,    // Array of dimensions
+                         const int32_t *input_dims,    // Array of dimensions
                          int32_t target_dim, // Target dimension for evaluation
                          const c_complex *input, // Input coefficients array
                          c_complex *out          // Output array
@@ -562,11 +562,11 @@ int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
  * @see spir_dlr_to_IR_dd
  */
 int32_t spir_dlr_from_IR_dd(const spir_dlr *dlr, spir_order_type order,
-                         int32_t ndim, int32_t *input_dims, int32_t target_dim,
+                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const double *input, double *out);
 
 int32_t spir_dlr_from_IR_zz(const spir_dlr *dlr, spir_order_type order,
-                         int32_t ndim, int32_t *input_dims, int32_t target_dim,
+                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const c_complex *input, c_complex *out);
 
 
@@ -604,7 +604,7 @@ int32_t spir_dlr_from_IR_zz(const spir_dlr *dlr, spir_order_type order,
  * @see spir_dlr_from_IR
  */
 int32_t spir_dlr_to_IR_dd(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
-                       int32_t *input_dims, int32_t target_dim,
+                       const int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out);
 
 /**
@@ -643,7 +643,7 @@ int32_t spir_dlr_to_IR_dd(const spir_dlr *dlr, spir_order_type order, int32_t nd
  * @see spir_dlr_to_IR_dd
  */
 int32_t spir_dlr_to_IR_zz(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
-                       int32_t *input_dims, int32_t target_dim,
+                       const int32_t *input_dims, int32_t target_dim,
                        const c_complex *input, c_complex *out);
 
 /**
