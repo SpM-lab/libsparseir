@@ -224,6 +224,7 @@ int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_ba
     }
 }
 
+// DEPRECATED. USE spir_sampling_get_matsubara_points INSTEAD.
 int32_t spir_matsubara_sampling_get_sampling_points(const spir_sampling *s, int32_t n_points, int32_t *points)
 {
     auto impl = get_impl_sampling(s);
