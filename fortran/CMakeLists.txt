@@ -1,7 +1,10 @@
 # Fortran bindings for SparseIR
 
+# Enable Fortran preprocessor
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+
 add_library(sparseir_fortran SHARED
-    sparseir.f90
+    sparseir.F90
     sparseir_impl.f90
 )
 
