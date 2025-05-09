@@ -18,17 +18,20 @@ module sparseir
   end enum
 
   include '_kernel_type.f90'
+  include '_sve_result_type.f90'
 
   ! Interface declarations for C API functions
   interface
 
     include '_kernel_capi.f90'
+    include '_sve_result_capi.f90'
 
   end interface
 
   ! Interface declarations for module procedures
   interface
     include '_kernel_proc.f90'
+    include '_sve_result_proc.f90'
   end interface
 
 end module sparseir
