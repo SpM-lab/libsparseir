@@ -811,12 +811,12 @@ void test_matsubara_sampling_constructor()
     REQUIRE(sampling_positive_only != nullptr);
 
     int32_t n_points;
-    int32_t status = spir_matsubara_sampling_get_num_points(sampling, &n_points);
+    int32_t status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     int32_t n_points_positive_only;
-    status = spir_matsubara_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
+    status = spir_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only > 0);
 
