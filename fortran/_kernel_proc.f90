@@ -29,7 +29,7 @@
 
     ! Wrapper for kernel creation
     module function spir_logistic_kernel_new(lambda) result(kernel)
-      real(c_double), intent(in) :: lambda
+      double precision, intent(in) :: lambda
       type(spir_kernel) :: kernel
     end function
 

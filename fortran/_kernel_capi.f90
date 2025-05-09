@@ -20,10 +20,11 @@
     
 
     ! Create a new logistic kernel
-    function c_spir_logistic_kernel_new(lambda) bind(c, name='spir_logistic_kernel_new')
-      import c_ptr, c_double
+    function c_spir_logistic_kernel_new(kernel, lambda) bind(c, name='spir_logistic_kernel_new')
+      import c_ptr, c_double, c_int
+      type(c_ptr), intent(out) :: kernel
       real(c_double), value :: lambda
-      type(c_ptr) :: c_spir_logistic_kernel_new
+      integer(c_int) :: c_spir_logistic_kernel_new
     end function
 
     ! Get the domain of a kernel

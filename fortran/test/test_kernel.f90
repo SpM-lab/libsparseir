@@ -7,8 +7,9 @@ program test_simple
   integer(c_int) :: stat
 
   type(spir_kernel) :: kernel
-  real(c_double) :: lambda
-  
+  double precision :: lambda, epsilon
+  type(spir_sve_result) :: sve
+
   ! Create a logistic kernel with lambda = 10.0
   lambda = 10.0d0
   print *, "Creating kernel with lambda =", lambda
@@ -22,5 +23,8 @@ program test_simple
   stat = spir_kernel_domain(kernel, xmin, xmax, ymin, ymax)
   print *, "Domain: [", xmin, ",", xmax, "] x [", ymin, ",", ymax, "]"
   print *, "Test completed successfully"
-  
+
+  ! Create a SVE result with epsilon = 1e-10
+  epsilon = 1e-10
+  sve = spir_sve_result_new(kernel, epsilon)
 end program test_simple 

@@ -72,12 +72,17 @@
 
   ! Wrapper for kernel creation
   module procedure spir_logistic_kernel_new
+    integer(c_int) :: status
+    real(c_double) :: lambda_c 
+
     print *, "Calling C function to create logistic kernel with lambda =", lambda
-    kernel%ptr = c_spir_logistic_kernel_new(lambda)
+    lambda_c = real(lambda, c_double)
+    status = c_spir_logistic_kernel_new(kernel%ptr, lambda_c)
     print *, "C function returned kernel ptr =", kernel%ptr
     
-    if (.not. c_associated(kernel%ptr)) then
-      print *, "Warning: C function returned NULL pointer"
+    if (status /= 0) then
+      print *, "Warning: C function returned error status =", status
+      kernel%ptr = c_null_ptr
     end if
   end procedure
 

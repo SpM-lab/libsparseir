@@ -42,7 +42,12 @@ def generate_type_files(type_name):
 
     # Generate _type_capi.f90
     with open(f'_{type_name}_capi.f90', 'w') as f:
-        f.write(f"""    ! Clone an existing {type_name}
+        f.write(f"""module {type_name}_capi
+  use, intrinsic :: iso_c_binding
+  implicit none
+
+  interface
+    ! Clone an existing {type_name}
     function c_spir_clone_{type_name}(src) &
         bind(c, name='spir_clone_{type_name}')
       import c_ptr
@@ -64,6 +69,9 @@ def generate_type_files(type_name):
       import c_ptr
       type(c_ptr), value :: k
     end subroutine
+  end interface
+
+end module {type_name}_capi
 """)
 
     # Generate _type_proc.f90
