@@ -7,7 +7,6 @@ module sparseir
 
   ! Export public interfaces
   public :: is_assigned
-
   public :: spir_kernel
   public :: spir_logistic_kernel_new
   public :: spir_kernel_domain
@@ -21,26 +20,23 @@ module sparseir
     enumerator :: SPIR_STATISTICS_BOSONIC = 0
   end enum
 
-  include '_kernel_type.f90'
-  include '_sve_result_type.f90'
+  include '_type.f90'
 
   ! Interface declarations for C API functions
   interface
+    include '_capi.f90'
 
     include '_kernel_capi.f90'
-
     include '_sve_result_capi.f90'
-    include '_sve_result_capi_add.f90'
-
   end interface
 
-  ! Interface declarations for module procedures
+  ! Type generic procedures
+  include '_proc.f90'
+
+  ! Type specific procedures
   interface
     include '_kernel_proc.f90'
-
     include '_sve_result_proc.f90'
-    include '_sve_result_proc_add.f90'
-
   end interface
 
 end module sparseir
