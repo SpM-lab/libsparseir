@@ -4,10 +4,8 @@ submodule (sparseir) sparseir_impl
 
 contains
 
-  !include '_kernel_impl.f90'
-  !include '_sve_result_impl.f90'
   include '_impl.f90'
-  include '_kernel_impl_add.f90'
-  include '_sve_result_impl_add.f90'
+  include '_kernel_impl.f90'
+  include '_sve_result_impl.f90'
 
 end submodule sparseir_impl 
