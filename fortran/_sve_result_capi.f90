@@ -1,3 +1,5 @@
+module sve_result_capi
+
     ! Clone an existing sve_result
     function c_spir_clone_sve_result(src) &
         bind(c, name='spir_clone_sve_result')
@@ -20,3 +22,4 @@
       import c_ptr
       type(c_ptr), value :: k
     end subroutine
+
