@@ -2,7 +2,6 @@
 
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
-#include "sparseir/sparseir.h"
 
 #include <Eigen/SVD>
 #include <memory>
@@ -276,7 +275,6 @@ public:
 
     // Return number of sampling points
     virtual int32_t n_sampling_points() const = 0;
-    virtual spir_statistics_type get_statistics() const = 0;
 
     // Return basis size
     virtual std::size_t basis_size() const = 0;
@@ -473,14 +471,6 @@ public:
         return sampling_points_.size();
     }
 
-    spir_statistics_type get_statistics() const override
-    {
-        if (std::is_same<S, sparseir::Fermionic>::value) {
-            return SPIR_STATISTICS_FERMIONIC;
-        } else {
-            return SPIR_STATISTICS_BOSONIC;
-        }
-    }
     // Implement the pure virtual method from AbstractSampling
     std::size_t basis_size() const override
     {
@@ -683,15 +673,6 @@ public:
     int32_t n_sampling_points() const override
     {
         return sampling_points_.size();
-    }
-
-    spir_statistics_type get_statistics() const override
-    {
-        if (std::is_same<S, sparseir::Fermionic>::value) {
-            return SPIR_STATISTICS_FERMIONIC;
-        } else {
-            return SPIR_STATISTICS_BOSONIC;
-        }
     }
 
     std::size_t basis_size() const override

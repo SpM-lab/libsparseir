@@ -683,24 +683,6 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
     }
 }
 
-int32_t spir_sampling_get_statistics(const spir_sampling *s,
-                                     spir_statistics_type *statistics)
-{
-    auto impl = get_impl_sampling(s);
-    if (!impl) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-    if (!statistics) {
-        return SPIR_INVALID_ARGUMENT;
-    }
-    try {
-        *statistics = impl->get_statistics();
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (...) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
 int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out)
 {
     if (!funcs || !out) {

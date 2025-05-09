@@ -218,9 +218,6 @@ int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
 int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
                                               spir_statistics_type *statistics);
 
-int32_t spir_sampling_get_statistics(const spir_sampling *s,
-                                     spir_statistics_type *statistics);
-
 /**
  * @brief Creates a new tau sampling object for sparse sampling in
  * imaginary time.
