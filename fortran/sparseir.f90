@@ -7,12 +7,10 @@ module sparseir
 
   ! Export public interfaces
   public :: is_assigned
-  public :: spir_kernel
-  public :: spir_logistic_kernel_new
-  public :: spir_kernel_domain
 
-  public :: spir_sve_result
-  public :: spir_sve_result_new
+  include '_public.f90'
+  include '_public_kernel.f90'
+  include '_public_sve_result.f90'
 
   ! Enumeration types
   enum, bind(c)

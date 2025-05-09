@@ -53,6 +53,13 @@ def generate_type_files(types):
 
 """)
 
+    # Generate _public.f90
+    with open('_public.f90', 'w') as f:
+        f.write("\n\n")
+        for type_name in types:
+            f.write(f"""  public :: spir_{type_name}
+""")
+
     # Generate _capi.f90
     with open('_capi.f90', 'w') as f:
         for type_name in types:
