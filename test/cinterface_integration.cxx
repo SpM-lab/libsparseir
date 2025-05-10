@@ -491,7 +491,6 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<T, ndim, ORDER> coeffs =
         sparseir::movedim(coeffs_targetdim0, 0, target_dim);
     // Convert DLR coefficients to IR coefficients
-    // TODO: Extend to Tensor
     Eigen::Tensor<T, ndim, ORDER> g_IR(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
     status = dlr_to_IR(dlr, order, ndim,
@@ -506,6 +505,15 @@ void integration_test(double beta, double wmax, double epsilon,
                         _get_dims<ndim, int32_t>(npoles, extra_dims, target_dim).data(), target_dim,
                         g_IR.data(), g_DLR_reconst.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    // From_IR C API
+    Eigen::Tensor<T, ndim, ORDER> g_dlr(
+        _get_dims<ndim>(basis_size, extra_dims, target_dim));
+    status = dlr_from_IR(dlr, order, ndim,
+                            _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
+                            g_IR.data(), g_dlr.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "g_dlr: " << g_dlr << std::endl;
 
     // DLR basis functions
     spir_funcs *dlr_u;
@@ -598,6 +606,35 @@ void integration_test(double beta, double wmax, double epsilon,
         gIR2.data(), giw_reconst.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
+
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> giv_ref(
+        _get_dims<ndim, Eigen::Index>(num_matsubara_points, extra_dims,
+                                      target_dim));
+
+    status = _matsubara_sampling_evaluate<T>(
+        matsubara_sampling, order, ndim, _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
+        g_IR.data(),
+        giv_ref.data()
+    );
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "giv_ref: " << giv_ref << std::endl;
+
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> giv(
+        _get_dims<ndim, Eigen::Index>(num_matsubara_points, extra_dims,
+                                      target_dim));
+
+    spir_sampling* smpl_for_dlr;
+    status = spir_matsubara_sampling_dlr_new(&smpl_for_dlr, dlr, num_matsubara_points, matsubara_points.data(), positive_only);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    status = _matsubara_sampling_evaluate<T>(
+        smpl_for_dlr, order, ndim, _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
+        g_dlr.data(),
+        giv.data()
+    );
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(giv, giv_ref, 300 * epsilon));
+
     REQUIRE(
         compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
             giw_from_DLR, giw_reconst, tol));
@@ -611,6 +648,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
 TEST_CASE("Integration Test", "[cinterface]") {
     double beta = 1e+4;
+    beta = 10.0;
     double wmax = 2.0;
     double epsilon = 1e-10;
 

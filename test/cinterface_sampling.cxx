@@ -811,21 +811,23 @@ void test_matsubara_sampling_constructor()
     REQUIRE(sampling_positive_only != nullptr);
 
     int32_t n_points;
-    int32_t status = spir_matsubara_sampling_get_num_points(sampling, &n_points);
+    int32_t status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     int32_t n_points_positive_only;
-    status = spir_matsubara_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
+    status = spir_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only > 0);
 
     int32_t *smpl_points = (int32_t *)malloc(n_points * sizeof(int32_t));
-    status = spir_matsubara_sampling_get_sampling_points(sampling, n_points, smpl_points);
+    // TODO: rewrite this
+    status = spir_sampling_get_matsubara_points(sampling, smpl_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     int32_t *smpl_points_positive_only = (int32_t *)malloc(n_points_positive_only * sizeof(int32_t));
-    status = spir_matsubara_sampling_get_sampling_points(sampling_positive_only, n_points_positive_only, smpl_points_positive_only);
+    // TODO: rewrite this
+    status = spir_sampling_get_matsubara_points(sampling_positive_only, smpl_points_positive_only);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Clean up
