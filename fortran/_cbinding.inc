@@ -164,13 +164,6 @@ function c_spir_finite_temp_basis_get_statistics(b, statistics) bind(c, name="sp
   integer(c_int) :: c_spir_finite_temp_basis_get_statistics
 end function
 
-function c_spir_sampling_get_statistics(s, statistics) bind(c, name="spir_sampling_get_statistics") result(c_spir_sampling_get_statistics)
-  use iso_c_binding
-  type(c_ptr), value :: s
-  type(c_ptr), value :: statistics
-  integer(c_int) :: c_spir_sampling_get_statistics
-end function
-
 function c_spir_tau_sampling_new(s, b) bind(c, name="spir_tau_sampling_new") result(c_spir_tau_sampling_new)
   use iso_c_binding
   type(c_ptr) :: s
@@ -194,21 +187,6 @@ function c_spir_matsubara_sampling_dlr_new(s, dlr, n_smpl_points, smpl_points, p
   type(c_ptr), value :: smpl_points
   integer(c_int), value :: positive_only
   integer(c_int) :: c_spir_matsubara_sampling_dlr_new
-end function
-
-function c_spir_matsubara_sampling_get_sampling_points(s, n_points, points) bind(c, name="spir_matsubara_sampling_get_sampling_points") result(c_spir_matsubara_sampling_get_sampling_points)
-  use iso_c_binding
-  type(c_ptr), value :: s
-  integer(c_int), value :: n_points
-  type(c_ptr), value :: points
-  integer(c_int) :: c_spir_matsubara_sampling_get_sampling_points
-end function
-
-function c_spir_matsubara_sampling_get_num_points(s, n_points) bind(c, name="spir_matsubara_sampling_get_num_points") result(c_spir_matsubara_sampling_get_num_points)
-  use iso_c_binding
-  type(c_ptr), value :: s
-  type(c_ptr), value :: n_points
-  integer(c_int) :: c_spir_matsubara_sampling_get_num_points
 end function
 
 function c_spir_dlr_new(dlr, b) bind(c, name="spir_dlr_new") result(c_spir_dlr_new)
