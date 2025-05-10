@@ -7,7 +7,8 @@ program test_simple
   integer(c_int) :: stat
 
   type(spir_kernel) :: kernel
-  double precision :: lambda, epsilon
+  type(spir_finite_temp_basis) :: basis
+  double precision :: lambda, epsilon, beta, omega_max
   type(spir_sve_result) :: sve
 
   ! Create a logistic kernel with lambda = 10.0
@@ -27,4 +28,10 @@ program test_simple
   ! Create a SVE result with epsilon = 1e-10
   epsilon = 1e-10
   sve = spir_sve_result_new(kernel, epsilon)
+
+  ! Create a finite temperature basis with beta = 1.0, omega_max = 10.0, epsilon = 1e-10
+  !beta = 1.0
+  !omega_max = 10.0
+  !basis = spir_finite_temp_basis_new(1, beta, omega_max, epsilon)
+
 end program test_simple 

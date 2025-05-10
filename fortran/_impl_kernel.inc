@@ -32,5 +32,6 @@
     ymax = 0.0_c_double
     
     stat = c_spir_kernel_domain(kernel%ptr, xmin, xmax, ymin, ymax)
+    
     print *, "C function c_spir_kernel_domain returned status =", stat
   end procedure
