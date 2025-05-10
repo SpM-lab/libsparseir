@@ -246,59 +246,6 @@ int32_t spir_matsubara_sampling_new(spir_sampling** s, const spir_finite_temp_ba
     }
 }
 
-int32_t spir_matsubara_sampling_get_sampling_points(const spir_sampling *s, int32_t n_points, int32_t *points)
-{
-    auto impl = get_impl_sampling(s);
-    spir_statistics_type stat;
-    int32_t status = spir_sampling_get_statistics(s, &stat);
-    if (status != SPIR_COMPUTATION_SUCCESS) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-    if (stat == SPIR_STATISTICS_FERMIONIC) {
-        auto smpl = std::dynamic_pointer_cast<sparseir::MatsubaraSampling<sparseir::Fermionic>>(impl);
-        auto smpl_points = smpl->sampling_points();
-        if (n_points != smpl_points.size())
-            return SPIR_INVALID_ARGUMENT;
-
-        std::vector<int> smpl_points_vec;
-        for (int32_t i = 0; i < n_points; i++) {
-            smpl_points_vec.push_back(smpl_points[i].get_n());
-        }
-        for (int32_t i = 0; i < n_points; i++) {
-            points[i] = smpl_points_vec[i];
-        }
-    } else {
-        auto smpl = std::dynamic_pointer_cast<sparseir::MatsubaraSampling<sparseir::Bosonic>>(impl);
-        auto smpl_points = smpl->sampling_points();
-        if (n_points != smpl_points.size())
-            return SPIR_INVALID_ARGUMENT;
-
-        std::vector<int> smpl_points_vec;
-        for (int32_t i = 0; i < n_points; i++) {
-            smpl_points_vec.push_back(smpl_points[i].get_n());
-        }
-        for (int32_t i = 0; i < n_points; i++) {
-            points[i] = smpl_points_vec[i];
-        }
-    }
-
-    return SPIR_COMPUTATION_SUCCESS;
-}
-
-int32_t spir_matsubara_sampling_get_num_points(const spir_sampling *s, int32_t *n_points)
-{
-    auto impl = get_impl_sampling(s);
-    if (!impl) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-    try {
-        *n_points = impl->n_sampling_points();
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (...) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
 int32_t spir_matsubara_sampling_dlr_new(spir_sampling** s, const spir_dlr *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only)
 {
     spir_statistics_type stat;
@@ -630,6 +577,7 @@ int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
     }
 }
 
+// TODO: USE THIS
 int32_t spir_sampling_get_num_points(const spir_sampling *s,
                                      int32_t *num_points)
 {
@@ -680,6 +628,7 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points)
     }
 }
 
+// TODO: USE THIS
 int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
                                            int32_t *points)
 {
@@ -742,24 +691,6 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
                                               spir_statistics_type *statistics)
 {
     auto impl = get_impl_finite_temp_basis(b);
-    if (!impl) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-    if (!statistics) {
-        return SPIR_INVALID_ARGUMENT;
-    }
-    try {
-        *statistics = impl->get_statistics();
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (...) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
-int32_t spir_sampling_get_statistics(const spir_sampling *s,
-                                     spir_statistics_type *statistics)
-{
-    auto impl = get_impl_sampling(s);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }

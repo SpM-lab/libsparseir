@@ -106,7 +106,7 @@ void test_finite_temp_basis_dlr()
     REQUIRE(n_smpl_points > 0);
 
     int32_t *smpl_points = (int32_t *)malloc(n_smpl_points * sizeof(int32_t));
-    smpl_status = spir_matsubara_sampling_get_sampling_points(smpl, n_smpl_points, smpl_points);
+    smpl_status = spir_sampling_get_matsubara_points(smpl, smpl_points);
     REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *smpl_for_dlr;
