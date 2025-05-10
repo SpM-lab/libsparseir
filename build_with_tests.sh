@@ -12,6 +12,8 @@ cd build
 # Configure with tests enabled
 cmake .. \
   -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX:-$HOME/opt/libsparseir} \
+  -DCMAKE_C_FLAGS="-w" \
+  -DCMAKE_CXX_FLAGS="-w" \
   -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=ON \
   -DBUILD_TESTING=ON
