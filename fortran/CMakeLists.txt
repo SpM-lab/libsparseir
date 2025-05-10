@@ -3,9 +3,19 @@
 # Enable Fortran preprocessor
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 
+file(GLOB TYPE_FILES
+    "_*_capi.inc"
+    "_*_proc.inc"
+    "_*_impl.inc"
+)
+
 add_library(sparseir_fortran SHARED
     sparseir.F90
     sparseir_impl.f90
+    _capi.inc
+    _proc.inc
+    _impl.inc
+    ${TYPE_FILES}
 )
 
 set_target_properties(sparseir_fortran PROPERTIES

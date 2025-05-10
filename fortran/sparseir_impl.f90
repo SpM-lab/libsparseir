@@ -4,8 +4,9 @@ submodule (sparseir) sparseir_impl
 
 contains
 
-  include '_impl.f90'
-  include '_kernel_impl.f90'
-  include '_sve_result_impl.f90'
+  include '_impl.inc'
+  include '_impl_kernel.inc'
+  include '_impl_sve_result.inc'
+  include '_impl_finite_temp_basis.inc'
 
 end submodule sparseir_impl 

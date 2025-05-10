@@ -41,8 +41,6 @@ typedef enum {
 struct _spir_kernel;
 
 DECLARE_OPAQUE_TYPE(kernel);
-DECLARE_OPAQUE_TYPE(logistic_kernel);
-DECLARE_OPAQUE_TYPE(regularized_bose_kernel);
 DECLARE_OPAQUE_TYPE(funcs);
 DECLARE_OPAQUE_TYPE(matsubara_funcs);
 DECLARE_OPAQUE_TYPE(finite_temp_basis);

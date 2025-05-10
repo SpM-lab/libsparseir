@@ -14,10 +14,10 @@ Arguments:
   config_file    Path to JSON configuration file (default: types.json)
 
 Generated files:
-  - _type.f90   : Type definitions
-  - _capi.f90   : C API interfaces
-  - _proc.f90   : Procedure interfaces
-  - _impl.f90   : Procedure implementations
+  - _type.inc   : Type definitions
+  - _capi.inc   : C API interfaces
+  - _proc.inc   : Procedure interfaces
+  - _impl.inc   : Procedure implementations
 """)
 
 
@@ -37,8 +37,8 @@ def load_types(config_file):
 
 def generate_type_files(types):
     """Generate Fortran binding files for all C types."""
-    # Generate _type.f90
-    with open('_type.f90', 'w') as f:
+    # Generate _type.inc
+    with open('_type.inc', 'w') as f:
         f.write("\n\n")
         for type_name in types:
             f.write(f"""  type :: spir_{type_name}
@@ -53,15 +53,15 @@ def generate_type_files(types):
 
 """)
 
-    # Generate _public.f90
-    with open('_public.f90', 'w') as f:
+    # Generate _public.inc
+    with open('_public.inc', 'w') as f:
         f.write("\n\n")
         for type_name in types:
             f.write(f"""  public :: spir_{type_name}
 """)
 
-    # Generate _capi.f90
-    with open('_capi.f90', 'w') as f:
+    # Generate _capi.inc
+    with open('_capi.inc', 'w') as f:
         for type_name in types:
             f.write(f"""  ! Clone an existing {type_name}
   function c_spir_clone_{type_name}(src) &
@@ -88,8 +88,8 @@ def generate_type_files(types):
 
 """)
 
-    # Generate _proc.f90
-    with open('_proc.f90', 'w') as f:
+    # Generate _proc.inc
+    with open('_proc.inc', 'w') as f:
         f.write("interface is_initialized\n")
         for type_name in types:
             f.write(f"""  ! Check if {type_name} is initialized
@@ -147,8 +147,8 @@ def generate_type_files(types):
         f.write("end interface\n\n")
 
 
-    # Generate _impl.f90
-    with open('_impl.f90', 'w') as f:
+    # Generate _impl.inc
+    with open('_impl.inc', 'w') as f:
         # Break long line into multiple lines
         for type_name in types:
             f.write(f"""  ! Check if {type_name} is initialized
