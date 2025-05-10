@@ -20,9 +20,11 @@
 // Implementation of the C API
 extern "C" {
 
-int32_t spir_check_kernel_ptr(spir_kernel** kernel)
+int32_t spir_check_kernel_ptr(const spir_kernel* kernel)
 {
-    std::cout << "kernel ptr = " << *kernel << std::endl;
+    std::cout << "kernel ptr = " << kernel << std::endl;
+    std::cout << "kernel->ptr.get() = " << kernel->ptr.get() << std::endl;
+    std::cout << "kernel->ptr.use_count() = " << kernel->ptr.use_count() << std::endl;
     return SPIR_COMPUTATION_SUCCESS;
 }
 

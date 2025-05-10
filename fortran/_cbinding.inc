@@ -1,6 +1,6 @@
 function c_spir_check_kernel_ptr(kernel) bind(c, name="spir_check_kernel_ptr") result(c_spir_check_kernel_ptr)
   use iso_c_binding
-  type(c_ptr), intent(out) :: kernel
+  type(c_ptr), value :: kernel
   integer(c_int) :: c_spir_check_kernel_ptr
 end function
 
@@ -18,7 +18,7 @@ end function
 
 function c_spir_is_assigned_kernel(obj) bind(c, name="spir_is_assigned_kernel") result(c_spir_is_assigned_kernel)
   use iso_c_binding
-  type(c_ptr), intent(in) :: obj
+  type(c_ptr), value :: obj
   integer(c_int) :: c_spir_is_assigned_kernel
 end function
 
@@ -141,14 +141,14 @@ end function
 function c_spir_sve_result_new(sve, k, epsilon) bind(c, name="spir_sve_result_new") result(c_spir_sve_result_new)
   use iso_c_binding
   type(c_ptr) :: sve
-  type(c_ptr), intent(in) :: k
+  type(c_ptr), value :: k
   real(c_double), value :: epsilon
   integer(c_int) :: c_spir_sve_result_new
 end function
 
 function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) bind(c, name="spir_kernel_domain") result(c_spir_kernel_domain)
   use iso_c_binding
-  type(c_ptr), intent(in) :: k
+  type(c_ptr), value :: k
   real(c_double), intent(out) :: xmin
   real(c_double), intent(out) :: xmax
   real(c_double), intent(out) :: ymin
