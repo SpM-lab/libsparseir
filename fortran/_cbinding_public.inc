@@ -60,3 +60,4 @@
   public :: c_spir_sampling_get_tau_points
   public :: c_spir_sampling_get_matsubara_points
   public :: c_spir_matsubara_funcs_get_size
+  public :: c_spir_check_kernel_ptr

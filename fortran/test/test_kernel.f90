@@ -1,37 +1,91 @@
 ! Simple test program for SparseIR Fortran bindings
-program test_simple
+program test_kernel
   use sparseir
   use, intrinsic :: iso_c_binding
   implicit none
   real(c_double) :: xmin, xmax, ymin, ymax
   integer(c_int) :: stat
+  integer(c_int) :: status
 
-  type(kernel) :: k
-  type(finite_temp_basis) :: basis
-  double precision :: lambda, epsilon, beta, omega_max
-  type(sve_result) :: sve
+  real(c_double) :: beta = 1.0_c_double
+  real(c_double) :: omega_max = 10.0_c_double
+  real(c_double) :: epsilon = 1.0e-6_c_double
+  real(c_double) :: lambda
+  type(spir_kernel_handle) :: k
+  type(c_ptr) :: k_ptr
+  type(spir_finite_temp_basis_handle) :: basis
+  type(spir_sve_result_handle) :: sve
+  integer(c_int) :: basis_size
 
-  ! Create a logistic kernel with lambda = 10.0
-  lambda = 10.0d0
-  print *, "Creating kernel with lambda =", lambda
-  k = spir_logistic_kernel_new(lambda)
-  
-  print *, "Returned kernel ptr =", k%ptr
-  print *, "Is ptr associated (C level)? ", c_associated(k%ptr)
-  print * , "Checking is_assigned"
-  print *, "Is object assigned (C++ level)? ", is_assigned(k)
-  
-  stat = spir_kernel_domain(k, xmin, xmax, ymin, ymax)
-  print *, "Domain: [", xmin, ",", xmax, "] x [", ymin, ",", ymax, "]"
-  print *, "Test completed successfully"
+  ! Create a new kernel
+  lambda = beta * omega_max
+  !status = c_spir_logistic_kernel_new(k%handle, lambda)
+  status = c_spir_logistic_kernel_new(k_ptr, lambda)
+  print *, 'Checking kernel ptr'
+  status = c_spir_check_kernel_ptr(k_ptr)
+  !status = c_spir_logistic_kernel_new(k_ptr, lambda)
+  !status = c_spir_logistic_kernel_new(k_ptr, lambda)
+  if (status /= 0) then
+    print *, "Error creating kernel"
+    stop
+  end if
+  print *, "Returned kernel ptr =", k_ptr
+  print *, "Is ptr associated (C level)? ", c_associated(k_ptr)
+  if (.not. c_associated(k_ptr)) then
+    print *, "Error: kernel handle is not associated"
+    stop
+  end if
+  print *, "Checking if kernel is assigned"
+  status = c_spir_is_assigned_kernel(k_ptr)
+  if (status /= 1) then
+    print *, "Error: kernel is not assigned"
+    stop
+  end if
 
-  ! Create a SVE result with epsilon = 1e-10
-  epsilon = 1e-10
-  sve = spir_sve_result_new(k, epsilon)
+  status = c_spir_kernel_domain(k_ptr, xmin, xmax, ymin, ymax)
+  if (status /= 0) then
+    print *, "Error: kernel domain is not assigned"
+    stop
+  end if
+  print *, "Kernel domain =", xmin, xmax, ymin, ymax
+
+  ! Create a new SVE result
+  !status = c_spir_sve_result_new(sve%handle, k%handle, epsilon)
+  !print *, k%handle
+  !if (status /= 0) then
+    !print *, "Error creating SVE result"
+    !stop
+  !end if
+  !print *, "Returned SVE result ptr =", sve%handle
+  !print *, "Is ptr associated (C level)? ", c_associated(sve%handle)
+  !if (.not. c_associated(sve%handle)) then
+    !print *, "Error: SVE result handle is not associated"
+    !stop
+  !end if
+
 
   ! Create a finite temperature basis with beta = 1.0, omega_max = 10.0, epsilon = 1e-10
-  !beta = 1.0
-  !omega_max = 10.0
-  !basis = spir_finite_temp_basis_new(1, beta, omega_max, epsilon)
+  !status = c_spir_finite_temp_basis_new(basis%handle, SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon)
+  !if (status /= 0) then
+    !print *, "Error creating finite temperature basis"
+    !!stop
+  !end if
+  !print *, "Returned basis ptr =", basis%handle
+  !print *, "Is ptr associated (C level)? ", c_associated(basis%handle)
+  !if (.not. c_associated(basis%handle)) then
+    !print *, "Error: basis handle is not associated"
+    !stop
+  !end if
 
-end program test_simple 
+  ! Get the size of the basis
+  !status = c_spir_finite_temp_basis_get_size(basis%handle, basis_size)
+  !if (status /= 0) then
+    !print *, "Error getting basis size"
+    !stop
+  !end if
+  !print *, "Basis size =", basis_size
+
+  ! Create a finite temperature basis with beta = 1.0, omega_max = 10.0, epsilon = 1e-10
+  !basis%handle = spir_finite_temp_basis_new(1, beta, omega_max, epsilon)
+
+end program test_kernel 

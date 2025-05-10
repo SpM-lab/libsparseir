@@ -7,11 +7,11 @@
 #include <iostream>
 
 // Debug macro
-#ifdef DEBUG_CINTERFACE
+//#ifdef DEBUG_CINTERFACE
 #define DEBUG_LOG(msg) std::cerr << "[DEBUG] " << msg << std::endl
-#else
-#define DEBUG_LOG(msg)
-#endif
+//#else
+//#define DEBUG_LOG(msg)
+//#endif
 
 #include "cinterface_impl/helper_types.hpp"
 #include "cinterface_impl/opaque_types.hpp"
@@ -20,14 +20,33 @@
 // Implementation of the C API
 extern "C" {
 
+int32_t spir_check_kernel_ptr(spir_kernel** kernel)
+{
+    std::cout << "kernel ptr = " << *kernel << std::endl;
+    return SPIR_COMPUTATION_SUCCESS;
+}
+
 int32_t spir_logistic_kernel_new(spir_kernel** kernel, double lambda)
 {
     DEBUG_LOG("Creating LogisticKernel with lambda=" << lambda);
     try {
+        std::cout << "spir_logistic_kernel_new: orignal ptr = " << *kernel << std::endl;
         auto kernel_ptr = std::make_shared<sparseir::LogisticKernel>(lambda);
-        auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel_ptr);
+        std::cout << "kernel_ptr.use_count()=" << kernel_ptr.use_count() << std::endl;
+        std::shared_ptr<sparseir::AbstractKernel> abstract_kernel = std::static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
+        
+        // Debug output before creating the C interface object
+        std::cout << "C++ kernel_ptr address: " << kernel_ptr.get() 
+                  << " use_count: " << kernel_ptr.use_count() << std::endl;
+        
+        // Check if dynamic_cast works at this point
+        auto check_logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(abstract_kernel);
+        std::cout << "dynamic_cast to LogisticKernel before C interface: " 
+                  << (check_logistic ? "succeeded" : "failed") << std::endl;
+        
         *kernel = create_kernel(abstract_kernel);
-        DEBUG_LOG("Created LogisticKernel at " << *kernel << ", ptr=" << (*kernel)->ptr.get());
+        DEBUG_LOG("Created LogisticKernel at " << *kernel << ", raw ptr=" << (*kernel)->ptr.get());
+        std::cout << "kernel_ptr.use_count() after create_kernel: " << kernel_ptr.use_count() << std::endl;
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_logistic_kernel_new: " << e.what());
@@ -43,7 +62,7 @@ int32_t spir_regularized_bose_kernel_new(spir_kernel** kernel, double lambda)
     DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
     try {
         auto kernel_ptr = std::make_shared<sparseir::RegularizedBoseKernel>(lambda);
-        auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel_ptr);
+        auto abstract_kernel = std::static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
         *kernel = create_kernel(abstract_kernel);
         DEBUG_LOG("Created RegularizedBoseKernel at " << *kernel << ", ptr=" << (*kernel)->ptr.get());
         return SPIR_COMPUTATION_SUCCESS;
@@ -65,6 +84,10 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
         DEBUG_LOG("Failed to get kernel implementation");
         return SPIR_GET_IMPL_FAILED;
     }
+
+    std::cout << "spir_kernel_domain: impl=" << impl << std::endl;
+    std::cout << "impl.get()=" << impl.get() << std::endl;
+    std::cout << "impl.use_count()=" << impl.use_count() << std::endl;
 
     try {
         DEBUG_LOG("Getting xrange and yrange");
@@ -92,11 +115,41 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 int32_t spir_sve_result_new(spir_sve_result** sve, const spir_kernel *k, double epsilon)
 {
     try {
-        auto impl = get_impl_kernel(k);
-        if (!impl)
+        // Debug info for the C kernel object received from Fortran
+        std::cout << "Received kernel from Fortran: " << k << std::endl;
+        if (k) {
+            std::cout << "Kernel->ptr: " << k->ptr.get() << " use_count: " << k->ptr.use_count() << std::endl;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            std::cout << "get_impl_kernel failed, returned nullptr" << std::endl;
             return SPIR_GET_IMPL_FAILED;
-
+        }
+        
+        std::cout << "impl=" << impl << " use_count: " << impl.use_count() << std::endl;
+        std::cout << "impl.get()=" << impl.get() << std::endl;
+        
+        // Check dynamic_cast results without using typeid
+        auto check_logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl);
+        auto check_bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl);
+        
+        std::cout << "dynamic_cast to LogisticKernel: " << (check_logistic ? "succeeded" : "failed") << std::endl;
+        std::cout << "dynamic_cast to RegularizedBoseKernel: " << (check_bose ? "succeeded" : "failed") << std::endl;
+        
+        // Original typeid check - this might fail
+        try {
+            if (impl.get()) {
+                std::cout << "impl.get() type=" << typeid(*impl.get()).name() << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cout << "Exception when using typeid: " << e.what() << std::endl;
+        } catch (...) {
+            std::cout << "Unknown exception when using typeid" << std::endl;
+        }
+        
         std::shared_ptr<sparseir::SVEResult> sve_result;
+        
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
             sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(*logistic, epsilon));
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {

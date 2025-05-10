@@ -48,6 +48,9 @@ DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
 DECLARE_OPAQUE_TYPE(dlr);
 
+
+int32_t spir_check_kernel_ptr(spir_kernel** kernel);
+
 /**
  * @brief Creates a new logistic kernel for fermionic/bosonic analytical
  * continuation.

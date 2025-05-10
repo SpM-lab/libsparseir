@@ -10,10 +10,10 @@ file(GLOB TYPE_FILES
 
 add_library(sparseir_fortran SHARED
     sparseir.F90
-    sparseir_impl.f90
     _fortran_types.inc
+    _impl_types.inc
+    _fortran_assign.inc
     _cbinding.inc
-    _fortran_funcs.inc
     ${TYPE_FILES}
 )
 
