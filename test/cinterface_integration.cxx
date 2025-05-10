@@ -485,6 +485,35 @@ void integration_test(double beta, double wmax, double epsilon,
         reinterpret_cast<c_complex *>(giw_reconst.data()));
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
+
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> giv_ref(
+        _get_dims<ndim, Eigen::Index>(num_matsubara_points, extra_dims,
+                                      target_dim));
+
+    status = spir_sampling_evaluate_dz(
+        matsubara_sampling, order, ndim, _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
+        g_IR.data(),
+        reinterpret_cast<c_complex *>(giv_ref.data())
+    );
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    std::cout << "giv_ref: " << giv_ref << std::endl;
+
+    Eigen::Tensor<std::complex<double>, ndim, ORDER> giv(
+        _get_dims<ndim, Eigen::Index>(num_matsubara_points, extra_dims,
+                                      target_dim));
+
+    spir_sampling* smpl_for_dlr;
+    status = spir_matsubara_sampling_dlr_new(&smpl_for_dlr, dlr, num_matsubara_points, matsubara_points.data(), positive_only);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    status = spir_sampling_evaluate_dz(
+        smpl_for_dlr, order, ndim, _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
+        g_dlr.data(),
+        reinterpret_cast<c_complex *>(giv.data())
+    );
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(giv, giv_ref, 300 * epsilon));
+
     REQUIRE(
         compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
             giw_from_DLR, giw_reconst, tol));
