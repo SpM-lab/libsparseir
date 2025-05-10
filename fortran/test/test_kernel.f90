@@ -3,7 +3,7 @@ program test_kernel
   use sparseir
   use, intrinsic :: iso_c_binding
   implicit none
-  real(c_double) :: xmin, xmax, ymin, ymax
+  real(c_double),target :: xmin, xmax, ymin, ymax
   integer(c_int) :: stat
   integer(c_int) :: status
 
@@ -19,12 +19,8 @@ program test_kernel
 
   ! Create a new kernel
   lambda = beta * omega_max
-  !status = c_spir_logistic_kernel_new(k%handle, lambda)
   status = c_spir_logistic_kernel_new(k_ptr, lambda)
   print *, 'Checking kernel ptr'
-  status = c_spir_check_kernel_ptr(k_ptr)
-  !status = c_spir_logistic_kernel_new(k_ptr, lambda)
-  !status = c_spir_logistic_kernel_new(k_ptr, lambda)
   if (status /= 0) then
     print *, "Error creating kernel"
     stop
@@ -42,7 +38,9 @@ program test_kernel
     stop
   end if
 
-  status = c_spir_kernel_domain(k_ptr, xmin, xmax, ymin, ymax)
+  print *, "Kernel domain =", xmin, xmax, ymin, ymax
+  print *, "Kernel domain ptr =", c_loc(xmin)
+  status = c_spir_kernel_domain(k_ptr, c_loc(xmin), c_loc(xmax), c_loc(ymin), c_loc(ymax))
   if (status /= 0) then
     print *, "Error: kernel domain is not assigned"
     stop
