@@ -20,23 +20,6 @@ static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
     return dims_3d;
 }
 
-// Helper function to convert N-dimensional array to 2D array by collapsing
-// dimensions
-static std::array<int32_t, 2> collapse_to_2d(int32_t ndim, const int32_t *dims,
-                                             int32_t target_dim)
-{
-    std::array<int32_t, 2> dims_2d = {dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
-        dims_2d[0] *= dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
-        dims_2d[1] *= dims[i];
-    }
-    return dims_2d;
-}
-
 // Template function to handle all evaluation cases - moved outside extern "C"
 // block
 template <typename InputScalar, typename OutputScalar>
