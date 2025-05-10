@@ -3,5 +3,5 @@
       real(8), intent(in) :: beta
       real(8), intent(in) :: omega_max
       real(8), intent(in) :: epsilon
-      type(spir_finite_temp_basis) :: result
+      type(finite_temp_basis) :: result
     end function

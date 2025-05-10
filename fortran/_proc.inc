@@ -3,43 +3,43 @@ interface is_initialized
 
   ! Check if dlr is initialized
   module function dlr_is_initialized(this) result(initialized)
-    class(spir_dlr), intent(in) :: this
+    class(dlr), intent(in) :: this
     logical :: initialized
   end function
 
   ! Check if finite_temp_basis is initialized
   module function finite_temp_basis_is_initialized(this) result(initialized)
-    class(spir_finite_temp_basis), intent(in) :: this
+    class(finite_temp_basis), intent(in) :: this
     logical :: initialized
   end function
 
   ! Check if funcs is initialized
   module function funcs_is_initialized(this) result(initialized)
-    class(spir_funcs), intent(in) :: this
+    class(funcs), intent(in) :: this
     logical :: initialized
   end function
 
   ! Check if kernel is initialized
   module function kernel_is_initialized(this) result(initialized)
-    class(spir_kernel), intent(in) :: this
+    class(kernel), intent(in) :: this
     logical :: initialized
   end function
 
   ! Check if matsubara_funcs is initialized
   module function matsubara_funcs_is_initialized(this) result(initialized)
-    class(spir_matsubara_funcs), intent(in) :: this
+    class(matsubara_funcs), intent(in) :: this
     logical :: initialized
   end function
 
   ! Check if sampling is initialized
   module function sampling_is_initialized(this) result(initialized)
-    class(spir_sampling), intent(in) :: this
+    class(sampling), intent(in) :: this
     logical :: initialized
   end function
 
   ! Check if sve_result is initialized
   module function sve_result_is_initialized(this) result(initialized)
-    class(spir_sve_result), intent(in) :: this
+    class(sve_result), intent(in) :: this
     logical :: initialized
   end function
 
@@ -50,44 +50,44 @@ interface clone
 
   ! Clone the dlr object (create a copy)
   module function dlr_clone(this) result(copy)
-    class(spir_dlr), intent(in) :: this
-    type(spir_dlr) :: copy
+    class(dlr), intent(in) :: this
+    type(dlr) :: copy
   end function
 
   ! Clone the finite_temp_basis object (create a copy)
   module function finite_temp_basis_clone(this) result(copy)
-    class(spir_finite_temp_basis), intent(in) :: this
-    type(spir_finite_temp_basis) :: copy
+    class(finite_temp_basis), intent(in) :: this
+    type(finite_temp_basis) :: copy
   end function
 
   ! Clone the funcs object (create a copy)
   module function funcs_clone(this) result(copy)
-    class(spir_funcs), intent(in) :: this
-    type(spir_funcs) :: copy
+    class(funcs), intent(in) :: this
+    type(funcs) :: copy
   end function
 
   ! Clone the kernel object (create a copy)
   module function kernel_clone(this) result(copy)
-    class(spir_kernel), intent(in) :: this
-    type(spir_kernel) :: copy
+    class(kernel), intent(in) :: this
+    type(kernel) :: copy
   end function
 
   ! Clone the matsubara_funcs object (create a copy)
   module function matsubara_funcs_clone(this) result(copy)
-    class(spir_matsubara_funcs), intent(in) :: this
-    type(spir_matsubara_funcs) :: copy
+    class(matsubara_funcs), intent(in) :: this
+    type(matsubara_funcs) :: copy
   end function
 
   ! Clone the sampling object (create a copy)
   module function sampling_clone(this) result(copy)
-    class(spir_sampling), intent(in) :: this
-    type(spir_sampling) :: copy
+    class(sampling), intent(in) :: this
+    type(sampling) :: copy
   end function
 
   ! Clone the sve_result object (create a copy)
   module function sve_result_clone(this) result(copy)
-    class(spir_sve_result), intent(in) :: this
-    type(spir_sve_result) :: copy
+    class(sve_result), intent(in) :: this
+    type(sve_result) :: copy
   end function
 
 end interface
@@ -97,44 +97,44 @@ interface assign
 
   ! Assignment operator implementation
   module subroutine dlr_assign(lhs, rhs)
-    class(spir_dlr), intent(inout) :: lhs
-    class(spir_dlr), intent(in) :: rhs
+    class(dlr), intent(inout) :: lhs
+    class(dlr), intent(in) :: rhs
   end subroutine
 
   ! Assignment operator implementation
   module subroutine finite_temp_basis_assign(lhs, rhs)
-    class(spir_finite_temp_basis), intent(inout) :: lhs
-    class(spir_finite_temp_basis), intent(in) :: rhs
+    class(finite_temp_basis), intent(inout) :: lhs
+    class(finite_temp_basis), intent(in) :: rhs
   end subroutine
 
   ! Assignment operator implementation
   module subroutine funcs_assign(lhs, rhs)
-    class(spir_funcs), intent(inout) :: lhs
-    class(spir_funcs), intent(in) :: rhs
+    class(funcs), intent(inout) :: lhs
+    class(funcs), intent(in) :: rhs
   end subroutine
 
   ! Assignment operator implementation
   module subroutine kernel_assign(lhs, rhs)
-    class(spir_kernel), intent(inout) :: lhs
-    class(spir_kernel), intent(in) :: rhs
+    class(kernel), intent(inout) :: lhs
+    class(kernel), intent(in) :: rhs
   end subroutine
 
   ! Assignment operator implementation
   module subroutine matsubara_funcs_assign(lhs, rhs)
-    class(spir_matsubara_funcs), intent(inout) :: lhs
-    class(spir_matsubara_funcs), intent(in) :: rhs
+    class(matsubara_funcs), intent(inout) :: lhs
+    class(matsubara_funcs), intent(in) :: rhs
   end subroutine
 
   ! Assignment operator implementation
   module subroutine sampling_assign(lhs, rhs)
-    class(spir_sampling), intent(inout) :: lhs
-    class(spir_sampling), intent(in) :: rhs
+    class(sampling), intent(inout) :: lhs
+    class(sampling), intent(in) :: rhs
   end subroutine
 
   ! Assignment operator implementation
   module subroutine sve_result_assign(lhs, rhs)
-    class(spir_sve_result), intent(inout) :: lhs
-    class(spir_sve_result), intent(in) :: rhs
+    class(sve_result), intent(inout) :: lhs
+    class(sve_result), intent(in) :: rhs
   end subroutine
 
 end interface
@@ -144,37 +144,37 @@ interface finalize
 
   ! Finalizer for dlr
   module subroutine dlr_finalize(this)
-    type(spir_dlr), intent(inout) :: this
+    type(dlr), intent(inout) :: this
   end subroutine
 
   ! Finalizer for finite_temp_basis
   module subroutine finite_temp_basis_finalize(this)
-    type(spir_finite_temp_basis), intent(inout) :: this
+    type(finite_temp_basis), intent(inout) :: this
   end subroutine
 
   ! Finalizer for funcs
   module subroutine funcs_finalize(this)
-    type(spir_funcs), intent(inout) :: this
+    type(funcs), intent(inout) :: this
   end subroutine
 
   ! Finalizer for kernel
   module subroutine kernel_finalize(this)
-    type(spir_kernel), intent(inout) :: this
+    type(kernel), intent(inout) :: this
   end subroutine
 
   ! Finalizer for matsubara_funcs
   module subroutine matsubara_funcs_finalize(this)
-    type(spir_matsubara_funcs), intent(inout) :: this
+    type(matsubara_funcs), intent(inout) :: this
   end subroutine
 
   ! Finalizer for sampling
   module subroutine sampling_finalize(this)
-    type(spir_sampling), intent(inout) :: this
+    type(sampling), intent(inout) :: this
   end subroutine
 
   ! Finalizer for sve_result
   module subroutine sve_result_finalize(this)
-    type(spir_sve_result), intent(inout) :: this
+    type(sve_result), intent(inout) :: this
   end subroutine
 
 end interface
@@ -184,50 +184,50 @@ interface is_assigned
 
   ! Check if dlr's shared_ptr is assigned
   ! (contains a valid C++ object)
-  module function dlr_is_assigned(dlr) result(assigned)
-    type(spir_dlr), intent(in) :: dlr
+  module function dlr_is_assigned(this) result(assigned)
+    type(dlr), intent(in) :: this
     logical :: assigned
   end function
 
   ! Check if finite_temp_basis's shared_ptr is assigned
   ! (contains a valid C++ object)
-  module function finite_temp_basis_is_assigned(finite_temp_basis) result(assigned)
-    type(spir_finite_temp_basis), intent(in) :: finite_temp_basis
+  module function finite_temp_basis_is_assigned(this) result(assigned)
+    type(finite_temp_basis), intent(in) :: this
     logical :: assigned
   end function
 
   ! Check if funcs's shared_ptr is assigned
   ! (contains a valid C++ object)
-  module function funcs_is_assigned(funcs) result(assigned)
-    type(spir_funcs), intent(in) :: funcs
+  module function funcs_is_assigned(this) result(assigned)
+    type(funcs), intent(in) :: this
     logical :: assigned
   end function
 
   ! Check if kernel's shared_ptr is assigned
   ! (contains a valid C++ object)
-  module function kernel_is_assigned(kernel) result(assigned)
-    type(spir_kernel), intent(in) :: kernel
+  module function kernel_is_assigned(this) result(assigned)
+    type(kernel), intent(in) :: this
     logical :: assigned
   end function
 
   ! Check if matsubara_funcs's shared_ptr is assigned
   ! (contains a valid C++ object)
-  module function matsubara_funcs_is_assigned(matsubara_funcs) result(assigned)
-    type(spir_matsubara_funcs), intent(in) :: matsubara_funcs
+  module function matsubara_funcs_is_assigned(this) result(assigned)
+    type(matsubara_funcs), intent(in) :: this
     logical :: assigned
   end function
 
   ! Check if sampling's shared_ptr is assigned
   ! (contains a valid C++ object)
-  module function sampling_is_assigned(sampling) result(assigned)
-    type(spir_sampling), intent(in) :: sampling
+  module function sampling_is_assigned(this) result(assigned)
+    type(sampling), intent(in) :: this
     logical :: assigned
   end function
 
   ! Check if sve_result's shared_ptr is assigned
   ! (contains a valid C++ object)
-  module function sve_result_is_assigned(sve_result) result(assigned)
-    type(spir_sve_result), intent(in) :: sve_result
+  module function sve_result_is_assigned(this) result(assigned)
+    type(sve_result), intent(in) :: this
     logical :: assigned
   end function
 

@@ -43,12 +43,12 @@
 
   ! Check if kernel's shared_ptr is assigned (contains a valid C++ object)
   module procedure kernel_is_assigned
-    if (.not. c_associated(kernel%ptr)) then
+    if (.not. c_associated(this%ptr)) then
       assigned = .false.
       return
     end if
     
-    assigned = (c_spir_is_assigned_kernel(kernel%ptr) /= 0)
+    assigned = (c_spir_is_assigned_kernel(this%ptr) /= 0)
   end procedure
 
   ! Check if sve_result is initialized
@@ -96,12 +96,12 @@
 
   ! Check if sve_result's shared_ptr is assigned (contains a valid C++ object)
   module procedure sve_result_is_assigned
-    if (.not. c_associated(sve_result%ptr)) then
+    if (.not. c_associated(this%ptr)) then
       assigned = .false.
       return
     end if
     
-    assigned = (c_spir_is_assigned_sve_result(sve_result%ptr) /= 0)
+    assigned = (c_spir_is_assigned_sve_result(this%ptr) /= 0)
   end procedure
 
   ! Check if funcs is initialized
@@ -149,12 +149,12 @@
 
   ! Check if funcs's shared_ptr is assigned (contains a valid C++ object)
   module procedure funcs_is_assigned
-    if (.not. c_associated(funcs%ptr)) then
+    if (.not. c_associated(this%ptr)) then
       assigned = .false.
       return
     end if
     
-    assigned = (c_spir_is_assigned_funcs(funcs%ptr) /= 0)
+    assigned = (c_spir_is_assigned_funcs(this%ptr) /= 0)
   end procedure
 
   ! Check if matsubara_funcs is initialized
@@ -202,12 +202,12 @@
 
   ! Check if matsubara_funcs's shared_ptr is assigned (contains a valid C++ object)
   module procedure matsubara_funcs_is_assigned
-    if (.not. c_associated(matsubara_funcs%ptr)) then
+    if (.not. c_associated(this%ptr)) then
       assigned = .false.
       return
     end if
     
-    assigned = (c_spir_is_assigned_matsubara_funcs(matsubara_funcs%ptr) /= 0)
+    assigned = (c_spir_is_assigned_matsubara_funcs(this%ptr) /= 0)
   end procedure
 
   ! Check if finite_temp_basis is initialized
@@ -255,12 +255,12 @@
 
   ! Check if finite_temp_basis's shared_ptr is assigned (contains a valid C++ object)
   module procedure finite_temp_basis_is_assigned
-    if (.not. c_associated(finite_temp_basis%ptr)) then
+    if (.not. c_associated(this%ptr)) then
       assigned = .false.
       return
     end if
     
-    assigned = (c_spir_is_assigned_finite_temp_basis(finite_temp_basis%ptr) /= 0)
+    assigned = (c_spir_is_assigned_finite_temp_basis(this%ptr) /= 0)
   end procedure
 
   ! Check if sampling is initialized
@@ -308,12 +308,12 @@
 
   ! Check if sampling's shared_ptr is assigned (contains a valid C++ object)
   module procedure sampling_is_assigned
-    if (.not. c_associated(sampling%ptr)) then
+    if (.not. c_associated(this%ptr)) then
       assigned = .false.
       return
     end if
     
-    assigned = (c_spir_is_assigned_sampling(sampling%ptr) /= 0)
+    assigned = (c_spir_is_assigned_sampling(this%ptr) /= 0)
   end procedure
 
   ! Check if dlr is initialized
@@ -361,11 +361,11 @@
 
   ! Check if dlr's shared_ptr is assigned (contains a valid C++ object)
   module procedure dlr_is_assigned
-    if (.not. c_associated(dlr%ptr)) then
+    if (.not. c_associated(this%ptr)) then
       assigned = .false.
       return
     end if
     
-    assigned = (c_spir_is_assigned_dlr(dlr%ptr) /= 0)
+    assigned = (c_spir_is_assigned_dlr(this%ptr) /= 0)
   end procedure
 
