@@ -1,5 +1,6 @@
 import clang.cindex
 from clang.cindex import Index, TypeKind, CursorKind
+import re
 
 
 def map_c_type_to_fortran(ctype):
@@ -99,6 +100,128 @@ def generate_fortran_type_definition(type_name):
 
 """
 
+
+def generate_proc_interfaces(type_name):
+    """Generate Fortran procedure interfaces for a type."""
+    fortran_type_name = f"spir_{type_name}"
+    return f"""  ! Check if {type_name} is initialized
+  module function {type_name}_is_initialized(this) result(initialized)
+    class({fortran_type_name}), intent(in) :: this
+    logical :: initialized
+  end function
+
+  ! Clone the {type_name} object (create a copy)
+  module function {type_name}_clone(this) result(copy)
+    class({fortran_type_name}), intent(in) :: this
+    type({fortran_type_name}) :: copy
+  end function
+
+  ! Assignment operator implementation
+  module subroutine {type_name}_assign(lhs, rhs)
+    class({fortran_type_name}), intent(inout) :: lhs
+    class({fortran_type_name}), intent(in) :: rhs
+  end subroutine
+
+  ! Finalizer for {type_name}
+  module subroutine {type_name}_finalize(this)
+    type({fortran_type_name}), intent(inout) :: this
+  end subroutine
+
+  ! Check if {type_name}'s shared_ptr is assigned
+  ! (contains a valid C++ object)
+  module function {type_name}_is_assigned({type_name}) result(assigned)
+    type({fortran_type_name}), intent(in) :: {type_name}
+    logical :: assigned
+  end function
+
+"""
+
+
+def find_c_types(header_path):
+    """Find all types declared with DECLARE_OPAQUE_TYPE macro."""
+    types = set()
+    pattern = re.compile(r'DECLARE_OPAQUE_TYPE\(([a-zA-Z0-9_]+)\)')
+    
+    with open(header_path, 'r') as f:
+        content = f.read()
+    
+    # Remove #define section to avoid matching the macro definition itself
+    content = re.sub(r'#define.*?\\\n.*?\\\n.*?\\\n.*?\\\n', '', content, flags=re.DOTALL)
+    
+    # Find all matches
+    for match in pattern.finditer(content):
+        type_name = match.group(1)
+        # Skip if the type is not declared with DECLARE_OPAQUE_TYPE
+        if not f"DECLARE_OPAQUE_TYPE({type_name})" in content:
+            continue
+        types.add(type_name)
+    
+    # Print found types
+    print("Found types declared with DECLARE_OPAQUE_TYPE:")
+    for type_name in sorted(types):
+        print(f"  - {type_name}")
+    
+    return sorted(list(types))
+
+
+def generate_proc_inc(types):
+    """Generate _proc.inc file content."""
+    content = []
+    
+    # Generate is_initialized interface
+    content.append("interface is_initialized")
+    for type_name in types:
+        content.append(f"""  ! Check if {type_name} is initialized
+  module function {type_name}_is_initialized(this) result(initialized)
+    class(spir_{type_name}), intent(in) :: this
+    logical :: initialized
+  end function""")
+    content.append("end interface\n")
+
+    # Generate clone interface
+    content.append("interface clone")
+    for type_name in types:
+        content.append(f"""  ! Clone the {type_name} object (create a copy)
+  module function {type_name}_clone(this) result(copy)
+    class(spir_{type_name}), intent(in) :: this
+    type(spir_{type_name}) :: copy
+  end function""")
+    content.append("end interface\n")
+
+    # Generate assign interface
+    content.append("interface assign")
+    for type_name in types:
+        content.append(f"""  ! Assignment operator implementation
+  module subroutine {type_name}_assign(lhs, rhs)
+    class(spir_{type_name}), intent(inout) :: lhs
+    class(spir_{type_name}), intent(in) :: rhs
+  end subroutine""")
+    content.append("end interface\n")
+
+    # Generate finalize interface
+    content.append("interface finalize")
+    for type_name in types:
+        content.append(f"""  ! Finalizer for {type_name}
+  module subroutine {type_name}_finalize(this)
+    type(spir_{type_name}), intent(inout) :: this
+  end subroutine""")
+    content.append("end interface\n")
+
+    # Generate is_assigned interface
+    content.append("interface is_assigned")
+    for type_name in types:
+        content.append(f"""  ! Check if {type_name}'s shared_ptr is assigned
+  ! (contains a valid C++ object)
+  module function {type_name}_is_assigned({type_name}) result(assigned)
+    type(spir_{type_name}), intent(in) :: {type_name}
+    logical :: assigned
+  end function""")
+    content.append("end interface\n")
+
+    # Join with double newlines between interfaces
+    return "\n\n".join(content)
+
+
 def main():
     import sys
     if len(sys.argv) < 2:
@@ -123,25 +246,24 @@ def main():
         for code in interfaces:
             f.write(code + "\n\n")
 
-    # Generate type definitions
-    C_types = [
-        "kernel",
-        "funcs",
-        "matsubara_funcs",
-        "finite_temp_basis",
-        "sampling",
-        "sve_result",
-        "dlr"
-    ]
-
+    # Find C types and generate type definitions
+    types = find_c_types(header_path)
+    print(types)
+    
     # Write type definitions
     with open("_fortran_types.inc", 'w') as f:
         f.write("! Autogenerated Fortran type definitions\n")
-        for type_name in C_types:
+        for type_name in types:
             f.write(generate_fortran_type_definition(type_name))
+
+    # Generate and write _proc.inc
+    with open("_proc.inc", 'w') as f:
+        f.write("! Autogenerated Fortran procedure interfaces\n")
+        f.write(generate_proc_inc(types))
     
     print("Generated Fortran interfaces written to _cbinding.inc")
     print("Generated Fortran type definitions written to _fortran_types.inc")
+    print("Generated Fortran procedure interfaces written to _proc.inc")
 
 
 if __name__ == "__main__":
