@@ -13,8 +13,7 @@ add_library(sparseir_fortran SHARED
     sparseir_impl.f90
     _fortran_types.inc
     _cbinding.inc
-    _proc.inc
-    _impl.inc
+    _fortran_funcs.inc
     ${TYPE_FILES}
 )
 

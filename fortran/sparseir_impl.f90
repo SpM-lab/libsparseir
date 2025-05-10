@@ -4,9 +4,10 @@ submodule (sparseir) sparseir_impl
 
 contains
 
-  include '_impl.inc'
-  include '_impl_kernel.inc'
-  include '_impl_sve_result.inc'
-  include '_impl_finite_temp_basis.inc'
+  !include '_impl.inc'
+  !include '_impl_kernel.inc'
+  !include '_impl_sve_result.inc'
+  !include '_impl_finite_temp_basis.inc'
+  include '_fortran_funcs.inc'
 
 end submodule sparseir_impl 
