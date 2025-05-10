@@ -13,9 +13,9 @@ find_package(Python3 REQUIRED)
 #)
 
 # Add test executables
-add_executable(test_kernel test_kernel.f90)
-target_link_libraries(test_kernel PRIVATE sparseir_fortran)
-set_target_properties(test_kernel PROPERTIES
+add_executable(test_integration test_integration.f90)
+target_link_libraries(test_integration PRIVATE sparseir_fortran sparseir)
+set_target_properties(test_integration PROPERTIES
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../fortran
 )
 
@@ -30,8 +30,8 @@ set_target_properties(test_kernel PROPERTIES
 #)
 
 # Add tests
-add_test(NAME test_kernel
-    COMMAND test_kernel
+add_test(NAME test_integration
+    COMMAND test_integration
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 

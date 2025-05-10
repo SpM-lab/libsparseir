@@ -22,12 +22,14 @@ extern "C" {
 
 int32_t spir_logistic_kernel_new(spir_kernel** kernel, double lambda)
 {
-    DEBUG_LOG("Creating LogisticKernel with lambda=" << lambda);
     try {
         auto kernel_ptr = std::make_shared<sparseir::LogisticKernel>(lambda);
-        auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel_ptr);
+        std::shared_ptr<sparseir::AbstractKernel> abstract_kernel = std::static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
+        
+        // Check if dynamic_cast works at this point
+        auto check_logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(abstract_kernel);
+        
         *kernel = create_kernel(abstract_kernel);
-        DEBUG_LOG("Created LogisticKernel at " << *kernel << ", ptr=" << (*kernel)->ptr.get());
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_logistic_kernel_new: " << e.what());
@@ -43,7 +45,7 @@ int32_t spir_regularized_bose_kernel_new(spir_kernel** kernel, double lambda)
     DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
     try {
         auto kernel_ptr = std::make_shared<sparseir::RegularizedBoseKernel>(lambda);
-        auto abstract_kernel = std::shared_ptr<sparseir::AbstractKernel>(kernel_ptr);
+        auto abstract_kernel = std::static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
         *kernel = create_kernel(abstract_kernel);
         DEBUG_LOG("Created RegularizedBoseKernel at " << *kernel << ", ptr=" << (*kernel)->ptr.get());
         return SPIR_COMPUTATION_SUCCESS;
@@ -66,6 +68,8 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
         return SPIR_GET_IMPL_FAILED;
     }
 
+    std::cout << "xmin=" << xmin << std::endl;
+
     try {
         DEBUG_LOG("Getting xrange and yrange");
         auto xrange = impl->xrange();
@@ -74,6 +78,22 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
         DEBUG_LOG("Setting output values: xrange=("
                   << xrange.first << ", " << xrange.second << "), yrange=("
                   << yrange.first << ", " << yrange.second << ")");
+        if (!xmin) {
+            DEBUG_LOG("xmin is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        if (!xmax) {
+            DEBUG_LOG("xmax is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        if (!ymin) {
+            DEBUG_LOG("ymin is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        if (!ymax) {
+            DEBUG_LOG("ymax is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
         *xmin = xrange.first;
         *xmax = xrange.second;
         *ymin = yrange.first;
@@ -92,11 +112,13 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 int32_t spir_sve_result_new(spir_sve_result** sve, const spir_kernel *k, double epsilon)
 {
     try {
-        auto impl = get_impl_kernel(k);
-        if (!impl)
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
             return SPIR_GET_IMPL_FAILED;
-
+        }
+        
         std::shared_ptr<sparseir::SVEResult> sve_result;
+        
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
             sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(*logistic, epsilon));
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {

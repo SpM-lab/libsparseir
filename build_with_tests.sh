@@ -12,15 +12,16 @@ cd build
 # Configure with tests enabled
 cmake .. \
   -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX:-$HOME/opt/libsparseir} \
-  -DCMAKE_C_FLAGS="-w" \
-  -DCMAKE_CXX_FLAGS="-w" \
+  -DCMAKE_C_FLAGS="-w -g" \
+  -DCMAKE_CXX_FLAGS="-w -g" \
+  -DCMAKE_EXE_LINKER_FLAGS=" -g" \
   -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=ON \
   -DBUILD_TESTING=ON
 
 #   -DCMAKE_C_FLAGS="-w -fsanitize=address -g" \
 #   -DCMAKE_CXX_FLAGS="-w -fsanitize=address -g" \
-#   -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address" \
+#   -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address -g" \
 
 # Build (including tests)
 cmake --build . --config Release -j 4

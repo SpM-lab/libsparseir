@@ -27,8 +27,17 @@
             return 0;                                                          \
         }                                                                      \
         bool is_assigned = static_cast<bool>(obj->ptr);                        \
-        DEBUG_LOG(#name << " object at " << obj << ", ptr=" << obj->ptr.get()  \
+        DEBUG_LOG(#name << " object at " << obj                             \
+                        << ", std::shared_ptr at " << obj->ptr  \
+                        << ", raw ptr=" << obj->ptr.get()                      \
+                        << ", use_count=" << obj->ptr.use_count()             \
                         << ", is_assigned=" << is_assigned);                   \
+        if (is_assigned) {                                                    \
+            if (obj->ptr.use_count() == 0) {                                  \
+                DEBUG_LOG(#name << " object has 0 use_count");                \
+                return 0;                                                     \
+            }                                                                  \
+        }                                                                      \
         return is_assigned ? 1 : 0;                                            \
     }                                                                          \
                                                                                \
@@ -103,8 +112,8 @@
     }
 
 IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
-IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
-IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
+//IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
+//IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
 IMPLEMENT_OPAQUE_TYPE(funcs, AbstractContinuousFunctions);
 IMPLEMENT_OPAQUE_TYPE(matsubara_funcs, AbstractMatsubaraFunctions);
 IMPLEMENT_OPAQUE_TYPE(finite_temp_basis, AbstractFiniteTempBasis);

@@ -1,8 +1,20 @@
 # Fortran bindings for SparseIR
 
+# Enable Fortran preprocessor
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+
+file(GLOB TYPE_FILES
+    "_*_proc.inc"
+    "_*_impl.inc"
+)
+
 add_library(sparseir_fortran SHARED
-    sparseir.f90
-    sparseir_impl.f90
+    sparseir.F90
+    _fortran_types.inc
+    _impl_types.inc
+    _fortran_assign.inc
+    _cbinding.inc
+    ${TYPE_FILES}
 )
 
 set_target_properties(sparseir_fortran PROPERTIES
