@@ -485,7 +485,7 @@ int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles)
     }
 
     try {
-        std::vector<double> poles_vec = impl->get_poles();
+        std::vector<double> poles_vec = std::dynamic_pointer_cast<AbstractDLR>(impl)->get_poles();
         std::memcpy(poles, poles_vec.data(), poles_vec.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {

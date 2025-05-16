@@ -269,7 +269,7 @@ spir_dlr *_spir_dlr_new(const spir_basis *b)
     auto ptr_dlr = std::make_shared<_DLR<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis));
-    return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
+    return create_dlr(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
 }
 
 template <typename S>
@@ -291,14 +291,14 @@ spir_dlr *_spir_dlr_new_with_poles(const spir_basis *b,
     auto ptr_dlr = std::make_shared<_DLR<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis, poles_vec));
-    return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
+    return create_dlr(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
 }
 
 template <typename S>
 int32_t _spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u)
 {
     try {
-        std::shared_ptr<AbstractDLR> impl = get_impl_dlr(dlr);
+        std::shared_ptr<AbstractDLR> impl = std::dynamic_pointer_cast<AbstractDLR>(get_impl_dlr(dlr));
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
