@@ -175,7 +175,7 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  *       expansion.
  * @note For a DLR basis, the size is the number of poles.
  */
-int32_t spir_basis_get_size(const spir_basis *b, int *size);
+int32_t spir_basis_get_size(const spir_basis *b, int32_t *size);
 
 /**
  * @brief Gets the statistics type (Fermionic or Bosonic) of a finite
