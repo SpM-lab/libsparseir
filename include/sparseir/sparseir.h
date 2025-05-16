@@ -42,7 +42,6 @@ struct _spir_kernel;
 
 DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(funcs);
-DECLARE_OPAQUE_TYPE(matsubara_funcs);
 DECLARE_OPAQUE_TYPE(basis);
 DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
@@ -631,8 +630,7 @@ spir_basis *spir_basis_new_with_sve(spir_statistics_type statistics, double beta
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_basis_get_u(const spir_basis *b,
-                                     spir_funcs **u);
+int32_t spir_basis_get_u(const spir_basis *b, spir_funcs **u);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis.
@@ -664,11 +662,11 @@ int32_t spir_get_v(const spir_basis *b, spir_funcs **v);
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
  *         - A non-zero error code on failure
  *
- * @note The returned object must be freed using spir_destroy_matsubara_funcs
+ * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
- * @see spir_destroy_matsubara_funcs
+ * @see spir_destroy_funcs
  */
-int32_t spir_basis_get_uhat(const spir_basis *b, spir_matsubara_funcs **uhat);
+int32_t spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat);
 
 /**
  * @brief Gets the number of functions in a functions object.
@@ -731,7 +729,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
  *        ωn = nπ/β, where n are odd for fermionic frequencies and even for
  *        bosonic frequencies.
  */
-int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
+int32_t spir_evaluate_matsubara_funcs(const spir_funcs *uiw,
                                       spir_order_type order, int32_t num_freqs,
                                       int32_t *matsubara_freq_indices,
                                       c_complex *out);
@@ -797,21 +795,6 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @see spir_sampling_get_num_points
  */
 int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points);
-
-/**
- * @brief Gets the number of functions in a Matsubara functions object.
- *
- * This function returns the number of functions contained in the specified
- * Matsubara functions object. This number is needed to allocate arrays of the
- * correct size when evaluating the functions.
- *
- * @param funcs Pointer to the Matsubara functions object
- * @param size Pointer to store the number of functions
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- */
-int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs *funcs, int32_t *size);
 
 #ifdef __cplusplus
 }

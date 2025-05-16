@@ -1,12 +1,19 @@
 #include "sparseir/sparseir.hpp"
 #include <memory>
 
-class AbstractMatsubaraFunctions {
+class _AbstractFuncs {
+public:
+    virtual ~_AbstractFuncs() = default;
+    virtual int size() const = 0;
+    virtual bool is_continuous_funcs() const = 0;
+};
+
+class AbstractMatsubaraFunctions : public _AbstractFuncs {
 public:
     virtual ~AbstractMatsubaraFunctions() = default;
     virtual Eigen::MatrixXcd
     operator()(const Eigen::ArrayXi &n_array) const = 0;
-    virtual int size() const = 0;
+    virtual bool is_continuous_funcs() const override { return false; }
 };
 
 template <typename InternalType>
@@ -28,12 +35,12 @@ public:
 
 // Abstract class for functions of a single variable (in the imaginary time
 // domain or the real frequency domain)
-class AbstractContinuousFunctions {
+class AbstractContinuousFunctions : public _AbstractFuncs {
 public:
     virtual ~AbstractContinuousFunctions() = default;
     virtual Eigen::VectorXd operator()(double x) const = 0;
-    virtual int size() const = 0;
     virtual std::pair<double, double> get_domain() const = 0;
+    virtual bool is_continuous_funcs() const override { return true; }
 };
 
 class PiecewiseLegendrePolyFunctions : public AbstractContinuousFunctions {
@@ -185,14 +192,9 @@ public:
 class AbstractDLR : public AbstractFiniteTempBasis {
 public:
     virtual ~AbstractDLR() = default;
-    //virtual int size() const = 0;
-    //virtual double get_beta() const = 0;
-    //virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
-    //virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const override {
         throw std::runtime_error("get_v is not implemented for DLR");
     }
-    //virtual spir_statistics_type get_statistics() const = 0;
     virtual std::vector<double> get_poles() const = 0;
 };
 

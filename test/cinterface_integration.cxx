@@ -117,12 +117,12 @@ _evaluate_basis_functions(const spir_funcs *u, const Eigen::VectorXd &x_values)
 // Helper function to evaluate Matsubara basis functions at multiple frequencies
 template <Eigen::StorageOptions ORDER>
 Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic, ORDER>
-_evaluate_matsubara_basis_functions(const spir_matsubara_funcs *uhat,
+_evaluate_matsubara_basis_functions(const spir_funcs *uhat,
                                     const Eigen::VectorXi &matsubara_indices)
 {
     int32_t status;
     int32_t funcs_size;
-    status = spir_matsubara_funcs_get_size(uhat, &funcs_size);
+    status = spir_funcs_get_size(uhat, &funcs_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Allocate output matrix with shape (nfreqs, nfuncs)
@@ -201,7 +201,7 @@ _evaluate_gtau(const Eigen::Tensor<T, ndim, ORDER> &coeffs, const spir_funcs *u,
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
 Eigen::Tensor<std::complex<double>, ndim, ORDER>
 _evaluate_giw(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
-              const spir_matsubara_funcs *uhat, int target_dim,
+              const spir_funcs *uhat, int target_dim,
               const Eigen::VectorXi &matsubara_indices)
 {
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic, ORDER> uhat_eval_mat =
@@ -514,7 +514,7 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_basis_get_u(dlr, &dlr_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_matsubara_funcs *dlr_uhat;
+    spir_funcs *dlr_uhat;
     status = spir_basis_get_uhat(dlr, &dlr_uhat);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -523,7 +523,7 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_basis_get_u(basis, &ir_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_matsubara_funcs *ir_uhat;
+    spir_funcs *ir_uhat;
     status = spir_basis_get_uhat(basis, &ir_uhat);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 

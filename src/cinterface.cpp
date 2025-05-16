@@ -549,8 +549,7 @@ int32_t spir_get_v(const spir_basis *b,
     }
 }
 
-int32_t spir_basis_get_uhat(const spir_basis *b,
-                                        spir_matsubara_funcs **uhat)
+int32_t spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
 {
     if (!b || !uhat) {
         return SPIR_INVALID_ARGUMENT;
@@ -713,7 +712,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
     }
 
     try {
-        Eigen::VectorXd result = funcs->ptr->operator()(x);
+        Eigen::VectorXd result = std::dynamic_pointer_cast<AbstractContinuousFunctions>(funcs->ptr)->operator()(x);
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
@@ -722,14 +721,20 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
     }
 }
 
-int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
+int32_t spir_evaluate_matsubara_funcs(const spir_funcs *uiw,
                                           spir_order_type order,
                                           int32_t num_freqs,
                                           int32_t *matsubara_freq_indices,
                                           c_complex *out)
 {
-    if (!uiw || !uiw->ptr) {
+    auto impl = get_impl_funcs(uiw);
+    if (!impl) {
         DEBUG_LOG("Matsubara basis functions object is null or not assigned");
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (impl->is_continuous_funcs()) {
+        std::cerr << "Error: the function is not defined for Matsubara frequencies" << std::endl;
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -753,7 +758,7 @@ int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
 
         // Evaluate functions at all frequencies
         // The operator() returns a matrix of shape (nfuncs, nfreqs)
-        Eigen::MatrixXcd out_matrix = uiw->ptr->operator()(freq_indices);
+        Eigen::MatrixXcd out_matrix = std::dynamic_pointer_cast<AbstractMatsubaraFunctions>(uiw->ptr)->operator()(freq_indices);
 
         // Copy the results to the output array
         for (int ifreq = 0; ifreq < num_freqs; ++ifreq) {
@@ -813,10 +818,6 @@ int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size)
     } catch (const std::exception &e) {
         return SPIR_GET_IMPL_FAILED;
     }
-}
-
-int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_t* size) {
-    return _spir_matsubara_funcs_get_size<double>(funcs, size);
 }
 
 } // extern "C"
