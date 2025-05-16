@@ -145,7 +145,7 @@ spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int32
     }
 }
 
-spir_finite_temp_basis* spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
+spir_basis* spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
                            double omega_max, double epsilon, int32_t* status)
 {
     try {
@@ -157,7 +157,7 @@ spir_finite_temp_basis* spir_finite_temp_basis_new(spir_statistics_type statisti
             auto impl =
                 std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
             *status = SPIR_COMPUTATION_SUCCESS;
-            return create_finite_temp_basis(
+            return create_basis(
                 std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
         } else {
             using FiniteTempBasisType =
@@ -165,7 +165,7 @@ spir_finite_temp_basis* spir_finite_temp_basis_new(spir_statistics_type statisti
             auto impl =
                 std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
             *status = SPIR_COMPUTATION_SUCCESS;
-            return create_finite_temp_basis(
+            return create_basis(
                 std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
         }
     } catch (const std::exception &e) {
@@ -179,7 +179,7 @@ spir_finite_temp_basis* spir_finite_temp_basis_new(spir_statistics_type statisti
     }
 }
 
-spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(
+spir_basis* spir_finite_temp_basis_new_with_sve(
     spir_statistics_type statistics, double beta, double omega_max,
     const spir_kernel *k, const spir_sve_result *sve, int32_t* status)
 {
@@ -199,7 +199,7 @@ spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(
         }
 
         // switch on kernel type
-        spir_finite_temp_basis* result = nullptr;
+        spir_basis* result = nullptr;
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
             result = _spir_finite_temp_basis_new_with_sve(statistics, beta, omega_max, *logistic, sve);
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
@@ -225,7 +225,7 @@ spir_finite_temp_basis* spir_finite_temp_basis_new_with_sve(
     }
 }
 
-spir_sampling* spir_tau_sampling_new(const spir_finite_temp_basis *b, int32_t* status)
+spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t* status)
 {
     spir_statistics_type stat;
     int32_t stat_status = spir_finite_temp_basis_get_statistics(b, &stat);
@@ -246,7 +246,7 @@ spir_sampling* spir_tau_sampling_new(const spir_finite_temp_basis *b, int32_t* s
     }
 }
 
-spir_sampling* spir_matsubara_sampling_new(const spir_finite_temp_basis *b, bool positive_only, int32_t* status)
+spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t* status)
 {
     spir_statistics_type stat;
     int32_t stat_status = spir_finite_temp_basis_get_statistics(b, &stat);
@@ -288,7 +288,7 @@ spir_sampling* spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_sm
     }
 }
 
-spir_dlr* spir_dlr_new(const spir_finite_temp_basis *b, int32_t* status)
+spir_dlr* spir_dlr_new(const spir_basis *b, int32_t* status)
 {
     spir_statistics_type stat;
     int32_t status_basis = spir_finite_temp_basis_get_statistics(b, &stat);
@@ -306,10 +306,10 @@ spir_dlr* spir_dlr_new(const spir_finite_temp_basis *b, int32_t* status)
     }
 }
 
-spir_dlr* spir_dlr_new_with_poles(const spir_finite_temp_basis *b,
+spir_dlr* spir_dlr_new_with_poles(const spir_basis *b,
                                   const int npoles, const double *poles, int32_t* status)
 {
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl)
         return nullptr;
 
@@ -552,14 +552,14 @@ int32_t spir_dlr_get_uhat(const spir_dlr* dlr, spir_matsubara_funcs** uhat)
     }
 }
 
-int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_v(const spir_basis *b,
                                      spir_funcs **v)
 {
     if (!b || !v) {
         return SPIR_INVALID_ARGUMENT;
     }
 
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
@@ -575,14 +575,14 @@ int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
     }
 }
 
-int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_uhat(const spir_basis *b,
                                         spir_matsubara_funcs **uhat)
 {
     if (!b || !uhat) {
         return SPIR_INVALID_ARGUMENT;
     }
 
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
@@ -691,10 +691,10 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
     }
 }
 
-int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_size(const spir_basis *b,
                                         int32_t *size)
 {
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
@@ -709,10 +709,10 @@ int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
     }
 }
 
-int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_statistics(const spir_basis *b,
                                               spir_statistics_type *statistics)
 {
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }
@@ -795,14 +795,14 @@ int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
     }
 }
 
-int32_t spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_u(const spir_basis *b,
                                      spir_funcs **u)
 {
     if (!b || !u) {
         return SPIR_INVALID_ARGUMENT;
     }
 
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl) {
         return SPIR_GET_IMPL_FAILED;
     }

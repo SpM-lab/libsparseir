@@ -182,14 +182,17 @@ public:
     }
 };
 
-class AbstractDLR {
+class AbstractDLR : public AbstractFiniteTempBasis {
 public:
     virtual ~AbstractDLR() = default;
-    virtual int size() const = 0;
-    virtual double get_beta() const = 0;
-    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
-    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
-    virtual spir_statistics_type get_statistics() const = 0;
+    //virtual int size() const = 0;
+    //virtual double get_beta() const = 0;
+    //virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
+    //virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const override {
+        throw std::runtime_error("get_v is not implemented for DLR");
+    }
+    //virtual spir_statistics_type get_statistics() const = 0;
     virtual std::vector<double> get_poles() const = 0;
 };
 

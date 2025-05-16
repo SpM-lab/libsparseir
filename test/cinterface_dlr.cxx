@@ -36,7 +36,7 @@ void test_finite_temp_basis_dlr()
     const double epsilon = 1e-12;
 
     int32_t basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
     int32_t basis_size;
@@ -143,7 +143,7 @@ void test_finite_temp_basis_dlr()
     free(giv_ref);
     free(giv);
     free(smpl_points);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     spir_dlr_destroy(dlr);
     spir_dlr_destroy(dlr_with_poles);
 }

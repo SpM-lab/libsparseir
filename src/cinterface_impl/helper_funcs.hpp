@@ -206,10 +206,10 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
 }
 
 template <typename S, typename SMPL>
-spir_sampling *_spir_sampling_new(const spir_finite_temp_basis *b)
+spir_sampling *_spir_sampling_new(const spir_basis *b)
 {
     std::shared_ptr<AbstractFiniteTempBasis> impl =
-        get_impl_finite_temp_basis(b);
+        get_impl_basis(b);
     if (!impl)
         return nullptr;
 
@@ -221,10 +221,10 @@ spir_sampling *_spir_sampling_new(const spir_finite_temp_basis *b)
 
 
 template <typename S, typename SMPL>
-spir_sampling *_spir_matsubara_sampling_new(const spir_finite_temp_basis *b, bool positive_only)
+spir_sampling *_spir_matsubara_sampling_new(const spir_basis *b, bool positive_only)
 {
     std::shared_ptr<AbstractFiniteTempBasis> impl =
-        get_impl_finite_temp_basis(b);
+        get_impl_basis(b);
     if (!impl)
         return nullptr;
 
@@ -255,9 +255,9 @@ spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_s
 
 
 template <typename S>
-spir_dlr *_spir_dlr_new(const spir_finite_temp_basis *b)
+spir_dlr *_spir_dlr_new(const spir_basis *b)
 {
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl) {
         return nullptr;
     }
@@ -273,10 +273,10 @@ spir_dlr *_spir_dlr_new(const spir_finite_temp_basis *b)
 }
 
 template <typename S>
-spir_dlr *_spir_dlr_new_with_poles(const spir_finite_temp_basis *b,
+spir_dlr *_spir_dlr_new_with_poles(const spir_basis *b,
                                    const int npoles, const double *poles)
 {
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl)
         return nullptr;
 
@@ -331,11 +331,11 @@ int32_t _spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat)
 }
 
 template <typename S>
-int32_t _spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
+int32_t _spir_finite_temp_basis_get_u(const spir_basis *b,
                                       spir_funcs **u)
 {
     try {
-        std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_finite_temp_basis(b);
+        std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_basis(b);
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
@@ -348,11 +348,11 @@ int32_t _spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
 }
 
 template <typename S>
-int32_t _spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
+int32_t _spir_finite_temp_basis_get_v(const spir_basis *b,
                                       spir_funcs **v)
 {
     try {
-        auto impl = get_impl_finite_temp_basis(b);
+        auto impl = get_impl_basis(b);
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
@@ -364,11 +364,11 @@ int32_t _spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
 }
 
 template <typename S>
-int32_t _spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
+int32_t _spir_finite_temp_basis_get_uhat(const spir_basis *b,
                                          spir_matsubara_funcs **uhat)
 {
     try {
-        auto impl = get_impl_finite_temp_basis(b);
+        auto impl = get_impl_basis(b);
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
@@ -395,7 +395,7 @@ int32_t _spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_
 
 
 template <typename K>
-spir_finite_temp_basis* _spir_finite_temp_basis_new_with_sve(
+spir_basis* _spir_finite_temp_basis_new_with_sve(
     spir_statistics_type statistics, double beta, double omega_max,
     const K& kernel, const spir_sve_result *sve)
 {
@@ -408,14 +408,14 @@ spir_finite_temp_basis* _spir_finite_temp_basis_new_with_sve(
                 sparseir::FiniteTempBasis<sparseir::Fermionic>;
             auto impl = std::make_shared<FiniteTempBasisType>(
                 beta, omega_max, kernel, *sve_impl);
-            return create_finite_temp_basis(
+            return create_basis(
                 std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
         } else {
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Bosonic>;
             auto impl = std::make_shared<FiniteTempBasisType>(
                 beta, omega_max, kernel, *sve_impl);
-            return create_finite_temp_basis(
+            return create_basis(
                 std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
         }
     } catch (...) {

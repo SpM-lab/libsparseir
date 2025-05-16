@@ -407,7 +407,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve != nullptr);
 
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -633,7 +633,7 @@ void integration_test(double beta, double wmax, double epsilon,
         //compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
             //giw_from_DLR, giw_reconst, tol));
 
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     spir_dlr_destroy(dlr);
     spir_funcs_destroy(dlr_u);
     spir_funcs_destroy(ir_u);

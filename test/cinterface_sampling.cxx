@@ -33,7 +33,7 @@ void test_tau_sampling()
     auto stat = get_stat<S>();
 
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-15, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -61,7 +61,7 @@ void test_tau_sampling()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
 }
 
 template <typename S>
@@ -74,7 +74,7 @@ void test_tau_sampling_evaluation_1d_column_major()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -146,7 +146,7 @@ void test_tau_sampling_evaluation_1d_column_major()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     // Free allocated memory
     free(coeffs);
     free(evaluate_output);
@@ -163,7 +163,7 @@ void test_tau_sampling_evaluation_4d_row_major()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -282,7 +282,7 @@ void test_tau_sampling_evaluation_4d_row_major()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -297,7 +297,7 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -424,7 +424,7 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -439,7 +439,7 @@ void test_tau_sampling_evaluation_4d_column_major()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -525,7 +525,7 @@ void test_tau_sampling_evaluation_4d_column_major()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -540,7 +540,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -632,7 +632,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -685,7 +685,7 @@ TEST_CASE("TauSampling", "[cinterface]")
 
         // Create basis
         int basis_status;
-        spir_finite_temp_basis *basis = spir_finite_temp_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10, &basis_status);
+        spir_basis *basis = spir_finite_temp_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10, &basis_status);
         REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
 
@@ -779,7 +779,7 @@ TEST_CASE("TauSampling", "[cinterface]")
 
         // Clean up
         spir_sampling_destroy(sampling);
-        spir_finite_temp_basis_destroy(basis);
+        spir_basis_destroy(basis);
         free(output_complex);
         free(output_double);
         free(fit_output_double);
@@ -796,7 +796,7 @@ void test_matsubara_sampling_constructor()
     auto stat = get_stat<S>();
 
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -832,7 +832,7 @@ void test_matsubara_sampling_constructor()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(smpl_points);
     free(smpl_points_positive_only);
 }
@@ -847,7 +847,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -944,7 +944,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -959,7 +959,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1050,7 +1050,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1065,7 +1065,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1182,7 +1182,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1198,7 +1198,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1321,7 +1321,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1337,7 +1337,7 @@ void test_matsubara_sampling_error_status()
 
     // Create basis
     int basis_status;
-    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1428,7 +1428,7 @@ void test_matsubara_sampling_error_status()
 
     // Clean up
     spir_sampling_destroy(sampling);
-    spir_finite_temp_basis_destroy(basis);
+    spir_basis_destroy(basis);
     free(output_complex);
     free(output_double);
     free(fit_output_double);

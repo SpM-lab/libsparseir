@@ -43,7 +43,7 @@ struct _spir_kernel;
 DECLARE_OPAQUE_TYPE(kernel);
 DECLARE_OPAQUE_TYPE(funcs);
 DECLARE_OPAQUE_TYPE(matsubara_funcs);
-DECLARE_OPAQUE_TYPE(finite_temp_basis);
+DECLARE_OPAQUE_TYPE(basis);
 DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
 DECLARE_OPAQUE_TYPE(dlr);
@@ -176,7 +176,7 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  *       the specified parameters (β, ωmax, ε) and the kernel's singular value
  *       expansion.
  */
-int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_size(const spir_basis *b,
                                         int *size);
 
 /**
@@ -199,7 +199,7 @@ int32_t spir_finite_temp_basis_get_size(const spir_finite_temp_basis *b,
  * @note The statistics type affects the form of the basis functions and the
  *       sampling points used for evaluation.
  */
-int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_statistics(const spir_basis *b,
                                               spir_statistics_type *statistics);
 
 /**
@@ -224,7 +224,7 @@ int32_t spir_finite_temp_basis_get_statistics(const spir_finite_temp_basis *b,
  *       longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_tau_sampling_new(const spir_finite_temp_basis *b, int32_t *status);
+spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t *status);
 
 /**
  * @brief Creates a new Matsubara sampling object for sparse sampling
@@ -241,7 +241,7 @@ spir_sampling *spir_tau_sampling_new(const spir_finite_temp_basis *b, int32_t *s
  * @param status Pointer to store the status code
  * @return Pointer to the newly created sampling object, or NULL if creation fails
  */
-spir_sampling *spir_matsubara_sampling_new(const spir_finite_temp_basis *b, bool positive_only, int32_t *status);
+spir_sampling *spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t *status);
 
 /**
  * @brief Creates a new Matsubara sampling object for sparse sampling
@@ -284,7 +284,7 @@ spir_sampling *spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_sm
  * @param status Pointer to store the status code
  * @return Pointer to the newly created DLR object, or NULL if creation fails
  */
-spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b, int32_t *status);
+spir_dlr *spir_dlr_new(const spir_basis *b, int32_t *status);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) with
@@ -300,7 +300,7 @@ spir_dlr *spir_dlr_new(const spir_finite_temp_basis *b, int32_t *status);
  * @param status Pointer to store the status code
  * @return Pointer to the newly created DLR object, or NULL if creation fails
  */
-spir_dlr *spir_dlr_new_with_poles(const spir_finite_temp_basis *b, const int npoles, const double *poles, int32_t *status);
+spir_dlr *spir_dlr_new_with_poles(const spir_basis *b, const int npoles, const double *poles, int32_t *status);
 
 /**
  * @brief Gets the statistics type of a DLR.
@@ -636,7 +636,7 @@ int32_t spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat);
  * @return Pointer to the newly created basis object, or NULL if creation fails
  * @see spir_finite_temp_basis_new_with_kernel
  */
-spir_finite_temp_basis *spir_finite_temp_basis_new(spir_statistics_type statistics, double beta, double omega_max, double epsilon, int32_t *status);
+spir_basis *spir_finite_temp_basis_new(spir_statistics_type statistics, double beta, double omega_max, double epsilon, int32_t *status);
 
 /**
  * @brief Creates a new finite temperature IR basis using a
@@ -661,7 +661,7 @@ spir_finite_temp_basis *spir_finite_temp_basis_new(spir_statistics_type statisti
  * @see spir_sve_result_new
  * @see spir_destroy_finite_temp_basis
  */
-spir_finite_temp_basis *spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max, const spir_kernel *k, const spir_sve_result *sve, int32_t *status);
+spir_basis *spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max, const spir_kernel *k, const spir_sve_result *sve, int32_t *status);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis.
@@ -679,7 +679,7 @@ spir_finite_temp_basis *spir_finite_temp_basis_new_with_sve(spir_statistics_type
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_u(const spir_basis *b,
                                      spir_funcs **u);
 
 /**
@@ -698,7 +698,7 @@ int32_t spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_v(const spir_basis *b,
                                      spir_funcs **v);
 
 /**
@@ -718,7 +718,7 @@ int32_t spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
  *       when no longer needed
  * @see spir_destroy_matsubara_funcs
  */
-int32_t spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
+int32_t spir_finite_temp_basis_get_uhat(const spir_basis *b,
                                         spir_matsubara_funcs **uhat);
 
 /**
