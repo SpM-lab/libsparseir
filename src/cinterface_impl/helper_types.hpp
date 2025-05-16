@@ -132,7 +132,7 @@ public:
     virtual ~AbstractFiniteTempBasis() = default;
     virtual int size() const = 0;
     virtual double get_beta() const = 0;
-    virtual spir_statistics_type get_statistics() const = 0;
+    virtual int32_t get_statistics() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
     virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
@@ -156,7 +156,7 @@ public:
 
     virtual int size() const override { return impl->size(); }
 
-    virtual spir_statistics_type get_statistics() const override
+    virtual int32_t get_statistics() const override
     {
         if (std::is_same<S, sparseir::Fermionic>::value) {
             return SPIR_STATISTICS_FERMIONIC;
@@ -242,7 +242,7 @@ public:
         return impl->size();
     }
 
-    virtual spir_statistics_type get_statistics() const override
+    virtual int32_t get_statistics() const override
     {
         if (std::is_same<S, sparseir::Fermionic>::value) {
             return SPIR_STATISTICS_FERMIONIC;

@@ -6,22 +6,30 @@
 
 #include "spir_status.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Define a C-compatible type alias for the C99 complex number.
 typedef double _Complex c_complex;
 
-typedef enum {
-    SPIR_STATISTICS_FERMIONIC = 1,
-    SPIR_STATISTICS_BOSONIC = 0
-} spir_statistics_type;
+// Status codes
+#define SPIR_COMPUTATION_SUCCESS 0
+#define SPIR_GET_IMPL_FAILED -1
+#define SPIR_INVALID_DIMENSION -2
+#define SPIR_INPUT_DIMENSION_MISMATCH -3
+#define SPIR_OUTPUT_DIMENSION_MISMATCH -4
+#define SPIR_NOT_SUPPORTED -5
+#define SPIR_INVALID_ARGUMENT -6
+#define SPIR_INTERNAL_ERROR -7
 
-typedef enum {
-    SPIR_ORDER_COLUMN_MAJOR = 1,
-    SPIR_ORDER_ROW_MAJOR = 0
-} spir_order_type;
+// Statistics type constants
+#define SPIR_STATISTICS_FERMIONIC 1
+#define SPIR_STATISTICS_BOSONIC 0
+
+// Order type constants
+#define SPIR_ORDER_COLUMN_MAJOR 1
+#define SPIR_ORDER_ROW_MAJOR 0
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Macro for declaring opaque types and their functions */
 #define DECLARE_OPAQUE_TYPE(name)                                              \
@@ -219,7 +227,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
  * frequencies.
  */
 int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
-                                      spir_order_type order, int32_t num_freqs,
+                                      int32_t order, int32_t num_freqs,
                                       int64_t *matsubara_freq_indices,
                                       c_complex *out);
 
@@ -240,8 +248,8 @@ int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
  * @return Pointer to the newly created basis object, or NULL if creation fails
  * @see spir_basis_new_with_kernel
  */
-spir_basis *spir_basis_new(spir_statistics_type statistics, double beta,
-                           double omega_max, double epsilon, int32_t *status);
+//spir_basis *spir_basis_new(spir_statistics_t statistics, double beta,
+                           //double omega_max, double epsilon, int32_t *status);
 
 /**
  * @brief Creates a new finite temperature IR basis using a
@@ -266,7 +274,7 @@ spir_basis *spir_basis_new(spir_statistics_type statistics, double beta,
  * @see spir_sve_result_new
  * @see spir_destroy_finite_temp_basis
  */
-spir_basis *spir_basis_new_with_sve(spir_statistics_type statistics,
+spir_basis *spir_basis_new_with_sve(int32_t statistics,
                                     double beta, double omega_max,
                                     const spir_kernel *k,
                                     const spir_sve_result *sve,
@@ -314,7 +322,7 @@ int32_t spir_basis_get_size(const spir_basis *b, int32_t *size);
  *       sampling points used for evaluation.
  */
 int32_t spir_basis_get_statistics(const spir_basis *b,
-                                  spir_statistics_type *statistics);
+                                  int32_t *statistics);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis.
@@ -564,11 +572,11 @@ int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles);
  * @see spir_ir_to_dlr
  * @see spir_dlr_to_ir_dd
  */
-int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, int32_t order,
                           int32_t ndim, const int32_t *input_dims,
                           int32_t target_dim, const double *input, double *out);
 
-int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, int32_t order,
                           int32_t ndim, const int32_t *input_dims,
                           int32_t target_dim, const c_complex *input,
                           c_complex *out);
@@ -606,7 +614,7 @@ int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, spir_order_type order,
  *
  * @see spir_ir_to_dlr
  */
-int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order,
+int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, int32_t order,
                           int32_t ndim, const int32_t *input_dims,
                           int32_t target_dim, const double *input, double *out);
 
@@ -645,7 +653,7 @@ int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order,
  * @see spir_ir_to_dlr_zz
  * @see spir_dlr_to_ir_dd
  */
-int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order,
+int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, int32_t order,
                           int32_t ndim, const int32_t *input_dims,
                           int32_t target_dim, const c_complex *input,
                           c_complex *out);
@@ -796,7 +804,7 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
  */
 int32_t
 spir_sampling_evaluate_dd(const spir_sampling *s, // Sampling object
-                          spir_order_type order,  // Order type (C or Fortran)
+                          int32_t order,  // Order type (C or Fortran)
                           int32_t ndim,           // Number of dimensions
                           const int32_t *input_dims, // Array of dimensions
                           int32_t target_dim, // Target dimension for evaluation
@@ -813,7 +821,7 @@ spir_sampling_evaluate_dd(const spir_sampling *s, // Sampling object
  */
 int32_t
 spir_sampling_evaluate_dz(const spir_sampling *s, // Sampling object
-                          spir_order_type order,  // Order type (C or Fortran)
+                          int32_t order,  // Order type (C or Fortran)
                           int32_t ndim,           // Number of dimensions
                           const int32_t *input_dims, // Array of dimensions
                           int32_t target_dim, // Target dimension for evaluation
@@ -830,7 +838,7 @@ spir_sampling_evaluate_dz(const spir_sampling *s, // Sampling object
  */
 int32_t
 spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
-                          spir_order_type order,  // Order type (C or Fortran)
+                          int32_t order,  // Order type (C or Fortran)
                           int32_t ndim,           // Number of dimensions
                           const int32_t *input_dims, // Array of dimensions
                           int32_t target_dim, // Target dimension for evaluation
@@ -869,7 +877,7 @@ spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
  */
 int32_t
 spir_sampling_fit_dd(const spir_sampling *s,    // Sampling object
-                     spir_order_type order,     // Order type (C or Fortran)
+                     int32_t order,     // Order type (C or Fortran)
                      int32_t ndim,              // Number of dimensions
                      const int32_t *input_dims, // Array of dimensions
                      int32_t target_dim,  // Target dimension for evaluation
@@ -886,7 +894,7 @@ spir_sampling_fit_dd(const spir_sampling *s,    // Sampling object
  */
 int32_t
 spir_sampling_fit_zz(const spir_sampling *s,    // Sampling object
-                     spir_order_type order,     // Order type (C or Fortran)
+                     int32_t order,     // Order type (C or Fortran)
                      int32_t ndim,              // Number of dimensions
                      const int32_t *input_dims, // Array of dimensions
                      int32_t target_dim,     // Target dimension for evaluation

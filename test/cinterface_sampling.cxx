@@ -10,12 +10,13 @@
 
 #include <sparseir/sparseir.h>   // C interface
 #include <sparseir/sparseir.hpp> // C++ interface
+#include "_cinterface_utils.hpp"
 
 using Catch::Approx;
 using xprec::DDouble;
 
 template <typename S>
-spir_statistics_type get_stat()
+int32_t get_stat()
 {
     if (std::is_same<S, sparseir::Fermionic>::value) {
         return SPIR_STATISTICS_FERMIONIC;

@@ -11,6 +11,8 @@
 #include <sparseir/sparseir.h>   // C interface
 #include <sparseir/sparseir.hpp> // C++ interface
 
+#include "_cinterface_utils.hpp"
+
 using Catch::Approx;
 using xprec::DDouble;
 
@@ -68,7 +70,7 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
 }
 
 template <typename S>
-spir_statistics_type get_stat()
+int32_t get_stat()
 {
     if (std::is_same<S, sparseir::Fermionic>::value) {
         return SPIR_STATISTICS_FERMIONIC;
@@ -125,7 +127,7 @@ void test_finite_temp_basis_constructor_with_sve()
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
-    spir_statistics_type stats;
+    int32_t stats;
     int stats_status = spir_basis_get_statistics(basis, &stats);
     REQUIRE(stats_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(stats == stat);
@@ -182,7 +184,7 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
 
-        spir_statistics_type stats;
+        int32_t stats;
         int stats_status = spir_basis_get_statistics(basis, &stats);
         REQUIRE(stats_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(stats == SPIR_STATISTICS_BOSONIC);

@@ -16,7 +16,17 @@ double epsilon = 1e-8;     // Accuracy target
 
 int32_t status;
 
-spir_basis* basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon, &status); // default choice of kernel is logistic kernel
+spir_kernel* kernel = spir_logistic_kernel_new(beta * omega_max, &status);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(kernel != NULL);
+
+// Create a pre-computed SVE result
+spir_sve_result* sve_logistic = spir_sve_result_new(kernel, epsilon, &status);
+assert(status == SPIR_COMPUTATION_SUCCESS);
+assert(sve_logistic != NULL);
+
+// Create fermionic and bosonic finite temperature bases with pre-computed SVE result
+spir_basis* basis = spir_basis_new_with_sve(SPIR_STATISTICS_FERMIONIC, beta, omega_max, kernel, sve_logistic, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis != NULL);
 

@@ -9,12 +9,12 @@ libsparseir = expanduser("~/opt/libsparseir/lib/libsparseir.$(dlext)")
 
 const c_complex = ComplexF32
 
-@cenum spir_statistics_type::UInt32 begin
+@cenum int32_t::UInt32 begin
     SPIR_STATISTICS_FERMIONIC = 1
     SPIR_STATISTICS_BOSONIC = 0
 end
 
-@cenum spir_order_type::UInt32 begin
+@cenum int32_t::UInt32 begin
     SPIR_ORDER_COLUMN_MAJOR = 1
     SPIR_ORDER_ROW_MAJOR = 0
 end
@@ -602,7 +602,7 @@ Transforms basis coefficients to values at sampling points, where both input and
 [`spir_sampling_evaluate_dz`](@ref), [`spir_sampling_evaluate_zz`](@ref)
 """
 function spir_sampling_evaluate_dd(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_dd, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_evaluate_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -642,11 +642,11 @@ Transforms basis coefficients to values at sampling points, where input is real 
 [`spir_sampling_evaluate_dd`](@ref), [`spir_sampling_evaluate_zz`](@ref)
 """
 function spir_sampling_evaluate_dz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_dz, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_evaluate_dz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 function spir_sampling_evaluate_zz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_zz, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_evaluate_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -686,7 +686,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
 [`spir_sampling_evaluate_dd`](@ref), [`spir_sampling_fit_zz`](@ref)
 """
 function spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_fit_dd, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_fit_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -730,7 +730,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
 [`spir_sampling_evaluate_zz`](@ref), [`spir_sampling_fit_dd`](@ref)
 """
 function spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_fit_zz, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_fit_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -843,7 +843,7 @@ Transforms a given input array from the Imaginary Frequency (IR) representation 
 [`spir_fermionic_dlr_to_IR`](@ref), [`spir_fermionic_dlr_fitmat_rows`](@ref), [`spir_fermionic_dlr_fitmat_cols`](@ref)
 """
 function spir_fermionic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_fermionic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_fermionic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 """
@@ -890,7 +890,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (
 [`spir_bosonic_dlr_to_IR`](@ref), [`spir_fermionic_dlr_from_IR`](@ref)
 """
 function spir_bosonic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_bosonic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_bosonic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 """
@@ -933,7 +933,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (
 [`spir_bosonic_dlr_from_IR`](@ref), [`spir_fermionic_dlr_to_IR`](@ref)
 """
 function spir_bosonic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_bosonic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_bosonic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 """
@@ -976,7 +976,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (
 [`spir_fermionic_dlr_from_IR`](@ref), [`spir_bosonic_dlr_to_IR`](@ref)
 """
 function spir_fermionic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_fermionic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_fermionic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 function spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon)
@@ -1244,7 +1244,7 @@ This function evaluates all basis functions contained in a Matsubara basis funct
 SPIR\\_COMPUTATION\\_SUCCESS on success, error code on failure
 """
 function spir_funcs_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
-    ccall((:spir_funcs_evaluate_matsubara, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, spir_order_type, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
+    ccall((:spir_funcs_evaluate_matsubara, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, int32_t, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
 end
 
 """
@@ -1320,7 +1320,7 @@ function spir_sampling_get_matsubara_points(s, points)
     ccall((:spir_sampling_get_matsubara_points, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cint}), s, points)
 end
 
-@cenum spir_status_type::Int32 begin
+@cenum int32_t::Int32 begin
     SPIR_COMPUTATION_SUCCESS = 0
     SPIR_GET_IMPL_FAILED = -1
     SPIR_INVALID_DIMENSION = -2

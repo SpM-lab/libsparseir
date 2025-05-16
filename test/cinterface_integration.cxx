@@ -16,11 +16,12 @@
 
 #include <sparseir/sparseir.hpp> // C++ interface
 #include <sparseir/sparseir.h>   // C interface
+#include "_cinterface_utils.hpp"
 
 using Catch::Approx;
 
 template <typename S>
-spir_statistics_type get_stat()
+int32_t get_stat()
 {
     if (std::is_same<S, sparseir::Fermionic>::value) {
         return SPIR_STATISTICS_FERMIONIC;
@@ -29,7 +30,7 @@ spir_statistics_type get_stat()
     }
 }
 
-// spir_order_type get_order(Eigen::StorageOptions order)
+// int32_t get_order(Eigen::StorageOptions order)
 //{
 // if (order == Eigen::ColMajor) {
 // return SPIR_ORDER_COLUMN_MAJOR;
@@ -282,7 +283,7 @@ std::complex<double> generate_random_coeff<std::complex<double>>(double random_v
 
 // Add these template functions before the integration_test function
 template <typename T>
-int32_t dlr_to_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
+int32_t dlr_to_IR(spir_basis* dlr, int32_t order, int32_t ndim,
                   const int32_t* dims, int32_t target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
@@ -299,7 +300,7 @@ int32_t dlr_to_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
 
 
 template <typename T>
-int32_t dlr_from_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
+int32_t dlr_from_IR(spir_basis* dlr, int32_t order, int32_t ndim,
                   const int32_t* dims, int32_t target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
@@ -315,7 +316,7 @@ int32_t dlr_from_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
 }
 
 template <typename T>
-int32_t _tau_sampling_evaluate(spir_sampling* sampling, spir_order_type order, int32_t ndim,
+int32_t _tau_sampling_evaluate(spir_sampling* sampling, int32_t order, int32_t ndim,
                          const int32_t* dims, int32_t target_dim,
                          const T* gIR, T* gtau) {
     if (std::is_same<T, double>::value) {
@@ -331,7 +332,7 @@ int32_t _tau_sampling_evaluate(spir_sampling* sampling, spir_order_type order, i
 }
 
 template <typename T>
-int32_t _tau_sampling_fit(spir_sampling* sampling, spir_order_type order, int32_t ndim,
+int32_t _tau_sampling_fit(spir_sampling* sampling, int32_t order, int32_t ndim,
                          const int32_t* dims, int32_t target_dim,
                          const T* gtau, T* gIR) {
     if (std::is_same<T, double>::value) {
@@ -347,7 +348,7 @@ int32_t _tau_sampling_fit(spir_sampling* sampling, spir_order_type order, int32_
 }
 
 template <typename T>
-int32_t _matsubara_sampling_evaluate(spir_sampling* sampling, spir_order_type order, int32_t ndim,
+int32_t _matsubara_sampling_evaluate(spir_sampling* sampling, int32_t order, int32_t ndim,
                                    const int32_t* dims, int32_t target_dim,
                                    const T* gIR, std::complex<double>* giw) {
     if (std::is_same<T, double>::value) {
@@ -382,7 +383,7 @@ T: double or std::complex<double>, scalar type of coeffs
 template <typename T, typename S, typename K, int ndim, Eigen::StorageOptions ORDER>
 void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
-                      const spir_order_type order, double tol, bool positive_only)
+                      const int32_t order, double tol, bool positive_only)
 {
     // positive_only is not supported for complex numbers
     REQUIRE (!(std::is_same<T, std::complex<double>>::value && positive_only));

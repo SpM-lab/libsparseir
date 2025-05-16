@@ -35,7 +35,7 @@ static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
 // block
 template <typename InputScalar, typename OutputScalar>
 static int
-evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
+evaluate_impl(const spir_sampling *s, int32_t order, int32_t ndim,
               const int32_t *input_dims, int32_t target_dim, const InputScalar *input,
               OutputScalar *out,
               int (sparseir::AbstractSampling::*eval_func)(
@@ -80,7 +80,7 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
 
 template <typename InputScalar, typename OutputScalar>
 static int
-fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
+fit_impl(const spir_sampling *s, int32_t order, int32_t ndim,
          const int32_t *input_dims, int32_t target_dim, const InputScalar *input,
          OutputScalar *out,
          int (sparseir::AbstractSampling::*eval_func)(
@@ -148,7 +148,7 @@ spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_to_ir(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir(const spir_basis *dlr, int32_t order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim, const T *input, T *out)
 {
     std::shared_ptr<_DLR<S>> impl =
@@ -175,7 +175,7 @@ int32_t spir_dlr_to_ir(const spir_basis *dlr, spir_order_type order, int32_t ndi
 }
 
 template <typename S, typename T>
-int32_t spir_ir_to_dlr(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr(const spir_basis *dlr, int32_t order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const T *input, T *out)
 {
@@ -389,7 +389,7 @@ int32_t _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
 
 template <typename K>
 spir_basis* _spir_basis_new_with_sve(
-    spir_statistics_type statistics, double beta, double omega_max,
+    int32_t statistics, double beta, double omega_max,
     const K& kernel, const spir_sve_result *sve)
 {
     try {

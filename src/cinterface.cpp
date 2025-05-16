@@ -145,42 +145,8 @@ spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int32
     }
 }
 
-spir_basis* spir_basis_new(spir_statistics_type statistics, double beta,
-                           double omega_max, double epsilon, int32_t* status)
-{
-    try {
-        auto kernel = sparseir::LogisticKernel(beta * omega_max);
-        auto sve_result = sparseir::compute_sve(kernel, epsilon);
-        if (statistics == SPIR_STATISTICS_FERMIONIC) {
-            using FiniteTempBasisType =
-                sparseir::FiniteTempBasis<sparseir::Fermionic>;
-            auto impl =
-                std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
-            *status = SPIR_COMPUTATION_SUCCESS;
-            return create_basis(
-                std::make_shared<_IRBasis<sparseir::Fermionic>>(impl));
-        } else {
-            using FiniteTempBasisType =
-                sparseir::FiniteTempBasis<sparseir::Bosonic>;
-            auto impl =
-                std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
-            *status = SPIR_COMPUTATION_SUCCESS;
-            return create_basis(
-                std::make_shared<_IRBasis<sparseir::Bosonic>>(impl));
-        }
-    } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_basis_new: " << e.what());
-        *status = SPIR_INTERNAL_ERROR;
-        return nullptr;
-    } catch (...) {
-        DEBUG_LOG("Unknown exception in spir_basis_new");
-        *status = SPIR_INTERNAL_ERROR;
-        return nullptr;
-    }
-}
-
 spir_basis* spir_basis_new_with_sve(
-    spir_statistics_type statistics, double beta, double omega_max,
+    int32_t statistics, double beta, double omega_max,
     const spir_kernel *k, const spir_sve_result *sve, int32_t* status)
 {
     try {
@@ -325,7 +291,7 @@ spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
         return nullptr;
     }
 
-    spir_statistics_type stat;
+    int32_t stat;
     int32_t status_basis = spir_basis_get_statistics(b, &stat);
     if (status_basis != SPIR_COMPUTATION_SUCCESS) {
         *status = SPIR_GET_IMPL_FAILED;
@@ -354,7 +320,7 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
         return nullptr;
     }
 
-    spir_statistics_type stat;
+    int32_t stat;
     int32_t status_basis = spir_basis_get_statistics(b, &stat);
     if (status_basis != SPIR_COMPUTATION_SUCCESS) {
         *status = SPIR_GET_IMPL_FAILED;
@@ -370,7 +336,7 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
     }
 }
 
-int32_t spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_dd(const spir_sampling *s, int32_t order,
                                   int32_t ndim, const int32_t *input_dims,
                                   int32_t target_dim, const double *input,
                                   double *out)
@@ -379,7 +345,7 @@ int32_t spir_sampling_evaluate_dd(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_dd);
 }
 
-int32_t spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_dz(const spir_sampling *s, int32_t order,
                                   int32_t ndim, const int32_t *input_dims,
                                   int32_t target_dim, const double *input,
                                   c_complex *out)
@@ -389,7 +355,7 @@ int32_t spir_sampling_evaluate_dz(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_dz);
 }
 
-int32_t spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_evaluate_zz(const spir_sampling *s, int32_t order,
                                   int32_t ndim, const int32_t *input_dims,
                                   int32_t target_dim, const c_complex *input,
                                   c_complex *out)
@@ -402,7 +368,7 @@ int32_t spir_sampling_evaluate_zz(const spir_sampling *s, spir_order_type order,
                          &sparseir::AbstractSampling::evaluate_inplace_zz);
 }
 
-int32_t spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_fit_dd(const spir_sampling *s, int32_t order,
                              int32_t ndim, const int32_t *input_dims,
                              int32_t target_dim, const double *input,
                              double *out)
@@ -411,7 +377,7 @@ int32_t spir_sampling_fit_dd(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_dd);
 }
 
-int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
+int32_t spir_sampling_fit_zz(const spir_sampling *s, int32_t order,
                              int32_t ndim, const int32_t *input_dims,
                              int32_t target_dim, const c_complex *input,
                              c_complex *out)
@@ -422,7 +388,7 @@ int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, int32_t order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out)
 {
@@ -444,7 +410,7 @@ int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order, int32_t 
     }
 }
 
-int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, int32_t order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const c_complex *input, c_complex *out)
 {
@@ -469,7 +435,7 @@ int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order, int32_t 
     }
 }
 
-int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, int32_t order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const double *input, double *out)
 {
@@ -491,7 +457,7 @@ int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, spir_order_type order,
     }
 }
 
-int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, int32_t order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const c_complex *input, c_complex *out)
 {
@@ -925,7 +891,7 @@ int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bo
 }
 
 int32_t spir_basis_get_statistics(const spir_basis *b,
-                                              spir_statistics_type *statistics)
+                                  int32_t *statistics)
 {
     auto impl = get_impl_basis(b);
     if (!impl) {
@@ -968,7 +934,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
 }
 
 int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
-                                          spir_order_type order,
+                                          int32_t order,
                                           int32_t num_freqs,
                                           int64_t *matsubara_freq_indices,
                                           c_complex *out)

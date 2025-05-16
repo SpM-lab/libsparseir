@@ -35,7 +35,7 @@ def map_c_type_to_fortran(ctype):
         return 'integer(c_int), value'
     elif kind == TypeKind.ELABORATED:
         type_name = ctype.get_canonical().spelling
-        if type_name in ["spir_statistics_type", "spir_order_type"]:
+        if type_name in ["int32_t", "int32_t"]:
             return 'integer(c_int), value'
         return 'type(c_ptr)'
     else:
