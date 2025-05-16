@@ -633,11 +633,11 @@ void integration_test(double beta, double wmax, double epsilon,
         //compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
             //giw_from_DLR, giw_reconst, tol));
 
-    spir_destroy_finite_temp_basis(basis);
-    spir_destroy_dlr(dlr);
-    spir_destroy_funcs(dlr_u);
-    spir_destroy_funcs(ir_u);
-    spir_destroy_sampling(tau_sampling);
+    spir_finite_temp_basis_destroy(basis);
+    spir_dlr_destroy(dlr);
+    spir_funcs_destroy(dlr_u);
+    spir_funcs_destroy(ir_u);
+    spir_sampling_destroy(tau_sampling);
 }
 
 TEST_CASE("Integration Test", "[cinterface]") {

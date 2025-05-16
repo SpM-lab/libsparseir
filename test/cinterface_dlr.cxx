@@ -143,9 +143,9 @@ void test_finite_temp_basis_dlr()
     free(giv_ref);
     free(giv);
     free(smpl_points);
-    spir_destroy_finite_temp_basis(basis);
-    spir_destroy_dlr(dlr);
-    spir_destroy_dlr(dlr_with_poles);
+    spir_finite_temp_basis_destroy(basis);
+    spir_dlr_destroy(dlr);
+    spir_dlr_destroy(dlr_with_poles);
 }
 
 TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")

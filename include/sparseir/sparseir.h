@@ -27,15 +27,15 @@ typedef enum {
 #define DECLARE_OPAQUE_TYPE(name)                                              \
     struct _spir_##name;                                                       \
     typedef struct _spir_##name spir_##name;                                   \
-                                                                               \
+                                                                                    \
     /* Destroy function */                                                     \
-    void spir_destroy_##name(spir_##name *obj);                                \
-                                                                               \
+    void spir_##name##_destroy(spir_##name *obj);                                \
+                                                                                    \
     /* Clone function */                                                       \
-    spir_##name *spir_clone_##name(const spir_##name *src);                    \
-                                                                               \
+    spir_##name *spir_##name##_clone(const spir_##name *src);                    \
+                                                                                    \
     /* Check if the shared_ptr is assigned to a valid object */                \
-    int spir_is_assigned_##name(const spir_##name *obj);
+    int spir_##name##_is_assigned(const spir_##name *obj);
 
 /* Declare opaque types */
 struct _spir_kernel;
@@ -779,8 +779,8 @@ int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out);
  *
  * @note The output array must be pre-allocated with sufficient size to store
  *       all function values at all requested frequencies. Indices n correspond to
- *       ωn = nπ/β, where n are odd for fermionic frequencies and even for
- *       bosonic frequencies.
+ *        ωn = nπ/β, where n are odd for fermionic frequencies and even for
+ *        bosonic frequencies.
  */
 int32_t spir_evaluate_matsubara_funcs(const spir_matsubara_funcs *uiw,
                                       spir_order_type order, int32_t num_freqs,

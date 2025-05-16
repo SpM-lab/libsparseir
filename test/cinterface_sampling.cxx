@@ -60,8 +60,8 @@ void test_tau_sampling()
     free(matsubara_points);
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
 }
 
 template <typename S>
@@ -145,8 +145,8 @@ void test_tau_sampling_evaluation_1d_column_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     // Free allocated memory
     free(coeffs);
     free(evaluate_output);
@@ -281,8 +281,8 @@ void test_tau_sampling_evaluation_4d_row_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -423,8 +423,8 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -524,8 +524,8 @@ void test_tau_sampling_evaluation_4d_column_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -631,8 +631,8 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -778,8 +778,8 @@ TEST_CASE("TauSampling", "[cinterface]")
         }
 
         // Clean up
-        spir_destroy_sampling(sampling);
-        spir_destroy_finite_temp_basis(basis);
+        spir_sampling_destroy(sampling);
+        spir_finite_temp_basis_destroy(basis);
         free(output_complex);
         free(output_double);
         free(fit_output_double);
@@ -831,8 +831,8 @@ void test_matsubara_sampling_constructor()
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(smpl_points);
     free(smpl_points_positive_only);
 }
@@ -943,8 +943,8 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1049,8 +1049,8 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1181,8 +1181,8 @@ void test_matsubara_sampling_evaluation_4d_row_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1320,8 +1320,8 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1427,8 +1427,8 @@ void test_matsubara_sampling_error_status()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_destroy(sampling);
+    spir_finite_temp_basis_destroy(basis);
     free(output_complex);
     free(output_double);
     free(fit_output_double);

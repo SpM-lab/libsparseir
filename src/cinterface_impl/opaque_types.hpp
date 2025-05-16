@@ -20,7 +20,7 @@
     }                                                                          \
                                                                                \
     /* Check if the shared_ptr has a valid object */                           \
-    int spir_is_assigned_##name(const spir_##name *obj)                        \
+    int spir_##name##_is_assigned(const spir_##name *obj)                        \
     {                                                                          \
         if (!obj) {                                                            \
             DEBUG_LOG(#name << " object is null");                             \
@@ -42,7 +42,7 @@
     }                                                                          \
                                                                                \
     /* Clone function */                                                       \
-    spir_##name *spir_clone_##name(const spir_##name *src)                     \
+    spir_##name *spir_##name##_clone(const spir_##name *src)                     \
     {                                                                          \
         DEBUG_LOG("Cloning " << #name << " at " << src);                       \
         if (!src) {                                                            \
@@ -77,7 +77,7 @@
     }                                                                          \
                                                                                \
     /* Destroy function */                                                     \
-    void spir_destroy_##name(spir_##name *obj)                                 \
+    void spir_##name##_destroy(spir_##name *obj)                                 \
     {                                                                          \
         if (!obj) {                                                            \
             DEBUG_LOG(#name << " object is null");                             \
@@ -112,8 +112,6 @@
     }
 
 IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
-//IMPLEMENT_OPAQUE_TYPE(logistic_kernel, sparseir::LogisticKernel);
-//IMPLEMENT_OPAQUE_TYPE(regularized_bose_kernel, sparseir::RegularizedBoseKernel);
 IMPLEMENT_OPAQUE_TYPE(funcs, AbstractContinuousFunctions);
 IMPLEMENT_OPAQUE_TYPE(matsubara_funcs, AbstractMatsubaraFunctions);
 IMPLEMENT_OPAQUE_TYPE(finite_temp_basis, AbstractFiniteTempBasis);
