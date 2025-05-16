@@ -171,12 +171,12 @@ function c_spir_tau_sampling_new_old(s, b) bind(c, name="spir_tau_sampling_new_o
   integer(c_int) :: c_spir_tau_sampling_new_old
 end function
 
-function c_spir_matsubara_sampling_new(s, b, positive_only) bind(c, name="spir_matsubara_sampling_new") result(c_spir_matsubara_sampling_new)
+function c_spir_matsubara_sampling_new_old(s, b, positive_only) bind(c, name="spir_matsubara_sampling_new_old") result(c_spir_matsubara_sampling_new_old)
   use iso_c_binding
   type(c_ptr) :: s
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
-  integer(c_int) :: c_spir_matsubara_sampling_new
+  integer(c_int) :: c_spir_matsubara_sampling_new_old
 end function
 
 function c_spir_matsubara_sampling_dlr_new(s, dlr, n_smpl_points, smpl_points, positive_only) bind(c, name="spir_matsubara_sampling_dlr_new") result(c_spir_matsubara_sampling_dlr_new)

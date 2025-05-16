@@ -364,17 +364,102 @@ spir_funcs *spir_basis_get_v(const spir_basis *b, int32_t *status);
  */
 spir_funcs *spir_basis_get_uhat(const spir_basis *b, int32_t *status);
 
-// only for IR basis
-int32_t spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int32_t *num_points);
+/**
+ * @brief Gets the number of default tau sampling points for an IR basis.
+ *
+ * This function returns the number of default sampling points in imaginary time
+ * (τ) that are automatically chosen for optimal conditioning of the sampling
+ * matrix. These points are the extrema of the highest-order basis function in
+ * imaginary time.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param num_points Pointer to store the number of sampling points
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note The default sampling points are chosen to provide near-optimal
+ *       conditioning for the given basis size
+ * @see spir_basis_get_default_tau_sampling_points
+ */
+int32_t spir_basis_get_num_default_tau_sampling_points(const spir_basis *b,
+                                                       int32_t *num_points);
 
-// only for IR basis
-int32_t spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *points);
+/**
+ * @brief Gets the default tau sampling points for an IR basis.
+ *
+ * This function fills the provided array with the default sampling points in
+ * imaginary time (τ) that are automatically chosen for optimal conditioning of
+ * the sampling matrix. These points are the extrema of the highest-order basis
+ * function in imaginary time.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param points Pre-allocated array to store the τ sampling points
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note The array must be pre-allocated with size >=
+ *       spir_basis_get_num_default_tau_sampling_points(b)
+ * @note The default sampling points are chosen to provide near-optimal
+ *       conditioning for the given basis size
+ * @see spir_basis_get_num_default_tau_sampling_points
+ */
+int32_t spir_basis_get_default_tau_sampling_points(const spir_basis *b,
+                                                   double *points);
 
-// only for IR basis
-int32_t spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *num_points);
+/**
+ * @brief Gets the number of default Matsubara sampling points for an IR basis.
+ *
+ * This function returns the number of default sampling points in Matsubara
+ * frequencies (iωn) that are automatically chosen for optimal conditioning of
+ * the sampling matrix. These points are the extrema of the highest-order basis
+ * function in Matsubara frequencies.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param positive_only If true, only positive frequencies are used
+ * @param num_points Pointer to store the number of sampling points
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note The default sampling points are chosen to provide near-optimal
+ *       conditioning for the given basis size
+ * @see spir_basis_get_default_matsubara_sampling_points
+ */
+int32_t spir_basis_get_num_default_matsubara_sampling_points(
+    const spir_basis *b, bool positive_only, int32_t *num_points);
 
-// only for IR basis
-int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *points);
+/**
+ * @brief Gets the default Matsubara sampling points for an IR basis.
+ *
+ * This function fills the provided array with the default sampling points in
+ * Matsubara frequencies (iωn) that are automatically chosen for optimal
+ * conditioning of the sampling matrix. These points are the extrema of the
+ * highest-order basis function in Matsubara frequencies.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param positive_only If true, only positive frequencies are used
+ * @param points Pre-allocated array to store the Matsubara frequency indices
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note The array must be pre-allocated with size >=
+ *       spir_basis_get_num_default_matsubara_sampling_points(b)
+ * @note The default sampling points are chosen to provide near-optimal
+ *       conditioning for the given basis size
+ * @note For fermionic case, the indices n give frequencies ωn = (2n + 1)π/β
+ * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
+ * @see spir_basis_get_num_default_matsubara_sampling_points
+ */
+int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b,
+                                                         bool positive_only,
+                                                         int32_t *points);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
@@ -570,8 +655,9 @@ int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order,
  * imaginary time with custom sampling points.
  *
  * Constructs a sampling object that allows transformation between the IR basis
- * and a user-specified set of sampling points in imaginary time (τ). The sampling
- * points are provided by the user, allowing for custom sampling strategies.
+ * and a user-specified set of sampling points in imaginary time (τ). The
+ * sampling points are provided by the user, allowing for custom sampling
+ * strategies.
  *
  * @param b Pointer to a finite temperature basis object
  * @param num_points Number of sampling points
@@ -588,27 +674,32 @@ int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order,
  *       longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t num_points, const double *points, int32_t *status);
-
+spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t num_points,
+                                     const double *points, int32_t *status);
 
 /**
  * @brief Creates a new Matsubara sampling object for sparse sampling
- * in Matsubara frequencies.
+ * in Matsubara frequencies with custom sampling points.
  *
  * Constructs a sampling object that allows transformation between the IR basis
- * and a set of sampling points in Matsubara frequencies (iωn). The sampling
- * points are automatically chosen as the (discrete) extrema of the
- * highest-order basis function in Matsubara frequencies, which provides
- * near-optimal conditioning for the given basis size.
+ * and a user-specified set of sampling points in Matsubara frequencies (iωn).
+ * The sampling points are provided by the user, allowing for custom sampling
+ * strategies.
  *
  * @param b Pointer to a finite temperature basis object
  * @param positive_only If true, only positive frequencies are used
+ * @param num_points Number of sampling points
+ * @param points Array of Matsubara frequency indices (n) for the sampling
+ * points
  * @param status Pointer to store the status code
  * @return Pointer to the newly created sampling object, or NULL if creation
  * fails
  */
 spir_sampling *spir_matsubara_sampling_new(const spir_basis *b,
-                                           bool positive_only, int32_t *status);
+                                           bool positive_only,
+                                           int32_t num_points,
+                                           const int32_t *points,
+                                           int32_t *status);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.

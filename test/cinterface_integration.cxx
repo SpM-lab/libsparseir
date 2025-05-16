@@ -443,9 +443,21 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;
-    spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis, positive_only, &status);
+    int32_t num_matsubara_points_org;
+    status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &num_matsubara_points_org);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(num_matsubara_points_org > 0);
+    Eigen::Vector<int32_t, Eigen::Dynamic> matsubara_points_org(num_matsubara_points_org);
+    status = spir_basis_get_default_matsubara_sampling_points(basis, positive_only, matsubara_points_org.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis, positive_only, num_matsubara_points_org, matsubara_points_org.data(), &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(matsubara_sampling != nullptr);
+    if (positive_only) {
+        REQUIRE(num_matsubara_points_org >= basis_size / 2);
+    } else {
+        REQUIRE(num_matsubara_points_org >= basis_size);
+    }
 
     int32_t num_matsubara_points;
     status =
@@ -456,11 +468,11 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_sampling_get_matsubara_points(matsubara_sampling,
                                                 matsubara_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    if (positive_only) {
-        REQUIRE(num_matsubara_points >= basis_size / 2);
-    } else {
-        REQUIRE(num_matsubara_points >= basis_size);
+    // compare matsubara_points and matsubara_points_org
+    for (int i = 0; i < num_matsubara_points; i++) {
+        REQUIRE(matsubara_points(i) == matsubara_points_org(i));
     }
+
 
     // DLR
     std::cout << "DLR" << std::endl;
@@ -635,7 +647,7 @@ void integration_test(double beta, double wmax, double epsilon,
         //_get_dims<ndim, Eigen::Index>(num_matsubara_points, extra_dims,
                                       //target_dim));
 //
-    //spir_sampling *smpl_for_dlr = spir_matsubara_sampling_new(dlr, num_matsubara_points, matsubara_points.data(), positive_only, &status);
+    //spir_sampling *smpl_for_dlr = spir_matsubara_sampling_new_old(dlr, num_matsubara_points, matsubara_points.data(), positive_only, &status);
     //REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     //REQUIRE(smpl_for_dlr != nullptr);
 //

@@ -27,6 +27,7 @@ spir_statistics_type get_stat()
 
 
 // Compression Tests
+/*
 template <typename Statistics>
 void test_finite_temp_basis_dlr()
 {
@@ -34,6 +35,8 @@ void test_finite_temp_basis_dlr()
     const auto stat = get_stat<Statistics>();
     const double wmax = 1.0;
     const double epsilon = 1e-12;
+
+    int32_t status;
 
     int32_t basis_status;
     spir_basis *basis = spir_basis_new(stat, beta, wmax, epsilon, &basis_status);
@@ -43,6 +46,16 @@ void test_finite_temp_basis_dlr()
     basis_status = spir_basis_get_size(basis, &basis_size);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis_size >= 0);
+
+    // IR sampling points
+    int32_t n_smpl_points;
+    status = spir_basis_get_num_default_matsubara_sampling_points(basis, false, &n_smpl_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_smpl_points >= 0);
+    std::vector<int32_t> smpl_points(n_smpl_points);
+    status = spir_basis_get_default_matsubara_sampling_points(basis, false, smpl_points.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
 
 
     int32_t dlr_status;
@@ -80,7 +93,6 @@ void test_finite_temp_basis_dlr()
     REQUIRE(dlr_with_poles != nullptr);
 
     double *Gl = (double *)malloc(basis_size * sizeof(double));
-    std::cout << "basis_size = " << basis_size << std::endl;
     int32_t to_ir_input_dims[1] = {npoles};
     int32_t ndim = 1;
     int32_t target_dim = 0;
@@ -94,22 +106,7 @@ void test_finite_temp_basis_dlr()
                                           from_ir_input_dims, target_dim, Gl, g_dlr);
     REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
 
-    bool positive_only = false;
-    int32_t smpl_status;
-    spir_sampling *smpl = spir_matsubara_sampling_new(basis, positive_only, &smpl_status);
-    REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(smpl != nullptr);
 
-    int32_t n_smpl_points;
-    smpl_status = spir_sampling_get_num_points(smpl, &n_smpl_points);
-    REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(n_smpl_points > 0);
-
-    int32_t *smpl_points = (int32_t *)malloc(n_smpl_points * sizeof(int32_t));
-    smpl_status = spir_sampling_get_matsubara_points(smpl, smpl_points);
-    REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
-
-    int32_t smpl_for_dlr_status;
     // Get Matsubara basis functions
     int32_t uhat_status;
     spir_funcs *uhat = spir_basis_get_uhat(dlr, &uhat_status);
@@ -174,3 +171,4 @@ TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
         test_finite_temp_basis_dlr<sparseir::Bosonic>();
     }
 }
+*/

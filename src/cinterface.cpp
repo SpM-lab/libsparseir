@@ -226,38 +226,6 @@ spir_basis* spir_basis_new_with_sve(
 }
 
 
-spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t* status)
-{
-    auto impl = get_impl_basis(b);
-    if (!impl) {
-        *status = SPIR_GET_IMPL_FAILED;
-        return nullptr;
-    }
-    if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
-        *status = SPIR_INVALID_ARGUMENT;
-        return nullptr;
-    }
-
-    spir_statistics_type stat;
-    int32_t stat_status = spir_basis_get_statistics(b, &stat);
-    if (stat_status != SPIR_COMPUTATION_SUCCESS) {
-        *status = SPIR_GET_IMPL_FAILED;
-        return nullptr;
-    }
-    if (stat == SPIR_STATISTICS_FERMIONIC) {
-        *status = SPIR_COMPUTATION_SUCCESS;
-        return _spir_matsubara_sampling_new<
-            sparseir::Fermionic,
-            sparseir::MatsubaraSampling<sparseir::Fermionic>>(b, positive_only);
-    } else {
-        *status = SPIR_COMPUTATION_SUCCESS;
-        return _spir_matsubara_sampling_new<
-            sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            b, positive_only);
-    }
-}
-
 spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t num_points, const double *points, int32_t* status)
 {
     if (!b || !points || num_points <= 0) {
@@ -280,17 +248,65 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t num_points, co
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_sampling_new_with_points<sparseir::Fermionic,
+            return _spir_tau_sampling_new_with_points<sparseir::Fermionic,
                                                 sparseir::TauSampling<sparseir::Fermionic>>(
                 b, num_points, points);
         } else {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_sampling_new_with_points<sparseir::Bosonic,
+            return _spir_tau_sampling_new_with_points<sparseir::Bosonic,
                                                 sparseir::TauSampling<sparseir::Bosonic>>(
                 b, num_points, points);
         }
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_tau_sampling_new: " << e.what());
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
+
+spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t num_points, const int32_t *points, int32_t* status)
+{
+    if (!b || !points || num_points <= 0) {
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    if (positive_only) {
+        for (int i = 0; i < num_points; i++) {
+            if (points[i] < 0) {
+                std::cerr << "Error: Frequency must not be negative if positive_only is true" << std::endl;
+                *status = SPIR_INVALID_ARGUMENT;
+                return nullptr;
+            }
+        }
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return _spir_matsubara_sampling_new_with_points<sparseir::Fermionic,
+                                                sparseir::MatsubaraSampling<sparseir::Fermionic>>(
+                b, positive_only, num_points, points);
+        } else {
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return _spir_matsubara_sampling_new_with_points<sparseir::Bosonic,
+                                                sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+                b, positive_only, num_points, points);
+        }
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_matsubara_sampling_new: " << e.what());
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }

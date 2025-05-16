@@ -232,7 +232,7 @@ spir_sampling *_spir_sampling_new(const spir_basis *b)
 
 
 template<typename S, typename SMPL>
-spir_sampling* _spir_sampling_new_with_points(const spir_basis *b, int32_t num_points, const double *points) {
+spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int32_t num_points, const double *points) {
 
     std::shared_ptr<AbstractFiniteTempBasis> impl =
         get_impl_basis(b);
@@ -259,44 +259,31 @@ spir_sampling* _spir_sampling_new_with_points(const spir_basis *b, int32_t num_p
         std::make_shared<SMPL>(impl_finite_temp_basis, sampling_points)));
 }
 
-
-
-template <typename S, typename SMPL>
-spir_sampling *_spir_matsubara_sampling_new(const spir_basis *b, bool positive_only)
-{
-    std::shared_ptr<AbstractFiniteTempBasis> impl =
-        get_impl_basis(b);
+template<typename S, typename SMPL>
+spir_sampling* _spir_matsubara_sampling_new_with_points(const spir_basis *b, bool positive_only, int32_t num_points, const int32_t *points) {
+    std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_basis(b);
     if (!impl)
         return nullptr;
 
-    auto impl_finite_temp_basis =
-        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return nullptr;
+    }
+    if (num_points <= 0) {
+        std::cerr << "Error: Number of points must be positive" << std::endl;
+        return nullptr;
+    }
+
+    auto impl_finite_temp_basis = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
+
+    std::vector<sparseir::MatsubaraFreq<S>> matsubara_points;
+    matsubara_points.reserve(num_points);
+    for (std::size_t i = 0; i < num_points; i++) {
+        matsubara_points.emplace_back(points[i]);
+    }
     return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
-        std::make_shared<SMPL>(impl_finite_temp_basis, positive_only)));
+        std::make_shared<SMPL>(impl_finite_temp_basis, matsubara_points, positive_only)));
 }
-
-template <typename S, typename SMPL>
-spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_basis *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only)
-{
-    auto impl = get_impl_basis(dlr);
-    if (!impl)
-        return nullptr;
-
-    std::vector<sparseir::MatsubaraFreq<S>> smpl_points_vec;
-    smpl_points_vec.reserve(n_smpl_points);
-    for (int32_t i = 0; i < n_smpl_points; ++i) {
-        smpl_points_vec.emplace_back(smpl_points[i]);
-    }
-
-    if (auto dlr_impl = std::dynamic_pointer_cast<_DLR<S>>(impl)->get_impl()) {
-        auto sampling = std::make_shared<SMPL>(dlr_impl, smpl_points_vec, positive_only);
-        return create_sampling(sampling);
-    } else {
-        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
-        return nullptr;
-    }
-}
-
 
 
 template <typename S>

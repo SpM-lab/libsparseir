@@ -216,7 +216,7 @@ assert(tau_sampling != NULL);
 
 spir_sampling* matsubara_sampling;
 bool positive_only = false;
-status = spir_matsubara_sampling_new(&matsubara_sampling, basis, positive_only);
+status = spir_matsubara_sampling_new_old(&matsubara_sampling, basis, positive_only);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(matsubara_sampling != NULL);
 
