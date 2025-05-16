@@ -220,7 +220,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
  */
 int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
                                       spir_order_type order, int32_t num_freqs,
-                                      int32_t *matsubara_freq_indices,
+                                      int64_t *matsubara_freq_indices,
                                       c_complex *out);
 
 /**
@@ -459,7 +459,7 @@ int32_t spir_basis_get_num_default_matsubara_sampling_points(
  */
 int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b,
                                                          bool positive_only,
-                                                         int32_t *points);
+                                                         int64_t *points);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
@@ -698,7 +698,7 @@ spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t num_points,
 spir_sampling *spir_matsubara_sampling_new(const spir_basis *b,
                                            bool positive_only,
                                            int32_t num_points,
-                                           const int32_t *points,
+                                           const int64_t *points,
                                            int32_t *status);
 
 /**
@@ -717,8 +717,7 @@ spir_sampling *spir_matsubara_sampling_new(const spir_basis *b,
  * @see spir_sampling_get_tau_points
  * @see spir_sampling_get_matsubara_points
  */
-int32_t spir_sampling_get_num_points(const spir_sampling *s,
-                                     int32_t *num_points);
+int32_t spir_sampling_get_num_points(const spir_sampling *s, int32_t *num_points);
 
 /**
  * @brief Gets the imaginary time sampling points.
@@ -762,7 +761,7 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @see spir_sampling_get_num_points
  */
 int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
-                                           int32_t *points);
+                                           int64_t *points);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to double

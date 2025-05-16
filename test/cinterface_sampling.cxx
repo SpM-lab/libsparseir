@@ -47,7 +47,7 @@ spir_sampling *create_matsubara_sampling(spir_basis *basis, bool positive_only)
     status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &n_matsubara_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    std::vector<int32_t> smpl_points(n_matsubara_points);
+    std::vector<int64_t> smpl_points(n_matsubara_points);
     status = spir_basis_get_default_matsubara_sampling_points(basis, positive_only, smpl_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -102,10 +102,9 @@ void test_tau_sampling()
         REQUIRE(tau_points[i] == Approx(tau_points_org[i]));
     }
 
-    int *matsubara_points = (int *)malloc(n_points * sizeof(int));
-    int matsubara_status = spir_sampling_get_matsubara_points(sampling, matsubara_points);
+    std::vector<int64_t> matsubara_points(n_points);
+    int matsubara_status = spir_sampling_get_matsubara_points(sampling, matsubara_points.data());
     REQUIRE(matsubara_status == SPIR_NOT_SUPPORTED);
-    free(matsubara_points);
 
     // Clean up
     spir_sampling_destroy(sampling);
@@ -843,7 +842,7 @@ void test_matsubara_sampling_constructor()
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_org > 0);
 
-    std::vector<int32_t> smpl_points_org(n_points_org);
+    std::vector<int64_t> smpl_points_org(n_points_org);
     status = spir_basis_get_default_matsubara_sampling_points(basis, false, smpl_points_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -856,7 +855,7 @@ void test_matsubara_sampling_constructor()
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only_org > 0);
 
-    std::vector<int32_t> smpl_points_positive_only_org(n_points_positive_only_org);
+    std::vector<int64_t> smpl_points_positive_only_org(n_points_positive_only_org);
     status = spir_basis_get_default_matsubara_sampling_points(basis, true, smpl_points_positive_only_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -874,7 +873,7 @@ void test_matsubara_sampling_constructor()
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only > 0);
 
-    std::vector<int32_t> smpl_points(n_points);
+    std::vector<int64_t> smpl_points(n_points);
     status = spir_sampling_get_matsubara_points(sampling, smpl_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     // compare with smpl_points_org
@@ -882,7 +881,7 @@ void test_matsubara_sampling_constructor()
         REQUIRE(smpl_points[i] == smpl_points_org[i]);
     }
 
-    std::vector<int32_t> smpl_points_positive_only(n_points_positive_only);
+    std::vector<int64_t> smpl_points_positive_only(n_points_positive_only);
     status = spir_sampling_get_matsubara_points(sampling_positive_only, smpl_points_positive_only.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     // compare with smpl_points_positive_only_org

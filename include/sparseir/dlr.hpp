@@ -74,7 +74,7 @@ public:
         return result;
     }
 
-    Eigen::MatrixXcd operator()(const Eigen::ArrayXi &n_array) const {
+    Eigen::MatrixXcd operator()(const Eigen::Array<int64_t, Eigen::Dynamic, 1> &n_array) const {
         // delegate to operator()(const std::vector<FreqType> &n)
         return (*this)(std::vector<MatsubaraFreq<Statistics>>(n_array.data(), n_array.data() + n_array.size()));
     }

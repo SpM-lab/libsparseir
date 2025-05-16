@@ -264,7 +264,7 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t num_points, co
     }
 }
 
-spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t num_points, const int32_t *points, int32_t* status)
+spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t num_points, const int64_t *points, int32_t* status)
 {
     if (!b || !points || num_points <= 0) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -735,7 +735,7 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points)
 
 // TODO: USE THIS
 int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
-                                           int32_t *points)
+                                           int64_t *points)
 {
     auto impl = get_impl_sampling(s);
     if (!impl) {
@@ -750,7 +750,7 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
             std::transform(
                 matsubara_points.begin(), matsubara_points.end(), points,
                 [](const sparseir::MatsubaraFreq<sparseir::Fermionic> &freq) {
-                    return static_cast<int>(freq.get_n());
+                    return static_cast<int64_t>(freq.get_n());
                 });
             return SPIR_COMPUTATION_SUCCESS;
         }
@@ -763,7 +763,7 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
             std::transform(
                 matsubara_points.begin(), matsubara_points.end(), points,
                 [](const sparseir::MatsubaraFreq<sparseir::Bosonic> &freq) {
-                    return static_cast<int>(freq.get_n());
+                    return static_cast<int64_t>(freq.get_n());
                 });
             return SPIR_COMPUTATION_SUCCESS;
         }
@@ -891,7 +891,7 @@ int32_t spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b
     }
 }
 
-int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *points)
+int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int64_t *points)
 {
     if (!b || !points) {
         return SPIR_INVALID_ARGUMENT;
@@ -970,7 +970,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
 int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
                                           spir_order_type order,
                                           int32_t num_freqs,
-                                          int32_t *matsubara_freq_indices,
+                                          int64_t *matsubara_freq_indices,
                                           c_complex *out)
 {
     auto impl = get_impl_funcs(uiw);
@@ -995,8 +995,8 @@ int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
 
     try {
         // Convert C array to Eigen vector
-        Eigen::VectorXi freq_indices =
-            Eigen::Map<Eigen::VectorXi>(matsubara_freq_indices, num_freqs);
+        Eigen::Vector<int64_t, Eigen::Dynamic> freq_indices =
+            Eigen::Map<Eigen::Vector<int64_t, Eigen::Dynamic>>(matsubara_freq_indices, num_freqs);
 
         // Get the func size
         int func_size = uiw->ptr->size();

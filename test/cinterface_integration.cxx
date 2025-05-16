@@ -118,7 +118,7 @@ _evaluate_basis_functions(const spir_funcs *u, const Eigen::VectorXd &x_values)
 template <Eigen::StorageOptions ORDER>
 Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic, ORDER>
 _evaluate_matsubara_basis_functions(const spir_funcs *uhat,
-                                    const Eigen::VectorXi &matsubara_indices)
+                                    const Eigen::Vector<int64_t, Eigen::Dynamic> &matsubara_indices)
 {
     int32_t status;
     int32_t funcs_size;
@@ -130,7 +130,7 @@ _evaluate_matsubara_basis_functions(const spir_funcs *uhat,
         uhat_eval_mat(matsubara_indices.size(), funcs_size);
 
     // Create a non-const copy of the Matsubara indices
-    std::vector<int32_t> freq_indices(matsubara_indices.data(),
+    std::vector<int64_t> freq_indices(matsubara_indices.data(),
                                       matsubara_indices.data() +
                                           matsubara_indices.size());
 
@@ -202,7 +202,7 @@ template <typename T, int ndim, Eigen::StorageOptions ORDER>
 Eigen::Tensor<std::complex<double>, ndim, ORDER>
 _evaluate_giw(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
               const spir_funcs *uhat, int target_dim,
-              const Eigen::VectorXi &matsubara_indices)
+              const Eigen::Vector<int64_t, Eigen::Dynamic> &matsubara_indices)
 {
     Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic, ORDER> uhat_eval_mat =
         _evaluate_matsubara_basis_functions<ORDER>(uhat, matsubara_indices);
@@ -447,7 +447,7 @@ void integration_test(double beta, double wmax, double epsilon,
     status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &num_matsubara_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_matsubara_points_org > 0);
-    Eigen::Vector<int32_t, Eigen::Dynamic> matsubara_points_org(num_matsubara_points_org);
+    Eigen::Vector<int64_t, Eigen::Dynamic> matsubara_points_org(num_matsubara_points_org);
     status = spir_basis_get_default_matsubara_sampling_points(basis, positive_only, matsubara_points_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis, positive_only, num_matsubara_points_org, matsubara_points_org.data(), &status);
@@ -463,7 +463,7 @@ void integration_test(double beta, double wmax, double epsilon,
     status =
         spir_sampling_get_num_points(matsubara_sampling, &num_matsubara_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    Eigen::Vector<int32_t, Eigen::Dynamic> matsubara_points(
+    Eigen::Vector<int64_t, Eigen::Dynamic> matsubara_points(
         num_matsubara_points);
     status = spir_sampling_get_matsubara_points(matsubara_sampling,
                                                 matsubara_points.data());

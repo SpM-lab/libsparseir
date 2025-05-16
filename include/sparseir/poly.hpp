@@ -458,8 +458,8 @@ inline PowerModel<double> power_model(const Statistics &stat,
 // Bosonic and Fermionic statistics classes
 class BosonicStatistics : public Statistics {
 public:
-    int zeta() const override { return 1; }
-    bool allowed(int n) const override { return n % 2 == 0 && n != 0; }
+    int64_t zeta() const override { return 1; }
+    bool allowed(int64_t n) const override { return n % 2 == 0 && n != 0; }
 };
 
 // PiecewiseLegendreFT class template
@@ -497,7 +497,12 @@ public:
         }
     }
 
-    std::complex<double> operator()(int n) const
+    std::complex<double> operator()(int64_t n) const
+    {
+        return (*this)(MatsubaraFreq<S>(n));
+    }
+
+    std::complex<double> operator()(int32_t n) const
     {
         return (*this)(MatsubaraFreq<S>(n));
     }
@@ -532,8 +537,8 @@ private:
 // Remove the external template member function declarations
 class FermionicStatistics : public Statistics {
 public:
-    int zeta() const override { return -1; }
-    bool allowed(int n) const override { return n % 2 != 0; }
+    int64_t zeta() const override { return -1; }
+    bool allowed(int64_t n) const override { return n % 2 != 0; }
 };
 
 template <typename S>
@@ -764,7 +769,7 @@ public:
     }
 
     // Overload operator() for array of integers
-    Eigen::MatrixXcd operator()(const Eigen::ArrayXi &n_array) const
+    Eigen::MatrixXcd operator()(const Eigen::Vector<int64_t, Eigen::Dynamic> &n_array) const
     {
         size_t num_funcs = polyvec.size();
         size_t num_freqs = n_array.size();

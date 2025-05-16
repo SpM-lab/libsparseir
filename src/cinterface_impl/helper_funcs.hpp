@@ -260,7 +260,7 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int32_t n
 }
 
 template<typename S, typename SMPL>
-spir_sampling* _spir_matsubara_sampling_new_with_points(const spir_basis *b, bool positive_only, int32_t num_points, const int32_t *points) {
+spir_sampling* _spir_matsubara_sampling_new_with_points(const spir_basis *b, bool positive_only, int32_t num_points, const int64_t *points) {
     std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_basis(b);
     if (!impl)
         return nullptr;

@@ -5,7 +5,7 @@ project(SparseIRTests LANGUAGES C)
 find_package(SparseIR REQUIRED)
 
 # Get all .c files in test_files directory and sort them
-file(GLOB TEST_SOURCES "test_files/*.c")
+file(GLOB TEST_SOURCES "*.c")
 list(SORT TEST_SOURCES)
 
 # Create executable for each test file

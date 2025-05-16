@@ -12,7 +12,7 @@ class AbstractMatsubaraFunctions : public _AbstractFuncs {
 public:
     virtual ~AbstractMatsubaraFunctions() = default;
     virtual Eigen::MatrixXcd
-    operator()(const Eigen::ArrayXi &n_array) const = 0;
+    operator()(const Eigen::Array<int64_t, Eigen::Dynamic, 1> &n_array) const = 0;
     virtual bool is_continuous_funcs() const override { return false; }
 };
 
@@ -25,7 +25,7 @@ public:
     MatsubaraBasisFunctions(std::shared_ptr<InternalType> impl) : impl(impl) { }
 
     virtual Eigen::MatrixXcd
-    operator()(const Eigen::ArrayXi &n_array) const override
+    operator()(const Eigen::Array<int64_t, Eigen::Dynamic, 1> &n_array) const override
     {
         return impl->operator()(n_array);
     }
@@ -198,17 +198,17 @@ public:
         return std::vector<double>(sampling.data(), sampling.data() + sampling.size());
     }
 
-    std::vector<int32_t> default_matsubara_sampling_points(bool positive_only) const
+    std::vector<int64_t> default_matsubara_sampling_points(bool positive_only) const
     {
         bool fence = false;
         int32_t L = size();
 
         std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
-        std::vector<int32_t> points(matsubara_points.size());
+        std::vector<int64_t> points(matsubara_points.size());
         std::transform(
             matsubara_points.begin(), matsubara_points.end(), points.begin(),
         [](const sparseir::MatsubaraFreq<S> &freq) {
-            return static_cast<int>(freq.get_n());
+            return static_cast<int64_t>(freq.get_n());
         });
         return points;
     }
