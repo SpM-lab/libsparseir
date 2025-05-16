@@ -723,7 +723,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
  *        ωn = nπ/β, where n are odd for fermionic frequencies and even for
  *        bosonic frequencies.
  */
-int32_t spir_evaluate_matsubara_funcs(const spir_funcs *uiw,
+int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
                                       spir_order_type order, int32_t num_freqs,
                                       int32_t *matsubara_freq_indices,
                                       c_complex *out);

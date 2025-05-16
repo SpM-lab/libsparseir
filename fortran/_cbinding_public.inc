@@ -52,7 +52,7 @@
   public :: c_spir_finite_temp_basis_get_uhat
   public :: c_spir_funcs_get_size
   public :: c_spir_evaluate_funcs
-  public :: c_spir_evaluate_matsubara_funcs
+  public :: c_spir_funcs_evaluate_matsubara
   public :: c_spir_sampling_get_num_points
   public :: c_spir_sampling_get_tau_points
   public :: c_spir_sampling_get_matsubara_points

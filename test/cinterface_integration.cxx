@@ -135,7 +135,7 @@ _evaluate_matsubara_basis_functions(const spir_funcs *uhat,
                                           matsubara_indices.size());
 
     // Evaluate all frequencies at once
-    status = spir_evaluate_matsubara_funcs(
+    status = spir_funcs_evaluate_matsubara(
         uhat,
         ORDER == Eigen::ColMajor ? SPIR_ORDER_COLUMN_MAJOR
                                  : SPIR_ORDER_ROW_MAJOR,
@@ -507,7 +507,6 @@ void integration_test(double beta, double wmax, double epsilon,
                             _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
                             g_IR.data(), g_dlr.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    std::cout << "g_dlr: " << g_dlr << std::endl;
 
     // DLR basis functions
     int32_t dlr_u_status;
@@ -619,7 +618,6 @@ void integration_test(double beta, double wmax, double epsilon,
         giv_ref.data()
     );
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    std::cout << "giv_ref: " << giv_ref << std::endl;
 
     //Eigen::Tensor<std::complex<double>, ndim, ORDER> giv(
         //_get_dims<ndim, Eigen::Index>(num_matsubara_points, extra_dims,

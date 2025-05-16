@@ -771,12 +771,16 @@ int32_t spir_basis_get_statistics(const spir_basis *b,
 
 int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
 {
-    if (!funcs) {
-        std::cerr << "Error: funcs is null" << std::endl;
-        return SPIR_INVALID_ARGUMENT;
-    }
     if (!out) {
         std::cerr << "Error: out is null" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+    auto impl = get_impl_funcs(funcs);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+    if (!impl->is_continuous_funcs()) {
+        std::cerr << "Error: the function is not defined for continuous variables" << std::endl;
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -790,7 +794,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
     }
 }
 
-int32_t spir_evaluate_matsubara_funcs(const spir_funcs *uiw,
+int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
                                           spir_order_type order,
                                           int32_t num_freqs,
                                           int32_t *matsubara_freq_indices,
@@ -801,7 +805,6 @@ int32_t spir_evaluate_matsubara_funcs(const spir_funcs *uiw,
         DEBUG_LOG("Matsubara basis functions object is null or not assigned");
         return SPIR_GET_IMPL_FAILED;
     }
-
     if (impl->is_continuous_funcs()) {
         std::cerr << "Error: the function is not defined for Matsubara frequencies" << std::endl;
         return SPIR_INVALID_ARGUMENT;
@@ -843,7 +846,7 @@ int32_t spir_evaluate_matsubara_funcs(const spir_funcs *uiw,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_evaluate_matsubara_funcs: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_evaluate_matsubara: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }
