@@ -20,8 +20,8 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
     SECTION("LogisticKernel(9)")
     {
         auto cpp_kernel = sparseir::LogisticKernel(9);
-        spir_kernel *kernel;
-        int status = spir_logistic_kernel_new(&kernel, 9);
+        int status;
+        spir_kernel *kernel = spir_logistic_kernel_new(9, &status);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(kernel != nullptr);
     }
@@ -29,8 +29,8 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
     SECTION("RegularizedBoseKernel(10)")
     {
         auto cpp_kernel = sparseir::RegularizedBoseKernel(10);
-        spir_kernel *kernel;
-        int status = spir_regularized_bose_kernel_new(&kernel, 10);
+        int status;
+        spir_kernel *kernel = spir_regularized_bose_kernel_new(10, &status);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(kernel != nullptr);
     }
@@ -38,8 +38,8 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
     SECTION("Kernel Domain")
     {
         // Create a kernel through C API
-        spir_kernel *kernel;
-        int kernel_status = spir_logistic_kernel_new(&kernel, 9);
+        int kernel_status;
+        spir_kernel *kernel = spir_logistic_kernel_new(9, &kernel_status);
         REQUIRE(kernel_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(kernel != nullptr);
 
@@ -88,8 +88,8 @@ void test_finite_temp_basis_constructor()
     auto stat = get_stat<S>();
 
     sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, epsilon);
+    int basis_status;
+    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -107,21 +107,21 @@ void test_finite_temp_basis_constructor_with_sve()
     double Lambda = 10.0;
     double epsilon = 1e-6;
 
-    spir_kernel *kernel;
-    int kernel_status = spir_logistic_kernel_new(&kernel, Lambda);
+    int kernel_status;
+    spir_kernel *kernel = spir_logistic_kernel_new(Lambda, &kernel_status);
     REQUIRE(kernel_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(kernel != nullptr);
 
-    spir_sve_result *sve_result;
-    int sve_status = spir_sve_result_new(&sve_result, kernel, epsilon);
+    int sve_status;
+    spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, &sve_status);
     REQUIRE(sve_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve_result != nullptr);
 
     auto stat = get_stat<S>();
 
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new_with_sve(
-        &basis, stat, beta, wmax, kernel, sve_result);
+    int basis_status;
+    spir_finite_temp_basis *basis = spir_finite_temp_basis_new_with_sve(
+        stat, beta, wmax, kernel, sve_result, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -166,19 +166,19 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         double Lambda = 10.0;
         double epsilon = 1e-6;
 
-        spir_kernel *kernel;
-        int kernel_status = spir_regularized_bose_kernel_new(&kernel, Lambda);
+        int kernel_status;
+        spir_kernel *kernel = spir_regularized_bose_kernel_new(Lambda, &kernel_status);
         REQUIRE(kernel_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(kernel != nullptr);
 
-        spir_sve_result *sve_result;
-        int sve_status = spir_sve_result_new(&sve_result, kernel, epsilon);
+        int sve_status;
+        spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, &sve_status);
         REQUIRE(sve_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(sve_result != nullptr);
 
-        spir_finite_temp_basis *basis;
-        int basis_status = spir_finite_temp_basis_new_with_sve(
-            &basis, SPIR_STATISTICS_BOSONIC, beta, wmax, kernel, sve_result);
+        int basis_status;
+        spir_finite_temp_basis *basis = spir_finite_temp_basis_new_with_sve(
+            SPIR_STATISTICS_BOSONIC, beta, wmax, kernel, sve_result, &basis_status);
         REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
 
@@ -203,8 +203,8 @@ void test_finite_temp_basis_basis_functions()
 
     auto stat = get_stat<S>();
 
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, epsilon);
+    int basis_status;
+    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 

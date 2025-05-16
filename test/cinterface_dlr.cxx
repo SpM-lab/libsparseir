@@ -35,8 +35,8 @@ void test_finite_temp_basis_dlr()
     const double wmax = 1.0;
     const double epsilon = 1e-12;
 
-    spir_finite_temp_basis *basis;
-    int32_t basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, epsilon);
+    int32_t basis_status;
+    spir_finite_temp_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
     int32_t basis_size;
@@ -45,8 +45,8 @@ void test_finite_temp_basis_dlr()
     REQUIRE(basis_size >= 0);
 
 
-    spir_dlr *dlr;
-    int32_t dlr_status = spir_dlr_new(&dlr, basis);
+    int32_t dlr_status;
+    spir_dlr *dlr = spir_dlr_new(basis, &dlr_status);
     REQUIRE(dlr_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr != nullptr);
 
@@ -74,8 +74,8 @@ void test_finite_temp_basis_dlr()
     }
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
 
-    spir_dlr *dlr_with_poles;
-    int32_t poles_status = spir_dlr_new_with_poles(&dlr_with_poles, basis, npoles, poles.data());
+    int32_t poles_status;
+    spir_dlr *dlr_with_poles = spir_dlr_new_with_poles(basis, npoles, poles.data(), &poles_status);
     REQUIRE(poles_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr_with_poles != nullptr);
 
@@ -94,9 +94,9 @@ void test_finite_temp_basis_dlr()
                                           from_ir_input_dims, target_dim, Gl, g_dlr);
     REQUIRE(status_from_IR == SPIR_COMPUTATION_SUCCESS);
 
-    spir_sampling *smpl;
     bool positive_only = false;
-    int32_t smpl_status = spir_matsubara_sampling_new(&smpl, basis, positive_only);
+    int32_t smpl_status;
+    spir_sampling *smpl = spir_matsubara_sampling_new(basis, positive_only, &smpl_status);
     REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(smpl != nullptr);
 
@@ -109,8 +109,8 @@ void test_finite_temp_basis_dlr()
     smpl_status = spir_sampling_get_matsubara_points(smpl, smpl_points);
     REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_sampling *smpl_for_dlr;
-    int32_t smpl_for_dlr_status = spir_matsubara_sampling_dlr_new(&smpl_for_dlr, dlr, n_smpl_points, smpl_points, positive_only);
+    int32_t smpl_for_dlr_status;
+    spir_sampling *smpl_for_dlr = spir_matsubara_sampling_dlr_new(dlr, n_smpl_points, smpl_points, positive_only, &smpl_for_dlr_status);
     REQUIRE(smpl_for_dlr_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(smpl_for_dlr != nullptr);
 
