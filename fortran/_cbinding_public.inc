@@ -24,7 +24,7 @@
   public :: c_spir_regularized_bose_kernel_new
   public :: c_spir_sve_result_new
   public :: c_spir_kernel_domain
-  public :: c_spir_finite_temp_basis_get_size
+  public :: c_spir_basis_get_size
   public :: c_spir_finite_temp_basis_get_statistics
   public :: c_spir_tau_sampling_new
   public :: c_spir_matsubara_sampling_new

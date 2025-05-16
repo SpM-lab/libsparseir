@@ -150,11 +150,11 @@ function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) bind(c, name="spir_kern
   integer(c_int) :: c_spir_kernel_domain
 end function
 
-function c_spir_finite_temp_basis_get_size(b, size) bind(c, name="spir_finite_temp_basis_get_size") result(c_spir_finite_temp_basis_get_size)
+function c_spir_basis_get_size(b, size) bind(c, name="spir_basis_get_size") result(c_spir_basis_get_size)
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: size
-  integer(c_int) :: c_spir_finite_temp_basis_get_size
+  integer(c_int) :: c_spir_basis_get_size
 end function
 
 function c_spir_finite_temp_basis_get_statistics(b, statistics) bind(c, name="spir_finite_temp_basis_get_statistics") result(c_spir_finite_temp_basis_get_statistics)

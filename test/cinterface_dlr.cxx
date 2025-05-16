@@ -40,7 +40,7 @@ void test_finite_temp_basis_dlr()
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
     int32_t basis_size;
-    basis_status = spir_finite_temp_basis_get_size(basis, &basis_size);
+    basis_status = spir_basis_get_size(basis, &basis_size);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis_size >= 0);
 

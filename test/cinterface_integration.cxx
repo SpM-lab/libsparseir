@@ -107,7 +107,7 @@ _evaluate_basis_functions(const spir_funcs *u, const Eigen::VectorXd &x_values)
         x_values.size(), funcs_size);
     for (Eigen::Index i = 0; i < x_values.size(); ++i) {
         Eigen::VectorXd u_eval(funcs_size);
-        status = spir_evaluate_funcs(u, x_values(i), u_eval.data());
+        status = spir_funcs_evaluate(u, x_values(i), u_eval.data());
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         u_eval_mat.row(i) = u_eval.transpose().cast<T>();
     }
@@ -412,7 +412,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(basis != nullptr);
 
     int32_t basis_size;
-    status = spir_finite_temp_basis_get_size(basis, &basis_size);
+    status = spir_basis_get_size(basis, &basis_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Tau Sampling

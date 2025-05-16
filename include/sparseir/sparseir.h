@@ -35,7 +35,7 @@ typedef enum {
     spir_##name *spir_##name##_clone(const spir_##name *src);                    \
                                                                                     \
     /* Check if the shared_ptr is assigned to a valid object */                \
-    int spir_##name##_is_assigned(const spir_##name *obj);
+    int32_t spir_##name##_is_assigned(const spir_##name *obj);
 
 /* Declare opaque types */
 struct _spir_kernel;
@@ -171,12 +171,12 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
  *         - A non-zero error code on failure
  *
- * @note The size is determined automatically during basis construction based on
+ * @note For an IR basis, the size is determined automatically during basis construction based on
  *       the specified parameters (β, ωmax, ε) and the kernel's singular value
  *       expansion.
+ * @note For a DLR basis, the size is the number of poles.
  */
-int32_t spir_finite_temp_basis_get_size(const spir_basis *b,
-                                        int *size);
+int32_t spir_basis_get_size(const spir_basis *b, int *size);
 
 /**
  * @brief Gets the statistics type (Fermionic or Bosonic) of a finite
@@ -198,8 +198,7 @@ int32_t spir_finite_temp_basis_get_size(const spir_basis *b,
  * @note The statistics type affects the form of the basis functions and the
  *       sampling points used for evaluation.
  */
-int32_t spir_basis_get_statistics(const spir_basis *b,
-                                              spir_statistics_type *statistics);
+int32_t spir_basis_get_statistics(const spir_basis *b, spir_statistics_type *statistics);
 
 /**
  * @brief Creates a new tau sampling object for sparse sampling in
@@ -299,7 +298,7 @@ spir_basis *spir_dlr_new(const spir_basis *b, int32_t *status);
  * @param status Pointer to store the status code
  * @return Pointer to the newly created DLR object, or NULL if creation fails
  */
-spir_basis *spir_dlr_new_with_poles(const spir_basis *b, const int npoles, const double *poles, int32_t *status);
+spir_basis *spir_dlr_new_with_poles(const spir_basis *b, const int32_t npoles, const double *poles, int32_t *status);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to double
@@ -422,7 +421,7 @@ spir_sampling_fit_dd(const spir_sampling *s, // Sampling object
  * For more details, see spir_sampling_fit_dd
  * @see spir_sampling_fit_dd
  */
-int spir_sampling_fit_zz(const spir_sampling *s, // Sampling object
+int32_t spir_sampling_fit_zz(const spir_sampling *s, // Sampling object
                          spir_order_type order,  // Order type (C or Fortran)
                          int32_t ndim,           // Number of dimensions
                          const int32_t *input_dims,    // Array of dimensions
@@ -651,12 +650,10 @@ int32_t spir_basis_get_u(const spir_basis *b,
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_get_v(const spir_basis *b,
-                                     spir_funcs **v);
+int32_t spir_get_v(const spir_basis *b, spir_funcs **v);
 
 /**
- * @brief Gets the basis functions of a finite temperature basis in Matsubara
- * frequency domain.
+ * @brief Gets the basis functions in Matsubara frequency domain.
  *
  * This function returns an object representing the basis functions
  * in the Matsubara-frequency domain of the specified finite temperature basis.
@@ -671,8 +668,7 @@ int32_t spir_get_v(const spir_basis *b,
  *       when no longer needed
  * @see spir_destroy_matsubara_funcs
  */
-int32_t spir_basis_get_uhat(const spir_basis *b,
-                                        spir_matsubara_funcs **uhat);
+int32_t spir_basis_get_uhat(const spir_basis *b, spir_matsubara_funcs **uhat);
 
 /**
  * @brief Gets the number of functions in a functions object.
@@ -708,7 +704,7 @@ int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size);
  * @note The output array must be pre-allocated with sufficient size to store
  *       all function values
  */
-int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out);
+int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
 
 /**
  * @brief Evaluates basis functions at multiple Matsubara frequencies.
@@ -800,8 +796,7 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
  * @see spir_sampling_get_num_points
  */
-int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
-                                           int32_t *points);
+int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points);
 
 /**
  * @brief Gets the number of functions in a Matsubara functions object.
@@ -816,8 +811,7 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
  *         - A non-zero error code on failure
  */
-int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs *funcs,
-                                      int32_t *size);
+int32_t spir_matsubara_funcs_get_size(const spir_matsubara_funcs *funcs, int32_t *size);
 
 #ifdef __cplusplus
 }

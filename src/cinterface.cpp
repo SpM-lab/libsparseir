@@ -307,7 +307,7 @@ spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
 }
 
 spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
-                                  const int npoles, const double *poles, int32_t* status)
+                                  const int32_t npoles, const double *poles, int32_t* status)
 {
     auto impl = get_impl_basis(b);
     if (!impl)
@@ -665,7 +665,7 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
     }
 }
 
-int32_t spir_finite_temp_basis_get_size(const spir_basis *b,
+int32_t spir_basis_get_size(const spir_basis *b,
                                         int32_t *size)
 {
     auto impl = get_impl_basis(b);
@@ -701,7 +701,7 @@ int32_t spir_basis_get_statistics(const spir_basis *b,
     }
 }
 
-int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out)
+int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
 {
     if (!funcs) {
         std::cerr << "Error: funcs is null" << std::endl;
@@ -717,7 +717,7 @@ int32_t spir_evaluate_funcs(const spir_funcs *funcs, double x, double *out)
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_evaluate_funcs: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_evaluate: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }

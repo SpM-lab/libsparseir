@@ -65,7 +65,7 @@ program test_kernel
 
   ! Get the size of the basis
   print *, "Getting basis size"
-  status = c_spir_finite_temp_basis_get_size(basis%handle, c_loc(basis_size))
+  status = c_spir_basis_get_size(basis%handle, c_loc(basis_size))
   if (status /= 0) then
     print *, "Error getting basis size"
     stop

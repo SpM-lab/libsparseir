@@ -45,7 +45,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis != NULL);
 
 int32_t n_basis;
-status = spir_finite_temp_basis_get_size(basis, &n_basis);
+status = spir_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Evaluate the basis functions at a given tau point
@@ -246,7 +246,7 @@ int32_t target_dim = 0; // target dimension for evaluation and fit
 
 // Matsubara sampling points to basis coefficients
 int32_t n_basis;
-status = spir_finite_temp_basis_get_size(basis, &n_basis);
+status = spir_basis_get_size(basis, &n_basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 c_complex* g_fit = (c_complex*)malloc(n_basis * sizeof(c_complex));
