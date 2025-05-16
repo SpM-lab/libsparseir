@@ -27,13 +27,13 @@ typedef enum {
 #define DECLARE_OPAQUE_TYPE(name)                                              \
     struct _spir_##name;                                                       \
     typedef struct _spir_##name spir_##name;                                   \
-                                                                                    \
+                                                                               \
     /* Destroy function */                                                     \
-    void spir_##name##_destroy(spir_##name *obj);                                \
-                                                                                    \
+    void spir_##name##_destroy(spir_##name *obj);                              \
+                                                                               \
     /* Clone function */                                                       \
-    spir_##name *spir_##name##_clone(const spir_##name *src);                    \
-                                                                                    \
+    spir_##name *spir_##name##_clone(const spir_##name *src);                  \
+                                                                               \
     /* Check if the shared_ptr is assigned to a valid object */                \
     int32_t spir_##name##_is_assigned(const spir_##name *obj);
 
@@ -95,6 +95,28 @@ spir_kernel *spir_logistic_kernel_new(double lambda, int32_t *status);
 spir_kernel *spir_regularized_bose_kernel_new(double lambda, int32_t *status);
 
 /**
+ * @brief Retrieves the domain boundaries of a kernel function.
+ *
+ * This function obtains the domain boundaries (ranges) for both the x and y
+ * variables of the specified kernel function. The kernel domain is typically
+ * defined as a rectangle in the (x,y) plane.
+ *
+ * @param k Pointer to the kernel object whose domain is to be retrieved.
+ * @param xmin Pointer to store the minimum value of the x-range.
+ * @param xmax Pointer to store the maximum value of the x-range.
+ * @param ymin Pointer to store the minimum value of the y-range.
+ * @param ymax Pointer to store the maximum value of the y-range.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note For the logistic and regularized bosonic kernels, the domain is
+ *       typically [-1, 1] × [-1, 1] in dimensionless variables.
+ */
+int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
+                           double *ymin, double *ymax);
+
+/**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
  *
  * Computes a truncated singular value expansion of an integral kernel
@@ -132,523 +154,8 @@ spir_kernel *spir_regularized_bose_kernel_new(double lambda, int32_t *status);
  * longer needed
  * @see spir_destroy_sve_result
  */
-spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon, int32_t *status);
-
-/**
- * @brief Retrieves the domain boundaries of a kernel function.
- *
- * This function obtains the domain boundaries (ranges) for both the x and y
- * variables of the specified kernel function. The kernel domain is typically
- * defined as a rectangle in the (x,y) plane.
- *
- * @param k Pointer to the kernel object whose domain is to be retrieved.
- * @param xmin Pointer to store the minimum value of the x-range.
- * @param xmax Pointer to store the maximum value of the x-range.
- * @param ymin Pointer to store the minimum value of the y-range.
- * @param ymax Pointer to store the maximum value of the y-range.
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note For the logistic and regularized bosonic kernels, the domain is
- *       typically [-1, 1] × [-1, 1] in dimensionless variables.
- */
-int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
-                           double *ymin, double *ymax);
-
-/**
- * @brief Gets the size (number of basis functions) of a finite temperature
- * basis.
- *
- * This function returns the number of basis functions in the specified finite
- * temperature basis object. This size determines the dimensionality of the
- * basis and is needed when allocating arrays for basis function evaluations.
- *
- * @param b Pointer to the finite temperature basis object
- * @param size Pointer to store the number of basis functions
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note For an IR basis, the size is determined automatically during basis construction based on
- *       the specified parameters (β, ωmax, ε) and the kernel's singular value
- *       expansion.
- * @note For a DLR basis, the size is the number of poles.
- */
-int32_t spir_basis_get_size(const spir_basis *b, int32_t *size);
-
-/**
- * @brief Gets the statistics type (Fermionic or Bosonic) of a finite
- * temperature basis.
- *
- * This function returns the statistics type of the specified finite temperature
- * basis object. The statistics type determines whether the basis is for
- * fermionic or bosonic Green's functions.
- *
- * @param b Pointer to the finite temperature basis object
- * @param statistics Pointer to store the statistics type
- * (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note The statistics type is determined during basis construction and cannot
- * be changed
- * @note The statistics type affects the form of the basis functions and the
- *       sampling points used for evaluation.
- */
-int32_t spir_basis_get_statistics(const spir_basis *b, spir_statistics_type *statistics);
-
-/**
- * @brief Creates a new tau sampling object for sparse sampling in
- * imaginary time.
- *
- * Constructs a sampling object that allows transformation between the IR basis
- * and a set of sampling points in imaginary time (τ). The sampling points are
- * automatically chosen as the extrema of the highest-order basis function in
- * imaginary time, which provides near-optimal conditioning for the given basis
- * size.
- *
- * @param b Pointer to a finite temperature basis object
- * @param status Pointer to store the status code
- * @return Pointer to the newly created sampling object, or NULL if creation fails
- *
- * @note The sampling points are chosen to optimize numerical stability and
- *       accuracy
- * @note The sampling matrix is automatically factorized using SVD for efficient
- *       transformations
- * @note The returned object must be freed using spir_destroy_sampling when no
- *       longer needed
- * @see spir_destroy_sampling
- */
-spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t *status);
-
-/**
- * @brief Creates a new Matsubara sampling object for sparse sampling
- * in Matsubara frequencies.
- *
- * Constructs a sampling object that allows transformation between the IR basis
- * and a set of sampling points in Matsubara frequencies (iωn). The sampling
- * points are automatically chosen as the (discrete) extrema of the
- * highest-order basis function in Matsubara frequencies, which provides
- * near-optimal conditioning for the given basis size.
- *
- * @param b Pointer to a finite temperature basis object
- * @param positive_only If true, only positive frequencies are used
- * @param status Pointer to store the status code
- * @return Pointer to the newly created sampling object, or NULL if creation fails
- */
-spir_sampling *spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t *status);
-
-
-/**
- * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
- *
- * This function implements a variant of the discrete Lehmann representation
- * (DLR). Unlike the IR which uses truncated singular value expansion of the
- * analytic continuation kernel K, the DLR is based on a "sketching" of K. The
- * resulting basis is a linear combination of discrete set of poles on the
- * real-frequency axis, continued to the imaginary-frequency axis:
- *
- * G(iν) = ∑ a[i] * reg[i] / (iν - w[i]) for i = 1, 2, ..., L
- *
- * where:
- * - a[i] are the expansion coefficients
- * - w[i] are the poles on the real axis
- * - reg[i] are the regularization factors, which are 1 for fermionic
- * frequencies. For bosonic frequencies, we take reg[i] = tanh(βω[i]/2)
- * (logistic kernel), reg[i] = w[i] (regularized bosonic kernel). The DLR basis
- * functions are given by u[i](iν) = reg[i] / (iν - w[i]) in the
- * imaginary-frequency domain. In the imaginary-time domain, the basis functions
- * are given by u[i](τ) = reg[i] * exp(-w[i]τ) / (1 + exp(-w[i]β)) for fermionic
- * frequencies, u[i](τ) = reg[i] * exp(-w[i]τ) / (1 - exp(-w[i]β)) for bosonic
- * frequencies.
- * - iν are Matsubara frequencies
- *
- * @param b Pointer to a finite temperature basis object
- * @param status Pointer to store the status code
- * @return Pointer to the newly created DLR object, or NULL if creation fails
- */
-spir_basis *spir_dlr_new(const spir_basis *b, int32_t *status);
-
-/**
- * @brief Creates a new Discrete Lehmann Representation (DLR) with
- * custom poles.
- *
- * This function creates a DLR basis with user-specified pole locations on the
- * real-frequency axis. This allows for more control over the pole selection
- * compared to the automatic pole selection in spir_dlr_new.
- *
- * @param b Pointer to a finite temperature basis object
- * @param npoles Number of poles to use in the representation
- * @param poles Array of pole locations on the real-frequency axis
- * @param status Pointer to store the status code
- * @return Pointer to the newly created DLR object, or NULL if creation fails
- */
-spir_basis *spir_dlr_new_with_poles(const spir_basis *b, const int32_t npoles, const double *poles, int32_t *status);
-
-/**
- * @brief Evaluates basis coefficients at sampling points (double to double
- * version).
- *
- * Transforms basis coefficients to values at sampling points, where both input
- * and output are real (double precision) values. The operation can be performed
- * along any dimension of a multidimensional array.
- *
- * @param s Pointer to the sampling object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
- * SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param target_dim Target dimension for the transformation (0-based)
- * @param input Input array of basis coefficients
- * @param out Output array for the evaluated values at sampling points
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note For optimal performance, the target dimension should be either the
- *       first (0) or the last (ndim-1) dimension to avoid large temporary array
- *       allocations
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note The transformation is performed using a pre-computed sampling matrix
- *       that is factorized using SVD for efficiency
- *
- * @see spir_sampling_evaluate_dz
- * @see spir_sampling_evaluate_zz
- */
-int32_t
-spir_sampling_evaluate_dd(const spir_sampling *s, // Sampling object
-                          spir_order_type order,  // Order type (C or Fortran)
-                          int32_t ndim,           // Number of dimensions
-                          const int32_t *input_dims,    // Array of dimensions
-                          int32_t target_dim, // Target dimension for evaluation
-                          const double *input, // Input coefficients array
-                          double *out          // Output array
-);
-
-/**
- * @brief Evaluates basis coefficients at sampling points (double to complex
- * version).
- *
- * For more details, see spir_sampling_evaluate_dd
- * @see spir_sampling_evaluate_dd
- */
-int32_t
-spir_sampling_evaluate_dz(const spir_sampling *s, // Sampling object
-                          spir_order_type order,  // Order type (C or Fortran)
-                          int32_t ndim,           // Number of dimensions
-                          const int32_t *input_dims,    // Array of dimensions
-                          int32_t target_dim, // Target dimension for evaluation
-                          const double *input, // Input coefficients array
-                          c_complex *out       // Output array
-);
-
-/**
- * @brief Evaluates basis coefficients at sampling points (complex to complex
- * version).
- *
- * For more details, see spir_sampling_evaluate_dd
- * @see spir_sampling_evaluate_dd
- */
-int32_t
-spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
-                          spir_order_type order,  // Order type (C or Fortran)
-                          int32_t ndim,           // Number of dimensions
-                          const int32_t *input_dims,    // Array of dimensions
-                          int32_t target_dim, // Target dimension for evaluation
-                          const c_complex *input, // Input coefficients array
-                          c_complex *out          // Output array
-);
-
-/**
- * @brief Fits values at sampling points to basis coefficients (double to double
- * version).
- *
- * Transforms values at sampling points back to basis coefficients, where both
- * input and output are real (double precision) values. The operation can be
- * performed along any dimension of a multidimensional array.
- *
- * @param s Pointer to the sampling object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
- * SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param target_dim Target dimension for the transformation (0-based)
- * @param input Input array of values at sampling points
- * @param out Output array for the fitted basis coefficients
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note The output array must be pre-allocated with the correct size
- * @note This function performs the inverse operation of
- *       spir_sampling_evaluate_dd
- * @note The transformation is performed using a pre-computed sampling matrix
- *       that is factorized using SVD for efficiency
- *
- * @see spir_sampling_evaluate_dd
- * @see spir_sampling_fit_zz
- */
-int32_t
-spir_sampling_fit_dd(const spir_sampling *s, // Sampling object
-                     spir_order_type order,  // Order type (C or Fortran)
-                     int32_t ndim,           // Number of dimensions
-                     const int32_t *input_dims,    // Array of dimensions
-                     int32_t target_dim,     // Target dimension for evaluation
-                     const double *input,    // Input coefficients array
-                     double *out             // Output array
-);
-
-/**
- * @brief Fits values at sampling points to basis coefficients (complex to
- * complex version).
- *
- * For more details, see spir_sampling_fit_dd
- * @see spir_sampling_fit_dd
- */
-int32_t spir_sampling_fit_zz(const spir_sampling *s, // Sampling object
-                         spir_order_type order,  // Order type (C or Fortran)
-                         int32_t ndim,           // Number of dimensions
-                         const int32_t *input_dims,    // Array of dimensions
-                         int32_t target_dim, // Target dimension for evaluation
-                         const c_complex *input, // Input coefficients array
-                         c_complex *out          // Output array
-);
-
-/**
- * @brief Gets the number of poles in a DLR.
- *
- * This function returns the number of poles in the specified DLR object.
- *
- * @param dlr Pointer to the DLR object
- * @param num_poles Pointer to store the number of poles
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @see spir_dlr_get_poles
- */
-int32_t spir_dlr_get_num_poles(const spir_basis *dlr, int32_t *num_poles);
-
-/**
- * @brief Gets the poles in a DLR.
- *
- * This function returns the poles in the specified DLR object.
- *
- * @param dlr Pointer to the DLR object
- * @param poles Pointer to store the poles
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @see spir_dlr_get_num_poles
- */
-int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles);
-
-/**
- * @brief Transforms a given input array from the Intermediate Representation (IR)
- * to the Discrete Lehmann Representation (DLR) using the specified DLR object.
- * This version handles real (double precision) input and output arrays.
- *
- * @param dlr Pointer to the DLR basis object
- * @param order Order type (C or Fortran)
- * @param ndim Number of dimensions of input/output arrays
- * @param input_dims Array of dimensions
- * @param target_dim Target dimension for the transformation (0-based)
- * @param input Input coefficients array in IR
- * @param out Output array in DLR
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note The input and output arrays must be allocated with sufficient memory.
- *       The size of the input and output arrays should match the dimensions
- *       specified. The order type determines the memory layout of the input and
- *       output arrays. The function assumes that the input array is in the
- *       specified order type. The output array will be in the specified order
- *       type.
- *
- * @see spir_ir_to_dlr
- * @see spir_dlr_to_ir_dd
- */
-int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, spir_order_type order,
-                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
-                         const double *input, double *out);
-
-int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, spir_order_type order,
-                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
-                         const c_complex *input, c_complex *out);
-
-
-/**
- * @brief Transforms coefficients from DLR basis to IR representation.
- *
- * This function converts expansion coefficients from the Discrete Lehmann
- * Representation (DLR) basis to the Intermediate Representation (IR) basis.
- * The transformation is performed using the fitting matrix:
- *
- * g_IR = fitmat * g_DLR
- *
- * where:
- * - g_IR are the coefficients in the IR basis
- * - g_DLR are the coefficients in the DLR basis
- * - fitmat is the transformation matrix
- *
- * @param dlr Pointer to the DLR object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
- * SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param target_dim Target dimension for the transformation (0-based)
- * @param input Input array of DLR coefficients (double precision)
- * @param out Output array for the IR coefficients (double precision)
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note The transformation is a direct matrix multiplication, which is
- *       typically faster than the inverse transformation
- *
- * @see spir_ir_to_dlr
- */
-int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order, int32_t ndim,
-                       const int32_t *input_dims, int32_t target_dim,
-                       const double *input, double *out);
-
-/**
- * @brief Transforms coefficients from DLR basis to IR representation.
- * This version handles complex input and output arrays.
- *
- * This function converts expansion coefficients from the Discrete Lehmann
- * Representation (DLR) basis to the Intermediate Representation (IR) basis.
- * The transformation is performed using the fitting matrix:
- *
- * g_IR = fitmat * g_DLR
- *
- * where:
- * - g_IR are the coefficients in the IR basis
- * - g_DLR are the coefficients in the DLR basis
- * - fitmat is the transformation matrix
- *
- * @param dlr Pointer to the DLR object
- * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
- * SPIR_ORDER_COLUMN_MAJOR)
- * @param ndim Number of dimensions in the input/output arrays
- * @param input_dims Array of dimension sizes
- * @param target_dim Target dimension for the transformation (0-based)
- * @param input Input array of DLR coefficients (complex)
- * @param out Output array for the IR coefficients (complex)
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @note The output array must be pre-allocated with the correct size
- * @note The input and output arrays must be contiguous in memory
- * @note The transformation is a direct matrix multiplication, which is
- *       typically faster than the inverse transformation
- *
- * @see spir_ir_to_dlr_zz
- * @see spir_dlr_to_ir_dd
- */
-int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order, int32_t ndim,
-                       const int32_t *input_dims, int32_t target_dim,
-                       const c_complex *input, c_complex *out);
-
-/**
- * @brief Creates a new finite temperature IR basis.
- *
- * This function creates a new finite temperature IR basis using the specified
- * parameters and the default logistic kernel. The basis is constructed based on
- * the given beta (inverse temperature), omega_max (frequency cutoff), and
- * epsilon (accuracy target).
- *
- * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
- * SPIR_STATISTICS_BOSONIC)
- * @param beta Inverse temperature β (must be positive)
- * @param omega_max Frequency cutoff ωmax (must be non-negative)
- * @param epsilon Accuracy target for the basis
- * @param status Pointer to store the status code
- * @return Pointer to the newly created basis object, or NULL if creation fails
- * @see spir_basis_new_with_kernel
- */
-spir_basis *spir_basis_new(spir_statistics_type statistics, double beta, double omega_max, double epsilon, int32_t *status);
-
-/**
- * @brief Creates a new finite temperature IR basis using a
- * pre-computed SVE result.
- *
- * This function creates a intermediate representation (IR) basis
- * using a pre-computed singular value expansion (SVE) result. This allows for
- * reusing an existing SVE computation, which can be more efficient than
- * recomputing it.
- *
- * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
- * SPIR_STATISTICS_BOSONIC)
- * @param beta Inverse temperature β (must be positive)
- * @param omega_max Frequency cutoff ωmax (must be non-negative)
- * @param k Pointer to the kernel object used for the basis construction
- * @param sve Pointer to a pre-computed SVE result for the kernel
- * @param status Pointer to store the status code
- * @return Pointer to the newly created basis object, or NULL if creation fails
- *
- * @note Using a pre-computed SVE can significantly improve performance when
- *       creating multiple basis objects with the same kernel
- * @see spir_sve_result_new
- * @see spir_destroy_finite_temp_basis
- */
-spir_basis *spir_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max, const spir_kernel *k, const spir_sve_result *sve, int32_t *status);
-
-/**
- * @brief Gets the basis functions of a finite temperature basis.
- *
- * This function returns an object representing the basis functions
- * in the imaginary-time domain of the specified finite temperature basis.
- *
- * @param b Pointer to the finite temperature basis object
- * @param status Pointer to store the status code
- * @return Pointer to the basis functions object, or NULL if creation fails
- *
- * @note The returned object must be freed using spir_destroy_funcs
- *       when no longer needed
- * @see spir_destroy_funcs
- */
-spir_funcs *spir_basis_get_u(const spir_basis *b, int32_t *status);
-
-/**
- * @brief Gets the basis functions of a finite temperature basis.
- *
- * This function returns an object representing the basis functions
- * in the real-frequency domain of the specified finite temperature basis.
- *
- * @param b Pointer to the finite temperature basis object
- * @param status Pointer to store the status code
- * @return Pointer to the basis functions object, or NULL if creation fails
- *
- * @note The returned object must be freed using spir_destroy_funcs
- *       when no longer needed
- * @see spir_destroy_funcs
- */
-spir_funcs *spir_basis_get_v(const spir_basis *b, int32_t *status);
-
-/**
- * @brief Gets the basis functions in Matsubara frequency domain.
- *
- * This function returns an object representing the basis functions
- * in the Matsubara-frequency domain of the specified finite temperature basis.
- *
- * @param b Pointer to the finite temperature basis object
- * @param status Pointer to store the status code
- * @return Pointer to the basis functions object, or NULL if creation fails
- *
- * @note The returned object must be freed using spir_destroy_funcs
- *       when no longer needed
- * @see spir_destroy_funcs
- */
-spir_funcs *spir_basis_get_uhat(const spir_basis *b, int32_t *status);
+spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon,
+                                     int32_t *status);
 
 /**
  * @brief Gets the number of functions in a functions object.
@@ -707,14 +214,388 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
  *         - A non-zero error code on failure
  *
  * @note The output array must be pre-allocated with sufficient size to store
- *       all function values at all requested frequencies. Indices n correspond to
- *        ωn = nπ/β, where n are odd for fermionic frequencies and even for
- *        bosonic frequencies.
+ *       all function values at all requested frequencies. Indices n correspond
+ * to ωn = nπ/β, where n are odd for fermionic frequencies and even for bosonic
+ * frequencies.
  */
 int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
-                                    spir_order_type order, int32_t num_freqs,
-                                    int32_t *matsubara_freq_indices,
-                                    c_complex *out);
+                                      spir_order_type order, int32_t num_freqs,
+                                      int32_t *matsubara_freq_indices,
+                                      c_complex *out);
+
+/**
+ * @brief Creates a new finite temperature IR basis.
+ *
+ * This function creates a new finite temperature IR basis using the specified
+ * parameters and the default logistic kernel. The basis is constructed based on
+ * the given beta (inverse temperature), omega_max (frequency cutoff), and
+ * epsilon (accuracy target).
+ *
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
+ * SPIR_STATISTICS_BOSONIC)
+ * @param beta Inverse temperature β (must be positive)
+ * @param omega_max Frequency cutoff ωmax (must be non-negative)
+ * @param epsilon Accuracy target for the basis
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created basis object, or NULL if creation fails
+ * @see spir_basis_new_with_kernel
+ */
+spir_basis *spir_basis_new(spir_statistics_type statistics, double beta,
+                           double omega_max, double epsilon, int32_t *status);
+
+/**
+ * @brief Creates a new finite temperature IR basis using a
+ * pre-computed SVE result.
+ *
+ * This function creates a intermediate representation (IR) basis
+ * using a pre-computed singular value expansion (SVE) result. This allows for
+ * reusing an existing SVE computation, which can be more efficient than
+ * recomputing it.
+ *
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
+ * SPIR_STATISTICS_BOSONIC)
+ * @param beta Inverse temperature β (must be positive)
+ * @param omega_max Frequency cutoff ωmax (must be non-negative)
+ * @param k Pointer to the kernel object used for the basis construction
+ * @param sve Pointer to a pre-computed SVE result for the kernel
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created basis object, or NULL if creation fails
+ *
+ * @note Using a pre-computed SVE can significantly improve performance when
+ *       creating multiple basis objects with the same kernel
+ * @see spir_sve_result_new
+ * @see spir_destroy_finite_temp_basis
+ */
+spir_basis *spir_basis_new_with_sve(spir_statistics_type statistics,
+                                    double beta, double omega_max,
+                                    const spir_kernel *k,
+                                    const spir_sve_result *sve,
+                                    int32_t *status);
+
+/**
+ * @brief Gets the size (number of basis functions) of a finite temperature
+ * basis.
+ *
+ * This function returns the number of basis functions in the specified finite
+ * temperature basis object. This size determines the dimensionality of the
+ * basis and is needed when allocating arrays for basis function evaluations.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param size Pointer to store the number of basis functions
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note For an IR basis, the size is determined automatically during basis
+ * construction based on the specified parameters (β, ωmax, ε) and the kernel's
+ * singular value expansion.
+ * @note For a DLR basis, the size is the number of poles.
+ */
+int32_t spir_basis_get_size(const spir_basis *b, int32_t *size);
+
+/**
+ * @brief Gets the statistics type (Fermionic or Bosonic) of a finite
+ * temperature basis.
+ *
+ * This function returns the statistics type of the specified finite temperature
+ * basis object. The statistics type determines whether the basis is for
+ * fermionic or bosonic Green's functions.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param statistics Pointer to store the statistics type
+ * (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The statistics type is determined during basis construction and cannot
+ * be changed
+ * @note The statistics type affects the form of the basis functions and the
+ *       sampling points used for evaluation.
+ */
+int32_t spir_basis_get_statistics(const spir_basis *b,
+                                  spir_statistics_type *statistics);
+
+/**
+ * @brief Gets the basis functions of a finite temperature basis.
+ *
+ * This function returns an object representing the basis functions
+ * in the imaginary-time domain of the specified finite temperature basis.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param status Pointer to store the status code
+ * @return Pointer to the basis functions object, or NULL if creation fails
+ *
+ * @note The returned object must be freed using spir_destroy_funcs
+ *       when no longer needed
+ * @see spir_destroy_funcs
+ */
+spir_funcs *spir_basis_get_u(const spir_basis *b, int32_t *status);
+
+/**
+ * @brief Gets the basis functions of a finite temperature basis.
+ *
+ * This function returns an object representing the basis functions
+ * in the real-frequency domain of the specified finite temperature basis.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param status Pointer to store the status code
+ * @return Pointer to the basis functions object, or NULL if creation fails
+ *
+ * @note The returned object must be freed using spir_destroy_funcs
+ *       when no longer needed
+ * @see spir_destroy_funcs
+ */
+spir_funcs *spir_basis_get_v(const spir_basis *b, int32_t *status);
+
+/**
+ * @brief Gets the basis functions in Matsubara frequency domain.
+ *
+ * This function returns an object representing the basis functions
+ * in the Matsubara-frequency domain of the specified finite temperature basis.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param status Pointer to store the status code
+ * @return Pointer to the basis functions object, or NULL if creation fails
+ *
+ * @note The returned object must be freed using spir_destroy_funcs
+ *       when no longer needed
+ * @see spir_destroy_funcs
+ */
+spir_funcs *spir_basis_get_uhat(const spir_basis *b, int32_t *status);
+
+/**
+ * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
+ *
+ * This function implements a variant of the discrete Lehmann representation
+ * (DLR). Unlike the IR which uses truncated singular value expansion of the
+ * analytic continuation kernel K, the DLR is based on a "sketching" of K. The
+ * resulting basis is a linear combination of discrete set of poles on the
+ * real-frequency axis, continued to the imaginary-frequency axis:
+ *
+ * G(iν) = ∑ a[i] * reg[i] / (iν - w[i]) for i = 1, 2, ..., L
+ *
+ * where:
+ * - a[i] are the expansion coefficients
+ * - w[i] are the poles on the real axis
+ * - reg[i] are the regularization factors, which are 1 for fermionic
+ * frequencies. For bosonic frequencies, we take reg[i] = tanh(βω[i]/2)
+ * (logistic kernel), reg[i] = w[i] (regularized bosonic kernel). The DLR basis
+ * functions are given by u[i](iν) = reg[i] / (iν - w[i]) in the
+ * imaginary-frequency domain. In the imaginary-time domain, the basis functions
+ * are given by u[i](τ) = reg[i] * exp(-w[i]τ) / (1 + exp(-w[i]β)) for fermionic
+ * frequencies, u[i](τ) = reg[i] * exp(-w[i]τ) / (1 - exp(-w[i]β)) for bosonic
+ * frequencies.
+ * - iν are Matsubara frequencies
+ *
+ * @param b Pointer to a finite temperature basis object
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created DLR object, or NULL if creation fails
+ */
+spir_basis *spir_dlr_new(const spir_basis *b, int32_t *status);
+
+/**
+ * @brief Creates a new Discrete Lehmann Representation (DLR) with
+ * custom poles.
+ *
+ * This function creates a DLR basis with user-specified pole locations on the
+ * real-frequency axis. This allows for more control over the pole selection
+ * compared to the automatic pole selection in spir_dlr_new.
+ *
+ * @param b Pointer to a finite temperature basis object
+ * @param npoles Number of poles to use in the representation
+ * @param poles Array of pole locations on the real-frequency axis
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created DLR object, or NULL if creation fails
+ */
+spir_basis *spir_dlr_new_with_poles(const spir_basis *b, const int32_t npoles,
+                                    const double *poles, int32_t *status);
+
+/**
+ * @brief Gets the number of poles in a DLR.
+ *
+ * This function returns the number of poles in the specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param num_poles Pointer to store the number of poles
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @see spir_dlr_get_poles
+ */
+int32_t spir_dlr_get_num_poles(const spir_basis *dlr, int32_t *num_poles);
+
+/**
+ * @brief Gets the poles in a DLR.
+ *
+ * This function returns the poles in the specified DLR object.
+ *
+ * @param dlr Pointer to the DLR object
+ * @param poles Pointer to store the poles
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @see spir_dlr_get_num_poles
+ */
+int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles);
+
+/**
+ * @brief Transforms a given input array from the Intermediate Representation
+ * (IR) to the Discrete Lehmann Representation (DLR) using the specified DLR
+ * object. This version handles real (double precision) input and output arrays.
+ *
+ * @param dlr Pointer to the DLR basis object
+ * @param order Order type (C or Fortran)
+ * @param ndim Number of dimensions of input/output arrays
+ * @param input_dims Array of dimensions
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input coefficients array in IR
+ * @param out Output array in DLR
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The input and output arrays must be allocated with sufficient memory.
+ *       The size of the input and output arrays should match the dimensions
+ *       specified. The order type determines the memory layout of the input and
+ *       output arrays. The function assumes that the input array is in the
+ *       specified order type. The output array will be in the specified order
+ *       type.
+ *
+ * @see spir_ir_to_dlr
+ * @see spir_dlr_to_ir_dd
+ */
+int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, spir_order_type order,
+                          int32_t ndim, const int32_t *input_dims,
+                          int32_t target_dim, const double *input, double *out);
+
+int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, spir_order_type order,
+                          int32_t ndim, const int32_t *input_dims,
+                          int32_t target_dim, const c_complex *input,
+                          c_complex *out);
+
+/**
+ * @brief Transforms coefficients from DLR basis to IR representation.
+ *
+ * This function converts expansion coefficients from the Discrete Lehmann
+ * Representation (DLR) basis to the Intermediate Representation (IR) basis.
+ * The transformation is performed using the fitting matrix:
+ *
+ * g_IR = fitmat * g_DLR
+ *
+ * where:
+ * - g_IR are the coefficients in the IR basis
+ * - g_DLR are the coefficients in the DLR basis
+ * - fitmat is the transformation matrix
+ *
+ * @param dlr Pointer to the DLR object
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param ndim Number of dimensions in the input/output arrays
+ * @param input_dims Array of dimension sizes
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input array of DLR coefficients (double precision)
+ * @param out Output array for the IR coefficients (double precision)
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The output array must be pre-allocated with the correct size
+ * @note The input and output arrays must be contiguous in memory
+ * @note The transformation is a direct matrix multiplication, which is
+ *       typically faster than the inverse transformation
+ *
+ * @see spir_ir_to_dlr
+ */
+int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order,
+                          int32_t ndim, const int32_t *input_dims,
+                          int32_t target_dim, const double *input, double *out);
+
+/**
+ * @brief Transforms coefficients from DLR basis to IR representation.
+ * This version handles complex input and output arrays.
+ *
+ * This function converts expansion coefficients from the Discrete Lehmann
+ * Representation (DLR) basis to the Intermediate Representation (IR) basis.
+ * The transformation is performed using the fitting matrix:
+ *
+ * g_IR = fitmat * g_DLR
+ *
+ * where:
+ * - g_IR are the coefficients in the IR basis
+ * - g_DLR are the coefficients in the DLR basis
+ * - fitmat is the transformation matrix
+ *
+ * @param dlr Pointer to the DLR object
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param ndim Number of dimensions in the input/output arrays
+ * @param input_dims Array of dimension sizes
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input array of DLR coefficients (complex)
+ * @param out Output array for the IR coefficients (complex)
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The output array must be pre-allocated with the correct size
+ * @note The input and output arrays must be contiguous in memory
+ * @note The transformation is a direct matrix multiplication, which is
+ *       typically faster than the inverse transformation
+ *
+ * @see spir_ir_to_dlr_zz
+ * @see spir_dlr_to_ir_dd
+ */
+int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order,
+                          int32_t ndim, const int32_t *input_dims,
+                          int32_t target_dim, const c_complex *input,
+                          c_complex *out);
+
+/**
+ * @brief Creates a new tau sampling object for sparse sampling in
+ * imaginary time.
+ *
+ * Constructs a sampling object that allows transformation between the IR basis
+ * and a set of sampling points in imaginary time (τ). The sampling points are
+ * automatically chosen as the extrema of the highest-order basis function in
+ * imaginary time, which provides near-optimal conditioning for the given basis
+ * size.
+ *
+ * @param b Pointer to a finite temperature basis object
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created sampling object, or NULL if creation
+ * fails
+ *
+ * @note The sampling points are chosen to optimize numerical stability and
+ *       accuracy
+ * @note The sampling matrix is automatically factorized using SVD for efficient
+ *       transformations
+ * @note The returned object must be freed using spir_destroy_sampling when no
+ *       longer needed
+ * @see spir_destroy_sampling
+ */
+spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t *status);
+
+/**
+ * @brief Creates a new Matsubara sampling object for sparse sampling
+ * in Matsubara frequencies.
+ *
+ * Constructs a sampling object that allows transformation between the IR basis
+ * and a set of sampling points in Matsubara frequencies (iωn). The sampling
+ * points are automatically chosen as the (discrete) extrema of the
+ * highest-order basis function in Matsubara frequencies, which provides
+ * near-optimal conditioning for the given basis size.
+ *
+ * @param b Pointer to a finite temperature basis object
+ * @param positive_only If true, only positive frequencies are used
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created sampling object, or NULL if creation
+ * fails
+ */
+spir_sampling *spir_matsubara_sampling_new(const spir_basis *b,
+                                           bool positive_only, int32_t *status);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.
@@ -776,7 +657,139 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
  * @see spir_sampling_get_num_points
  */
-int32_t spir_sampling_get_matsubara_points(const spir_sampling *s, int32_t *points);
+int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
+                                           int32_t *points);
+
+/**
+ * @brief Evaluates basis coefficients at sampling points (double to double
+ * version).
+ *
+ * Transforms basis coefficients to values at sampling points, where both input
+ * and output are real (double precision) values. The operation can be performed
+ * along any dimension of a multidimensional array.
+ *
+ * @param s Pointer to the sampling object
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param ndim Number of dimensions in the input/output arrays
+ * @param input_dims Array of dimension sizes
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input array of basis coefficients
+ * @param out Output array for the evaluated values at sampling points
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note For optimal performance, the target dimension should be either the
+ *       first (0) or the last (ndim-1) dimension to avoid large temporary array
+ *       allocations
+ * @note The output array must be pre-allocated with the correct size
+ * @note The input and output arrays must be contiguous in memory
+ * @note The transformation is performed using a pre-computed sampling matrix
+ *       that is factorized using SVD for efficiency
+ *
+ * @see spir_sampling_evaluate_dz
+ * @see spir_sampling_evaluate_zz
+ */
+int32_t
+spir_sampling_evaluate_dd(const spir_sampling *s, // Sampling object
+                          spir_order_type order,  // Order type (C or Fortran)
+                          int32_t ndim,           // Number of dimensions
+                          const int32_t *input_dims, // Array of dimensions
+                          int32_t target_dim, // Target dimension for evaluation
+                          const double *input, // Input coefficients array
+                          double *out          // Output array
+);
+
+/**
+ * @brief Evaluates basis coefficients at sampling points (double to complex
+ * version).
+ *
+ * For more details, see spir_sampling_evaluate_dd
+ * @see spir_sampling_evaluate_dd
+ */
+int32_t
+spir_sampling_evaluate_dz(const spir_sampling *s, // Sampling object
+                          spir_order_type order,  // Order type (C or Fortran)
+                          int32_t ndim,           // Number of dimensions
+                          const int32_t *input_dims, // Array of dimensions
+                          int32_t target_dim, // Target dimension for evaluation
+                          const double *input, // Input coefficients array
+                          c_complex *out       // Output array
+);
+
+/**
+ * @brief Evaluates basis coefficients at sampling points (complex to complex
+ * version).
+ *
+ * For more details, see spir_sampling_evaluate_dd
+ * @see spir_sampling_evaluate_dd
+ */
+int32_t
+spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
+                          spir_order_type order,  // Order type (C or Fortran)
+                          int32_t ndim,           // Number of dimensions
+                          const int32_t *input_dims, // Array of dimensions
+                          int32_t target_dim, // Target dimension for evaluation
+                          const c_complex *input, // Input coefficients array
+                          c_complex *out          // Output array
+);
+
+/**
+ * @brief Fits values at sampling points to basis coefficients (double to double
+ * version).
+ *
+ * Transforms values at sampling points back to basis coefficients, where both
+ * input and output are real (double precision) values. The operation can be
+ * performed along any dimension of a multidimensional array.
+ *
+ * @param s Pointer to the sampling object
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param ndim Number of dimensions in the input/output arrays
+ * @param input_dims Array of dimension sizes
+ * @param target_dim Target dimension for the transformation (0-based)
+ * @param input Input array of values at sampling points
+ * @param out Output array for the fitted basis coefficients
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The output array must be pre-allocated with the correct size
+ * @note This function performs the inverse operation of
+ *       spir_sampling_evaluate_dd
+ * @note The transformation is performed using a pre-computed sampling matrix
+ *       that is factorized using SVD for efficiency
+ *
+ * @see spir_sampling_evaluate_dd
+ * @see spir_sampling_fit_zz
+ */
+int32_t
+spir_sampling_fit_dd(const spir_sampling *s,    // Sampling object
+                     spir_order_type order,     // Order type (C or Fortran)
+                     int32_t ndim,              // Number of dimensions
+                     const int32_t *input_dims, // Array of dimensions
+                     int32_t target_dim,  // Target dimension for evaluation
+                     const double *input, // Input coefficients array
+                     double *out          // Output array
+);
+
+/**
+ * @brief Fits values at sampling points to basis coefficients (complex to
+ * complex version).
+ *
+ * For more details, see spir_sampling_fit_dd
+ * @see spir_sampling_fit_dd
+ */
+int32_t
+spir_sampling_fit_zz(const spir_sampling *s,    // Sampling object
+                     spir_order_type order,     // Order type (C or Fortran)
+                     int32_t ndim,              // Number of dimensions
+                     const int32_t *input_dims, // Array of dimensions
+                     int32_t target_dim,     // Target dimension for evaluation
+                     const c_complex *input, // Input coefficients array
+                     c_complex *out          // Output array
+);
 
 #ifdef __cplusplus
 }

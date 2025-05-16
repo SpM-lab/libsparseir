@@ -227,6 +227,17 @@ spir_basis* spir_basis_new_with_sve(
 
 spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t* status)
 {
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
     spir_statistics_type stat;
     int32_t stat_status = spir_basis_get_statistics(b, &stat);
     if (stat_status != SPIR_COMPUTATION_SUCCESS) {
@@ -248,6 +259,17 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t* status)
 
 spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t* status)
 {
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
     spir_statistics_type stat;
     int32_t stat_status = spir_basis_get_statistics(b, &stat);
     if (stat_status != SPIR_COMPUTATION_SUCCESS) {
@@ -270,6 +292,17 @@ spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_on
 
 spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
 {
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
     spir_statistics_type stat;
     int32_t status_basis = spir_basis_get_statistics(b, &stat);
     if (status_basis != SPIR_COMPUTATION_SUCCESS) {
@@ -292,6 +325,12 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
     auto impl = get_impl_basis(b);
     if (!impl)
         return nullptr;
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
 
     spir_statistics_type stat;
     int32_t status_basis = spir_basis_get_statistics(b, &stat);
