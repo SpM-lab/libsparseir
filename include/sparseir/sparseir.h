@@ -621,16 +621,14 @@ spir_basis *spir_basis_new_with_sve(spir_statistics_type statistics, double beta
  * in the imaginary-time domain of the specified finite temperature basis.
  *
  * @param b Pointer to the finite temperature basis object
- * @param u Pointer to store the basis functions
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
+ * @param status Pointer to store the status code
+ * @return Pointer to the basis functions object, or NULL if creation fails
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_basis_get_u(const spir_basis *b, spir_funcs **u);
+spir_funcs *spir_basis_get_u(const spir_basis *b, int32_t *status);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis.
@@ -639,16 +637,14 @@ int32_t spir_basis_get_u(const spir_basis *b, spir_funcs **u);
  * in the real-frequency domain of the specified finite temperature basis.
  *
  * @param b Pointer to the finite temperature basis object
- * @param v Pointer to store the basis functions
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
+ * @param status Pointer to store the status code
+ * @return Pointer to the basis functions object, or NULL if creation fails
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_get_v(const spir_basis *b, spir_funcs **v);
+spir_funcs *spir_basis_get_v(const spir_basis *b, int32_t *status);
 
 /**
  * @brief Gets the basis functions in Matsubara frequency domain.
@@ -657,16 +653,14 @@ int32_t spir_get_v(const spir_basis *b, spir_funcs **v);
  * in the Matsubara-frequency domain of the specified finite temperature basis.
  *
  * @param b Pointer to the finite temperature basis object
- * @param uhat Pointer to store the basis functions
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
+ * @param status Pointer to store the status code
+ * @return Pointer to the basis functions object, or NULL if creation fails
  *
  * @note The returned object must be freed using spir_destroy_funcs
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat);
+spir_funcs *spir_basis_get_uhat(const spir_basis *b, int32_t *status);
 
 /**
  * @brief Gets the number of functions in a functions object.

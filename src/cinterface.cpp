@@ -524,51 +524,120 @@ int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles)
     }
 }
 
-
-
-int32_t spir_get_v(const spir_basis *b,
-                                     spir_funcs **v)
+spir_funcs* spir_basis_get_u(const spir_basis *b, int32_t *status)
 {
-    if (!b || !v) {
-        return SPIR_INVALID_ARGUMENT;
+    if (!b || !status) {
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
     }
 
     auto impl = get_impl_basis(b);
     if (!impl) {
-        return SPIR_GET_IMPL_FAILED;
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
     }
 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            return _spir_get_v<sparseir::Fermionic>(b, v);
+            spir_funcs *u = nullptr;
+            int32_t ret = _spir_basis_get_u<sparseir::Fermionic>(b, &u);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return u;
         } else {
-            return _spir_get_v<sparseir::Bosonic>(b, v);
+            spir_funcs *u = nullptr;
+            int32_t ret = _spir_basis_get_u<sparseir::Bosonic>(b, &u);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return u;
         }
     } catch (const std::exception &e) {
-        return SPIR_GET_IMPL_FAILED;
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
     }
 }
 
-int32_t spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
+spir_funcs* spir_basis_get_v(const spir_basis *b, int32_t *status)
 {
-    if (!b || !uhat) {
-        return SPIR_INVALID_ARGUMENT;
+    if (!b || !status) {
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
     }
 
     auto impl = get_impl_basis(b);
     if (!impl) {
-        return SPIR_GET_IMPL_FAILED;
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
     }
 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            return _spir_basis_get_uhat<sparseir::Fermionic>(b,
-                                                                         uhat);
+            spir_funcs *v = nullptr;
+            int32_t ret = _spir_get_v<sparseir::Fermionic>(b, &v);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return v;
         } else {
-            return _spir_basis_get_uhat<sparseir::Bosonic>(b, uhat);
+            spir_funcs *v = nullptr;
+            int32_t ret = _spir_get_v<sparseir::Bosonic>(b, &v);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return v;
         }
     } catch (const std::exception &e) {
-        return SPIR_GET_IMPL_FAILED;
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+}
+
+spir_funcs* spir_basis_get_uhat(const spir_basis *b, int32_t *status)
+{
+    if (!b || !status) {
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            spir_funcs *uhat = nullptr;
+            int32_t ret = _spir_basis_get_uhat<sparseir::Fermionic>(b, &uhat);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return uhat;
+        } else {
+            spir_funcs *uhat = nullptr;
+            int32_t ret = _spir_basis_get_uhat<sparseir::Bosonic>(b, &uhat);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return uhat;
+        }
+    } catch (const std::exception &e) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
     }
 }
 
@@ -776,29 +845,6 @@ int32_t spir_evaluate_matsubara_funcs(const spir_funcs *uiw,
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_evaluate_matsubara_funcs: " << e.what());
         return SPIR_INTERNAL_ERROR;
-    }
-}
-
-int32_t spir_basis_get_u(const spir_basis *b,
-                                     spir_funcs **u)
-{
-    if (!b || !u) {
-        return SPIR_INVALID_ARGUMENT;
-    }
-
-    auto impl = get_impl_basis(b);
-    if (!impl) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-
-    try {
-        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            return _spir_basis_get_u<sparseir::Fermionic>(b, u);
-        } else {
-            return _spir_basis_get_u<sparseir::Bosonic>(b, u);
-        }
-    } catch (const std::exception &e) {
-        return SPIR_GET_IMPL_FAILED;
     }
 }
 

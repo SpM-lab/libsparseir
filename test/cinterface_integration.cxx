@@ -510,22 +510,26 @@ void integration_test(double beta, double wmax, double epsilon,
     std::cout << "g_dlr: " << g_dlr << std::endl;
 
     // DLR basis functions
-    spir_funcs *dlr_u;
-    status = spir_basis_get_u(dlr, &dlr_u);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int32_t dlr_u_status;
+    spir_funcs *dlr_u = spir_basis_get_u(dlr, &dlr_u_status);
+    REQUIRE(dlr_u_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(dlr_u != nullptr);
 
-    spir_funcs *dlr_uhat;
-    status = spir_basis_get_uhat(dlr, &dlr_uhat);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int32_t dlr_uhat_status;
+    spir_funcs *dlr_uhat = spir_basis_get_uhat(dlr, &dlr_uhat_status);
+    REQUIRE(dlr_uhat_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(dlr_uhat != nullptr);
 
     // IR basis functions
-    spir_funcs *ir_u;
-    status = spir_basis_get_u(basis, &ir_u);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int32_t ir_u_status;
+    spir_funcs *ir_u = spir_basis_get_u(basis, &ir_u_status);
+    REQUIRE(ir_u_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(ir_u != nullptr);
 
-    spir_funcs *ir_uhat;
-    status = spir_basis_get_uhat(basis, &ir_uhat);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    int32_t ir_uhat_status;
+    spir_funcs *ir_uhat = spir_basis_get_uhat(basis, &ir_uhat_status);
+    REQUIRE(ir_uhat_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(ir_uhat != nullptr);
 
     // Compare the Greens function at all tau points between IR and DLR
     std::cout << "Evaluate Greens function at all tau points between IR and DLR" << std::endl;

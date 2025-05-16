@@ -208,13 +208,13 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
-    spir_funcs *u = nullptr;
-    int u_status = spir_basis_get_u(basis, &u);
+    int u_status;
+    spir_funcs *u = spir_basis_get_u(basis, &u_status);
     REQUIRE(u_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(u != nullptr);
 
-    spir_funcs *uhat = nullptr;
-    int uhat_status = spir_basis_get_uhat(basis, &uhat);
+    int uhat_status;
+    spir_funcs *uhat = spir_basis_get_uhat(basis, &uhat_status);
     REQUIRE(uhat_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(uhat != nullptr);
 
@@ -237,8 +237,8 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test v basis functions
-    spir_funcs *v = nullptr;
-    int v_status = spir_get_v(basis, &v);
+    int v_status;
+    spir_funcs *v = spir_basis_get_v(basis, &v_status);
     REQUIRE(v_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(v != nullptr);
 
@@ -255,6 +255,7 @@ void test_finite_temp_basis_basis_functions()
     free(out);
     spir_funcs_destroy(u);
     spir_funcs_destroy(v);
+    spir_funcs_destroy(uhat);
 
     // Test error cases
     eval_status = spir_funcs_evaluate(nullptr, x, out);
