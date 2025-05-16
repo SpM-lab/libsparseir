@@ -464,7 +464,7 @@ int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles);
  * to the Discrete Lehmann Representation (DLR) using the specified DLR object.
  * This version handles real (double precision) input and output arrays.
  *
- * @param dlr Pointer to the fermionic DLR object
+ * @param dlr Pointer to the DLR basis object
  * @param order Order type (C or Fortran)
  * @param ndim Number of dimensions of input/output arrays
  * @param input_dims Array of dimensions
@@ -686,7 +686,7 @@ int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size);
  * The output array out[j] contains the value of the j-th function evaluated at
  * x.
  *
- * @param uv Pointer to a functions object
+ * @param funcs Pointer to a functions object
  * @param x Point at which to evaluate the functions
  * @param out Pre-allocated array to store the evaluation results.
  * @return An integer status code:
@@ -701,11 +701,11 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
 /**
  * @brief Evaluates basis functions at multiple Matsubara frequencies.
  *
- * This function evaluates all functions contained in a Matsubara functions
- * object at the specified Matsubara frequency indices. The values of each
+ * This function evaluates all functions contained in a functions object
+ * at the specified Matsubara frequency indices. The values of each
  * function at each frequency are stored in the output array.
  *
- * @param uiw Pointer to the Matsubara functions object
+ * @param uiw Pointer to the functions object
  * @param order Specifies the memory layout of the output array:
  *             SPIR_ORDER_ROW_MAJOR for row-major order (frequency index varies
  * fastest), SPIR_ORDER_COLUMN_MAJOR for column-major order (function index
@@ -724,9 +724,9 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
  *        bosonic frequencies.
  */
 int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
-                                      spir_order_type order, int32_t num_freqs,
-                                      int32_t *matsubara_freq_indices,
-                                      c_complex *out);
+                                    spir_order_type order, int32_t num_freqs,
+                                    int32_t *matsubara_freq_indices,
+                                    c_complex *out);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.
