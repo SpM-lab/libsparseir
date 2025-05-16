@@ -26,7 +26,7 @@
   public :: c_spir_kernel_domain
   public :: c_spir_basis_get_size
   public :: c_spir_finite_temp_basis_get_statistics
-  public :: c_spir_tau_sampling_new
+  public :: c_spir_tau_sampling_new_old
   public :: c_spir_matsubara_sampling_new
   public :: c_spir_matsubara_sampling_dlr_new
   public :: c_spir_dlr_new

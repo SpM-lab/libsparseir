@@ -164,11 +164,11 @@ function c_spir_finite_temp_basis_get_statistics(b, statistics) bind(c, name="sp
   integer(c_int) :: c_spir_finite_temp_basis_get_statistics
 end function
 
-function c_spir_tau_sampling_new(s, b) bind(c, name="spir_tau_sampling_new") result(c_spir_tau_sampling_new)
+function c_spir_tau_sampling_new_old(s, b) bind(c, name="spir_tau_sampling_new_old") result(c_spir_tau_sampling_new_old)
   use iso_c_binding
   type(c_ptr) :: s
   type(c_ptr), value :: b
-  integer(c_int) :: c_spir_tau_sampling_new
+  integer(c_int) :: c_spir_tau_sampling_new_old
 end function
 
 function c_spir_matsubara_sampling_new(s, b, positive_only) bind(c, name="spir_matsubara_sampling_new") result(c_spir_matsubara_sampling_new)

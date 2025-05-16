@@ -364,6 +364,18 @@ spir_funcs *spir_basis_get_v(const spir_basis *b, int32_t *status);
  */
 spir_funcs *spir_basis_get_uhat(const spir_basis *b, int32_t *status);
 
+// only for IR basis
+int32_t spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int32_t *num_points);
+
+// only for IR basis
+int32_t spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *points);
+
+// only for IR basis
+int32_t spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *num_points);
+
+// only for IR basis
+int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *points);
+
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
  *
@@ -555,28 +567,29 @@ int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order,
 
 /**
  * @brief Creates a new tau sampling object for sparse sampling in
- * imaginary time.
+ * imaginary time with custom sampling points.
  *
  * Constructs a sampling object that allows transformation between the IR basis
- * and a set of sampling points in imaginary time (τ). The sampling points are
- * automatically chosen as the extrema of the highest-order basis function in
- * imaginary time, which provides near-optimal conditioning for the given basis
- * size.
+ * and a user-specified set of sampling points in imaginary time (τ). The sampling
+ * points are provided by the user, allowing for custom sampling strategies.
  *
  * @param b Pointer to a finite temperature basis object
+ * @param num_points Number of sampling points
+ * @param points Array of sampling points in imaginary time (τ)
  * @param status Pointer to store the status code
  * @return Pointer to the newly created sampling object, or NULL if creation
  * fails
  *
- * @note The sampling points are chosen to optimize numerical stability and
- *       accuracy
+ * @note The sampling points should be chosen to ensure numerical stability and
+ *       accuracy for the given basis
  * @note The sampling matrix is automatically factorized using SVD for efficient
  *       transformations
  * @note The returned object must be freed using spir_destroy_sampling when no
  *       longer needed
  * @see spir_destroy_sampling
  */
-spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t *status);
+spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t num_points, const double *points, int32_t *status);
+
 
 /**
  * @brief Creates a new Matsubara sampling object for sparse sampling

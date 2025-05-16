@@ -210,7 +210,7 @@ assert(basis != NULL);
 
 // Create sampling objects for imaginary-time and Matsubara domains
 spir_sampling* tau_sampling;
-status = spir_tau_sampling_new(&tau_sampling, basis);
+status = spir_tau_sampling_new_old(&tau_sampling, basis);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(tau_sampling != NULL);
 

@@ -417,17 +417,29 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // Tau Sampling
     std::cout << "Tau sampling" << std::endl;
-    spir_sampling *tau_sampling = spir_tau_sampling_new(basis, &status);
+    int32_t num_tau_points;
+    status = spir_basis_get_num_default_tau_sampling_points(basis, &num_tau_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(num_tau_points > 0);
+
+    Eigen::VectorXd tau_points_org(num_tau_points);
+    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    spir_sampling *tau_sampling = spir_tau_sampling_new(basis, num_tau_points, tau_points_org.data(), &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(tau_sampling != nullptr);
 
-    int32_t num_tau_points;
     status = spir_sampling_get_num_points(tau_sampling, &num_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     Eigen::VectorXd tau_points(num_tau_points);
     status = spir_sampling_get_tau_points(tau_sampling, tau_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_tau_points >= basis_size);
+    // compare tau_points and tau_points_org
+    for (int i = 0; i < num_tau_points; i++) {
+        REQUIRE(tau_points(i) == Approx(tau_points_org(i)));
+    }
 
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;

@@ -138,13 +138,16 @@ public:
     virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
 };
 
+
+
+
 template <typename S>
-class _FiniteTempBasis : public AbstractFiniteTempBasis {
+class _IRBasis : public AbstractFiniteTempBasis {
 private:
     std::shared_ptr<sparseir::FiniteTempBasis<S>> impl;
 
 public:
-    _FiniteTempBasis(std::shared_ptr<sparseir::FiniteTempBasis<S>> impl)
+    _IRBasis(std::shared_ptr<sparseir::FiniteTempBasis<S>> impl)
         : impl(impl)
     {
     }
@@ -186,6 +189,28 @@ public:
     std::shared_ptr<sparseir::FiniteTempBasis<S>> get_impl() const
     {
         return impl;
+    }
+
+    std::vector<double> default_tau_sampling_points() const
+    {
+        // convert from Eigen::VectorXd to std::vector<double>
+        auto sampling = impl->default_tau_sampling_points();
+        return std::vector<double>(sampling.data(), sampling.data() + sampling.size());
+    }
+
+    std::vector<int32_t> default_matsubara_sampling_points(bool positive_only) const
+    {
+        bool fence = false;
+        int32_t L = size();
+
+        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
+        std::vector<int32_t> points(matsubara_points.size());
+        std::transform(
+            matsubara_points.begin(), matsubara_points.end(), points.begin(),
+        [](const sparseir::MatsubaraFreq<S> &freq) {
+            return static_cast<int>(freq.get_n());
+        });
+        return points;
     }
 };
 

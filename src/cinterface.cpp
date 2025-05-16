@@ -158,7 +158,7 @@ spir_basis* spir_basis_new(spir_statistics_type statistics, double beta,
                 std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
             *status = SPIR_COMPUTATION_SUCCESS;
             return create_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
+                std::make_shared<_IRBasis<sparseir::Fermionic>>(impl));
         } else {
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Bosonic>;
@@ -166,7 +166,7 @@ spir_basis* spir_basis_new(spir_statistics_type statistics, double beta,
                 std::make_shared<FiniteTempBasisType>(beta, omega_max, epsilon, kernel, sve_result);
             *status = SPIR_COMPUTATION_SUCCESS;
             return create_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
+                std::make_shared<_IRBasis<sparseir::Bosonic>>(impl));
         }
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_basis_new: " << e.what());
@@ -225,37 +225,6 @@ spir_basis* spir_basis_new_with_sve(
     }
 }
 
-spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t* status)
-{
-    auto impl = get_impl_basis(b);
-    if (!impl) {
-        *status = SPIR_GET_IMPL_FAILED;
-        return nullptr;
-    }
-    if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
-        *status = SPIR_INVALID_ARGUMENT;
-        return nullptr;
-    }
-
-    spir_statistics_type stat;
-    int32_t stat_status = spir_basis_get_statistics(b, &stat);
-    if (stat_status != SPIR_COMPUTATION_SUCCESS) {
-        *status = SPIR_GET_IMPL_FAILED;
-        return nullptr;
-    }
-
-    if (stat == SPIR_STATISTICS_FERMIONIC) {
-        *status = SPIR_COMPUTATION_SUCCESS;
-        return _spir_sampling_new<sparseir::Fermionic,
-                                  sparseir::TauSampling<sparseir::Fermionic>>(
-            b);
-    } else {
-        *status = SPIR_COMPUTATION_SUCCESS;
-        return _spir_sampling_new<sparseir::Bosonic,
-                                  sparseir::TauSampling<sparseir::Bosonic>>(b);
-    }
-}
 
 spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t* status)
 {
@@ -289,6 +258,43 @@ spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_on
     }
 }
 
+spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t num_points, const double *points, int32_t* status)
+{
+    if (!b || !points || num_points <= 0) {
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return _spir_sampling_new_with_points<sparseir::Fermionic,
+                                                sparseir::TauSampling<sparseir::Fermionic>>(
+                b, num_points, points);
+        } else {
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return _spir_sampling_new_with_points<sparseir::Bosonic,
+                                                sparseir::TauSampling<sparseir::Bosonic>>(
+                b, num_points, points);
+        }
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_tau_sampling_new: " << e.what());
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
 
 spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
 {
@@ -766,6 +772,138 @@ int32_t spir_basis_get_size(const spir_basis *b,
         *size = impl->size();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int32_t *num_points)
+{
+    if (!b || !num_points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto points = ir_basis->default_tau_sampling_points();
+            *num_points = points.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto points = ir_basis->default_tau_sampling_points();
+            *num_points = points.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *points)
+{
+    if (!b || !points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto tau_points = ir_basis->default_tau_sampling_points();
+            std::copy(tau_points.begin(), tau_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto tau_points = ir_basis->default_tau_sampling_points();
+            std::copy(tau_points.begin(), tau_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *num_points)
+{
+    if (!b || !num_points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto points = ir_basis->default_matsubara_sampling_points(positive_only);
+            *num_points = points.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto points = ir_basis->default_matsubara_sampling_points(positive_only);
+            *num_points = points.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *points)
+{
+    if (!b || !points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points(positive_only);
+            std::copy(matsubara_points.begin(), matsubara_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points(positive_only);
+            std::copy(matsubara_points.begin(), matsubara_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
         return SPIR_GET_IMPL_FAILED;
     }
 }

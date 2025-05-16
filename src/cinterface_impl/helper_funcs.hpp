@@ -10,8 +10,8 @@ inline bool is_dlr_basis(const spir_basis *b) {
 }
 
 inline bool is_ir_basis(const spir_basis *b) {
-    return std::dynamic_pointer_cast<_FiniteTempBasis<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
-           std::dynamic_pointer_cast<_FiniteTempBasis<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
+    return std::dynamic_pointer_cast<_IRBasis<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
+           std::dynamic_pointer_cast<_IRBasis<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
 }
 
 // Helper function to convert N-dimensional array to 3D array by collapsing
@@ -225,10 +225,40 @@ spir_sampling *_spir_sampling_new(const spir_basis *b)
         return nullptr;
 
     auto impl_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
     return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
         std::make_shared<SMPL>(impl_finite_temp_basis)));
 }
+
+
+template<typename S, typename SMPL>
+spir_sampling* _spir_sampling_new_with_points(const spir_basis *b, int32_t num_points, const double *points) {
+
+    std::shared_ptr<AbstractFiniteTempBasis> impl =
+        get_impl_basis(b);
+    if (!impl)
+        return nullptr;
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return nullptr;
+    }
+    if (num_points <= 0) {
+        std::cerr << "Error: Number of points must be positive" << std::endl;
+        return nullptr;
+    }
+
+    auto impl_finite_temp_basis =
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
+
+    Eigen::VectorXd sampling_points(num_points);
+    for (std::size_t i = 0; i < num_points; i++) {
+        sampling_points(i) = points[i];
+    }
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
+        std::make_shared<SMPL>(impl_finite_temp_basis, sampling_points)));
+}
+
 
 
 template <typename S, typename SMPL>
@@ -240,7 +270,7 @@ spir_sampling *_spir_matsubara_sampling_new(const spir_basis *b, bool positive_o
         return nullptr;
 
     auto impl_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
     return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
         std::make_shared<SMPL>(impl_finite_temp_basis, positive_only)));
 }
@@ -278,7 +308,7 @@ spir_basis *_spir_dlr_new(const spir_basis *b)
     }
 
     auto ptr_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
     auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis);
 
     auto ptr_dlr = std::make_shared<_DLR<S>>(
@@ -296,7 +326,7 @@ spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
         return nullptr;
 
     auto ptr_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
 
     Eigen::VectorXd poles_vec(npoles);
     for (int i = 0; i < npoles; i++) {
@@ -319,7 +349,7 @@ int32_t _spir_basis_get_u(const spir_basis *b,
             return SPIR_GET_IMPL_FAILED;
         }
         if (is_ir_basis(b)) {
-            std::shared_ptr<sparseir::TauFunctions<S, sparseir::PiecewiseLegendrePoly>> u_impl = std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl()->u;
+            std::shared_ptr<sparseir::TauFunctions<S, sparseir::PiecewiseLegendrePoly>> u_impl = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl()->u;
             *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
         } else if (is_dlr_basis(b)) {
             std::shared_ptr<sparseir::TauFunctions<S, sparseir::DLRBasisFunction<S>>> u_impl = std::static_pointer_cast<_DLR<S>>(impl)->get_impl()->u;
@@ -385,14 +415,14 @@ spir_basis* _spir_basis_new_with_sve(
             auto impl = std::make_shared<FiniteTempBasisType>(
                 beta, omega_max, kernel, *sve_impl);
             return create_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
+                std::make_shared<_IRBasis<sparseir::Fermionic>>(impl));
         } else {
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Bosonic>;
             auto impl = std::make_shared<FiniteTempBasisType>(
                 beta, omega_max, kernel, *sve_impl);
             return create_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
+                std::make_shared<_IRBasis<sparseir::Bosonic>>(impl));
         }
     } catch (...) {
         return nullptr;

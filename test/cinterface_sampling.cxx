@@ -25,20 +25,45 @@ spir_statistics_type get_stat()
 }
 
 template <typename S>
+spir_sampling *create_tau_sampling(spir_basis *basis)
+{
+    int status;
+    int n_tau_points;
+    status = spir_basis_get_num_default_tau_sampling_points(basis, &n_tau_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    double *tau_points_org = (double *)malloc(n_tau_points * sizeof(double));
+    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    return spir_tau_sampling_new(basis, n_tau_points, tau_points_org, &status);
+}
+
+template <typename S>
 void test_tau_sampling()
 {
     double beta = 1.0;
     double wmax = 10.0;
 
     auto stat = get_stat<S>();
+    int status;
 
     int basis_status;
     spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-15, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
+    int n_tau_points;
+    status = spir_basis_get_num_default_tau_sampling_points(basis, &n_tau_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_tau_points > 0);
+
+    double *tau_points_org = (double *)malloc(n_tau_points * sizeof(double));
+    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
     int sampling_status;
-    spir_sampling *sampling = spir_tau_sampling_new(basis, &sampling_status);
+    spir_sampling *sampling = spir_tau_sampling_new(basis, n_tau_points, tau_points_org, &sampling_status);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -52,7 +77,11 @@ void test_tau_sampling()
     double *tau_points = (double *)malloc(n_points * sizeof(double));
     int tau_status = spir_sampling_get_tau_points(sampling, tau_points);
     REQUIRE(tau_status == SPIR_COMPUTATION_SUCCESS);
-    free(tau_points);
+
+    // compare tau_points and tau_points_org
+    for (int i = 0; i < n_points; i++) {
+        REQUIRE(tau_points[i] == Approx(tau_points_org[i]));
+    }
 
     int *matsubara_points = (int *)malloc(n_points * sizeof(int));
     int matsubara_status = spir_sampling_get_matsubara_points(sampling, matsubara_points);
@@ -79,9 +108,7 @@ void test_tau_sampling_evaluation_1d_column_major()
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    int sampling_status;
-    spir_sampling *sampling = spir_tau_sampling_new(basis, &sampling_status);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -168,9 +195,7 @@ void test_tau_sampling_evaluation_4d_row_major()
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    int sampling_status;
-    spir_sampling *sampling = spir_tau_sampling_new(basis, &sampling_status);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -302,9 +327,7 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    int sampling_status;
-    spir_sampling *sampling = spir_tau_sampling_new(basis, &sampling_status);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -444,9 +467,7 @@ void test_tau_sampling_evaluation_4d_column_major()
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    int sampling_status;
-    spir_sampling *sampling = spir_tau_sampling_new(basis, &sampling_status);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -545,9 +566,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    int sampling_status;
-    spir_sampling *sampling = spir_tau_sampling_new(basis, &sampling_status);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -690,9 +709,7 @@ TEST_CASE("TauSampling", "[cinterface]")
         REQUIRE(basis != nullptr);
 
         // Create sampling
-        int sampling_status;
-        spir_sampling *sampling = spir_tau_sampling_new(basis, &sampling_status);
-        REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+        spir_sampling *sampling = create_tau_sampling<sparseir::Fermionic>(basis);
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
