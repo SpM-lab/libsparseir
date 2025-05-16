@@ -482,14 +482,14 @@ int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles);
  *       specified order type. The output array will be in the specified order
  *       type.
  *
- * @see spir_dlr_from_IR
- * @see spir_dlr_to_IR_dd
+ * @see spir_ir_to_dlr
+ * @see spir_dlr_to_ir_dd
  */
-int32_t spir_dlr_from_IR_dd(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const double *input, double *out);
 
-int32_t spir_dlr_from_IR_zz(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const c_complex *input, c_complex *out);
 
@@ -525,9 +525,9 @@ int32_t spir_dlr_from_IR_zz(const spir_basis *dlr, spir_order_type order,
  * @note The transformation is a direct matrix multiplication, which is
  *       typically faster than the inverse transformation
  *
- * @see spir_dlr_from_IR
+ * @see spir_ir_to_dlr
  */
-int32_t spir_dlr_to_IR_dd(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out);
 
@@ -563,10 +563,10 @@ int32_t spir_dlr_to_IR_dd(const spir_basis *dlr, spir_order_type order, int32_t 
  * @note The transformation is a direct matrix multiplication, which is
  *       typically faster than the inverse transformation
  *
- * @see spir_dlr_from_IR_zz
- * @see spir_dlr_to_IR_dd
+ * @see spir_ir_to_dlr_zz
+ * @see spir_dlr_to_ir_dd
  */
-int32_t spir_dlr_to_IR_zz(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const c_complex *input, c_complex *out);
 

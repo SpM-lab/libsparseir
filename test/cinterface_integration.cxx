@@ -286,11 +286,11 @@ int32_t dlr_to_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
                   const int32_t* dims, int32_t target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
-        return spir_dlr_to_IR_dd(dlr, order, ndim, dims, target_dim,
+        return spir_dlr_to_ir_dd(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const double*>(coeffs),
                                 reinterpret_cast<double*>(g_IR));
     } else if (std::is_same<T, std::complex<double>>::value) {
-        return spir_dlr_to_IR_zz(dlr, order, ndim, dims, target_dim,
+        return spir_dlr_to_ir_zz(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const c_complex*>(coeffs),
                                 reinterpret_cast<c_complex*>(g_IR));
     }
@@ -303,11 +303,11 @@ int32_t dlr_from_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
                   const int32_t* dims, int32_t target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
-        return spir_dlr_from_IR_dd(dlr, order, ndim, dims, target_dim,
+        return spir_ir_to_dlr_dd(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const double*>(coeffs),
                                 reinterpret_cast<double*>(g_IR));
     } else if (std::is_same<T, std::complex<double>>::value) {
-        return spir_dlr_from_IR_zz(dlr, order, ndim, dims, target_dim,
+        return spir_ir_to_dlr_zz(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const c_complex*>(coeffs),
                                 reinterpret_cast<c_complex*>(g_IR));
     }

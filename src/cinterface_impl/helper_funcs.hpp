@@ -148,7 +148,7 @@ spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_to_IR(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim, const T *input, T *out)
 {
     std::shared_ptr<_DLR<S>> impl =
@@ -175,7 +175,7 @@ int32_t spir_dlr_to_IR(const spir_basis *dlr, spir_order_type order, int32_t ndi
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_from_IR(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const T *input, T *out)
 {

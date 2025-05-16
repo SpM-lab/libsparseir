@@ -381,7 +381,7 @@ int32_t spir_sampling_fit_zz(const spir_sampling *s, spir_order_type order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int32_t spir_dlr_to_IR_dd(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out)
 {
@@ -395,15 +395,15 @@ int32_t spir_dlr_to_IR_dd(const spir_basis *dlr, spir_order_type order, int32_t 
     }
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_dlr_to_IR<sparseir::Fermionic, double>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr_to_ir<sparseir::Fermionic, double>(dlr, order, ndim, input_dims, target_dim,
                                                    input, out);
     } else {
-        return spir_dlr_to_IR<sparseir::Bosonic, double>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr_to_ir<sparseir::Bosonic, double>(dlr, order, ndim, input_dims, target_dim,
                                                  input, out);
     }
 }
 
-int32_t spir_dlr_to_IR_zz(const spir_basis *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const c_complex *input, c_complex *out)
 {
@@ -420,15 +420,15 @@ int32_t spir_dlr_to_IR_zz(const spir_basis *dlr, spir_order_type order, int32_t 
     std::complex<double> *cpp_out = (std::complex<double> *)(out);
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_dlr_to_IR<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr_to_ir<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
                                                    cpp_input, cpp_out);
     } else {
-        return spir_dlr_to_IR<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr_to_ir<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
                                                  cpp_input, cpp_out);
     }
 }
 
-int32_t spir_dlr_from_IR_dd(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const double *input, double *out)
 {
@@ -442,15 +442,15 @@ int32_t spir_dlr_from_IR_dd(const spir_basis *dlr, spir_order_type order,
     }
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_dlr_from_IR<sparseir::Fermionic, double>(dlr, order, ndim,
+        return spir_ir_to_dlr<sparseir::Fermionic, double>(dlr, order, ndim,
                                                      input_dims, target_dim, input, out);
     } else {
-        return spir_dlr_from_IR<sparseir::Bosonic, double>(dlr, order, ndim, input_dims,
+        return spir_ir_to_dlr<sparseir::Bosonic, double>(dlr, order, ndim, input_dims,
                                                    target_dim, input, out);
     }
 }
 
-int32_t spir_dlr_from_IR_zz(const spir_basis *dlr, spir_order_type order,
+int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const c_complex *input, c_complex *out)
 {
@@ -467,10 +467,10 @@ int32_t spir_dlr_from_IR_zz(const spir_basis *dlr, spir_order_type order,
     std::complex<double> *cpp_out = (std::complex<double> *)(out);
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_dlr_from_IR<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim,
+        return spir_ir_to_dlr<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim,
                                                      input_dims, target_dim, cpp_input, cpp_out);
     } else {
-        return spir_dlr_from_IR<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims,
+        return spir_ir_to_dlr<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims,
                                                    target_dim, cpp_input, cpp_out);
     }
 }

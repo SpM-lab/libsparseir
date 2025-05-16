@@ -286,7 +286,7 @@ function c_spir_dlr_get_poles(dlr, poles) bind(c, name="spir_dlr_get_poles") res
   integer(c_int) :: c_spir_dlr_get_poles
 end function
 
-function c_spir_dlr_from_IR_dd(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_from_IR_dd") result(c_spir_dlr_from_IR_dd)
+function c_spir_ir_to_dlr_dd(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_ir_to_dlr_dd") result(c_spir_ir_to_dlr_dd)
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -295,10 +295,10 @@ function c_spir_dlr_from_IR_dd(dlr, order, ndim, input_dims, target_dim, input, 
   integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int) :: c_spir_dlr_from_IR_dd
+  integer(c_int) :: c_spir_ir_to_dlr_dd
 end function
 
-function c_spir_dlr_from_IR_zz(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_from_IR_zz") result(c_spir_dlr_from_IR_zz)
+function c_spir_ir_to_dlr_zz(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_ir_to_dlr_zz") result(c_spir_ir_to_dlr_zz)
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -307,10 +307,10 @@ function c_spir_dlr_from_IR_zz(dlr, order, ndim, input_dims, target_dim, input, 
   integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int) :: c_spir_dlr_from_IR_zz
+  integer(c_int) :: c_spir_ir_to_dlr_zz
 end function
 
-function c_spir_dlr_to_IR_dd(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_to_IR_dd") result(c_spir_dlr_to_IR_dd)
+function c_spir_dlr_to_ir_dd(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_to_ir_dd") result(c_spir_dlr_to_ir_dd)
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -319,10 +319,10 @@ function c_spir_dlr_to_IR_dd(dlr, order, ndim, input_dims, target_dim, input, ou
   integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int) :: c_spir_dlr_to_IR_dd
+  integer(c_int) :: c_spir_dlr_to_ir_dd
 end function
 
-function c_spir_dlr_to_IR_zz(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_to_IR_zz") result(c_spir_dlr_to_IR_zz)
+function c_spir_dlr_to_ir_zz(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_to_ir_zz") result(c_spir_dlr_to_ir_zz)
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -331,7 +331,7 @@ function c_spir_dlr_to_IR_zz(dlr, order, ndim, input_dims, target_dim, input, ou
   integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int) :: c_spir_dlr_to_IR_zz
+  integer(c_int) :: c_spir_dlr_to_ir_zz
 end function
 
 function c_spir_dlr_get_u(dlr, u) bind(c, name="spir_dlr_get_u") result(c_spir_dlr_get_u)

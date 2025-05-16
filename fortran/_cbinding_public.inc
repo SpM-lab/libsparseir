@@ -39,10 +39,10 @@
   public :: c_spir_sampling_fit_zz
   public :: c_spir_dlr_get_num_poles
   public :: c_spir_dlr_get_poles
-  public :: c_spir_dlr_from_IR_dd
-  public :: c_spir_dlr_from_IR_zz
-  public :: c_spir_dlr_to_IR_dd
-  public :: c_spir_dlr_to_IR_zz
+  public :: c_spir_ir_to_dlr_dd
+  public :: c_spir_ir_to_dlr_zz
+  public :: c_spir_dlr_to_ir_dd
+  public :: c_spir_dlr_to_ir_zz
   public :: c_spir_dlr_get_u
   public :: c_spir_dlr_get_uhat
   public :: c_spir_finite_temp_basis_new
