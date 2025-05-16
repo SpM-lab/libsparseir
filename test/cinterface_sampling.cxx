@@ -69,7 +69,7 @@ void test_tau_sampling()
     int status;
 
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-15, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-15, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -122,7 +122,7 @@ void test_tau_sampling_evaluation_1d_column_major()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -209,7 +209,7 @@ void test_tau_sampling_evaluation_4d_row_major()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -341,7 +341,7 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -481,7 +481,7 @@ void test_tau_sampling_evaluation_4d_column_major()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -580,7 +580,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -723,7 +723,7 @@ TEST_CASE("TauSampling", "[cinterface]")
 
         // Create basis
         int basis_status;
-        spir_basis *basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10, &basis_status);
+        spir_basis *basis = _spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10, &basis_status);
         REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
 
@@ -833,7 +833,7 @@ void test_matsubara_sampling_constructor()
     auto stat = get_stat<S>();
 
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -906,7 +906,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1016,7 +1016,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1120,7 +1120,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1251,7 +1251,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -1388,7 +1388,7 @@ void test_matsubara_sampling_error_status()
 
     // Create basis
     int basis_status;
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 

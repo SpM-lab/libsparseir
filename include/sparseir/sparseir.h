@@ -231,25 +231,6 @@ int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
                                       int64_t *matsubara_freq_indices,
                                       c_complex *out);
 
-/**
- * @brief Creates a new finite temperature IR basis.
- *
- * This function creates a new finite temperature IR basis using the specified
- * parameters and the default logistic kernel. The basis is constructed based on
- * the given beta (inverse temperature), omega_max (frequency cutoff), and
- * epsilon (accuracy target).
- *
- * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
- * SPIR_STATISTICS_BOSONIC)
- * @param beta Inverse temperature β (must be positive)
- * @param omega_max Frequency cutoff ωmax (must be non-negative)
- * @param epsilon Accuracy target for the basis
- * @param status Pointer to store the status code
- * @return Pointer to the newly created basis object, or NULL if creation fails
- * @see spir_basis_new_with_kernel
- */
-//spir_basis *spir_basis_new(spir_statistics_t statistics, double beta,
-                           //double omega_max, double epsilon, int32_t *status);
 
 /**
  * @brief Creates a new finite temperature IR basis using a
@@ -274,7 +255,7 @@ int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
  * @see spir_sve_result_new
  * @see spir_destroy_finite_temp_basis
  */
-spir_basis *spir_basis_new_with_sve(int32_t statistics,
+spir_basis *spir_basis_new(int32_t statistics,
                                     double beta, double omega_max,
                                     const spir_kernel *k,
                                     const spir_sve_result *sve,

@@ -388,7 +388,7 @@ int32_t _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
 
 
 template <typename K>
-spir_basis* _spir_basis_new_with_sve(
+spir_basis* _spir_basis_new(
     int32_t statistics, double beta, double omega_max,
     const K& kernel, const spir_sve_result *sve)
 {

@@ -4,7 +4,7 @@
 
 #include <sparseir/sparseir.h> // C interface
 
-inline spir_basis *spir_basis_new(int32_t statistics, double beta,
+inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
                                   double omega_max, double epsilon,
                                   int32_t *status)
 {
@@ -30,7 +30,7 @@ inline spir_basis *spir_basis_new(int32_t statistics, double beta,
         }
 
         // Create a fermionic finite temperature basis with pre-computed SVE result
-        basis = spir_basis_new_with_sve(
+        basis = spir_basis_new(
             statistics, beta, omega_max, kernel, sve, &status_);
         if (status_ != SPIR_COMPUTATION_SUCCESS || basis == nullptr) {
             *status = status_;

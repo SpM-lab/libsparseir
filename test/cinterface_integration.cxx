@@ -408,7 +408,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve != nullptr);
 
-    spir_basis *basis = spir_basis_new(stat, beta, wmax, epsilon, &status);
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, epsilon, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
