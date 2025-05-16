@@ -136,9 +136,9 @@ free(g_fit2);
 free(g_tau);
 free(tau_points);
 free(g_matsubara_reconstructed);
-spir_basis_destroy(basis);
-spir_sampling_destroy(tau_sampling);
-spir_sampling_destroy(matsubara_sampling);
+spir_basis_release(basis);
+spir_sampling_release(tau_sampling);
+spir_sampling_release(matsubara_sampling);
 
     return 0;
 }

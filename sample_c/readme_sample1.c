@@ -82,12 +82,12 @@ free(uval);
 free(vval);
 free(matsubara_freq_indices);
 free(uhat_val);
-spir_funcs_destroy(u);
-spir_funcs_destroy(v);
-spir_funcs_destroy(uhat);
-spir_basis_destroy(basis);
-spir_sve_result_destroy(sve);
-spir_kernel_destroy(kernel);
+spir_funcs_release(u);
+spir_funcs_release(v);
+spir_funcs_release(uhat);
+spir_basis_release(basis);
+spir_sve_result_release(sve);
+spir_kernel_release(kernel);
 
     return 0;
 }

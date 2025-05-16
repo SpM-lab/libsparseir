@@ -108,8 +108,8 @@ void test_tau_sampling()
     REQUIRE(matsubara_status == SPIR_NOT_SUPPORTED);
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
 }
 
 template <typename S>
@@ -191,8 +191,8 @@ void test_tau_sampling_evaluation_1d_column_major()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     // Free allocated memory
     free(coeffs);
     free(evaluate_output);
@@ -325,8 +325,8 @@ void test_tau_sampling_evaluation_4d_row_major()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -465,8 +465,8 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -564,8 +564,8 @@ void test_tau_sampling_evaluation_4d_column_major()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -669,8 +669,8 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -814,8 +814,8 @@ TEST_CASE("TauSampling", "[cinterface]")
         }
 
         // Clean up
-        spir_sampling_destroy(sampling);
-        spir_basis_destroy(basis);
+        spir_sampling_release(sampling);
+        spir_basis_release(basis);
         free(output_complex);
         free(output_double);
         free(fit_output_double);
@@ -891,9 +891,9 @@ void test_matsubara_sampling_constructor()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_sampling_destroy(sampling_positive_only);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_sampling_release(sampling_positive_only);
+    spir_basis_release(basis);
 }
 
 template <typename S>
@@ -1000,8 +1000,8 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1104,8 +1104,8 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1234,8 +1234,8 @@ void test_matsubara_sampling_evaluation_4d_row_major()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1371,8 +1371,8 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1476,8 +1476,8 @@ void test_matsubara_sampling_error_status()
     }
 
     // Clean up
-    spir_sampling_destroy(sampling);
-    spir_basis_destroy(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(output_complex);
     free(output_double);
     free(fit_output_double);

@@ -152,7 +152,7 @@ def generate_fortran_type_definition(types):
         content.append(f"""  type :: {fortran_type_name}
     type(c_ptr) :: handle = c_null_ptr
   contains
-    final :: spir_destroy_{type_name}
+    final :: spir_release_{type_name}
   end type""")
     return "\n\n".join(content)
 
@@ -176,7 +176,7 @@ def generate_fortran_type_implementation(types):
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_{type_name_without_prefix}(lhs%handle)
+      call c_spir_release_{type_name_without_prefix}(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -187,11 +187,11 @@ def generate_fortran_type_implementation(types):
   end subroutine
 
   ! Finalizer for {type_name}
-  subroutine spir_destroy_{type_name}(this)
+  subroutine spir_release_{type_name}(this)
     type({fortran_type_name}), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_{type_name_without_prefix}(this%handle)
+      call c_spir_release_{type_name_without_prefix}(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine""")

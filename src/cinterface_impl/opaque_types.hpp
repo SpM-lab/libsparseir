@@ -77,7 +77,7 @@
     }                                                                          \
                                                                                \
     /* Destroy function */                                                     \
-    void spir_##name##_destroy(spir_##name *obj)                                 \
+    void spir_##name##_release(spir_##name *obj)                                 \
     {                                                                          \
         if (!obj) {                                                            \
             DEBUG_LOG(#name << " object is null");                             \

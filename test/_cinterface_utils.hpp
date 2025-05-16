@@ -25,7 +25,7 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
         sve = spir_sve_result_new(kernel, epsilon, &status_);
         if (status_ != SPIR_COMPUTATION_SUCCESS || sve == nullptr) {
             *status = status_;
-            spir_kernel_destroy(kernel);
+            spir_kernel_release(kernel);
             return nullptr;
         }
 
@@ -34,22 +34,22 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
             statistics, beta, omega_max, kernel, sve, &status_);
         if (status_ != SPIR_COMPUTATION_SUCCESS || basis == nullptr) {
             *status = status_;
-            spir_sve_result_destroy(sve);
-            spir_kernel_destroy(kernel);
+            spir_sve_result_release(sve);
+            spir_kernel_release(kernel);
             return nullptr;
         }
 
         // Success case - clean up intermediate objects
-        spir_sve_result_destroy(sve);
-        spir_kernel_destroy(kernel);
+        spir_sve_result_release(sve);
+        spir_kernel_release(kernel);
         *status = SPIR_COMPUTATION_SUCCESS;
         return basis;
 
     } catch (...) {
         // Clean up in case of exception
-        if (basis) spir_basis_destroy(basis);
-        if (sve) spir_sve_result_destroy(sve);
-        if (kernel) spir_kernel_destroy(kernel);
+        if (basis) spir_basis_release(basis);
+        if (sve) spir_sve_result_release(sve);
+        if (kernel) spir_kernel_release(kernel);
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }

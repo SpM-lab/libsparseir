@@ -10,7 +10,7 @@
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_dlr(lhs%handle)
+      call c_spir_release_dlr(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -21,11 +21,11 @@
   end subroutine
 
   ! Finalizer for spir_dlr
-  subroutine spir_destroy_spir_dlr(this)
+  subroutine spir_release_spir_dlr(this)
     type(spir_dlr_handle), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_dlr(this%handle)
+      call c_spir_release_dlr(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine
@@ -42,7 +42,7 @@
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_finite_temp_basis(lhs%handle)
+      call c_spir_release_finite_temp_basis(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -53,11 +53,11 @@
   end subroutine
 
   ! Finalizer for spir_finite_temp_basis
-  subroutine spir_destroy_spir_finite_temp_basis(this)
+  subroutine spir_release_spir_finite_temp_basis(this)
     type(spir_finite_temp_basis_handle), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_finite_temp_basis(this%handle)
+      call c_spir_release_finite_temp_basis(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine
@@ -74,7 +74,7 @@
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_funcs(lhs%handle)
+      call c_spir_release_funcs(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -85,11 +85,11 @@
   end subroutine
 
   ! Finalizer for spir_funcs
-  subroutine spir_destroy_spir_funcs(this)
+  subroutine spir_release_spir_funcs(this)
     type(spir_funcs_handle), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_funcs(this%handle)
+      call c_spir_release_funcs(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine
@@ -106,7 +106,7 @@
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_kernel(lhs%handle)
+      call c_spir_release_kernel(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -117,11 +117,11 @@
   end subroutine
 
   ! Finalizer for spir_kernel
-  subroutine spir_destroy_spir_kernel(this)
+  subroutine spir_release_spir_kernel(this)
     type(spir_kernel_handle), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_kernel(this%handle)
+      call c_spir_release_kernel(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine
@@ -138,7 +138,7 @@
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_matsubara_funcs(lhs%handle)
+      call c_spir_release_matsubara_funcs(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -149,11 +149,11 @@
   end subroutine
 
   ! Finalizer for spir_matsubara_funcs
-  subroutine spir_destroy_spir_matsubara_funcs(this)
+  subroutine spir_release_spir_matsubara_funcs(this)
     type(spir_matsubara_funcs_handle), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_matsubara_funcs(this%handle)
+      call c_spir_release_matsubara_funcs(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine
@@ -170,7 +170,7 @@
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_sampling(lhs%handle)
+      call c_spir_release_sampling(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -181,11 +181,11 @@
   end subroutine
 
   ! Finalizer for spir_sampling
-  subroutine spir_destroy_spir_sampling(this)
+  subroutine spir_release_spir_sampling(this)
     type(spir_sampling_handle), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_sampling(this%handle)
+      call c_spir_release_sampling(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine
@@ -202,7 +202,7 @@
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_destroy_sve_result(lhs%handle)
+      call c_spir_release_sve_result(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
@@ -213,11 +213,11 @@
   end subroutine
 
   ! Finalizer for spir_sve_result
-  subroutine spir_destroy_spir_sve_result(this)
+  subroutine spir_release_spir_sve_result(this)
     type(spir_sve_result_handle), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_destroy_sve_result(this%handle)
+      call c_spir_release_sve_result(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine

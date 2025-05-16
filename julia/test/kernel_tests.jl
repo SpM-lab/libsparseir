@@ -3,13 +3,13 @@
 
 	@testset "Logistic kernel" begin
 		k = LibSparseIR.spir_logistic_kernel_new(9.0)
-		LibSparseIR.spir_destroy_logistic_kernel(k)
+		LibSparseIR.spir_release_logistic_kernel(k)
 		@test true
 	end
 
 	@testset "Regularized Bose kernel" begin
 		k = LibSparseIR.spir_regularized_bose_kernel_new(10.0)
-		LibSparseIR.spir_destroy_regularized_bose_kernel(k)
+		LibSparseIR.spir_release_regularized_bose_kernel(k)
 		@test true
 	end
 

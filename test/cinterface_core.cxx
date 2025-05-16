@@ -65,7 +65,7 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
         REQUIRE(ymax == cpp_ymax);
 
         // Clean up
-        spir_kernel_destroy(kernel);
+        spir_kernel_release(kernel);
     }
 }
 
@@ -133,9 +133,9 @@ void test_finite_temp_basis_constructor_with_sve()
     REQUIRE(stats == stat);
 
     // Clean up
-    spir_kernel_destroy(kernel);
-    spir_sve_result_destroy(sve_result);
-    spir_basis_destroy(basis);
+    spir_kernel_release(kernel);
+    spir_sve_result_release(sve_result);
+    spir_basis_release(basis);
 }
 
 TEST_CASE("FiniteTempBasis", "[cinterface]")
@@ -190,9 +190,9 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         REQUIRE(stats == SPIR_STATISTICS_BOSONIC);
 
         // Clean up
-        spir_kernel_destroy(kernel);
-        spir_sve_result_destroy(sve_result);
-        spir_basis_destroy(basis);
+        spir_kernel_release(kernel);
+        spir_sve_result_release(sve_result);
+        spir_basis_release(basis);
     }
 }
 
@@ -255,9 +255,9 @@ void test_finite_temp_basis_basis_functions()
     }
 
     free(out);
-    spir_funcs_destroy(u);
-    spir_funcs_destroy(v);
-    spir_funcs_destroy(uhat);
+    spir_funcs_release(u);
+    spir_funcs_release(v);
+    spir_funcs_release(uhat);
 
     // Test error cases
     eval_status = spir_funcs_evaluate(nullptr, x, out);
@@ -267,7 +267,7 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(eval_status != SPIR_COMPUTATION_SUCCESS);
 
     // Clean up
-    spir_basis_destroy(basis);
+    spir_basis_release(basis);
 }
 
 TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")

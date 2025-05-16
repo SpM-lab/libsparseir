@@ -49,13 +49,13 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis_regularized != NULL);
 
 // Clean up (in arbitrary order)
-spir_kernel_destroy(logistic_kernel);
-spir_sve_result_destroy(sve_logistic);
-spir_kernel_destroy(regularized_kernel);
-spir_sve_result_destroy(sve_regularized);
-spir_basis_destroy(basis_fermionic);
-spir_basis_destroy(basis_bosonic);
-spir_basis_destroy(basis_regularized);
+spir_kernel_release(logistic_kernel);
+spir_sve_result_release(sve_logistic);
+spir_kernel_release(regularized_kernel);
+spir_sve_result_release(sve_regularized);
+spir_basis_release(basis_fermionic);
+spir_basis_release(basis_bosonic);
+spir_basis_release(basis_regularized);
 
     return 0;
 }

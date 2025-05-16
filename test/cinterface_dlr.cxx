@@ -142,7 +142,7 @@ void test_finite_temp_basis_dlr()
 
     // Clean up
     free(basis_values);
-    spir_funcs_destroy(uhat);
+    spir_funcs_release(uhat);
 
     for (int i = 0; i < n_smpl_points; i++) {
         // Compare real and imaginary parts with appropriate tolerance
@@ -156,9 +156,9 @@ void test_finite_temp_basis_dlr()
     free(giv_ref);
     free(giv);
     free(smpl_points);
-    spir_basis_destroy(basis);
-    spir_basis_destroy(dlr);
-    spir_basis_destroy(dlr_with_poles);
+    spir_basis_release(basis);
+    spir_basis_release(dlr);
+    spir_basis_release(dlr_with_poles);
 }
 
 TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")

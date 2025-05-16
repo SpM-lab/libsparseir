@@ -37,7 +37,7 @@ extern "C" {
     typedef struct _spir_##name spir_##name;                                   \
                                                                                \
     /* Destroy function */                                                     \
-    void spir_##name##_destroy(spir_##name *obj);                              \
+    void spir_##name##_release(spir_##name *obj);                              \
                                                                                \
     /* Clone function */                                                       \
     spir_##name *spir_##name##_clone(const spir_##name *src);                  \
@@ -158,9 +158,9 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  *       - If epsilon is below √ε (where ε is machine epsilon), a warning is
  *         issued and higher precision arithmetic is used
  *
- * @note The returned object must be freed using spir_destroy_sve_result when no
+ * @note The returned object must be freed using spir_release_sve_result when no
  * longer needed
- * @see spir_destroy_sve_result
+ * @see spir_release_sve_result
  */
 spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon,
                                      int32_t *status);
@@ -253,7 +253,7 @@ int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
  * @note Using a pre-computed SVE can significantly improve performance when
  *       creating multiple basis objects with the same kernel
  * @see spir_sve_result_new
- * @see spir_destroy_finite_temp_basis
+ * @see spir_release_finite_temp_basis
  */
 spir_basis *spir_basis_new(int32_t statistics,
                                     double beta, double omega_max,
@@ -315,9 +315,9 @@ int32_t spir_basis_get_statistics(const spir_basis *b,
  * @param status Pointer to store the status code
  * @return Pointer to the basis functions object, or NULL if creation fails
  *
- * @note The returned object must be freed using spir_destroy_funcs
+ * @note The returned object must be freed using spir_release_funcs
  *       when no longer needed
- * @see spir_destroy_funcs
+ * @see spir_release_funcs
  */
 spir_funcs *spir_basis_get_u(const spir_basis *b, int32_t *status);
 
@@ -331,9 +331,9 @@ spir_funcs *spir_basis_get_u(const spir_basis *b, int32_t *status);
  * @param status Pointer to store the status code
  * @return Pointer to the basis functions object, or NULL if creation fails
  *
- * @note The returned object must be freed using spir_destroy_funcs
+ * @note The returned object must be freed using spir_release_funcs
  *       when no longer needed
- * @see spir_destroy_funcs
+ * @see spir_release_funcs
  */
 spir_funcs *spir_basis_get_v(const spir_basis *b, int32_t *status);
 
@@ -347,9 +347,9 @@ spir_funcs *spir_basis_get_v(const spir_basis *b, int32_t *status);
  * @param status Pointer to store the status code
  * @return Pointer to the basis functions object, or NULL if creation fails
  *
- * @note The returned object must be freed using spir_destroy_funcs
+ * @note The returned object must be freed using spir_release_funcs
  *       when no longer needed
- * @see spir_destroy_funcs
+ * @see spir_release_funcs
  */
 spir_funcs *spir_basis_get_uhat(const spir_basis *b, int32_t *status);
 
@@ -659,9 +659,9 @@ int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, int32_t order,
  *       accuracy for the given basis
  * @note The sampling matrix is automatically factorized using SVD for efficient
  *       transformations
- * @note The returned object must be freed using spir_destroy_sampling when no
+ * @note The returned object must be freed using spir_release_sampling when no
  *       longer needed
- * @see spir_destroy_sampling
+ * @see spir_release_sampling
  */
 spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t num_points,
                                      const double *points, int32_t *status);

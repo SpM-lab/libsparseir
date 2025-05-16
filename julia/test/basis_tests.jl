@@ -13,7 +13,7 @@
 		@test status == 0
 		basis_size = basis_size_ref[]
 		@test basis_size > 0
-		LibSparseIR.spir_destroy_bosonic_finite_temp_basis(basis)
+		LibSparseIR.spir_release_bosonic_finite_temp_basis(basis)
 		@test true
 	end
 
@@ -25,7 +25,7 @@
 		@test status == 0
 		basis_size = basis_size_ref[]
 		@test basis_size > 0
-		LibSparseIR.spir_destroy_fermionic_finite_temp_basis(basis)
+		LibSparseIR.spir_release_fermionic_finite_temp_basis(basis)
 		@test true
 	end
 end
