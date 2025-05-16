@@ -126,7 +126,7 @@ void test_finite_temp_basis_constructor_with_sve()
     REQUIRE(basis != nullptr);
 
     spir_statistics_type stats;
-    int stats_status = spir_finite_temp_basis_get_statistics(basis, &stats);
+    int stats_status = spir_basis_get_statistics(basis, &stats);
     REQUIRE(stats_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(stats == stat);
 
@@ -183,7 +183,7 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         REQUIRE(basis != nullptr);
 
         spir_statistics_type stats;
-        int stats_status = spir_finite_temp_basis_get_statistics(basis, &stats);
+        int stats_status = spir_basis_get_statistics(basis, &stats);
         REQUIRE(stats_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(stats == SPIR_STATISTICS_BOSONIC);
 
@@ -209,12 +209,12 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(basis != nullptr);
 
     spir_funcs *u = nullptr;
-    int u_status = spir_finite_temp_basis_get_u(basis, &u);
+    int u_status = spir_basis_get_u(basis, &u);
     REQUIRE(u_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(u != nullptr);
 
     spir_matsubara_funcs *uhat = nullptr;
-    int uhat_status = spir_finite_temp_basis_get_uhat(basis, &uhat);
+    int uhat_status = spir_basis_get_uhat(basis, &uhat);
     REQUIRE(uhat_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(uhat != nullptr);
 
@@ -238,7 +238,7 @@ void test_finite_temp_basis_basis_functions()
 
     // Test v basis functions
     spir_funcs *v = nullptr;
-    int v_status = spir_finite_temp_basis_get_v(basis, &v);
+    int v_status = spir_get_v(basis, &v);
     REQUIRE(v_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(v != nullptr);
 

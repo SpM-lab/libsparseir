@@ -282,7 +282,7 @@ std::complex<double> generate_random_coeff<std::complex<double>>(double random_v
 
 // Add these template functions before the integration_test function
 template <typename T>
-int32_t dlr_to_IR(spir_dlr* dlr, spir_order_type order, int32_t ndim,
+int32_t dlr_to_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
                   const int32_t* dims, int32_t target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
@@ -299,7 +299,7 @@ int32_t dlr_to_IR(spir_dlr* dlr, spir_order_type order, int32_t ndim,
 
 
 template <typename T>
-int32_t dlr_from_IR(spir_dlr* dlr, spir_order_type order, int32_t ndim,
+int32_t dlr_from_IR(spir_basis* dlr, spir_order_type order, int32_t ndim,
                   const int32_t* dims, int32_t target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
@@ -452,7 +452,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // DLR
     std::cout << "DLR" << std::endl;
-    spir_dlr *dlr = spir_dlr_new(basis, &status);
+    spir_basis *dlr = spir_dlr_new(basis, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr != nullptr);
     int32_t npoles;
@@ -511,29 +511,33 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // DLR basis functions
     spir_funcs *dlr_u;
-    status = spir_dlr_get_u(dlr, &dlr_u);
+    status = spir_basis_get_u(dlr, &dlr_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     spir_matsubara_funcs *dlr_uhat;
-    status = spir_dlr_get_uhat(dlr, &dlr_uhat);
+    status = spir_basis_get_uhat(dlr, &dlr_uhat);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // IR basis functions
     spir_funcs *ir_u;
-    status = spir_finite_temp_basis_get_u(basis, &ir_u);
+    status = spir_basis_get_u(basis, &ir_u);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     spir_matsubara_funcs *ir_uhat;
-    status = spir_finite_temp_basis_get_uhat(basis, &ir_uhat);
+    status = spir_basis_get_uhat(basis, &ir_uhat);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare the Greens function at all tau points between IR and DLR
     std::cout << "Evaluate Greens function at all tau points between IR and DLR" << std::endl;
+    std::cout << "g_IR..." << std::endl;
     Eigen::Tensor<T, ndim, ORDER> gtau_from_IR =
         _evaluate_gtau<T, ndim, ORDER>(g_IR, ir_u, target_dim, tau_points);
+    std::cout << "g_IR done" << std::endl;
+    std::cout << "g_DLR..." << std::endl;
     Eigen::Tensor<T, ndim, ORDER> gtau_from_DLR =
         _evaluate_gtau<T, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
+    std::cout << "g_DLR done" << std::endl;
     Eigen::Tensor<T, ndim, ORDER> gtau_from_DLR_reconst =
         _evaluate_gtau<T, ndim, ORDER>(g_DLR_reconst, dlr_u, target_dim,
                                             tau_points);
@@ -634,7 +638,7 @@ void integration_test(double beta, double wmax, double epsilon,
             //giw_from_DLR, giw_reconst, tol));
 
     spir_basis_destroy(basis);
-    spir_dlr_destroy(dlr);
+    spir_basis_destroy(dlr);
     spir_funcs_destroy(dlr_u);
     spir_funcs_destroy(ir_u);
     spir_sampling_destroy(tau_sampling);

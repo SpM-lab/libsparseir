@@ -3,6 +3,17 @@
 #include <cstdint>
 #include <iostream>
 
+
+inline bool is_dlr_basis(const spir_basis *b) {
+    return std::dynamic_pointer_cast<_DLR<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
+           std::dynamic_pointer_cast<_DLR<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
+}
+
+inline bool is_ir_basis(const spir_basis *b) {
+    return std::dynamic_pointer_cast<_FiniteTempBasis<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
+           std::dynamic_pointer_cast<_FiniteTempBasis<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
+}
+
 // Helper function to convert N-dimensional array to 3D array by collapsing
 // dimensions
 static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
@@ -122,12 +133,12 @@ spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparse
         std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>>>(impl, beta)));
 }
 
-//template <typename S>
-//spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::TauPoles<S>>> impl, double beta)
-//{
-    //return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        //std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::TauPoles<S>>>>(impl, beta)));
-//}
+template <typename S>
+spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::DLRBasisFunction<S>>> impl, double beta)
+{
+    return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
+        std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::DLRBasisFunction<S>>>>(impl, beta)));
+}
 
 template <typename InternalType>
 spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
@@ -137,11 +148,11 @@ spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_IR(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim, const T *input, T *out)
 {
     std::shared_ptr<_DLR<S>> impl =
-        std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
+        std::dynamic_pointer_cast<_DLR<S>>(get_impl_basis(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
@@ -164,12 +175,12 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
+int32_t spir_dlr_from_IR(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const T *input, T *out)
 {
     std::shared_ptr<_DLR<S>> impl =
-        std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
+        std::dynamic_pointer_cast<_DLR<S>>(get_impl_basis(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
@@ -235,9 +246,9 @@ spir_sampling *_spir_matsubara_sampling_new(const spir_basis *b, bool positive_o
 }
 
 template <typename S, typename SMPL>
-spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only)
+spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_basis *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only)
 {
-    auto impl = get_impl_dlr(dlr);
+    auto impl = get_impl_basis(dlr);
     if (!impl)
         return nullptr;
 
@@ -247,15 +258,19 @@ spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_s
         smpl_points_vec.emplace_back(smpl_points[i]);
     }
 
-    auto dlr_impl = std::static_pointer_cast<_DLR<S>>(impl)->get_impl();
-    auto sampling = std::make_shared<SMPL>(dlr_impl, smpl_points_vec, positive_only);
-    return create_sampling(sampling);
+    if (auto dlr_impl = std::dynamic_pointer_cast<_DLR<S>>(impl)->get_impl()) {
+        auto sampling = std::make_shared<SMPL>(dlr_impl, smpl_points_vec, positive_only);
+        return create_sampling(sampling);
+    } else {
+        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
+        return nullptr;
+    }
 }
 
 
 
 template <typename S>
-spir_dlr *_spir_dlr_new(const spir_basis *b)
+spir_basis *_spir_dlr_new(const spir_basis *b)
 {
     auto impl = get_impl_basis(b);
     if (!impl) {
@@ -269,11 +284,11 @@ spir_dlr *_spir_dlr_new(const spir_basis *b)
     auto ptr_dlr = std::make_shared<_DLR<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis));
-    return create_dlr(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
+    return create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
 }
 
 template <typename S>
-spir_dlr *_spir_dlr_new_with_poles(const spir_basis *b,
+spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
                                    const int npoles, const double *poles)
 {
     auto impl = get_impl_basis(b);
@@ -291,47 +306,11 @@ spir_dlr *_spir_dlr_new_with_poles(const spir_basis *b,
     auto ptr_dlr = std::make_shared<_DLR<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis, poles_vec));
-    return create_dlr(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
+    return create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
 }
 
 template <typename S>
-int32_t _spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u)
-{
-    try {
-        std::shared_ptr<AbstractDLR> impl = std::dynamic_pointer_cast<AbstractDLR>(get_impl_dlr(dlr));
-        if (!impl) {
-            return SPIR_GET_IMPL_FAILED;
-        }
-        auto beta = impl->get_beta();
-        if (beta <= 0) {
-            throw std::runtime_error("beta is less than or equal to 0");
-        }
-
-        std::shared_ptr<AbstractContinuousFunctions> u_funcs = std::static_pointer_cast<_DLR<S>>(impl)->get_u();
-        *u = create_funcs(u_funcs);
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (const std::exception &e) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
-template <typename S>
-int32_t _spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat)
-{
-    try {
-        auto impl = get_impl_dlr(dlr);
-        if (!impl) {
-            return SPIR_GET_IMPL_FAILED;
-        }
-        *uhat = create_matsubara_funcs(impl->get_uhat());
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (const std::exception &e) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
-template <typename S>
-int32_t _spir_finite_temp_basis_get_u(const spir_basis *b,
+int32_t _spir_basis_get_u(const spir_basis *b,
                                       spir_funcs **u)
 {
     try {
@@ -339,22 +318,34 @@ int32_t _spir_finite_temp_basis_get_u(const spir_basis *b,
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
-        std::shared_ptr<sparseir::TauFunctions<S, sparseir::PiecewiseLegendrePoly>> u_impl = std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl()->u;
-        *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
+        if (is_ir_basis(b)) {
+            std::shared_ptr<sparseir::TauFunctions<S, sparseir::PiecewiseLegendrePoly>> u_impl = std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl()->u;
+            *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
+        } else if (is_dlr_basis(b)) {
+            std::shared_ptr<sparseir::TauFunctions<S, sparseir::DLRBasisFunction<S>>> u_impl = std::static_pointer_cast<_DLR<S>>(impl)->get_impl()->u;
+            *u = _create_dlr_tau_funcs<S>(u_impl, impl->get_beta());
+        } else {
+            return SPIR_NOT_SUPPORTED;
+        }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
         return SPIR_GET_IMPL_FAILED;
     }
 }
 
 template <typename S>
-int32_t _spir_finite_temp_basis_get_v(const spir_basis *b,
+int32_t _spir_get_v(const spir_basis *b,
                                       spir_funcs **v)
 {
     try {
         auto impl = get_impl_basis(b);
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
+        }
+        if (!is_ir_basis(b)) {
+            std::cerr << "Error: The basis is not an IR basis" << std::endl;
+            return SPIR_NOT_SUPPORTED;
         }
         *v = _create_omega_funcs(impl->get_v());
         return SPIR_COMPUTATION_SUCCESS;
@@ -364,7 +355,7 @@ int32_t _spir_finite_temp_basis_get_v(const spir_basis *b,
 }
 
 template <typename S>
-int32_t _spir_finite_temp_basis_get_uhat(const spir_basis *b,
+int32_t _spir_basis_get_uhat(const spir_basis *b,
                                          spir_matsubara_funcs **uhat)
 {
     try {

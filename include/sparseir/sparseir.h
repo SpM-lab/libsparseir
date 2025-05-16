@@ -46,7 +46,6 @@ DECLARE_OPAQUE_TYPE(matsubara_funcs);
 DECLARE_OPAQUE_TYPE(basis);
 DECLARE_OPAQUE_TYPE(sampling);
 DECLARE_OPAQUE_TYPE(sve_result);
-DECLARE_OPAQUE_TYPE(dlr);
 
 /**
  * @brief Creates a new logistic kernel for fermionic/bosonic analytical
@@ -199,7 +198,7 @@ int32_t spir_finite_temp_basis_get_size(const spir_basis *b,
  * @note The statistics type affects the form of the basis functions and the
  *       sampling points used for evaluation.
  */
-int32_t spir_finite_temp_basis_get_statistics(const spir_basis *b,
+int32_t spir_basis_get_statistics(const spir_basis *b,
                                               spir_statistics_type *statistics);
 
 /**
@@ -247,14 +246,14 @@ spir_sampling *spir_matsubara_sampling_new(const spir_basis *b, bool positive_on
  * @brief Creates a new Matsubara sampling object for sparse sampling
  * in Matsubara frequencies using DLR.
  *
- * @param dlr Pointer to a DLR object
+ * @param b Pointer to a DLR object
  * @param n_smpl_points Number of sampling points
  * @param smpl_points Array of sampling points
  * @param positive_only If true, only positive frequencies are used
  * @param status Pointer to store the status code
  * @return Pointer to the newly created sampling object, or NULL if creation fails
  */
-spir_sampling *spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only, int32_t *status);
+spir_sampling *spir_matsubara_sampling_dlr_new(const spir_basis *b, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only, int32_t *status);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
@@ -284,7 +283,7 @@ spir_sampling *spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_sm
  * @param status Pointer to store the status code
  * @return Pointer to the newly created DLR object, or NULL if creation fails
  */
-spir_dlr *spir_dlr_new(const spir_basis *b, int32_t *status);
+spir_basis *spir_dlr_new(const spir_basis *b, int32_t *status);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) with
@@ -300,24 +299,7 @@ spir_dlr *spir_dlr_new(const spir_basis *b, int32_t *status);
  * @param status Pointer to store the status code
  * @return Pointer to the newly created DLR object, or NULL if creation fails
  */
-spir_dlr *spir_dlr_new_with_poles(const spir_basis *b, const int npoles, const double *poles, int32_t *status);
-
-/**
- * @brief Gets the statistics type of a DLR.
- *
- * This function returns the statistics type (fermionic or bosonic) of the
- * specified DLR object.
- *
- * @param dlr Pointer to the DLR object
- * @param statistics Pointer to store the statistics type
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- *
- * @see spir_statistics_type
- */
-int32_t spir_dlr_get_statistics(const spir_dlr *dlr,
-                                spir_statistics_type *statistics);
+spir_basis *spir_dlr_new_with_poles(const spir_basis *b, const int npoles, const double *poles, int32_t *status);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to double
@@ -462,7 +444,7 @@ int spir_sampling_fit_zz(const spir_sampling *s, // Sampling object
  *
  * @see spir_dlr_get_poles
  */
-int32_t spir_dlr_get_num_poles(const spir_dlr *dlr, int32_t *num_poles);
+int32_t spir_dlr_get_num_poles(const spir_basis *dlr, int32_t *num_poles);
 
 /**
  * @brief Gets the poles in a DLR.
@@ -477,7 +459,7 @@ int32_t spir_dlr_get_num_poles(const spir_dlr *dlr, int32_t *num_poles);
  *
  * @see spir_dlr_get_num_poles
  */
-int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
+int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles);
 
 /**
  * @brief Transforms a given input array from the Intermediate Representation (IR)
@@ -505,11 +487,11 @@ int32_t spir_dlr_get_poles(const spir_dlr *dlr, double *poles);
  * @see spir_dlr_from_IR
  * @see spir_dlr_to_IR_dd
  */
-int32_t spir_dlr_from_IR_dd(const spir_dlr *dlr, spir_order_type order,
+int32_t spir_dlr_from_IR_dd(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const double *input, double *out);
 
-int32_t spir_dlr_from_IR_zz(const spir_dlr *dlr, spir_order_type order,
+int32_t spir_dlr_from_IR_zz(const spir_basis *dlr, spir_order_type order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const c_complex *input, c_complex *out);
 
@@ -547,7 +529,7 @@ int32_t spir_dlr_from_IR_zz(const spir_dlr *dlr, spir_order_type order,
  *
  * @see spir_dlr_from_IR
  */
-int32_t spir_dlr_to_IR_dd(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_IR_dd(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const double *input, double *out);
 
@@ -586,38 +568,9 @@ int32_t spir_dlr_to_IR_dd(const spir_dlr *dlr, spir_order_type order, int32_t nd
  * @see spir_dlr_from_IR_zz
  * @see spir_dlr_to_IR_dd
  */
-int32_t spir_dlr_to_IR_zz(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
+int32_t spir_dlr_to_IR_zz(const spir_basis *dlr, spir_order_type order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim,
                        const c_complex *input, c_complex *out);
-
-/**
- * @brief Gets the basis functions of a DLR.
- *
- * This function returns an object representing the basis functions
- * in the imaginary-time domain of the specified DLR object.
- *
- * @param dlr Pointer to the DLR object
- * @param u Pointer to store the basis functions
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- * @see spir_destroy_funcs
- */
-int32_t spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u);
-
-/**
- * @brief Gets the basis functions of a DLR in the Matsubara-frequency domain.
- *
- * This function returns an object representing the basis functions
- * in the Matsubara-frequency domain of the specified DLR object.
- *
- * @param dlr Pointer to the DLR object
- * @param uhat Pointer to store the basis functions
- * @return An integer status code:
- *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
- *         - A non-zero error code on failure
- */
-int32_t spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat);
 
 /**
  * @brief Creates a new finite temperature IR basis.
@@ -679,7 +632,7 @@ spir_basis *spir_basis_new_with_sve(spir_statistics_type statistics, double beta
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_finite_temp_basis_get_u(const spir_basis *b,
+int32_t spir_basis_get_u(const spir_basis *b,
                                      spir_funcs **u);
 
 /**
@@ -698,7 +651,7 @@ int32_t spir_finite_temp_basis_get_u(const spir_basis *b,
  *       when no longer needed
  * @see spir_destroy_funcs
  */
-int32_t spir_finite_temp_basis_get_v(const spir_basis *b,
+int32_t spir_get_v(const spir_basis *b,
                                      spir_funcs **v);
 
 /**
@@ -718,7 +671,7 @@ int32_t spir_finite_temp_basis_get_v(const spir_basis *b,
  *       when no longer needed
  * @see spir_destroy_matsubara_funcs
  */
-int32_t spir_finite_temp_basis_get_uhat(const spir_basis *b,
+int32_t spir_basis_get_uhat(const spir_basis *b,
                                         spir_matsubara_funcs **uhat);
 
 /**

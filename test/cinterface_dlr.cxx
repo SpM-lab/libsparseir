@@ -46,7 +46,7 @@ void test_finite_temp_basis_dlr()
 
 
     int32_t dlr_status;
-    spir_dlr *dlr = spir_dlr_new(basis, &dlr_status);
+    spir_basis *dlr = spir_dlr_new(basis, &dlr_status);
     REQUIRE(dlr_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr != nullptr);
 
@@ -75,7 +75,7 @@ void test_finite_temp_basis_dlr()
     REQUIRE(poles.array().abs().maxCoeff() <= wmax);
 
     int32_t poles_status;
-    spir_dlr *dlr_with_poles = spir_dlr_new_with_poles(basis, npoles, poles.data(), &poles_status);
+    spir_basis *dlr_with_poles = spir_dlr_new_with_poles(basis, npoles, poles.data(), &poles_status);
     REQUIRE(poles_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr_with_poles != nullptr);
 
@@ -144,8 +144,8 @@ void test_finite_temp_basis_dlr()
     free(giv);
     free(smpl_points);
     spir_basis_destroy(basis);
-    spir_dlr_destroy(dlr);
-    spir_dlr_destroy(dlr_with_poles);
+    spir_basis_destroy(dlr);
+    spir_basis_destroy(dlr_with_poles);
 }
 
 TEST_CASE("DiscreteLehmannRepresentation", "[cinterface]")
