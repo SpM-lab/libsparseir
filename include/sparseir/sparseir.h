@@ -240,18 +240,6 @@ spir_sampling *spir_tau_sampling_new(const spir_basis *b, int32_t *status);
  */
 spir_sampling *spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t *status);
 
-/**
- * @brief Creates a new Matsubara sampling object for sparse sampling
- * in Matsubara frequencies using DLR.
- *
- * @param b Pointer to a DLR object
- * @param n_smpl_points Number of sampling points
- * @param smpl_points Array of sampling points
- * @param positive_only If true, only positive frequencies are used
- * @param status Pointer to store the status code
- * @return Pointer to the newly created sampling object, or NULL if creation fails
- */
-spir_sampling *spir_matsubara_sampling_dlr_new(const spir_basis *b, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only, int32_t *status);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.

@@ -267,26 +267,6 @@ spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_on
     }
 }
 
-spir_sampling* spir_matsubara_sampling_dlr_new(const spir_basis *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only, int32_t* status)
-{
-    spir_statistics_type stat;
-    int32_t status_dlr = spir_basis_get_statistics(dlr, &stat);
-    if (status_dlr != SPIR_COMPUTATION_SUCCESS) {
-        *status = SPIR_GET_IMPL_FAILED;
-        return nullptr;
-    }
-    if (stat == SPIR_STATISTICS_FERMIONIC) {
-        *status = SPIR_COMPUTATION_SUCCESS;
-        return _spir_matsubara_sampling_dlr_new<
-            sparseir::Fermionic,
-            sparseir::MatsubaraSampling<sparseir::Fermionic>>(dlr, n_smpl_points, smpl_points, positive_only);
-    } else {
-        *status = SPIR_COMPUTATION_SUCCESS;
-        return _spir_matsubara_sampling_dlr_new<
-            sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            dlr, n_smpl_points, smpl_points, positive_only);
-    }
-}
 
 spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
 {

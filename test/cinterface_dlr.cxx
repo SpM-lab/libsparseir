@@ -110,9 +110,11 @@ void test_finite_temp_basis_dlr()
     REQUIRE(smpl_status == SPIR_COMPUTATION_SUCCESS);
 
     int32_t smpl_for_dlr_status;
-    spir_sampling *smpl_for_dlr = spir_matsubara_sampling_dlr_new(dlr, n_smpl_points, smpl_points, positive_only, &smpl_for_dlr_status);
-    REQUIRE(smpl_for_dlr_status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(smpl_for_dlr != nullptr);
+    // Get Matsubara basis functions
+    int32_t uhat_status;
+    spir_funcs *uhat = spir_basis_get_uhat(dlr, &uhat_status);
+    REQUIRE(uhat_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(uhat != nullptr);
 
     c_complex *giv_ref = (c_complex *)malloc(n_smpl_points * sizeof(c_complex));
     int32_t smpl_input_dims[1] = {basis_size};
@@ -122,14 +124,26 @@ void test_finite_temp_basis_dlr()
     );
     REQUIRE(status_eval == SPIR_COMPUTATION_SUCCESS);
 
-    int32_t smpl_for_dlr_input_dims[1] = {basis_size};
-
-    c_complex *giv = (c_complex *)malloc(n_smpl_points * sizeof(c_complex));
-    int32_t status_eval_for_dlr = spir_sampling_evaluate_dz(
-        smpl_for_dlr, SPIR_ORDER_COLUMN_MAJOR, ndim,
-        smpl_for_dlr_input_dims, target_dim, g_dlr, giv
+    // Evaluate DLR basis functions at Matsubara frequencies
+    c_complex *basis_values = (c_complex *)malloc(n_smpl_points * basis_size * sizeof(c_complex));
+    int32_t status_eval_for_dlr = spir_funcs_evaluate_matsubara(
+        uhat, SPIR_ORDER_COLUMN_MAJOR, n_smpl_points,
+        smpl_points, basis_values
     );
     REQUIRE(status_eval_for_dlr == SPIR_COMPUTATION_SUCCESS);
+
+    // Compute the sum of basis functions weighted by coefficients
+    c_complex *giv = (c_complex *)malloc(n_smpl_points * sizeof(c_complex));
+    for (int i = 0; i < n_smpl_points; i++) {
+        giv[i] = 0;
+        for (int j = 0; j < basis_size; j++) {
+            giv[i] += g_dlr[j] * basis_values[j * n_smpl_points + i];
+        }
+    }
+
+    // Clean up
+    free(basis_values);
+    spir_funcs_destroy(uhat);
 
     for (int i = 0; i < n_smpl_points; i++) {
         // Compare real and imaginary parts with appropriate tolerance
