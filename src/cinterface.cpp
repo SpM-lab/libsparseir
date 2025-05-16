@@ -145,7 +145,7 @@ spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int32
     }
 }
 
-spir_basis* spir_finite_temp_basis_new(spir_statistics_type statistics, double beta,
+spir_basis* spir_basis_new(spir_statistics_type statistics, double beta,
                            double omega_max, double epsilon, int32_t* status)
 {
     try {
@@ -169,17 +169,17 @@ spir_basis* spir_finite_temp_basis_new(spir_statistics_type statistics, double b
                 std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
         }
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_finite_temp_basis_new: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_new: " << e.what());
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     } catch (...) {
-        DEBUG_LOG("Unknown exception in spir_finite_temp_basis_new");
+        DEBUG_LOG("Unknown exception in spir_basis_new");
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
 }
 
-spir_basis* spir_finite_temp_basis_new_with_sve(
+spir_basis* spir_basis_new_with_sve(
     spir_statistics_type statistics, double beta, double omega_max,
     const spir_kernel *k, const spir_sve_result *sve, int32_t* status)
 {
@@ -201,9 +201,9 @@ spir_basis* spir_finite_temp_basis_new_with_sve(
         // switch on kernel type
         spir_basis* result = nullptr;
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
-            result = _spir_finite_temp_basis_new_with_sve(statistics, beta, omega_max, *logistic, sve);
+            result = _spir_basis_new_with_sve(statistics, beta, omega_max, *logistic, sve);
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
-            result = _spir_finite_temp_basis_new_with_sve(statistics, beta, omega_max, *bose, sve);
+            result = _spir_basis_new_with_sve(statistics, beta, omega_max, *bose, sve);
         } else {
             DEBUG_LOG("Unknown kernel type");
             *status = SPIR_INVALID_ARGUMENT;
@@ -219,7 +219,7 @@ spir_basis* spir_finite_temp_basis_new_with_sve(
         *status = SPIR_COMPUTATION_SUCCESS;
         return result;
     } catch (const std::exception& e) {
-        DEBUG_LOG("Exception in spir_finite_temp_basis_new_with_sve: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_new_with_sve: " << e.what());
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }

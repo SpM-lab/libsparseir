@@ -634,9 +634,9 @@ int32_t spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat);
  * @param epsilon Accuracy target for the basis
  * @param status Pointer to store the status code
  * @return Pointer to the newly created basis object, or NULL if creation fails
- * @see spir_finite_temp_basis_new_with_kernel
+ * @see spir_basis_new_with_kernel
  */
-spir_basis *spir_finite_temp_basis_new(spir_statistics_type statistics, double beta, double omega_max, double epsilon, int32_t *status);
+spir_basis *spir_basis_new(spir_statistics_type statistics, double beta, double omega_max, double epsilon, int32_t *status);
 
 /**
  * @brief Creates a new finite temperature IR basis using a
@@ -661,7 +661,7 @@ spir_basis *spir_finite_temp_basis_new(spir_statistics_type statistics, double b
  * @see spir_sve_result_new
  * @see spir_destroy_finite_temp_basis
  */
-spir_basis *spir_finite_temp_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max, const spir_kernel *k, const spir_sve_result *sve, int32_t *status);
+spir_basis *spir_basis_new_with_sve(spir_statistics_type statistics, double beta, double omega_max, const spir_kernel *k, const spir_sve_result *sve, int32_t *status);
 
 /**
  * @brief Gets the basis functions of a finite temperature basis.

@@ -52,7 +52,7 @@ program test_kernel
 
   ! Create a finite temperature basis with beta = 1.0, omega_max = 10.0, epsilon = 1e-10
   print *, "Creating finite temperature basis"
-  status = c_spir_finite_temp_basis_new(basis%handle, SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon)
+  status = c_spir_basis_new(basis%handle, SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon)
   if (status /= 0) then
     print *, "Error creating finite temperature basis"
     stop
@@ -73,6 +73,6 @@ program test_kernel
   print *, "Basis size =", basis_size
 
   ! Create a finite temperature basis with beta = 1.0, omega_max = 10.0, epsilon = 1e-10
-  !basis%handle = spir_finite_temp_basis_new(1, beta, omega_max, epsilon)
+  !basis%handle = spir_basis_new(1, beta, omega_max, epsilon)
 
 end program test_kernel 

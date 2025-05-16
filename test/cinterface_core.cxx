@@ -89,7 +89,7 @@ void test_finite_temp_basis_constructor()
 
     sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
     int basis_status;
-    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &basis_status);
+    spir_basis *basis = spir_basis_new(stat, beta, wmax, epsilon, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -120,7 +120,7 @@ void test_finite_temp_basis_constructor_with_sve()
     auto stat = get_stat<S>();
 
     int basis_status;
-    spir_basis *basis = spir_finite_temp_basis_new_with_sve(
+    spir_basis *basis = spir_basis_new_with_sve(
         stat, beta, wmax, kernel, sve_result, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
@@ -177,7 +177,7 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         REQUIRE(sve_result != nullptr);
 
         int basis_status;
-        spir_basis *basis = spir_finite_temp_basis_new_with_sve(
+        spir_basis *basis = spir_basis_new_with_sve(
             SPIR_STATISTICS_BOSONIC, beta, wmax, kernel, sve_result, &basis_status);
         REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
@@ -204,7 +204,7 @@ void test_finite_temp_basis_basis_functions()
     auto stat = get_stat<S>();
 
     int basis_status;
-    spir_basis *basis = spir_finite_temp_basis_new(stat, beta, wmax, epsilon, &basis_status);
+    spir_basis *basis = spir_basis_new(stat, beta, wmax, epsilon, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
