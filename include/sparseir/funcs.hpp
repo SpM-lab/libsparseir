@@ -105,7 +105,7 @@ public:
 
         Eigen::MatrixXd result = impl->operator()(xs_reg);
         for (int i = 0; i < xs.size(); ++i) {
-            result.row(i) *= signs[i];
+            result.col(i) *= signs[i];
         }
 
         return result;
