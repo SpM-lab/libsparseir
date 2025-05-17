@@ -127,10 +127,10 @@ fit_impl(const spir_sampling *s, int32_t order, int32_t ndim,
 }
 
 template <typename S>
-spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>> impl, double beta)
+spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::IRTauFuncsType<S>> impl, double beta)
 {
     return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>>>(impl, beta)));
+        std::make_shared<TauFunctions<sparseir::IRTauFuncsType<S>>>(impl, beta)));
 }
 
 template <typename S>
@@ -336,7 +336,7 @@ int32_t _spir_basis_get_u(const spir_basis *b,
             return SPIR_GET_IMPL_FAILED;
         }
         if (is_ir_basis(b)) {
-            std::shared_ptr<sparseir::TauFunctions<S, sparseir::PiecewiseLegendrePoly>> u_impl = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl()->u;
+            std::shared_ptr<sparseir::IRTauFuncsType<S>> u_impl = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl()->u;
             *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
         } else if (is_dlr_basis(b)) {
             std::shared_ptr<sparseir::TauFunctions<S, sparseir::DLRBasisFunction<S>>> u_impl = std::static_pointer_cast<_DLR<S>>(impl)->get_impl()->u;

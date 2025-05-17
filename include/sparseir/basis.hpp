@@ -51,41 +51,6 @@ public:
 
 
 
-// Accept a tau in [-beta, beta] and return a tau in [0, beta] with a sign
-// change for the fermionic case
-//
-// Interpreted as:
-// -beta -> -beta^+
-//  beta -> beta^-
-//  +0.0 -> 0^+
-//  -0.0 -> 0^-
-inline std::pair<double, double> regularize_tau(double tau, double beta, int fermionic_sign)
-{
-    // Check if tau is in the valid range
-    if (tau < -beta) {
-        throw std::invalid_argument("tau is less than -beta");
-    }
-    if (tau > beta) {
-        std::cout << "tau " << tau << " is greater than beta " << beta << std::endl;
-        throw std::invalid_argument("tau is greater than beta");
-    }
-
-    if (0 < tau && tau <= beta) {
-        return std::make_pair(tau, 1.0);
-    } else if (-beta <= tau && tau < 0) {
-        return std::make_pair(tau + beta, fermionic_sign);
-    } else if (tau == 0) {
-        // Check if tau is -0.0
-        if (std::signbit(tau)) {
-            return std::make_pair(beta, fermionic_sign);
-        } else {
-            return std::make_pair(0.0, 1.0);
-        }
-    }
-
-    throw std::invalid_argument("Something is wrong with the input tau");
-}
-
 
 // ImplType = PiecewiseLegendrePoly, DLRBasisFunction
 template <typename S, typename ImplType>
@@ -160,6 +125,17 @@ public:
         return result;
     }
 
+    /**
+     * @brief Evaluate all basis functions at multiple points.
+     * 
+     * This operator evaluates all basis functions at each point in the input vector xs.
+     * The result is a matrix where each row corresponds to a basis function and each
+     * column corresponds to an input point.
+     * 
+     * @param xs Vector of points at which to evaluate the basis functions
+     * @return Matrix of shape (funcs.size() × xs.size()) containing the evaluated values.
+     *         Each row i contains the values of the i-th basis function at all points in xs.
+     */
     Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const
     {
         Eigen::MatrixXd results(funcs.size(), xs.size());
@@ -183,7 +159,7 @@ public:
 };
 
 template <typename S>
-using IRTauFuncsType = TauFunctions<S, PiecewiseLegendrePoly>;
+using IRTauFuncsType = PeriodicFunctions<S, PiecewiseLegendrePolyVector>;
 
 template <typename S>
 class FiniteTempBasis : public AbstractBasis<S> {
@@ -280,15 +256,8 @@ public:
         Eigen::VectorXi v_symm =
             Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
 
-        {
-            std::vector<std::shared_ptr<PiecewiseLegendrePoly>> u_polyvec = make_polyvec(u_, u_knots, deltax4u, u_symm);
-            std::vector<std::shared_ptr<TauFunction<S, PiecewiseLegendrePoly>>> u_funcs(u_polyvec.size());
-            for (int i = 0; i < u_polyvec.size(); ++i) {
-                u_funcs[i] = std::make_shared<TauFunction<S, PiecewiseLegendrePoly>>(u_polyvec[i], beta);
-            }
-            this->u = std::make_shared<IRTauFuncsType<S>>(u_funcs, beta);
-        }
-
+        this->u = std::make_shared<PeriodicFunctions<S, PiecewiseLegendrePolyVector>>(
+            std::make_shared<PiecewiseLegendrePolyVector>(u_, u_knots, deltax4u, u_symm), beta);
         this->v = std::make_shared<PiecewiseLegendrePolyVector>(
             v_, v_knots, deltax4v, v_symm);
         this->s =

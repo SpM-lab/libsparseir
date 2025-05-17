@@ -10,6 +10,7 @@
 #include "sve_cache.hpp"
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
+#include "_cinterface_utils.hpp"
 
 using Catch::Approx;
 using std::complex;
@@ -70,7 +71,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
     REQUIRE(s.isApprox(s_ref));
 
     double x = 0.3;
-    auto u0 = (*basis->u)[0]->get_obj();
+    sparseir::PiecewiseLegendrePoly u0 = _singleout_poly_from_irtaufuncs(*(basis->u), 0);
     auto u0x = u0(x);
 
     REQUIRE(u0.get_xmin() == 0.0);
@@ -164,7 +165,7 @@ TEST_CASE("basis.u(x)", "[basis]")
     auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
         beta, wmax, 1e-15, kernel, sve_result);
     double x = 0.3;
-    auto u0 = (*basis->u)[0]->get_obj();
+    sparseir::PiecewiseLegendrePoly u0 = _singleout_poly_from_irtaufuncs(*basis->u, 0);
     auto u0x = u0(x);
 
     vector<double> u0_data_vec = {
@@ -792,8 +793,12 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
                 // Compute reconstruction using basis functions
                 double reconstruction = 0.0;
                 for (int l = 0; l < basis_f->size(); ++l) {
-                    reconstruction += basis_f->s[l] * (*basis_f->u)[l]->operator()(tau) *
-                                      (*basis_f->v)[l](omega);
+                    auto ulx = (*basis_f->u)[l];
+                    auto vly = (*basis_f->v)[l];
+                    auto ulx_tau = ulx(tau);
+                    auto vly_omega = vly(omega);
+
+                    reconstruction += basis_f->s[l] * ulx_tau[0] * vly_omega;
                 }
 
                 REQUIRE(std::abs(kernel_value * sign - reconstruction) < 10 * epsilon);
@@ -826,8 +831,11 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
                 // Compute reconstruction using basis functions
                 double reconstruction = 0.0;
                 for (int l = 0; l < basis_b->size(); ++l) {
-                    reconstruction += basis_b->s[l] * (*basis_b->u)[l]->operator()(tau) *
-                                      (*basis_b->v)[l](omega);
+                    auto ulx = (*basis_b->u)[l];
+                    auto vly = (*basis_b->v)[l];
+                    auto ulx_tau = ulx(tau);
+                    auto vly_omega = vly(omega);
+                    reconstruction += basis_b->s[l] * ulx_tau[0] * vly_omega;
                 }
 
                 REQUIRE(std::abs(kernel_value - reconstruction) < 10 * epsilon);

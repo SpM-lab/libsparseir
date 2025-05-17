@@ -170,6 +170,7 @@ public:
     // Helper function to split x into segment index i and x_tilde
     std::pair<int, double> split(double x) const;
 
+
 private:
     // Placeholder for Gauss-Legendre quadrature over [a, b]
     double gauss_legendre_quadrature(double a, double b,
@@ -310,6 +311,12 @@ public:
     }
 
     PiecewiseLegendrePoly &operator[](size_t i) { return polyvec[i]; }
+
+    PiecewiseLegendrePolyVector slice(size_t i) const {
+        return PiecewiseLegendrePolyVector(
+            std::vector<PiecewiseLegendrePoly>{polyvec[i]}
+        );
+    }
 
     // Functions to mimic Julia's property accessors
     double xmin() const { return polyvec.empty() ? 0.0 : polyvec[0].xmin; }
