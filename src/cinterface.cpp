@@ -1008,4 +1008,90 @@ int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size)
     }
 }
 
+int32_t spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
+                                                       int32_t *num_points)
+{
+    if (!b || !num_points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto basis = std::dynamic_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            if (!basis) {
+                return SPIR_INTERNAL_ERROR;
+            }
+            auto points = basis->default_omega_sampling_points();
+            *num_points = points.size();
+        } else {
+            auto basis = std::dynamic_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            if (!basis) {
+                return SPIR_INTERNAL_ERROR;
+            }
+            auto points = basis->default_omega_sampling_points();
+            *num_points = points.size();
+        }
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_basis_get_num_default_omega_sampling_points: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_basis_get_num_default_omega_sampling_points");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int32_t spir_basis_get_default_omega_sampling_points(const spir_basis *b,
+                                                   double *points)
+{
+    if (!b || !points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto basis = std::dynamic_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            if (!basis) {
+                return SPIR_INTERNAL_ERROR;
+            }
+            auto sampling_points = basis->default_omega_sampling_points();
+            std::copy(sampling_points.begin(), sampling_points.end(), points);
+        } else {
+            auto basis = std::dynamic_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            if (!basis) {
+                return SPIR_INTERNAL_ERROR;
+            }
+            auto sampling_points = basis->default_omega_sampling_points();
+            std::copy(sampling_points.begin(), sampling_points.end(), points);
+        }
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_basis_get_default_omega_sampling_points: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_basis_get_default_omega_sampling_points");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 } // extern "C"

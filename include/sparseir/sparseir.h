@@ -400,6 +400,52 @@ int32_t spir_basis_get_default_tau_sampling_points(const spir_basis *b,
                                                    double *points);
 
 /**
+ * @brief Gets the number of default omega sampling points for an IR basis.
+ *
+ * This function returns the number of default sampling points in real frequency
+ * (ω) that are automatically chosen for optimal conditioning of the sampling
+ * matrix. These points are the extrema of the highest-order basis function in
+ * real frequency.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param num_points Pointer to store the number of sampling points
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note The default sampling points are chosen to provide near-optimal
+ *       conditioning for the given basis size
+ * @see spir_basis_get_default_omega_sampling_points
+ */
+int32_t spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
+                                                       int32_t *num_points);
+
+/**
+ * @brief Gets the default omega sampling points for an IR basis.
+ *
+ * This function fills the provided array with the default sampling points in
+ * real frequency (ω) that are automatically chosen for optimal conditioning of
+ * the sampling matrix. These points are the extrema of the highest-order basis
+ * function in real frequency.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param points Pre-allocated array to store the ω sampling points
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note The array must be pre-allocated with size >=
+ *       spir_basis_get_num_default_omega_sampling_points(b)
+ * @note The default sampling points are chosen to provide near-optimal
+ *       conditioning for the given basis size
+ * @see spir_basis_get_num_default_omega_sampling_points
+ */
+int32_t spir_basis_get_default_omega_sampling_points(const spir_basis *b,
+                                                   double *points);
+
+/**
  * @brief Gets the number of default Matsubara sampling points for an IR basis.
  *
  * This function returns the number of default sampling points in Matsubara
@@ -479,6 +525,7 @@ int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b,
  * @return Pointer to the newly created DLR object, or NULL if creation fails
  */
 spir_basis *spir_dlr_new(const spir_basis *b, int32_t *status);
+
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) with

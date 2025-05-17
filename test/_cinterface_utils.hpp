@@ -54,3 +54,4 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
         return nullptr;
     }
 }
+

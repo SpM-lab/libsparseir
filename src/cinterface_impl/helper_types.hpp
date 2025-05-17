@@ -212,6 +212,14 @@ public:
         });
         return points;
     }
+
+    std::vector<double> default_omega_sampling_points() const
+    {
+        // convert from Eigen::VectorXd to std::vector<double>
+        auto sampling = impl->default_omega_sampling_points();
+        return std::vector<double>(sampling.data(), sampling.data() + sampling.size());
+    }
+
 };
 
 class AbstractDLR : public AbstractFiniteTempBasis {
