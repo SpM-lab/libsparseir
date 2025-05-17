@@ -20,7 +20,7 @@
   public :: c_spir_sve_result_new
   public :: c_spir_funcs_get_size
   public :: c_spir_funcs_evaluate
-  public :: c_spir_funcs_evaluate_matsubara
+  public :: c_spir_funcs_batch_evaluate_matsubara
   public :: c_spir_basis_new
   public :: c_spir_basis_get_size
   public :: c_spir_basis_get_statistics

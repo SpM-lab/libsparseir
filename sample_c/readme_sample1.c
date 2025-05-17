@@ -74,7 +74,7 @@ spir_funcs* uhat = spir_basis_get_uhat(basis, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(uhat != NULL);
 
-status = spir_funcs_evaluate_matsubara(uhat, SPIR_ORDER_COLUMN_MAJOR, n_freqs, matsubara_freq_indices, uhat_val);
+status = spir_funcs_batch_evaluate_matsubara(uhat, SPIR_ORDER_COLUMN_MAJOR, n_freqs, matsubara_freq_indices, uhat_val);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Clean up (in arbitrary order)

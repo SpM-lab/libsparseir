@@ -136,7 +136,7 @@ _evaluate_matsubara_basis_functions(const spir_funcs *uhat,
                                           matsubara_indices.size());
 
     // Evaluate all frequencies at once
-    status = spir_funcs_evaluate_matsubara(
+    status = spir_funcs_batch_evaluate_matsubara(
         uhat,
         ORDER == Eigen::ColMajor ? SPIR_ORDER_COLUMN_MAJOR
                                  : SPIR_ORDER_ROW_MAJOR,

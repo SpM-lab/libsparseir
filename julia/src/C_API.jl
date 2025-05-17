@@ -1224,7 +1224,7 @@ function spir_evaluate_continuous_functions(uv, x, out)
 end
 
 """
-    spir_funcs_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
+    spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
 
 Evaluates basis functions at multiple Matsubara frequencies.
 
@@ -1243,8 +1243,8 @@ This function evaluates all basis functions contained in a Matsubara basis funct
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success, error code on failure
 """
-function spir_funcs_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
-    ccall((:spir_funcs_evaluate_matsubara, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, int32_t, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
+function spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
+    ccall((:spir_funcs_batch_evaluate_matsubara, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, int32_t, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
 end
 
 """

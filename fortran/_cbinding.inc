@@ -131,14 +131,14 @@ function c_spir_funcs_evaluate(funcs, x, out) bind(c, name="spir_funcs_evaluate"
   integer(c_int32_t) :: c_spir_funcs_evaluate
 end function
 
-function c_spir_funcs_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out) bind(c, name="spir_funcs_evaluate_matsubara") result(c_spir_funcs_evaluate_matsubara)
+function c_spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out) bind(c, name="spir_funcs_batch_evaluate_matsubara") result(c_spir_funcs_batch_evaluate_matsubara)
   use iso_c_binding
   type(c_ptr), value :: uiw
   integer(c_int32_t), value :: order
   integer(c_int32_t), value :: num_freqs
   type(c_ptr), value :: matsubara_freq_indices
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_funcs_evaluate_matsubara
+  integer(c_int32_t) :: c_spir_funcs_batch_evaluate_matsubara
 end function
 
 function c_spir_basis_new(statistics, beta, omega_max, k, sve, status) bind(c, name="spir_basis_new") result(c_spir_basis_new)

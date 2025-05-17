@@ -933,7 +933,7 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
     }
 }
 
-int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
+int32_t spir_funcs_batch_evaluate_matsubara(const spir_funcs *uiw,
                                           int32_t order,
                                           int32_t num_freqs,
                                           int64_t *matsubara_freq_indices,
@@ -985,7 +985,7 @@ int32_t spir_funcs_evaluate_matsubara(const spir_funcs *uiw,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_evaluate_matsubara: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_batch_evaluate_matsubara: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }
