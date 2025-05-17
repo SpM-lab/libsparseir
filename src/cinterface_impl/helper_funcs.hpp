@@ -5,8 +5,8 @@
 
 
 inline bool is_dlr_basis(const spir_basis *b) {
-    return std::dynamic_pointer_cast<_DLR<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
-           std::dynamic_pointer_cast<_DLR<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
+    return std::dynamic_pointer_cast<DLRAdapter<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
+           std::dynamic_pointer_cast<DLRAdapter<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
 }
 
 inline bool is_ir_basis(const spir_basis *b) {
@@ -130,29 +130,29 @@ template <typename S>
 spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::IRTauFuncsType<S>> impl, double beta)
 {
     return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<TauFunctions<sparseir::IRTauFuncsType<S>>>(impl, beta)));
+        std::make_shared<TauFunctionsAdaptor<sparseir::IRTauFuncsType<S>>>(impl, beta)));
 }
 
 template <typename S>
 spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::DLRTauFuncsType<S>> impl, double beta)
 {
     return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<TauFunctions<sparseir::DLRTauFuncsType<S>>>(impl, beta)));
+        std::make_shared<TauFunctionsAdaptor<sparseir::DLRTauFuncsType<S>>>(impl, beta)));
 }
 
 template <typename InternalType>
 spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 {
     return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<OmegaFunctions<InternalType>>(impl)));
+        std::make_shared<OmegaFunctionsAdaptor<InternalType>>(impl)));
 }
 
 template <typename S, typename T>
 int32_t spir_dlr_to_ir(const spir_basis *dlr, int32_t order, int32_t ndim,
                        const int32_t *input_dims, int32_t target_dim, const T *input, T *out)
 {
-    std::shared_ptr<_DLR<S>> impl =
-        std::dynamic_pointer_cast<_DLR<S>>(get_impl_basis(dlr));
+    std::shared_ptr<DLRAdapter<S>> impl =
+        std::dynamic_pointer_cast<DLRAdapter<S>>(get_impl_basis(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
@@ -179,8 +179,8 @@ int32_t spir_ir_to_dlr(const spir_basis *dlr, int32_t order,
                          int32_t ndim, const int32_t *input_dims, int32_t target_dim,
                          const T *input, T *out)
 {
-    std::shared_ptr<_DLR<S>> impl =
-        std::dynamic_pointer_cast<_DLR<S>>(get_impl_basis(dlr));
+    std::shared_ptr<DLRAdapter<S>> impl =
+        std::dynamic_pointer_cast<DLRAdapter<S>>(get_impl_basis(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
@@ -298,7 +298,7 @@ spir_basis *_spir_dlr_new(const spir_basis *b)
         std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
     auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis);
 
-    auto ptr_dlr = std::make_shared<_DLR<S>>(
+    auto ptr_dlr = std::make_shared<DLRAdapter<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis));
     return create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
@@ -320,7 +320,7 @@ spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
         poles_vec(i) = poles[i];
     }
 
-    auto ptr_dlr = std::make_shared<_DLR<S>>(
+    auto ptr_dlr = std::make_shared<DLRAdapter<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis, poles_vec));
     return create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
@@ -339,7 +339,7 @@ int32_t _spir_basis_get_u(const spir_basis *b,
             std::shared_ptr<sparseir::IRTauFuncsType<S>> u_impl = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl()->u;
             *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
         } else if (is_dlr_basis(b)) {
-            std::shared_ptr<sparseir::DLRTauFuncsType<S>> u_impl = std::static_pointer_cast<_DLR<S>>(impl)->get_impl()->u;
+            std::shared_ptr<sparseir::DLRTauFuncsType<S>> u_impl = std::static_pointer_cast<DLRAdapter<S>>(impl)->get_impl()->u;
             *u = _create_dlr_tau_funcs<S>(u_impl, impl->get_beta());
         } else {
             return SPIR_NOT_SUPPORTED;

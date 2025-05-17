@@ -74,12 +74,12 @@ int _sign()
 
 
 template <typename ImplType>
-class OmegaFunctions : public AbstractContinuousFunctions {
+class OmegaFunctionsAdaptor : public AbstractContinuousFunctions {
 private:
     std::shared_ptr<ImplType> impl;
 
 public:
-    OmegaFunctions(std::shared_ptr<ImplType> impl)
+    OmegaFunctionsAdaptor(std::shared_ptr<ImplType> impl)
         : impl(impl)
     {
     }
@@ -99,13 +99,13 @@ public:
 
 
 template <typename ImplType>
-class TauFunctions : public AbstractContinuousFunctions {
+class TauFunctionsAdaptor : public AbstractContinuousFunctions {
 private:
     std::shared_ptr<ImplType> impl;
     double beta;
 
 public:
-    TauFunctions(std::shared_ptr<ImplType> impl, double beta)
+    TauFunctionsAdaptor(std::shared_ptr<ImplType> impl, double beta)
         : impl(impl), beta(beta)
     {
     }
@@ -168,7 +168,7 @@ public:
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override
     {
         std::shared_ptr<sparseir::IRTauFuncsType<S>> u_impl = impl->u;
-        auto u_tau_funcs = std::make_shared<TauFunctions<sparseir::IRTauFuncsType<S>>>(u_impl, get_beta());
+        auto u_tau_funcs = std::make_shared<TauFunctionsAdaptor<sparseir::IRTauFuncsType<S>>>(u_impl, get_beta());
         return std::static_pointer_cast<AbstractContinuousFunctions>(u_tau_funcs);
     }
 
@@ -233,12 +233,12 @@ public:
 
 
 template <typename S>
-class _DLR : public AbstractDLR {
+class DLRAdapter: public AbstractDLR {
 private:
     std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl;
 
 public:
-    _DLR(std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl)
+    DLRAdapter(std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl)
         : impl(impl)
     {
     }
@@ -271,12 +271,10 @@ public:
         if (!impl) {
             throw std::runtime_error("impl is not initialized");
         }
-        //using ImplType = sparseir::TauFunctions<S, sparseir::TauPoles<S>>;
-
         std::shared_ptr<sparseir::DLRTauFuncsType<S>> u_funcs = impl->u;
 
         return std::static_pointer_cast<AbstractContinuousFunctions>(
-            std::make_shared<TauFunctions<sparseir::DLRTauFuncsType<S>>>(u_funcs, get_beta())
+            std::make_shared<TauFunctionsAdaptor<sparseir::DLRTauFuncsType<S>>>(u_funcs, get_beta())
         );
     }
 

@@ -81,63 +81,6 @@ public:
 };
 
 
-
-template <typename S>
-class DLRBasisFunction {
-public:
-    double beta;
-    double pole;
-    double wmax;
-    double weight;
-
-    DLRBasisFunction(double beta, double pole, double wmax, double weight)
-        : beta(beta), pole(pole), wmax(wmax), weight(weight)
-    {
-    }
-
-    template <typename T = S>
-    DLRBasisFunction(double beta, double pole, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
-        : beta(beta), pole(pole), wmax(wmax), weight(1.0)
-    {
-    }
-
-    // Evaluate at tau points
-    template <typename T = S,
-              typename std::enable_if<std::is_same<T, Fermionic>::value, int>::type = 0>
-    double operator()(double tau) const
-    {
-        auto kernel = LogisticKernel(beta * wmax); // k(x, y)
-        double x = 2 * tau / beta - 1.0;
-        double y = pole / wmax;
-        return - kernel.compute(x, y) / weight;
-    }
-
-    template <typename T = S,
-              typename std::enable_if<std::is_same<T, Bosonic>::value, int>::type = 0>
-    double operator()(double tau) const
-    {
-        // k(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
-        auto kernel = RegularizedBoseKernel(beta * wmax); // k(x, y)
-        double x = 2.0 * tau / beta - 1.0;
-        double y = pole / wmax;
-        double xtau = pole * tau;
-        double k_tau_omega = kernel.compute(x, y);
-        return - k_tau_omega / (y * weight);
-    }
-
-    // For vector of tau points
-    Eigen::VectorXd operator()(const Eigen::VectorXd &tau) const
-    {
-        Eigen::VectorXd result(tau.size());
-        for (Eigen::Index i = 0; i < tau.size(); ++i) {
-            result(i) = (*this)(tau(i));
-        }
-        return result;
-    }
-};
-
-
-
 template <typename S>
 class DLRBasisFunctions {
 public:
@@ -242,8 +185,6 @@ Eigen::VectorXd default_omega_sampling_points(const FiniteTempBasis<S> &basis)
 }
 
 
-////template<typename S>
-//using DLRTauFuncsType = TauFunctions<S, DLRBasisFunction<S>>;
 template<typename S>
 using DLRTauFuncsType = PeriodicFunctions<S, DLRBasisFunctions<S>>;
 
