@@ -75,17 +75,17 @@ inline std::pair<double, double> regularize_tau(double tau, double beta, int fer
 template <typename S, typename ImplType>
 class PeriodicFunctions : public AbstractTauFunctions<S> {
 private:
-    std::shared_ptr<ImplType> impl;
+    std::shared_ptr<const ImplType> impl;
     double beta;
 
 public:
-    PeriodicFunctions(std::shared_ptr<ImplType> impl, double beta)
+    PeriodicFunctions(std::shared_ptr<const ImplType> impl, double beta)
         : impl(impl), beta(beta)
     {
     }
 
     PeriodicFunctions(const ImplType &data, double beta)
-        : impl(std::make_shared<ImplType>(data)), beta(beta)
+        : impl(std::make_shared<const ImplType>(data)), beta(beta)
     {
     }
 

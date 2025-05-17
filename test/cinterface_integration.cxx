@@ -16,7 +16,7 @@
 
 #include <sparseir/sparseir.hpp> // C++ interface
 #include <sparseir/sparseir.h>   // C interface
-#include "_cinterface_utils.hpp"
+#include "_utils.hpp"
 
 using Catch::Approx;
 

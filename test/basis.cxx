@@ -10,7 +10,7 @@
 #include "sve_cache.hpp"
 #include <sparseir/sparseir.hpp>
 #include <xprec/ddouble-header-only.hpp>
-#include "_cinterface_utils.hpp"
+#include "_utils.hpp"
 
 using Catch::Approx;
 using std::complex;
