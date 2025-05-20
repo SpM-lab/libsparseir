@@ -16,16 +16,16 @@ inline bool is_ir_basis(const spir_basis *b) {
 
 // Helper function to convert N-dimensional array to 3D array by collapsing
 // dimensions
-static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
-                                             int32_t target_dim)
+static std::array<int, 3> collapse_to_3d(int ndim, const int *dims,
+                                             int target_dim)
 {
-    std::array<int32_t, 3> dims_3d = {1, dims[target_dim], 1};
+    std::array<int, 3> dims_3d = {1, dims[target_dim], 1};
     // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
+    for (int i = 0; i < target_dim; ++i) {
         dims_3d[0] *= dims[i];
     }
     // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
+    for (int i = target_dim + 1; i < ndim; ++i) {
         dims_3d[2] *= dims[i];
     }
     return dims_3d;
@@ -35,8 +35,8 @@ static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
 // block
 template <typename InputScalar, typename OutputScalar>
 static int
-evaluate_impl(const spir_sampling *s, int32_t order, int32_t ndim,
-              const int32_t *input_dims, int32_t target_dim, const InputScalar *input,
+evaluate_impl(const spir_sampling *s, int order, int ndim,
+              const int *input_dims, int target_dim, const InputScalar *input,
               OutputScalar *out,
               int (sparseir::AbstractSampling::*eval_func)(
                   const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
@@ -48,14 +48,14 @@ evaluate_impl(const spir_sampling *s, int32_t order, int32_t ndim,
         return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
+    std::array<int, 3> dims_3d =
         collapse_to_3d(ndim, input_dims, target_dim);
 
     // output ndim, target_dim, dims_3d
     if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->n_sampling_points();
 
         // Create TensorMaps
@@ -65,8 +65,8 @@ evaluate_impl(const spir_sampling *s, int32_t order, int32_t ndim,
             out, output_dims_3d);
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->n_sampling_points();
 
         // Create TensorMaps
@@ -80,8 +80,8 @@ evaluate_impl(const spir_sampling *s, int32_t order, int32_t ndim,
 
 template <typename InputScalar, typename OutputScalar>
 static int
-fit_impl(const spir_sampling *s, int32_t order, int32_t ndim,
-         const int32_t *input_dims, int32_t target_dim, const InputScalar *input,
+fit_impl(const spir_sampling *s, int order, int ndim,
+         const int *input_dims, int target_dim, const InputScalar *input,
          OutputScalar *out,
          int (sparseir::AbstractSampling::*eval_func)(
              const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &, int,
@@ -94,14 +94,14 @@ fit_impl(const spir_sampling *s, int32_t order, int32_t ndim,
         return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
+    std::array<int, 3> dims_3d =
         collapse_to_3d(ndim, input_dims, target_dim);
 
     if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
 
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->basis_size();
 
         // Create TensorMaps
@@ -112,8 +112,8 @@ fit_impl(const spir_sampling *s, int32_t order, int32_t ndim,
         // Convert to column-major order for Eigen
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->basis_size();
 
         // Create TensorMaps
@@ -148,15 +148,15 @@ spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_to_ir(const spir_basis *dlr, int32_t order, int32_t ndim,
-                       const int32_t *input_dims, int32_t target_dim, const T *input, T *out)
+int spir_dlr_to_ir(const spir_basis *dlr, int order, int ndim,
+                       const int *input_dims, int target_dim, const T *input, T *out)
 {
     std::shared_ptr<DLRAdapter<S>> impl =
         std::dynamic_pointer_cast<DLRAdapter<S>>(get_impl_basis(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int32_t, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+    std::array<int, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
@@ -175,8 +175,8 @@ int32_t spir_dlr_to_ir(const spir_basis *dlr, int32_t order, int32_t ndim,
 }
 
 template <typename S, typename T>
-int32_t spir_ir_to_dlr(const spir_basis *dlr, int32_t order,
-                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
+int spir_ir_to_dlr(const spir_basis *dlr, int order,
+                         int ndim, const int *input_dims, int target_dim,
                          const T *input, T *out)
 {
     std::shared_ptr<DLRAdapter<S>> impl =
@@ -184,7 +184,7 @@ int32_t spir_ir_to_dlr(const spir_basis *dlr, int32_t order,
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int32_t, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+    std::array<int, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
@@ -232,7 +232,7 @@ spir_sampling *_spir_sampling_new(const spir_basis *b)
 
 
 template<typename S, typename SMPL>
-spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int32_t num_points, const double *points) {
+spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_points, const double *points) {
 
     std::shared_ptr<AbstractFiniteTempBasis> impl =
         get_impl_basis(b);
@@ -260,7 +260,7 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int32_t n
 }
 
 template<typename S, typename SMPL>
-spir_sampling* _spir_matsubara_sampling_new_with_points(const spir_basis *b, bool positive_only, int32_t num_points, const int64_t *points) {
+spir_sampling* _spir_matsubara_sampling_new_with_points(const spir_basis *b, bool positive_only, int num_points, const int64_t *points) {
     std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_basis(b);
     if (!impl)
         return nullptr;
@@ -327,7 +327,7 @@ spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
 }
 
 template <typename S>
-int32_t _spir_basis_get_u(const spir_basis *b,
+int _spir_basis_get_u(const spir_basis *b,
                                       spir_funcs **u)
 {
     try {
@@ -352,7 +352,7 @@ int32_t _spir_basis_get_u(const spir_basis *b,
 }
 
 template <typename S>
-int32_t _spir_get_v(const spir_basis *b,
+int _spir_get_v(const spir_basis *b,
                                       spir_funcs **v)
 {
     try {
@@ -372,7 +372,7 @@ int32_t _spir_get_v(const spir_basis *b,
 }
 
 template <typename S>
-int32_t _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
+int _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
 {
     try {
         auto impl = get_impl_basis(b);
@@ -389,7 +389,7 @@ int32_t _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
 
 template <typename K>
 spir_basis* _spir_basis_new(
-    int32_t statistics, double beta, double omega_max,
+    int statistics, double beta, double omega_max,
     const K& kernel, const spir_sve_result *sve)
 {
     try {

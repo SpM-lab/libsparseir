@@ -149,7 +149,7 @@ public:
     virtual ~AbstractFiniteTempBasis() = default;
     virtual int size() const = 0;
     virtual double get_beta() const = 0;
-    virtual int32_t get_statistics() const = 0;
+    virtual int get_statistics() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
     virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
@@ -173,7 +173,7 @@ public:
 
     virtual int size() const override { return impl->size(); }
 
-    virtual int32_t get_statistics() const override
+    virtual int get_statistics() const override
     {
         if (std::is_same<S, sparseir::Fermionic>::value) {
             return SPIR_STATISTICS_FERMIONIC;
@@ -218,7 +218,7 @@ public:
     std::vector<int64_t> default_matsubara_sampling_points(bool positive_only) const
     {
         bool fence = false;
-        int32_t L = size();
+        int L = size();
 
         std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
         std::vector<int64_t> points(matsubara_points.size());
@@ -267,7 +267,7 @@ public:
         return impl->size();
     }
 
-    virtual int32_t get_statistics() const override
+    virtual int get_statistics() const override
     {
         if (std::is_same<S, sparseir::Fermionic>::value) {
             return SPIR_STATISTICS_FERMIONIC;

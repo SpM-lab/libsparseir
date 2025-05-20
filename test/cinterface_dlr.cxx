@@ -18,7 +18,7 @@ using xprec::DDouble;
 
 
 template <typename S>
-int32_t get_stat()
+int get_stat()
 {
     if (std::is_same<S, sparseir::Fermionic>::value) {
         return SPIR_STATISTICS_FERMIONIC;
@@ -37,19 +37,19 @@ void test_finite_temp_basis_dlr()
     const double wmax = 1.0;
     const double epsilon = 1e-12;
 
-    int32_t status;
+    int status;
 
-    int32_t basis_status;
+    int basis_status;
     spir_basis *basis = _spir_basis_new(stat, beta, wmax, epsilon, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
-    int32_t basis_size;
+    int basis_size;
     basis_status = spir_basis_get_size(basis, &basis_size);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis_size >= 0);
 
     // Poles
-    int32_t num_default_poles;
+    int num_default_poles;
     status = spir_basis_get_num_default_omega_sampling_points(basis, &num_default_poles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_default_poles >= 0);
@@ -67,7 +67,7 @@ void test_finite_temp_basis_dlr()
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr_with_poles != nullptr);
 
-    int32_t num_poles;
+    int num_poles;
     status = spir_dlr_get_num_poles(dlr, &num_poles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_poles == num_default_poles);
