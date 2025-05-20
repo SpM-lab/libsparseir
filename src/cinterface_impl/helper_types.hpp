@@ -1,12 +1,19 @@
 #include "sparseir/sparseir.hpp"
 #include <memory>
 
-class AbstractMatsubaraFunctions {
+class _AbstractFuncs {
+public:
+    virtual ~_AbstractFuncs() = default;
+    virtual int size() const = 0;
+    virtual bool is_continuous_funcs() const = 0;
+};
+
+class AbstractMatsubaraFunctions : public _AbstractFuncs {
 public:
     virtual ~AbstractMatsubaraFunctions() = default;
     virtual Eigen::MatrixXcd
-    operator()(const Eigen::ArrayXi &n_array) const = 0;
-    virtual int size() const = 0;
+    operator()(const Eigen::Array<int64_t, Eigen::Dynamic, 1> &n_array) const = 0;
+    virtual bool is_continuous_funcs() const override { return false; }
 };
 
 template <typename InternalType>
@@ -18,7 +25,7 @@ public:
     MatsubaraBasisFunctions(std::shared_ptr<InternalType> impl) : impl(impl) { }
 
     virtual Eigen::MatrixXcd
-    operator()(const Eigen::ArrayXi &n_array) const override
+    operator()(const Eigen::Array<int64_t, Eigen::Dynamic, 1> &n_array) const override
     {
         return impl->operator()(n_array);
     }
@@ -28,12 +35,14 @@ public:
 
 // Abstract class for functions of a single variable (in the imaginary time
 // domain or the real frequency domain)
-class AbstractContinuousFunctions {
+class AbstractContinuousFunctions : public _AbstractFuncs {
 public:
     virtual ~AbstractContinuousFunctions() = default;
     virtual Eigen::VectorXd operator()(double x) const = 0;
-    virtual int size() const = 0;
+    // Returns a matrix of size n_funcs x n_points
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const = 0;
     virtual std::pair<double, double> get_domain() const = 0;
+    virtual bool is_continuous_funcs() const override { return true; }
 };
 
 class PiecewiseLegendrePolyFunctions : public AbstractContinuousFunctions {
@@ -49,6 +58,11 @@ public:
     }
 
     virtual int size() const override { return impl->size(); }
+
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const override
+    {
+        return impl->operator()(xs);
+    }
 
     virtual std::pair<double, double> get_domain() const override
     {
@@ -67,12 +81,12 @@ int _sign()
 
 
 template <typename ImplType>
-class OmegaFunctions : public AbstractContinuousFunctions {
+class OmegaFunctionsAdaptor : public AbstractContinuousFunctions {
 private:
     std::shared_ptr<ImplType> impl;
 
 public:
-    OmegaFunctions(std::shared_ptr<ImplType> impl)
+    OmegaFunctionsAdaptor(std::shared_ptr<ImplType> impl)
         : impl(impl)
     {
     }
@@ -80,6 +94,11 @@ public:
     virtual Eigen::VectorXd operator()(double x) const override
     {
         return impl->operator()(x);
+    }
+
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const override
+    {
+        return impl->operator()(xs);
     }
 
     virtual int size() const override { return impl->size(); }
@@ -92,13 +111,13 @@ public:
 
 
 template <typename ImplType>
-class TauFunctions : public AbstractContinuousFunctions {
+class TauFunctionsAdaptor : public AbstractContinuousFunctions {
 private:
     std::shared_ptr<ImplType> impl;
     double beta;
 
 public:
-    TauFunctions(std::shared_ptr<ImplType> impl, double beta)
+    TauFunctionsAdaptor(std::shared_ptr<ImplType> impl, double beta)
         : impl(impl), beta(beta)
     {
     }
@@ -109,6 +128,11 @@ public:
             throw std::runtime_error("impl is not initialized");
         }
         return impl->operator()(x);
+    }
+
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const override
+    {
+        return impl->operator()(xs);
     }
 
     virtual int size() const override { return impl->size(); }
@@ -125,19 +149,22 @@ public:
     virtual ~AbstractFiniteTempBasis() = default;
     virtual int size() const = 0;
     virtual double get_beta() const = 0;
-    virtual spir_statistics_type get_statistics() const = 0;
+    virtual int get_statistics() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
     virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
 };
 
+
+
+
 template <typename S>
-class _FiniteTempBasis : public AbstractFiniteTempBasis {
+class _IRBasis : public AbstractFiniteTempBasis {
 private:
     std::shared_ptr<sparseir::FiniteTempBasis<S>> impl;
 
 public:
-    _FiniteTempBasis(std::shared_ptr<sparseir::FiniteTempBasis<S>> impl)
+    _IRBasis(std::shared_ptr<sparseir::FiniteTempBasis<S>> impl)
         : impl(impl)
     {
     }
@@ -146,7 +173,7 @@ public:
 
     virtual int size() const override { return impl->size(); }
 
-    virtual spir_statistics_type get_statistics() const override
+    virtual int get_statistics() const override
     {
         if (std::is_same<S, sparseir::Fermionic>::value) {
             return SPIR_STATISTICS_FERMIONIC;
@@ -158,7 +185,7 @@ public:
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override
     {
         std::shared_ptr<sparseir::IRTauFuncsType<S>> u_impl = impl->u;
-        auto u_tau_funcs = std::make_shared<TauFunctions<sparseir::IRTauFuncsType<S>>>(u_impl, get_beta());
+        auto u_tau_funcs = std::make_shared<TauFunctionsAdaptor<sparseir::IRTauFuncsType<S>>>(u_impl, get_beta());
         return std::static_pointer_cast<AbstractContinuousFunctions>(u_tau_funcs);
     }
 
@@ -180,27 +207,55 @@ public:
     {
         return impl;
     }
+
+    std::vector<double> default_tau_sampling_points() const
+    {
+        // convert from Eigen::VectorXd to std::vector<double>
+        auto sampling = impl->default_tau_sampling_points();
+        return std::vector<double>(sampling.data(), sampling.data() + sampling.size());
+    }
+
+    std::vector<int64_t> default_matsubara_sampling_points(bool positive_only) const
+    {
+        bool fence = false;
+        int L = size();
+
+        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
+        std::vector<int64_t> points(matsubara_points.size());
+        std::transform(
+            matsubara_points.begin(), matsubara_points.end(), points.begin(),
+        [](const sparseir::MatsubaraFreq<S> &freq) {
+            return static_cast<int64_t>(freq.get_n());
+        });
+        return points;
+    }
+
+    std::vector<double> default_omega_sampling_points() const
+    {
+        // convert from Eigen::VectorXd to std::vector<double>
+        auto sampling = impl->default_omega_sampling_points();
+        return std::vector<double>(sampling.data(), sampling.data() + sampling.size());
+    }
+
 };
 
-class AbstractDLR {
+class AbstractDLR : public AbstractFiniteTempBasis {
 public:
     virtual ~AbstractDLR() = default;
-    virtual int size() const = 0;
-    virtual double get_beta() const = 0;
-    virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
-    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
-    virtual spir_statistics_type get_statistics() const = 0;
+    virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const override {
+        throw std::runtime_error("get_v is not implemented for DLR");
+    }
     virtual std::vector<double> get_poles() const = 0;
 };
 
 
 template <typename S>
-class _DLR : public AbstractDLR {
+class DLRAdapter: public AbstractDLR {
 private:
     std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl;
 
 public:
-    _DLR(std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl)
+    DLRAdapter(std::shared_ptr<sparseir::DiscreteLehmannRepresentation<S>> impl)
         : impl(impl)
     {
     }
@@ -212,7 +267,7 @@ public:
         return impl->size();
     }
 
-    virtual spir_statistics_type get_statistics() const override
+    virtual int get_statistics() const override
     {
         if (std::is_same<S, sparseir::Fermionic>::value) {
             return SPIR_STATISTICS_FERMIONIC;
@@ -233,12 +288,10 @@ public:
         if (!impl) {
             throw std::runtime_error("impl is not initialized");
         }
-        //using ImplType = sparseir::TauFunctions<S, sparseir::TauPoles<S>>;
-
         std::shared_ptr<sparseir::DLRTauFuncsType<S>> u_funcs = impl->u;
 
         return std::static_pointer_cast<AbstractContinuousFunctions>(
-            std::make_shared<TauFunctions<sparseir::DLRTauFuncsType<S>>>(u_funcs, get_beta())
+            std::make_shared<TauFunctionsAdaptor<sparseir::DLRTauFuncsType<S>>>(u_funcs, get_beta())
         );
     }
 

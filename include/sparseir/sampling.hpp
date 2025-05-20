@@ -528,27 +528,24 @@ public:
     }
 
     template <typename Basis>
-    TauSampling(const std::shared_ptr<Basis> &basis, bool factorize = true)
+    TauSampling(const std::shared_ptr<Basis> &basis, const Eigen::VectorXd& sampling_points, bool factorize = true) : sampling_points_(sampling_points)
     {
-        // Get default sampling points from basis
-        sampling_points_ = basis->default_tau_sampling_points();
-
         // Ensure matrix dimensions are correct
-        if (sampling_points_.size() == 0) {
-            throw std::runtime_error("No sampling points generated");
+        if (sampling_points.size() == 0) {
+            throw std::runtime_error("No sampling points given");
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(basis, sampling_points_);
+        matrix_ = eval_matrix(basis, sampling_points);
 
         // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
+        if (matrix_.rows() != sampling_points.size() ||
             matrix_.cols() != static_cast<std::size_t>(basis->size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
                                      ", expected " +
-                                     std::to_string(sampling_points_.size()) +
+                                     std::to_string(sampling_points.size()) +
                                      "x" + std::to_string(basis->size()));
         }
 
@@ -557,6 +554,15 @@ public:
             matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
+    }
+
+    template <typename Basis>
+    TauSampling(const std::shared_ptr<Basis> &basis, bool factorize = true)
+    {
+        // Get default sampling points from basis
+        sampling_points_ = basis->default_tau_sampling_points();
+
+        *this = TauSampling(basis, sampling_points_, factorize);
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>

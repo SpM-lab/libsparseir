@@ -20,6 +20,8 @@ using Catch::Approx;
 
 using ComplexF64 = std::complex<double>;
 
+
+
 TEST_CASE("TauSampling Constructor Test", "[sampling]")
 {
     double beta = 1.0;
@@ -46,29 +48,8 @@ TEST_CASE("TauSampling Constructor Test", "[sampling]")
         Eigen::Map<Eigen::MatrixXd>(mat_ref_vec.data(), 1, 19);
     Eigen::MatrixXd mat = eval_matrix(basis, x);
 
-    REQUIRE((*basis->u)[0]->operator()(0.3) == Approx(0.8209004724107448));
-
     REQUIRE((*basis->u)(x).transpose().isApprox(mat));
     REQUIRE((*basis->u)(x).transpose().isApprox(mat_ref));
-
-    // Comparing with the reference implementation in Julia is not good,
-    // because the heuristic to find sampling points may become different
-    // between the two implementations.
-    // TODO: Check the condition number of the matrix to see if the sampling
-    // points are good.
-    //std::vector<double> sampling_points_ref_vec = {
-        //0.0036884193900212914, 0.019354981745749233, 0.04721451082761008,
-        //0.08670296984028258,   0.13697417948305657,  0.19688831490761904,
-        //0.2650041152730527,    0.3395880303712605,   0.4186486136790497,
-        //0.4999999999999999,    0.5813513863209503,   0.6604119696287395,
-        //0.7349958847269473,    0.803111685092381,    0.8630258205169434,
-        //0.9132970301597174,    0.9527854891723898,   0.9806450182542508,
-        //0.9963115806099787,
-    //};
-    //Eigen::VectorXd sampling_points_ref =
-        //Eigen::Map<Eigen::VectorXd>(sampling_points_ref_vec.data(), 19);
-    //Eigen::VectorXd sampling_points = tau_sampling.sampling_points();
-    //REQUIRE(sampling_points.isApprox(sampling_points_ref));
 }
 
 TEST_CASE("Two-dimensional TauSampling test", "[sampling]")

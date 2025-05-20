@@ -15,26 +15,26 @@ namespace sparseir {
 class Statistics {
 public:
     virtual ~Statistics() = default;
-    virtual int zeta() const = 0;
-    virtual bool allowed(int n) const = 0;
+    virtual int64_t zeta() const = 0;
+    virtual bool allowed(int64_t n) const = 0;
 };
 
 // Fermionic statistics class
 class Fermionic : public Statistics {
 public:
-    inline int zeta() const override { return 1; }
-    inline bool allowed(int n) const override { return n % 2 != 0; }
+    inline int64_t zeta() const override { return 1; }
+    inline bool allowed(int64_t n) const override { return n % 2 != 0; }
 };
 
 // Bosonic statistics class
 class Bosonic : public Statistics {
 public:
-    inline int zeta() const override { return 0; }
-    inline bool allowed(int n) const override { return n % 2 == 0; }
+    inline int64_t zeta() const override { return 0; }
+    inline bool allowed(int64_t n) const override { return n % 2 == 0; }
 };
 
 // Factory function to create Statistics object
-inline std::unique_ptr<Statistics> create_statistics(int zeta)
+inline std::unique_ptr<Statistics> create_statistics(int64_t zeta)
 {
     if (zeta == 1)
         return sparseir::util::make_unique<Fermionic>();
@@ -50,10 +50,10 @@ class MatsubaraFreq {
                   "S must be derived from Statistics");
 
 public:
-    int n;
+    int64_t n;
 
     // Constructor
-    inline MatsubaraFreq(int n) : n(n)
+    inline MatsubaraFreq(int64_t n) : n(n)
     {
         static_assert(std::is_same<S, Fermionic>::value ||
                           std::is_same<S, Bosonic>::value,
@@ -83,7 +83,7 @@ public:
     }
 
     // Get n
-    inline int get_n() const { return n; }
+    inline int64_t get_n() const { return n; }
 
     // Add comparison operators
     bool operator<(const MatsubaraFreq &other) const { return n < other.n; }
@@ -132,11 +132,12 @@ inline MatsubaraFreq<S> operator-(const MatsubaraFreq<S> &a)
     return MatsubaraFreq<S>(-a.get_n());
 }
 
-inline BosonicFreq operator*(const BosonicFreq &a, int c)
+inline BosonicFreq operator*(const BosonicFreq &a, int64_t c)
 {
     return BosonicFreq(a.get_n() * c);
 }
-inline FermionicFreq operator*(const FermionicFreq &a, int c)
+
+inline FermionicFreq operator*(const FermionicFreq &a, int64_t c)
 {
     return FermionicFreq(a.get_n() * c);
 }

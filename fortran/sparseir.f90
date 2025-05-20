@@ -6,29 +6,27 @@ module sparseir
   private
 
   ! Export public interfaces
-  include '_fortran_types_public.inc'
+  !include '_fortran_types_public.inc'
   include '_cbinding_public.inc'
   public :: SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC
 
-  ! Enumeration types
-  enum, bind(c)
-    enumerator :: SPIR_STATISTICS_FERMIONIC = 1
-    enumerator :: SPIR_STATISTICS_BOSONIC = 0
-  end enum
+  ! Constants for statistics types
+  integer(c_int32_t), parameter :: SPIR_STATISTICS_FERMIONIC = 1_c_int32_t
+  integer(c_int32_t), parameter :: SPIR_STATISTICS_BOSONIC = 0_c_int32_t
 
   ! Type definitions
-  include '_fortran_types.inc'
+  !include '_fortran_types.inc'
 
   ! Assignment operator interfaces
-  include '_fortran_assign.inc'
+  !include '_fortran_assign.inc'
 
   ! C bindings
   interface
     include '_cbinding.inc'
   end interface
 
-  contains
+  !contains
     ! Type implementations
-    include '_impl_types.inc'
+    !include '_impl_types.inc'
 
 end module sparseir

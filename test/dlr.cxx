@@ -99,11 +99,12 @@ TEST_CASE("DLR Tests", "[dlr]")
         auto size_dlr = dlr.size();
         auto poles = dlr.poles;
 
-        auto u0 = *((*dlr.u)[0]);
-        auto u1 = *((*dlr.u)[size_dlr - 1]);
+        auto u0_ = (*dlr.u)[0];
+        auto u1_ = (*dlr.u)[size_dlr - 1];
+        auto u0 = [u0_](double x) { return u0_(x)[0]; };
+        auto u1 = [u1_](double x) { return u1_(x)[0]; };
 
         double delta = beta * 1e-13;
-
 
         REQUIRE(std::abs(u0(-0.0) - (-1 * u0(beta)) ) < 1e-8);
         REQUIRE(std::abs(u1(-0.0) - (-1 * u1(beta)) ) < 1e-8);
@@ -149,8 +150,10 @@ TEST_CASE("DLR Tests", "[dlr]")
         auto size_dlr = dlr.size();
         auto poles = dlr.poles;
 
-        auto u0 = *((*dlr.u)[0]);
-        auto u1 = *((*dlr.u)[size_dlr - 1]);
+        auto u0_ = (*dlr.u)[0];
+        auto u1_ = (*dlr.u)[size_dlr - 1];
+        auto u0 = [u0_](double x) { return u0_(x)[0]; };
+        auto u1 = [u1_](double x) { return u1_(x)[0]; };
 
         double delta = beta * 1e-13;
 

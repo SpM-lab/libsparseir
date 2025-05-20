@@ -3,18 +3,29 @@
 #include <cstdint>
 #include <iostream>
 
+
+inline bool is_dlr_basis(const spir_basis *b) {
+    return std::dynamic_pointer_cast<DLRAdapter<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
+           std::dynamic_pointer_cast<DLRAdapter<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
+}
+
+inline bool is_ir_basis(const spir_basis *b) {
+    return std::dynamic_pointer_cast<_IRBasis<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
+           std::dynamic_pointer_cast<_IRBasis<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
+}
+
 // Helper function to convert N-dimensional array to 3D array by collapsing
 // dimensions
-static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
-                                             int32_t target_dim)
+static std::array<int, 3> collapse_to_3d(int ndim, const int *dims,
+                                             int target_dim)
 {
-    std::array<int32_t, 3> dims_3d = {1, dims[target_dim], 1};
+    std::array<int, 3> dims_3d = {1, dims[target_dim], 1};
     // Multiply all dimensions before target_dim into first dimension
-    for (int32_t i = 0; i < target_dim; ++i) {
+    for (int i = 0; i < target_dim; ++i) {
         dims_3d[0] *= dims[i];
     }
     // Multiply all dimensions after target_dim into last dimension
-    for (int32_t i = target_dim + 1; i < ndim; ++i) {
+    for (int i = target_dim + 1; i < ndim; ++i) {
         dims_3d[2] *= dims[i];
     }
     return dims_3d;
@@ -24,8 +35,8 @@ static std::array<int32_t, 3> collapse_to_3d(int32_t ndim, const int32_t *dims,
 // block
 template <typename InputScalar, typename OutputScalar>
 static int
-evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
-              const int32_t *input_dims, int32_t target_dim, const InputScalar *input,
+evaluate_impl(const spir_sampling *s, int order, int ndim,
+              const int *input_dims, int target_dim, const InputScalar *input,
               OutputScalar *out,
               int (sparseir::AbstractSampling::*eval_func)(
                   const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &,
@@ -37,14 +48,14 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
         return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
+    std::array<int, 3> dims_3d =
         collapse_to_3d(ndim, input_dims, target_dim);
 
     // output ndim, target_dim, dims_3d
     if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->n_sampling_points();
 
         // Create TensorMaps
@@ -54,8 +65,8 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
             out, output_dims_3d);
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->n_sampling_points();
 
         // Create TensorMaps
@@ -69,8 +80,8 @@ evaluate_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
 
 template <typename InputScalar, typename OutputScalar>
 static int
-fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
-         const int32_t *input_dims, int32_t target_dim, const InputScalar *input,
+fit_impl(const spir_sampling *s, int order, int ndim,
+         const int *input_dims, int target_dim, const InputScalar *input,
          OutputScalar *out,
          int (sparseir::AbstractSampling::*eval_func)(
              const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &, int,
@@ -83,14 +94,14 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
         return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
-    std::array<int32_t, 3> dims_3d =
+    std::array<int, 3> dims_3d =
         collapse_to_3d(ndim, input_dims, target_dim);
 
     if (order == SPIR_ORDER_ROW_MAJOR) {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
 
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->basis_size();
 
         // Create TensorMaps
@@ -101,8 +112,8 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
         // Convert to column-major order for Eigen
         return (impl.get()->*eval_func)(input_3d, 1, output_3d);
     } else {
-        std::array<int32_t, 3> input_dims_3d = dims_3d;
-        std::array<int32_t, 3> output_dims_3d = input_dims_3d;
+        std::array<int, 3> input_dims_3d = dims_3d;
+        std::array<int, 3> output_dims_3d = input_dims_3d;
         output_dims_3d[1] = impl.get()->basis_size();
 
         // Create TensorMaps
@@ -116,36 +127,36 @@ fit_impl(const spir_sampling *s, spir_order_type order, int32_t ndim,
 }
 
 template <typename S>
-spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>> impl, double beta)
+spir_funcs *_create_ir_tau_funcs(std::shared_ptr<sparseir::IRTauFuncsType<S>> impl, double beta)
 {
     return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::PiecewiseLegendrePoly>>>(impl, beta)));
+        std::make_shared<TauFunctionsAdaptor<sparseir::IRTauFuncsType<S>>>(impl, beta)));
 }
 
-//template <typename S>
-//spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::TauFunctions<S,sparseir::TauPoles<S>>> impl, double beta)
-//{
-    //return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        //std::make_shared<TauFunctions<sparseir::TauFunctions<S,sparseir::TauPoles<S>>>>(impl, beta)));
-//}
+template <typename S>
+spir_funcs *_create_dlr_tau_funcs(std::shared_ptr<sparseir::DLRTauFuncsType<S>> impl, double beta)
+{
+    return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
+        std::make_shared<TauFunctionsAdaptor<sparseir::DLRTauFuncsType<S>>>(impl, beta)));
+}
 
 template <typename InternalType>
 spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 {
     return create_funcs(std::static_pointer_cast<AbstractContinuousFunctions>(
-        std::make_shared<OmegaFunctions<InternalType>>(impl)));
+        std::make_shared<OmegaFunctionsAdaptor<InternalType>>(impl)));
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
-                       const int32_t *input_dims, int32_t target_dim, const T *input, T *out)
+int spir_dlr_to_ir(const spir_basis *dlr, int order, int ndim,
+                       const int *input_dims, int target_dim, const T *input, T *out)
 {
-    std::shared_ptr<_DLR<S>> impl =
-        std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
+    std::shared_ptr<DLRAdapter<S>> impl =
+        std::dynamic_pointer_cast<DLRAdapter<S>>(get_impl_basis(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int32_t, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+    std::array<int, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
@@ -164,16 +175,16 @@ int32_t spir_dlr_to_IR(const spir_dlr *dlr, spir_order_type order, int32_t ndim,
 }
 
 template <typename S, typename T>
-int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
-                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
+int spir_ir_to_dlr(const spir_basis *dlr, int order,
+                         int ndim, const int *input_dims, int target_dim,
                          const T *input, T *out)
 {
-    std::shared_ptr<_DLR<S>> impl =
-        std::dynamic_pointer_cast<_DLR<S>>(get_impl_dlr(dlr));
+    std::shared_ptr<DLRAdapter<S>> impl =
+        std::dynamic_pointer_cast<DLRAdapter<S>>(get_impl_basis(dlr));
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int32_t, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+    std::array<int, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
@@ -206,155 +217,152 @@ int32_t spir_dlr_from_IR(const spir_dlr *dlr, spir_order_type order,
 }
 
 template <typename S, typename SMPL>
-spir_sampling *_spir_sampling_new(const spir_finite_temp_basis *b)
+spir_sampling *_spir_sampling_new(const spir_basis *b)
 {
     std::shared_ptr<AbstractFiniteTempBasis> impl =
-        get_impl_finite_temp_basis(b);
+        get_impl_basis(b);
     if (!impl)
         return nullptr;
 
     auto impl_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
     return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
         std::make_shared<SMPL>(impl_finite_temp_basis)));
 }
 
 
-template <typename S, typename SMPL>
-spir_sampling *_spir_matsubara_sampling_new(const spir_finite_temp_basis *b, bool positive_only)
-{
+template<typename S, typename SMPL>
+spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_points, const double *points) {
+
     std::shared_ptr<AbstractFiniteTempBasis> impl =
-        get_impl_finite_temp_basis(b);
+        get_impl_basis(b);
     if (!impl)
         return nullptr;
 
-    auto impl_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
-    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
-        std::make_shared<SMPL>(impl_finite_temp_basis, positive_only)));
-}
-
-template <typename S, typename SMPL>
-spir_sampling *_spir_matsubara_sampling_dlr_new(const spir_dlr *dlr, int32_t n_smpl_points, const int32_t *smpl_points, bool positive_only)
-{
-    auto impl = get_impl_dlr(dlr);
-    if (!impl)
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
         return nullptr;
-
-    std::vector<sparseir::MatsubaraFreq<S>> smpl_points_vec;
-    smpl_points_vec.reserve(n_smpl_points);
-    for (int32_t i = 0; i < n_smpl_points; ++i) {
-        smpl_points_vec.emplace_back(smpl_points[i]);
+    }
+    if (num_points <= 0) {
+        std::cerr << "Error: Number of points must be positive" << std::endl;
+        return nullptr;
     }
 
-    auto dlr_impl = std::static_pointer_cast<_DLR<S>>(impl)->get_impl();
-    auto sampling = std::make_shared<SMPL>(dlr_impl, smpl_points_vec, positive_only);
-    return create_sampling(sampling);
+    auto impl_finite_temp_basis =
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
+
+    Eigen::VectorXd sampling_points(num_points);
+    for (std::size_t i = 0; i < num_points; i++) {
+        sampling_points(i) = points[i];
+    }
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
+        std::make_shared<SMPL>(impl_finite_temp_basis, sampling_points)));
 }
 
+template<typename S, typename SMPL>
+spir_sampling* _spir_matsubara_sampling_new_with_points(const spir_basis *b, bool positive_only, int num_points, const int64_t *points) {
+    std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_basis(b);
+    if (!impl)
+        return nullptr;
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return nullptr;
+    }
+    if (num_points <= 0) {
+        std::cerr << "Error: Number of points must be positive" << std::endl;
+        return nullptr;
+    }
+
+    auto impl_finite_temp_basis = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
+
+    std::vector<sparseir::MatsubaraFreq<S>> matsubara_points;
+    matsubara_points.reserve(num_points);
+    for (std::size_t i = 0; i < num_points; i++) {
+        matsubara_points.emplace_back(points[i]);
+    }
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
+        std::make_shared<SMPL>(impl_finite_temp_basis, matsubara_points, positive_only)));
+}
 
 
 template <typename S>
-spir_dlr *_spir_dlr_new(const spir_finite_temp_basis *b)
+spir_basis *_spir_dlr_new(const spir_basis *b)
 {
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl) {
         return nullptr;
     }
 
     auto ptr_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
     auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis);
 
-    auto ptr_dlr = std::make_shared<_DLR<S>>(
+    auto ptr_dlr = std::make_shared<DLRAdapter<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis));
-    return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
+    return create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
 }
 
 template <typename S>
-spir_dlr *_spir_dlr_new_with_poles(const spir_finite_temp_basis *b,
+spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
                                    const int npoles, const double *poles)
 {
-    auto impl = get_impl_finite_temp_basis(b);
+    auto impl = get_impl_basis(b);
     if (!impl)
         return nullptr;
 
     auto ptr_finite_temp_basis =
-        std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl();
+        std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
 
     Eigen::VectorXd poles_vec(npoles);
     for (int i = 0; i < npoles; i++) {
         poles_vec(i) = poles[i];
     }
 
-    auto ptr_dlr = std::make_shared<_DLR<S>>(
+    auto ptr_dlr = std::make_shared<DLRAdapter<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis, poles_vec));
-    return create_dlr(std::static_pointer_cast<AbstractDLR>(ptr_dlr));
+    return create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
 }
 
 template <typename S>
-int32_t _spir_dlr_get_u(const spir_dlr *dlr, spir_funcs **u)
-{
-    try {
-        std::shared_ptr<AbstractDLR> impl = get_impl_dlr(dlr);
-        if (!impl) {
-            return SPIR_GET_IMPL_FAILED;
-        }
-        auto beta = impl->get_beta();
-        if (beta <= 0) {
-            throw std::runtime_error("beta is less than or equal to 0");
-        }
-
-        std::shared_ptr<AbstractContinuousFunctions> u_funcs = std::static_pointer_cast<_DLR<S>>(impl)->get_u();
-        *u = create_funcs(u_funcs);
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (const std::exception &e) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
-template <typename S>
-int32_t _spir_dlr_get_uhat(const spir_dlr *dlr, spir_matsubara_funcs **uhat)
-{
-    try {
-        auto impl = get_impl_dlr(dlr);
-        if (!impl) {
-            return SPIR_GET_IMPL_FAILED;
-        }
-        *uhat = create_matsubara_funcs(impl->get_uhat());
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (const std::exception &e) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
-template <typename S>
-int32_t _spir_finite_temp_basis_get_u(const spir_finite_temp_basis *b,
+int _spir_basis_get_u(const spir_basis *b,
                                       spir_funcs **u)
 {
     try {
-        std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_finite_temp_basis(b);
+        std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_basis(b);
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
-        std::shared_ptr<sparseir::TauFunctions<S, sparseir::PiecewiseLegendrePoly>> u_impl = std::static_pointer_cast<_FiniteTempBasis<S>>(impl)->get_impl()->u;
-        *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
+        if (is_ir_basis(b)) {
+            std::shared_ptr<sparseir::IRTauFuncsType<S>> u_impl = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl()->u;
+            *u = _create_ir_tau_funcs<S>(u_impl, impl->get_beta());
+        } else if (is_dlr_basis(b)) {
+            std::shared_ptr<sparseir::DLRTauFuncsType<S>> u_impl = std::static_pointer_cast<DLRAdapter<S>>(impl)->get_impl()->u;
+            *u = _create_dlr_tau_funcs<S>(u_impl, impl->get_beta());
+        } else {
+            return SPIR_NOT_SUPPORTED;
+        }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
         return SPIR_GET_IMPL_FAILED;
     }
 }
 
 template <typename S>
-int32_t _spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
+int _spir_get_v(const spir_basis *b,
                                       spir_funcs **v)
 {
     try {
-        auto impl = get_impl_finite_temp_basis(b);
+        auto impl = get_impl_basis(b);
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
+        }
+        if (!is_ir_basis(b)) {
+            std::cerr << "Error: The basis is not an IR basis" << std::endl;
+            return SPIR_NOT_SUPPORTED;
         }
         *v = _create_omega_funcs(impl->get_v());
         return SPIR_COMPUTATION_SUCCESS;
@@ -364,39 +372,24 @@ int32_t _spir_finite_temp_basis_get_v(const spir_finite_temp_basis *b,
 }
 
 template <typename S>
-int32_t _spir_finite_temp_basis_get_uhat(const spir_finite_temp_basis *b,
-                                         spir_matsubara_funcs **uhat)
+int _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
 {
     try {
-        auto impl = get_impl_finite_temp_basis(b);
+        auto impl = get_impl_basis(b);
         if (!impl) {
             return SPIR_GET_IMPL_FAILED;
         }
-        *uhat = create_matsubara_funcs(impl->get_uhat());
+        *uhat = create_funcs(impl->get_uhat());
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
         return SPIR_GET_IMPL_FAILED;
     }
 }
 
-template <typename S>
-int32_t _spir_matsubara_funcs_get_size(const spir_matsubara_funcs* funcs, int32_t* size) {
-    try {
-        auto impl = get_impl_matsubara_funcs(funcs);
-        if (!impl) {
-            return SPIR_GET_IMPL_FAILED;
-        }
-        *size = impl->size();
-        return SPIR_COMPUTATION_SUCCESS;
-    } catch (const std::exception& e) {
-        return SPIR_GET_IMPL_FAILED;
-    }
-}
-
 
 template <typename K>
-spir_finite_temp_basis* _spir_finite_temp_basis_new_with_sve(
-    spir_statistics_type statistics, double beta, double omega_max,
+spir_basis* _spir_basis_new(
+    int statistics, double beta, double omega_max,
     const K& kernel, const spir_sve_result *sve)
 {
     try {
@@ -408,15 +401,15 @@ spir_finite_temp_basis* _spir_finite_temp_basis_new_with_sve(
                 sparseir::FiniteTempBasis<sparseir::Fermionic>;
             auto impl = std::make_shared<FiniteTempBasisType>(
                 beta, omega_max, kernel, *sve_impl);
-            return create_finite_temp_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Fermionic>>(impl));
+            return create_basis(
+                std::make_shared<_IRBasis<sparseir::Fermionic>>(impl));
         } else {
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Bosonic>;
             auto impl = std::make_shared<FiniteTempBasisType>(
                 beta, omega_max, kernel, *sve_impl);
-            return create_finite_temp_basis(
-                std::make_shared<_FiniteTempBasis<sparseir::Bosonic>>(impl));
+            return create_basis(
+                std::make_shared<_IRBasis<sparseir::Bosonic>>(impl));
         }
     } catch (...) {
         return nullptr;

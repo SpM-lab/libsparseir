@@ -10,12 +10,13 @@
 
 #include <sparseir/sparseir.h>   // C interface
 #include <sparseir/sparseir.hpp> // C++ interface
+#include "_utils.hpp"
 
 using Catch::Approx;
 using xprec::DDouble;
 
 template <typename S>
-spir_statistics_type get_stat()
+int get_stat()
 {
     if (std::is_same<S, sparseir::Fermionic>::value) {
         return SPIR_STATISTICS_FERMIONIC;
@@ -25,20 +26,64 @@ spir_statistics_type get_stat()
 }
 
 template <typename S>
+spir_sampling *create_tau_sampling(spir_basis *basis)
+{
+    int status;
+    int n_tau_points;
+    status = spir_basis_get_num_default_tau_sampling_points(basis, &n_tau_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    double *tau_points_org = (double *)malloc(n_tau_points * sizeof(double));
+    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    return spir_tau_sampling_new(basis, n_tau_points, tau_points_org, &status);
+}
+
+template <typename S>
+spir_sampling *create_matsubara_sampling(spir_basis *basis, bool positive_only)
+{
+    int status;
+    int n_matsubara_points;
+    status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &n_matsubara_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    std::vector<int64_t> smpl_points(n_matsubara_points);
+    status = spir_basis_get_default_matsubara_sampling_points(basis, positive_only, smpl_points.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    spir_sampling *sampling = spir_matsubara_sampling_new(basis, positive_only, n_matsubara_points, smpl_points.data(), &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(sampling != nullptr);
+
+    return sampling;
+}
+
+template <typename S>
 void test_tau_sampling()
 {
     double beta = 1.0;
     double wmax = 10.0;
 
     auto stat = get_stat<S>();
+    int status;
 
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-15);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-15, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
-    spir_sampling *sampling;
-    int sampling_status = spir_tau_sampling_new(&sampling, basis);
+    int n_tau_points;
+    status = spir_basis_get_num_default_tau_sampling_points(basis, &n_tau_points);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_tau_points > 0);
+
+    double *tau_points_org = (double *)malloc(n_tau_points * sizeof(double));
+    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    int sampling_status;
+    spir_sampling *sampling = spir_tau_sampling_new(basis, n_tau_points, tau_points_org, &sampling_status);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -52,16 +97,19 @@ void test_tau_sampling()
     double *tau_points = (double *)malloc(n_points * sizeof(double));
     int tau_status = spir_sampling_get_tau_points(sampling, tau_points);
     REQUIRE(tau_status == SPIR_COMPUTATION_SUCCESS);
-    free(tau_points);
 
-    int *matsubara_points = (int *)malloc(n_points * sizeof(int));
-    int matsubara_status = spir_sampling_get_matsubara_points(sampling, matsubara_points);
+    // compare tau_points and tau_points_org
+    for (int i = 0; i < n_points; i++) {
+        REQUIRE(tau_points[i] == Approx(tau_points_org[i]));
+    }
+
+    std::vector<int64_t> matsubara_points(n_points);
+    int matsubara_status = spir_sampling_get_matsubara_points(sampling, matsubara_points.data());
     REQUIRE(matsubara_status == SPIR_NOT_SUPPORTED);
-    free(matsubara_points);
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
 }
 
 template <typename S>
@@ -73,15 +121,13 @@ void test_tau_sampling_evaluation_1d_column_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_tau_sampling_new(&sampling, basis);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -145,8 +191,8 @@ void test_tau_sampling_evaluation_1d_column_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     // Free allocated memory
     free(coeffs);
     free(evaluate_output);
@@ -162,15 +208,13 @@ void test_tau_sampling_evaluation_4d_row_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_tau_sampling_new(&sampling, basis);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -281,8 +325,8 @@ void test_tau_sampling_evaluation_4d_row_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -296,15 +340,13 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_tau_sampling_new(&sampling, basis);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -423,8 +465,8 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -438,15 +480,13 @@ void test_tau_sampling_evaluation_4d_column_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_tau_sampling_new(&sampling, basis);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -524,8 +564,8 @@ void test_tau_sampling_evaluation_4d_column_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -539,15 +579,13 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_tau_sampling_new(&sampling, basis);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_tau_sampling<S>(basis);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -631,8 +669,8 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -684,15 +722,13 @@ TEST_CASE("TauSampling", "[cinterface]")
         double wmax = 10.0;
 
         // Create basis
-        spir_finite_temp_basis *basis;
-        int basis_status = spir_finite_temp_basis_new(&basis, SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10);
+        int basis_status;
+        spir_basis *basis = _spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, 1e-10, &basis_status);
         REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
 
         // Create sampling
-        spir_sampling *sampling;
-        int sampling_status = spir_tau_sampling_new(&sampling, basis);
-        REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+        spir_sampling *sampling = create_tau_sampling<sparseir::Fermionic>(basis);
         REQUIRE(sampling != nullptr);
 
         // Test getting number of sampling points
@@ -778,8 +814,8 @@ TEST_CASE("TauSampling", "[cinterface]")
         }
 
         // Clean up
-        spir_destroy_sampling(sampling);
-        spir_destroy_finite_temp_basis(basis);
+        spir_sampling_release(sampling);
+        spir_basis_release(basis);
         free(output_complex);
         free(output_double);
         free(fit_output_double);
@@ -792,49 +828,72 @@ void test_matsubara_sampling_constructor()
 {
     double beta = 1.0;
     double wmax = 10.0;
+    int status;
 
     auto stat = get_stat<S>();
 
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
-    spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, false);
+    int sampling_status;
+    int n_points_org;
+    status = spir_basis_get_num_default_matsubara_sampling_points(basis, false, &n_points_org);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_points_org > 0);
+
+    std::vector<int64_t> smpl_points_org(n_points_org);
+    status = spir_basis_get_default_matsubara_sampling_points(basis, false, smpl_points_org.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    spir_sampling *sampling = spir_matsubara_sampling_new(basis, false, n_points_org, smpl_points_org.data(), &sampling_status);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
-    spir_sampling *sampling_positive_only;
-    int sampling_positive_only_status = spir_matsubara_sampling_new(&sampling_positive_only, basis, true);
-    REQUIRE(sampling_positive_only_status == SPIR_COMPUTATION_SUCCESS);
+    int n_points_positive_only_org;
+    status = spir_basis_get_num_default_matsubara_sampling_points(basis, true, &n_points_positive_only_org);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_points_positive_only_org > 0);
+
+    std::vector<int64_t> smpl_points_positive_only_org(n_points_positive_only_org);
+    status = spir_basis_get_default_matsubara_sampling_points(basis, true, smpl_points_positive_only_org.data());
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    spir_sampling *sampling_positive_only = spir_matsubara_sampling_new(basis, true, n_points_positive_only_org, smpl_points_positive_only_org.data(), &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling_positive_only != nullptr);
 
-    int32_t n_points;
-    int32_t status = spir_sampling_get_num_points(sampling, &n_points);
+    int n_points;
+    status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
-    int32_t n_points_positive_only;
+    int n_points_positive_only;
     status = spir_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only > 0);
 
-    int32_t *smpl_points = (int32_t *)malloc(n_points * sizeof(int32_t));
-    // TODO: rewrite this
-    status = spir_sampling_get_matsubara_points(sampling, smpl_points);
+    std::vector<int64_t> smpl_points(n_points);
+    status = spir_sampling_get_matsubara_points(sampling, smpl_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    // compare with smpl_points_org
+    for (int i = 0; i < n_points; ++i) {
+        REQUIRE(smpl_points[i] == smpl_points_org[i]);
+    }
 
-    int32_t *smpl_points_positive_only = (int32_t *)malloc(n_points_positive_only * sizeof(int32_t));
-    // TODO: rewrite this
-    status = spir_sampling_get_matsubara_points(sampling_positive_only, smpl_points_positive_only);
+    std::vector<int64_t> smpl_points_positive_only(n_points_positive_only);
+    status = spir_sampling_get_matsubara_points(sampling_positive_only, smpl_points_positive_only.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    // compare with smpl_points_positive_only_org
+    for (int i = 0; i < n_points_positive_only; ++i) {
+        REQUIRE(smpl_points_positive_only[i] == smpl_points_positive_only_org[i]);
+    }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
-    free(smpl_points);
-    free(smpl_points_positive_only);
+    spir_sampling_release(sampling);
+    spir_sampling_release(sampling_positive_only);
+    spir_basis_release(basis);
 }
 
 template <typename S>
@@ -846,15 +905,13 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_matsubara_sampling<S>(basis, positive_only);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -943,8 +1000,8 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -958,15 +1015,13 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_matsubara_sampling<S>(basis, positive_only);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -1049,8 +1104,8 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1064,15 +1119,13 @@ void test_matsubara_sampling_evaluation_4d_row_major()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis;
-    int basis_status = spir_finite_temp_basis_new(&basis, stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_matsubara_sampling<S>(basis, positive_only);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -1181,8 +1234,8 @@ void test_matsubara_sampling_evaluation_4d_row_major()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1197,14 +1250,13 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_matsubara_sampling<S>(basis, positive_only);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -1319,8 +1371,8 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(evaluate_output);
     free(fit_output);
 }
@@ -1335,14 +1387,13 @@ void test_matsubara_sampling_error_status()
     auto stat = get_stat<S>();
 
     // Create basis
-    spir_finite_temp_basis *basis =
-        spir_finite_temp_basis_new(stat, beta, wmax, 1e-10);
+    int basis_status;
+    spir_basis *basis = _spir_basis_new(stat, beta, wmax, 1e-10, &basis_status);
+    REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
     // Create sampling
-    spir_sampling *sampling;
-    int sampling_status = spir_matsubara_sampling_new(&sampling, basis, positive_only);
-    REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
+    spir_sampling *sampling = create_matsubara_sampling<S>(basis, positive_only);
     REQUIRE(sampling != nullptr);
 
     // Test getting number of sampling points
@@ -1425,8 +1476,8 @@ void test_matsubara_sampling_error_status()
     }
 
     // Clean up
-    spir_destroy_sampling(sampling);
-    spir_destroy_finite_temp_basis(basis);
+    spir_sampling_release(sampling);
+    spir_basis_release(basis);
     free(output_complex);
     free(output_double);
     free(fit_output_double);

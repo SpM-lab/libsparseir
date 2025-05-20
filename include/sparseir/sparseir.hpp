@@ -13,6 +13,7 @@
 #include "./poly.hpp"
 #include "./kernel.hpp"
 #include "./sve.hpp"
+#include "./funcs.hpp"
 #include "./basis.hpp"
 #include "./augment.hpp"
 #include "./sampling.hpp"

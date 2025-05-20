@@ -197,7 +197,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
     assert(fabs(actual - expected) < epsilon);
 
     free(uval);
-    spir_destroy_polyvector(u);
+    spir_release_polyvector(u);
 }
 
 // Basis coefficients to imaginary-time sampling points
@@ -242,9 +242,9 @@ free(matsubara_indices);
 free(g_matsubara);
 free(g_fit);
 free(g_tau);
-spir_destroy_fermionic_finite_temp_basis(basis);
-spir_destroy_sampling(tau_sampling);
-spir_destroy_sampling(matsubara_sampling);
+spir_release_fermionic_finite_temp_basis(basis);
+spir_release_sampling(tau_sampling);
+spir_release_sampling(matsubara_sampling);
 ```
 
 
@@ -266,8 +266,8 @@ double xmin, xmax, ymin, ymax;
 spir_kernel_domain(fermionic_kernel, &xmin, &xmax, &ymin, &ymax);
 
 // Clean up
-spir_destroy_kernel(fermionic_kernel);
-spir_destroy_kernel(bosonic_kernel);
+spir_release_kernel(fermionic_kernel);
+spir_release_kernel(bosonic_kernel);
 ```
 
 ### Basis Construction and Sampling
@@ -323,9 +323,9 @@ for (int i = 0; i < n_matsubara; ++i) {
 // Clean up
 free(matsubara_indices);
 free(g_matsubara);
-spir_destroy_fermionic_finite_temp_basis(basis);
-spir_destroy_sampling(tau_sampling);
-spir_destroy_sampling(matsubara_sampling);
+spir_release_fermionic_finite_temp_basis(basis);
+spir_release_sampling(tau_sampling);
+spir_release_sampling(matsubara_sampling);
 ```
 
 ### Sampling Operations
@@ -371,8 +371,8 @@ spir_sampling_fit_dd(
 );
 
 // Clean up
-spir_destroy_fermionic_finite_temp_basis(basis);
-spir_destroy_sampling(tau_sampling);
+spir_release_fermionic_finite_temp_basis(basis);
+spir_release_sampling(tau_sampling);
 ```
 
 ### Discrete Lehmann Representation (DLR)
@@ -419,9 +419,9 @@ int status_from_IR = spir_fermionic_dlr_from_IR(
 // Clean up
 free(Gl);
 free(g_dlr);
-spir_destroy_fermionic_finite_temp_basis(basis);
-spir_destroy_fermionic_dlr(dlr);
-spir_destroy_fermionic_dlr(dlr_with_poles);
+spir_release_fermionic_finite_temp_basis(basis);
+spir_release_fermionic_dlr(dlr);
+spir_release_fermionic_dlr(dlr_with_poles);
 ```
 
 ### Complex Number Operations
@@ -475,8 +475,8 @@ spir_sampling_fit_zz(
 );
 
 // Clean up
-spir_destroy_fermionic_finite_temp_basis(basis);
-spir_destroy_sampling(matsubara_sampling);
+spir_release_fermionic_finite_temp_basis(basis);
+spir_release_sampling(matsubara_sampling);
 ```
 
 # libsparseir Fortran Bindings Documentation

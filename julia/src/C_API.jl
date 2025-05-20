@@ -9,12 +9,12 @@ libsparseir = expanduser("~/opt/libsparseir/lib/libsparseir.$(dlext)")
 
 const c_complex = ComplexF32
 
-@cenum spir_statistics_type::UInt32 begin
+@cenum int32_t::UInt32 begin
     SPIR_STATISTICS_FERMIONIC = 1
     SPIR_STATISTICS_BOSONIC = 0
 end
 
-@cenum spir_order_type::UInt32 begin
+@cenum int32_t::UInt32 begin
     SPIR_ORDER_COLUMN_MAJOR = 1
     SPIR_ORDER_ROW_MAJOR = 0
 end
@@ -23,8 +23,8 @@ mutable struct _spir_kernel end
 
 const spir_kernel = _spir_kernel
 
-function spir_destroy_kernel(obj)
-    ccall((:spir_destroy_kernel, libsparseir), Cvoid, (Ptr{spir_kernel},), obj)
+function spir_release_kernel(obj)
+    ccall((:spir_release_kernel, libsparseir), Cvoid, (Ptr{spir_kernel},), obj)
 end
 
 function spir_clone_kernel(src)
@@ -39,8 +39,8 @@ mutable struct _spir_logistic_kernel end
 
 const spir_logistic_kernel = _spir_logistic_kernel
 
-function spir_destroy_logistic_kernel(obj)
-    ccall((:spir_destroy_logistic_kernel, libsparseir), Cvoid, (Ptr{spir_logistic_kernel},), obj)
+function spir_release_logistic_kernel(obj)
+    ccall((:spir_release_logistic_kernel, libsparseir), Cvoid, (Ptr{spir_logistic_kernel},), obj)
 end
 
 function spir_clone_logistic_kernel(src)
@@ -55,8 +55,8 @@ mutable struct _spir_regularized_bose_kernel end
 
 const spir_regularized_bose_kernel = _spir_regularized_bose_kernel
 
-function spir_destroy_regularized_bose_kernel(obj)
-    ccall((:spir_destroy_regularized_bose_kernel, libsparseir), Cvoid, (Ptr{spir_regularized_bose_kernel},), obj)
+function spir_release_regularized_bose_kernel(obj)
+    ccall((:spir_release_regularized_bose_kernel, libsparseir), Cvoid, (Ptr{spir_regularized_bose_kernel},), obj)
 end
 
 function spir_clone_regularized_bose_kernel(src)
@@ -71,8 +71,8 @@ mutable struct _spir_continuous_functions end
 
 const spir_continuous_functions = _spir_continuous_functions
 
-function spir_destroy_continuous_functions(obj)
-    ccall((:spir_destroy_continuous_functions, libsparseir), Cvoid, (Ptr{spir_continuous_functions},), obj)
+function spir_release_continuous_functions(obj)
+    ccall((:spir_release_continuous_functions, libsparseir), Cvoid, (Ptr{spir_continuous_functions},), obj)
 end
 
 function spir_clone_continuous_functions(src)
@@ -87,8 +87,8 @@ mutable struct _spir_matsubara_funcs end
 
 const spir_matsubara_funcs = _spir_matsubara_funcs
 
-function spir_destroy_matsubara_funcs(obj)
-    ccall((:spir_destroy_matsubara_funcs, libsparseir), Cvoid, (Ptr{spir_matsubara_funcs},), obj)
+function spir_release_matsubara_funcs(obj)
+    ccall((:spir_release_matsubara_funcs, libsparseir), Cvoid, (Ptr{spir_matsubara_funcs},), obj)
 end
 
 function spir_clone_matsubara_funcs(src)
@@ -103,8 +103,8 @@ mutable struct _spir_fermionic_finite_temp_basis end
 
 const spir_fermionic_finite_temp_basis = _spir_fermionic_finite_temp_basis
 
-function spir_destroy_fermionic_finite_temp_basis(obj)
-    ccall((:spir_destroy_fermionic_finite_temp_basis, libsparseir), Cvoid, (Ptr{spir_fermionic_finite_temp_basis},), obj)
+function spir_release_fermionic_finite_temp_basis(obj)
+    ccall((:spir_release_fermionic_finite_temp_basis, libsparseir), Cvoid, (Ptr{spir_fermionic_finite_temp_basis},), obj)
 end
 
 function spir_clone_fermionic_finite_temp_basis(src)
@@ -119,8 +119,8 @@ mutable struct _spir_bosonic_finite_temp_basis end
 
 const spir_bosonic_finite_temp_basis = _spir_bosonic_finite_temp_basis
 
-function spir_destroy_bosonic_finite_temp_basis(obj)
-    ccall((:spir_destroy_bosonic_finite_temp_basis, libsparseir), Cvoid, (Ptr{spir_bosonic_finite_temp_basis},), obj)
+function spir_release_bosonic_finite_temp_basis(obj)
+    ccall((:spir_release_bosonic_finite_temp_basis, libsparseir), Cvoid, (Ptr{spir_bosonic_finite_temp_basis},), obj)
 end
 
 function spir_clone_bosonic_finite_temp_basis(src)
@@ -135,8 +135,8 @@ mutable struct _spir_sampling end
 
 const spir_sampling = _spir_sampling
 
-function spir_destroy_sampling(obj)
-    ccall((:spir_destroy_sampling, libsparseir), Cvoid, (Ptr{spir_sampling},), obj)
+function spir_release_sampling(obj)
+    ccall((:spir_release_sampling, libsparseir), Cvoid, (Ptr{spir_sampling},), obj)
 end
 
 function spir_clone_sampling(src)
@@ -151,8 +151,8 @@ mutable struct _spir_sve_result end
 
 const spir_sve_result = _spir_sve_result
 
-function spir_destroy_sve_result(obj)
-    ccall((:spir_destroy_sve_result, libsparseir), Cvoid, (Ptr{spir_sve_result},), obj)
+function spir_release_sve_result(obj)
+    ccall((:spir_release_sve_result, libsparseir), Cvoid, (Ptr{spir_sve_result},), obj)
 end
 
 function spir_clone_sve_result(src)
@@ -167,8 +167,8 @@ mutable struct _spir_fermionic_dlr end
 
 const spir_fermionic_dlr = _spir_fermionic_dlr
 
-function spir_destroy_fermionic_dlr(obj)
-    ccall((:spir_destroy_fermionic_dlr, libsparseir), Cvoid, (Ptr{spir_fermionic_dlr},), obj)
+function spir_release_fermionic_dlr(obj)
+    ccall((:spir_release_fermionic_dlr, libsparseir), Cvoid, (Ptr{spir_fermionic_dlr},), obj)
 end
 
 function spir_clone_fermionic_dlr(src)
@@ -183,8 +183,8 @@ mutable struct _spir_bosonic_dlr end
 
 const spir_bosonic_dlr = _spir_bosonic_dlr
 
-function spir_destroy_bosonic_dlr(obj)
-    ccall((:spir_destroy_bosonic_dlr, libsparseir), Cvoid, (Ptr{spir_bosonic_dlr},), obj)
+function spir_release_bosonic_dlr(obj)
+    ccall((:spir_release_bosonic_dlr, libsparseir), Cvoid, (Ptr{spir_bosonic_dlr},), obj)
 end
 
 function spir_clone_bosonic_dlr(src)
@@ -262,7 +262,7 @@ The SVE is computed by mapping it onto a singular value decomposition (SVD) of a
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_sve_result`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_sve_result`](@ref) when no longer needed
 
 # Arguments
 * `k`: Pointer to the kernel object for which to compute SVE
@@ -270,7 +270,7 @@ The SVE is computed by mapping it onto a singular value decomposition (SVD) of a
 # Returns
 A pointer to the newly created SVE result object containing the truncated singular value expansion, or NULL if creation fails
 # See also
-[`spir_destroy_sve_result`](@ref)
+[`spir_release_sve_result`](@ref)
 """
 function spir_sve_result_new(k, epsilon)
     ccall((:spir_sve_result_new, libsparseir), Ptr{spir_sve_result}, (Ptr{spir_kernel}, Cdouble), k, epsilon)
@@ -330,14 +330,14 @@ Constructs a sampling object that allows transformation between the IR basis and
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_sampling`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to a fermionic finite temperature basis object
 # Returns
 A pointer to the newly created sampling object, or NULL if creation fails
 # See also
-[`spir_destroy_sampling`](@ref)
+[`spir_release_sampling`](@ref)
 """
 function spir_fermionic_tau_sampling_new(b)
     ccall((:spir_fermionic_tau_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_fermionic_finite_temp_basis},), b)
@@ -366,14 +366,14 @@ For fermionic Matsubara frequencies, the sampling points are odd integers: iωn 
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_sampling`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to a fermionic finite temperature basis object
 # Returns
 A pointer to the newly created sampling object, or NULL if creation fails
 # See also
-[`spir_destroy_sampling`](@ref)
+[`spir_release_sampling`](@ref)
 """
 function spir_fermionic_matsubara_sampling_new(b)
     ccall((:spir_fermionic_matsubara_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_fermionic_finite_temp_basis},), b)
@@ -396,14 +396,14 @@ Constructs a sampling object that allows transformation between the IR basis and
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_sampling`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to a bosonic finite temperature basis object
 # Returns
 A pointer to the newly created sampling object, or NULL if creation fails
 # See also
-[`spir_destroy_sampling`](@ref)
+[`spir_release_sampling`](@ref)
 """
 function spir_bosonic_tau_sampling_new(b)
     ccall((:spir_bosonic_tau_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_bosonic_finite_temp_basis},), b)
@@ -432,14 +432,14 @@ For bosonic Matsubara frequencies, the sampling points are even integers: iωn =
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_sampling`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to a bosonic finite temperature basis object
 # Returns
 A pointer to the newly created sampling object, or NULL if creation fails
 # See also
-[`spir_destroy_sampling`](@ref)
+[`spir_release_sampling`](@ref)
 """
 function spir_bosonic_matsubara_sampling_new(b)
     ccall((:spir_bosonic_matsubara_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_bosonic_finite_temp_basis},), b)
@@ -462,7 +462,7 @@ where: - a[i] are the expansion coefficients - w[i] are the poles on the real ax
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_fermionic_dlr`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_fermionic_dlr`](@ref) when no longer needed
 
 !!! warning
 
@@ -473,7 +473,7 @@ where: - a[i] are the expansion coefficients - w[i] are the poles on the real ax
 # Returns
 A pointer to the newly created DLR object, or NULL if creation fails
 # See also
-[`spir_destroy_fermionic_dlr`](@ref), [`spir_fermionic_dlr_new_with_poles`](@ref)
+[`spir_release_fermionic_dlr`](@ref), [`spir_fermionic_dlr_new_with_poles`](@ref)
 """
 function spir_fermionic_dlr_new(b)
     ccall((:spir_fermionic_dlr_new, libsparseir), Ptr{spir_fermionic_dlr}, (Ptr{spir_fermionic_finite_temp_basis},), b)
@@ -501,7 +501,7 @@ where w[i] are the specified poles and a[i] are the expansion coefficients.
 # Returns
 A pointer to the newly created DLR object with custom poles, or NULL if creation fails
 # See also
-[`spir_fermionic_dlr_new`](@ref), [`spir_destroy_fermionic_dlr`](@ref)
+[`spir_fermionic_dlr_new`](@ref), [`spir_release_fermionic_dlr`](@ref)
 """
 function spir_fermionic_dlr_new_with_poles(b, npoles, poles)
     ccall((:spir_fermionic_dlr_new_with_poles, libsparseir), Ptr{spir_fermionic_dlr}, (Ptr{spir_fermionic_finite_temp_basis}, Cint, Ptr{Cdouble}), b, npoles, poles)
@@ -524,7 +524,7 @@ where: - a[i] are the expansion coefficients - w[i] are the poles on the real ax
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_bosonic_dlr`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_bosonic_dlr`](@ref) when no longer needed
 
 !!! warning
 
@@ -535,7 +535,7 @@ where: - a[i] are the expansion coefficients - w[i] are the poles on the real ax
 # Returns
 A pointer to the newly created DLR object, or NULL if creation fails
 # See also
-[`spir_destroy_bosonic_dlr`](@ref), [`spir_bosonic_dlr_new_with_poles`](@ref)
+[`spir_release_bosonic_dlr`](@ref), [`spir_bosonic_dlr_new_with_poles`](@ref)
 """
 function spir_bosonic_dlr_new(b)
     ccall((:spir_bosonic_dlr_new, libsparseir), Ptr{spir_bosonic_dlr}, (Ptr{spir_bosonic_finite_temp_basis},), b)
@@ -563,7 +563,7 @@ where w[i] are the specified poles and a[i] are the expansion coefficients.
 # Returns
 A pointer to the newly created DLR object with custom poles, or NULL if creation fails
 # See also
-[`spir_bosonic_dlr_new`](@ref), [`spir_destroy_bosonic_dlr`](@ref)
+[`spir_bosonic_dlr_new`](@ref), [`spir_release_bosonic_dlr`](@ref)
 """
 function spir_bosonic_dlr_new_with_poles(b, npoles, poles)
     ccall((:spir_bosonic_dlr_new_with_poles, libsparseir), Ptr{spir_bosonic_dlr}, (Ptr{spir_bosonic_finite_temp_basis}, Cint, Ptr{Cdouble}), b, npoles, poles)
@@ -602,7 +602,7 @@ Transforms basis coefficients to values at sampling points, where both input and
 [`spir_sampling_evaluate_dz`](@ref), [`spir_sampling_evaluate_zz`](@ref)
 """
 function spir_sampling_evaluate_dd(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_dd, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_evaluate_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -642,11 +642,11 @@ Transforms basis coefficients to values at sampling points, where input is real 
 [`spir_sampling_evaluate_dd`](@ref), [`spir_sampling_evaluate_zz`](@ref)
 """
 function spir_sampling_evaluate_dz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_dz, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_evaluate_dz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 function spir_sampling_evaluate_zz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_zz, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_evaluate_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -686,7 +686,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
 [`spir_sampling_evaluate_dd`](@ref), [`spir_sampling_fit_zz`](@ref)
 """
 function spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_fit_dd, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_fit_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -730,7 +730,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
 [`spir_sampling_evaluate_zz`](@ref), [`spir_sampling_fit_dd`](@ref)
 """
 function spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_fit_zz, libsparseir), Cint, (Ptr{spir_sampling}, spir_order_type, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_fit_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -843,7 +843,7 @@ Transforms a given input array from the Imaginary Frequency (IR) representation 
 [`spir_fermionic_dlr_to_IR`](@ref), [`spir_fermionic_dlr_fitmat_rows`](@ref), [`spir_fermionic_dlr_fitmat_cols`](@ref)
 """
 function spir_fermionic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_fermionic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_fermionic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 """
@@ -890,7 +890,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (
 [`spir_bosonic_dlr_to_IR`](@ref), [`spir_fermionic_dlr_from_IR`](@ref)
 """
 function spir_bosonic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_bosonic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_bosonic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 """
@@ -933,7 +933,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (
 [`spir_bosonic_dlr_from_IR`](@ref), [`spir_fermionic_dlr_to_IR`](@ref)
 """
 function spir_bosonic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_bosonic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_bosonic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 """
@@ -976,7 +976,7 @@ SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (
 [`spir_fermionic_dlr_from_IR`](@ref), [`spir_bosonic_dlr_to_IR`](@ref)
 """
 function spir_fermionic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_fermionic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, spir_order_type, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+    ccall((:spir_fermionic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
 end
 
 function spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon)
@@ -1004,7 +1004,7 @@ where: - u[l](τ) are IR basis functions on the imaginary time axis (stored as p
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_bosonic_finite_temp_basis`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_bosonic_finite_temp_basis`](@ref) when no longer needed
 
 # Arguments
 * `beta`: Inverse temperature β (must be positive)
@@ -1013,7 +1013,7 @@ where: - u[l](τ) are IR basis functions on the imaginary time axis (stored as p
 # Returns
 A pointer to the newly created bosonic finite temperature basis object, or NULL if creation fails
 # See also
-[`spir_destroy_bosonic_finite_temp_basis`](@ref)
+[`spir_release_bosonic_finite_temp_basis`](@ref)
 """
 function spir_bosonic_finite_temp_basis_new(beta, omega_max, epsilon)
     ccall((:spir_bosonic_finite_temp_basis_new, libsparseir), Ptr{spir_bosonic_finite_temp_basis}, (Cdouble, Cdouble, Cdouble), beta, omega_max, epsilon)
@@ -1038,7 +1038,7 @@ This function creates a fermionic intermediate representation (IR) basis using a
 # Returns
 A pointer to the newly created fermionic finite temperature basis object, or NULL if creation fails (invalid inputs or exception occurs)
 # See also
-[`spir_sve_result_new`](@ref), [`spir_destroy_fermionic_finite_temp_basis`](@ref)
+[`spir_sve_result_new`](@ref), [`spir_release_fermionic_finite_temp_basis`](@ref)
 """
 function spir_fermionic_finite_temp_basis_new_with_sve(beta, omega_max, k, sve)
     ccall((:spir_fermionic_finite_temp_basis_new_with_sve, libsparseir), Ptr{spir_fermionic_finite_temp_basis}, (Cdouble, Cdouble, Ptr{spir_kernel}, Ptr{spir_sve_result}), beta, omega_max, k, sve)
@@ -1063,7 +1063,7 @@ This function creates a bosonic intermediate representation (IR) basis using a p
 # Returns
 A pointer to the newly created bosonic finite temperature basis object, or NULL if creation fails (invalid inputs or exception occurs)
 # See also
-[`spir_sve_result_new`](@ref), [`spir_destroy_bosonic_finite_temp_basis`](@ref)
+[`spir_sve_result_new`](@ref), [`spir_release_bosonic_finite_temp_basis`](@ref)
 """
 function spir_bosonic_finite_temp_basis_new_with_sve(beta, omega_max, k, sve)
     ccall((:spir_bosonic_finite_temp_basis_new_with_sve, libsparseir), Ptr{spir_bosonic_finite_temp_basis}, (Cdouble, Cdouble, Ptr{spir_kernel}, Ptr{spir_sve_result}), beta, omega_max, k, sve)
@@ -1078,14 +1078,14 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned polynomial vector must be freed using spir\\_destroy\\_polyvector when no longer needed
+    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
 
 # Arguments
 * `b`: Pointer to the fermionic finite temperature basis object
 # Returns
 A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
 # See also
-spir\\_destroy\\_polyvector
+spir\\_release\\_polyvector
 """
 function spir_fermionic_finite_temp_basis_get_u(b)
     ccall((:spir_fermionic_finite_temp_basis_get_u, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_fermionic_finite_temp_basis},), b)
@@ -1100,14 +1100,14 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned polynomial vector must be freed using spir\\_destroy\\_polyvector when no longer needed
+    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
 
 # Arguments
 * `b`: Pointer to the fermionic finite temperature basis object
 # Returns
 A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
 # See also
-spir\\_destroy\\_polyvector
+spir\\_release\\_polyvector
 """
 function spir_fermionic_finite_temp_basis_get_v(b)
     ccall((:spir_fermionic_finite_temp_basis_get_v, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_fermionic_finite_temp_basis},), b)
@@ -1122,14 +1122,14 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_matsubara_funcs`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_matsubara_funcs`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to the fermionic finite temperature basis object
 # Returns
 A pointer to the object containing the basis functions, or NULL if the basis object is invalid
 # See also
-[`spir_destroy_matsubara_funcs`](@ref)
+[`spir_release_matsubara_funcs`](@ref)
 """
 function spir_fermionic_finite_temp_basis_get_uhat(b)
     ccall((:spir_fermionic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_fermionic_finite_temp_basis},), b)
@@ -1144,14 +1144,14 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned polynomial vector must be freed using spir\\_destroy\\_polyvector when no longer needed
+    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
 
 # Arguments
 * `b`: Pointer to the bosonic finite temperature basis object
 # Returns
 A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
 # See also
-spir\\_destroy\\_polyvector
+spir\\_release\\_polyvector
 """
 function spir_bosonic_finite_temp_basis_get_u(b)
     ccall((:spir_bosonic_finite_temp_basis_get_u, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_bosonic_finite_temp_basis},), b)
@@ -1166,14 +1166,14 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned polynomial vector must be freed using spir\\_destroy\\_polyvector when no longer needed
+    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
 
 # Arguments
 * `b`: Pointer to the bosonic finite temperature basis object
 # Returns
 A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
 # See also
-spir\\_destroy\\_polyvector
+spir\\_release\\_polyvector
 """
 function spir_bosonic_finite_temp_basis_get_v(b)
     ccall((:spir_bosonic_finite_temp_basis_get_v, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_bosonic_finite_temp_basis},), b)
@@ -1188,14 +1188,14 @@ This function returns a polynomial vector containing the basis functions of the 
 
 !!! note
 
-    The returned object must be freed using [`spir_destroy_matsubara_funcs`](@ref) when no longer needed
+    The returned object must be freed using [`spir_release_matsubara_funcs`](@ref) when no longer needed
 
 # Arguments
 * `b`: Pointer to the bosonic finite temperature basis object
 # Returns
 A pointer to the object containing the basis functions, or NULL if the basis object is invalid
 # See also
-[`spir_destroy_matsubara_funcs`](@ref)
+[`spir_release_matsubara_funcs`](@ref)
 """
 function spir_bosonic_finite_temp_basis_get_uhat(b)
     ccall((:spir_bosonic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_bosonic_finite_temp_basis},), b)
@@ -1224,7 +1224,7 @@ function spir_evaluate_continuous_functions(uv, x, out)
 end
 
 """
-    spir_evaluate_matsubara_funcs(uiw, order, num_freqs, matsubara_freq_indices, out)
+    spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
 
 Evaluates basis functions at multiple Matsubara frequencies.
 
@@ -1243,8 +1243,8 @@ This function evaluates all basis functions contained in a Matsubara basis funct
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success, error code on failure
 """
-function spir_evaluate_matsubara_funcs(uiw, order, num_freqs, matsubara_freq_indices, out)
-    ccall((:spir_evaluate_matsubara_funcs, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, spir_order_type, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
+function spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
+    ccall((:spir_funcs_batch_evaluate_matsubara, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, int32_t, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
 end
 
 """
@@ -1320,7 +1320,7 @@ function spir_sampling_get_matsubara_points(s, points)
     ccall((:spir_sampling_get_matsubara_points, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cint}), s, points)
 end
 
-@cenum spir_status_type::Int32 begin
+@cenum int32_t::Int32 begin
     SPIR_COMPUTATION_SUCCESS = 0
     SPIR_GET_IMPL_FAILED = -1
     SPIR_INVALID_DIMENSION = -2
