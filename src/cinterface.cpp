@@ -20,7 +20,7 @@
 // Implementation of the C API
 extern "C" {
 
-spir_kernel* spir_logistic_kernel_new(double lambda, int32_t* status)
+spir_kernel* spir_logistic_kernel_new(double lambda, int* status)
 {
     try {
         auto kernel_ptr = std::make_shared<sparseir::LogisticKernel>(lambda);
@@ -42,7 +42,7 @@ spir_kernel* spir_logistic_kernel_new(double lambda, int32_t* status)
     }
 }
 
-spir_kernel* spir_regularized_bose_kernel_new(double lambda, int32_t* status)
+spir_kernel* spir_regularized_bose_kernel_new(double lambda, int* status)
 {
     DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
     try {
@@ -61,7 +61,7 @@ spir_kernel* spir_regularized_bose_kernel_new(double lambda, int32_t* status)
     }
 }
 
-int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
+int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax)
 {
     DEBUG_LOG("spir_kernel_domain called with kernel=" << k);
@@ -112,7 +112,7 @@ int32_t spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
     }
 }
 
-spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int32_t* status)
+spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int* status)
 {
     try {
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
@@ -146,8 +146,8 @@ spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int32
 }
 
 spir_basis* spir_basis_new(
-    int32_t statistics, double beta, double omega_max,
-    const spir_kernel *k, const spir_sve_result *sve, int32_t* status)
+    int statistics, double beta, double omega_max,
+    const spir_kernel *k, const spir_sve_result *sve, int* status)
 {
     try {
         // Get the kernel implementation
@@ -192,7 +192,7 @@ spir_basis* spir_basis_new(
 }
 
 
-spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t num_points, const double *points, int32_t* status)
+spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const double *points, int* status)
 {
     if (!b || !points || num_points <= 0) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -230,7 +230,7 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int32_t num_points, co
     }
 }
 
-spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int32_t num_points, const int64_t *points, int32_t* status)
+spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int num_points, const int64_t *points, int* status)
 {
     if (!b || !points || num_points <= 0) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -278,7 +278,7 @@ spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_on
     }
 }
 
-spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
+spir_basis* spir_dlr_new(const spir_basis *b, int* status)
 {
     auto impl = get_impl_basis(b);
     if (!impl) {
@@ -291,8 +291,8 @@ spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
         return nullptr;
     }
 
-    int32_t stat;
-    int32_t status_basis = spir_basis_get_statistics(b, &stat);
+    int stat;
+    int status_basis = spir_basis_get_statistics(b, &stat);
     if (status_basis != SPIR_COMPUTATION_SUCCESS) {
         *status = SPIR_GET_IMPL_FAILED;
         return nullptr;
@@ -308,7 +308,7 @@ spir_basis* spir_dlr_new(const spir_basis *b, int32_t* status)
 }
 
 spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
-                                  const int32_t npoles, const double *poles, int32_t* status)
+                                  const int npoles, const double *poles, int* status)
 {
     auto impl = get_impl_basis(b);
     if (!impl)
@@ -320,8 +320,8 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
         return nullptr;
     }
 
-    int32_t stat;
-    int32_t status_basis = spir_basis_get_statistics(b, &stat);
+    int stat;
+    int status_basis = spir_basis_get_statistics(b, &stat);
     if (status_basis != SPIR_COMPUTATION_SUCCESS) {
         *status = SPIR_GET_IMPL_FAILED;
         return nullptr;
@@ -336,18 +336,18 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
     }
 }
 
-int32_t spir_sampling_evaluate_dd(const spir_sampling *s, int32_t order,
-                                  int32_t ndim, const int32_t *input_dims,
-                                  int32_t target_dim, const double *input,
+int spir_sampling_evaluate_dd(const spir_sampling *s, int order,
+                                  int ndim, const int *input_dims,
+                                  int target_dim, const double *input,
                                   double *out)
 {
     return evaluate_impl(s, order, ndim, input_dims, target_dim, input, out,
                          &sparseir::AbstractSampling::evaluate_inplace_dd);
 }
 
-int32_t spir_sampling_evaluate_dz(const spir_sampling *s, int32_t order,
-                                  int32_t ndim, const int32_t *input_dims,
-                                  int32_t target_dim, const double *input,
+int spir_sampling_evaluate_dz(const spir_sampling *s, int order,
+                                  int ndim, const int *input_dims,
+                                  int target_dim, const double *input,
                                   c_complex *out)
 {
     std::complex<double> *cpp_out = (std::complex<double> *)(out);
@@ -355,9 +355,9 @@ int32_t spir_sampling_evaluate_dz(const spir_sampling *s, int32_t order,
                          &sparseir::AbstractSampling::evaluate_inplace_dz);
 }
 
-int32_t spir_sampling_evaluate_zz(const spir_sampling *s, int32_t order,
-                                  int32_t ndim, const int32_t *input_dims,
-                                  int32_t target_dim, const c_complex *input,
+int spir_sampling_evaluate_zz(const spir_sampling *s, int order,
+                                  int ndim, const int *input_dims,
+                                  int target_dim, const c_complex *input,
                                   c_complex *out)
 {
     // DANGER: MEMORY LAYOUT MAY NOT BE CONSISTENT BETWEEN C99 AND C++
@@ -368,18 +368,18 @@ int32_t spir_sampling_evaluate_zz(const spir_sampling *s, int32_t order,
                          &sparseir::AbstractSampling::evaluate_inplace_zz);
 }
 
-int32_t spir_sampling_fit_dd(const spir_sampling *s, int32_t order,
-                             int32_t ndim, const int32_t *input_dims,
-                             int32_t target_dim, const double *input,
+int spir_sampling_fit_dd(const spir_sampling *s, int order,
+                             int ndim, const int *input_dims,
+                             int target_dim, const double *input,
                              double *out)
 {
     return fit_impl(s, order, ndim, input_dims, target_dim, input, out,
                     &sparseir::AbstractSampling::fit_inplace_dd);
 }
 
-int32_t spir_sampling_fit_zz(const spir_sampling *s, int32_t order,
-                             int32_t ndim, const int32_t *input_dims,
-                             int32_t target_dim, const c_complex *input,
+int spir_sampling_fit_zz(const spir_sampling *s, int order,
+                             int ndim, const int *input_dims,
+                             int target_dim, const c_complex *input,
                              c_complex *out)
 {
     std::complex<double> *cpp_input = (std::complex<double> *)(input);
@@ -388,8 +388,8 @@ int32_t spir_sampling_fit_zz(const spir_sampling *s, int32_t order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, int32_t order, int32_t ndim,
-                       const int32_t *input_dims, int32_t target_dim,
+int spir_dlr_to_ir_dd(const spir_basis *dlr, int order, int ndim,
+                       const int *input_dims, int target_dim,
                        const double *input, double *out)
 {
     auto impl = get_impl_basis(dlr);
@@ -410,8 +410,8 @@ int32_t spir_dlr_to_ir_dd(const spir_basis *dlr, int32_t order, int32_t ndim,
     }
 }
 
-int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, int32_t order, int32_t ndim,
-                       const int32_t *input_dims, int32_t target_dim,
+int spir_dlr_to_ir_zz(const spir_basis *dlr, int order, int ndim,
+                       const int *input_dims, int target_dim,
                        const c_complex *input, c_complex *out)
 {
     auto impl = get_impl_basis(dlr);
@@ -435,8 +435,8 @@ int32_t spir_dlr_to_ir_zz(const spir_basis *dlr, int32_t order, int32_t ndim,
     }
 }
 
-int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, int32_t order,
-                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
+int spir_ir_to_dlr_dd(const spir_basis *dlr, int order,
+                         int ndim, const int *input_dims, int target_dim,
                          const double *input, double *out)
 {
     auto impl = get_impl_basis(dlr);
@@ -457,8 +457,8 @@ int32_t spir_ir_to_dlr_dd(const spir_basis *dlr, int32_t order,
     }
 }
 
-int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, int32_t order,
-                         int32_t ndim, const int32_t *input_dims, int32_t target_dim,
+int spir_ir_to_dlr_zz(const spir_basis *dlr, int order,
+                         int ndim, const int *input_dims, int target_dim,
                          const c_complex *input, c_complex *out)
 {
     auto impl = get_impl_basis(dlr);
@@ -482,7 +482,7 @@ int32_t spir_ir_to_dlr_zz(const spir_basis *dlr, int32_t order,
     }
 }
 
-int32_t spir_dlr_get_num_poles(const spir_basis *dlr, int32_t *num_poles)
+int spir_dlr_get_num_poles(const spir_basis *dlr, int *num_poles)
 {
     if (!dlr || !num_poles) {
         return SPIR_INVALID_ARGUMENT;
@@ -506,7 +506,7 @@ int32_t spir_dlr_get_num_poles(const spir_basis *dlr, int32_t *num_poles)
     }
 }
 
-int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles)
+int spir_dlr_get_poles(const spir_basis *dlr, double *poles)
 {
     if (!dlr || !poles) {
         return SPIR_INVALID_ARGUMENT;
@@ -531,7 +531,7 @@ int32_t spir_dlr_get_poles(const spir_basis *dlr, double *poles)
     }
 }
 
-spir_funcs* spir_basis_get_u(const spir_basis *b, int32_t *status)
+spir_funcs* spir_basis_get_u(const spir_basis *b, int *status)
 {
     if (!b || !status) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -547,7 +547,7 @@ spir_funcs* spir_basis_get_u(const spir_basis *b, int32_t *status)
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             spir_funcs *u = nullptr;
-            int32_t ret = _spir_basis_get_u<sparseir::Fermionic>(b, &u);
+            int ret = _spir_basis_get_u<sparseir::Fermionic>(b, &u);
             if (ret != SPIR_COMPUTATION_SUCCESS) {
                 *status = ret;
                 return nullptr;
@@ -556,7 +556,7 @@ spir_funcs* spir_basis_get_u(const spir_basis *b, int32_t *status)
             return u;
         } else {
             spir_funcs *u = nullptr;
-            int32_t ret = _spir_basis_get_u<sparseir::Bosonic>(b, &u);
+            int ret = _spir_basis_get_u<sparseir::Bosonic>(b, &u);
             if (ret != SPIR_COMPUTATION_SUCCESS) {
                 *status = ret;
                 return nullptr;
@@ -570,7 +570,7 @@ spir_funcs* spir_basis_get_u(const spir_basis *b, int32_t *status)
     }
 }
 
-spir_funcs* spir_basis_get_v(const spir_basis *b, int32_t *status)
+spir_funcs* spir_basis_get_v(const spir_basis *b, int *status)
 {
     if (!b || !status) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -586,7 +586,7 @@ spir_funcs* spir_basis_get_v(const spir_basis *b, int32_t *status)
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             spir_funcs *v = nullptr;
-            int32_t ret = _spir_get_v<sparseir::Fermionic>(b, &v);
+            int ret = _spir_get_v<sparseir::Fermionic>(b, &v);
             if (ret != SPIR_COMPUTATION_SUCCESS) {
                 *status = ret;
                 return nullptr;
@@ -595,7 +595,7 @@ spir_funcs* spir_basis_get_v(const spir_basis *b, int32_t *status)
             return v;
         } else {
             spir_funcs *v = nullptr;
-            int32_t ret = _spir_get_v<sparseir::Bosonic>(b, &v);
+            int ret = _spir_get_v<sparseir::Bosonic>(b, &v);
             if (ret != SPIR_COMPUTATION_SUCCESS) {
                 *status = ret;
                 return nullptr;
@@ -609,7 +609,7 @@ spir_funcs* spir_basis_get_v(const spir_basis *b, int32_t *status)
     }
 }
 
-spir_funcs* spir_basis_get_uhat(const spir_basis *b, int32_t *status)
+spir_funcs* spir_basis_get_uhat(const spir_basis *b, int *status)
 {
     if (!b || !status) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -625,7 +625,7 @@ spir_funcs* spir_basis_get_uhat(const spir_basis *b, int32_t *status)
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             spir_funcs *uhat = nullptr;
-            int32_t ret = _spir_basis_get_uhat<sparseir::Fermionic>(b, &uhat);
+            int ret = _spir_basis_get_uhat<sparseir::Fermionic>(b, &uhat);
             if (ret != SPIR_COMPUTATION_SUCCESS) {
                 *status = ret;
                 return nullptr;
@@ -634,7 +634,7 @@ spir_funcs* spir_basis_get_uhat(const spir_basis *b, int32_t *status)
             return uhat;
         } else {
             spir_funcs *uhat = nullptr;
-            int32_t ret = _spir_basis_get_uhat<sparseir::Bosonic>(b, &uhat);
+            int ret = _spir_basis_get_uhat<sparseir::Bosonic>(b, &uhat);
             if (ret != SPIR_COMPUTATION_SUCCESS) {
                 *status = ret;
                 return nullptr;
@@ -649,8 +649,8 @@ spir_funcs* spir_basis_get_uhat(const spir_basis *b, int32_t *status)
 }
 
 // TODO: USE THIS
-int32_t spir_sampling_get_num_points(const spir_sampling *s,
-                                     int32_t *num_points)
+int spir_sampling_get_num_points(const spir_sampling *s,
+                                     int *num_points)
 {
     auto impl = get_impl_sampling(s);
     if (!impl) {
@@ -667,7 +667,7 @@ int32_t spir_sampling_get_num_points(const spir_sampling *s,
     }
 }
 
-int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points)
+int spir_sampling_get_tau_points(const spir_sampling *s, double *points)
 {
     auto impl = get_impl_sampling(s);
     if (!impl) {
@@ -700,7 +700,7 @@ int32_t spir_sampling_get_tau_points(const spir_sampling *s, double *points)
 }
 
 // TODO: USE THIS
-int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
+int spir_sampling_get_matsubara_points(const spir_sampling *s,
                                            int64_t *points)
 {
     auto impl = get_impl_sampling(s);
@@ -740,8 +740,8 @@ int32_t spir_sampling_get_matsubara_points(const spir_sampling *s,
     }
 }
 
-int32_t spir_basis_get_size(const spir_basis *b,
-                                        int32_t *size)
+int spir_basis_get_size(const spir_basis *b,
+                                        int *size)
 {
     auto impl = get_impl_basis(b);
     if (!impl) {
@@ -758,7 +758,7 @@ int32_t spir_basis_get_size(const spir_basis *b,
     }
 }
 
-int32_t spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int32_t *num_points)
+int spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int *num_points)
 {
     if (!b || !num_points) {
         return SPIR_INVALID_ARGUMENT;
@@ -791,7 +791,7 @@ int32_t spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int3
     }
 }
 
-int32_t spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *points)
+int spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *points)
 {
     if (!b || !points) {
         return SPIR_INVALID_ARGUMENT;
@@ -824,7 +824,7 @@ int32_t spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *
     }
 }
 
-int32_t spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int32_t *num_points)
+int spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int *num_points)
 {
     if (!b || !num_points) {
         return SPIR_INVALID_ARGUMENT;
@@ -857,7 +857,7 @@ int32_t spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b
     }
 }
 
-int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int64_t *points)
+int spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int64_t *points)
 {
     if (!b || !points) {
         return SPIR_INVALID_ARGUMENT;
@@ -890,8 +890,8 @@ int32_t spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bo
     }
 }
 
-int32_t spir_basis_get_statistics(const spir_basis *b,
-                                  int32_t *statistics)
+int spir_basis_get_statistics(const spir_basis *b,
+                                  int *statistics)
 {
     auto impl = get_impl_basis(b);
     if (!impl) {
@@ -908,7 +908,7 @@ int32_t spir_basis_get_statistics(const spir_basis *b,
     }
 }
 
-int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
+int spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
 {
     if (!out) {
         std::cerr << "Error: out is null" << std::endl;
@@ -933,9 +933,70 @@ int32_t spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
     }
 }
 
-int32_t spir_funcs_batch_evaluate_matsubara(const spir_funcs *uiw,
-                                          int32_t order,
-                                          int32_t num_freqs,
+int spir_funcs_evaluate_matsubara(const spir_funcs *funcs, int64_t x, c_complex *out)
+{
+    if (!funcs || !out) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    // Use batch_evaluate_matsubara with num_freqs = 1
+    return spir_funcs_batch_evaluate_matsubara(funcs, SPIR_ORDER_COLUMN_MAJOR, 1, &x, out);
+}
+
+int spir_funcs_batch_evaluate(const spir_funcs *funcs,
+                                 int order, int num_points,
+                                 double *xs, double *out)
+{
+    if (!funcs || !xs || !out || num_points <= 0) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_funcs(funcs);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        // Get the size of the functions object
+        int size;
+        int status = spir_funcs_get_size(funcs, &size);
+        if (status != SPIR_COMPUTATION_SUCCESS) {
+            return status;
+        }
+
+        // result is a matrix of size n_funcs x num_points in column-major order
+        Eigen::MatrixXd result = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl)->operator()(Eigen::Map<Eigen::VectorXd>(xs, num_points));
+
+        // out is a matrix of size num_points x n_funcs 
+        if (order == SPIR_ORDER_ROW_MAJOR) {
+            // Copy the results to the output array
+            for (int i = 0; i < num_points; ++i) {
+                for (int j = 0; j < size; ++j) {
+                    out[i * size + j] = result(j, i);
+                }
+            }
+        } else {
+            // Copy the results to the output array
+            for (int i = 0; i < num_points; ++i) {
+                for (int j = 0; j < size; ++j) {
+                    out[j * num_points + i] = result(j, i);
+                }
+            }
+        }
+
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_batch_evaluate: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_funcs_batch_evaluate");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_funcs_batch_evaluate_matsubara(const spir_funcs *uiw,
+                                          int order,
+                                          int num_freqs,
                                           int64_t *matsubara_freq_indices,
                                           c_complex *out)
 {
@@ -990,7 +1051,7 @@ int32_t spir_funcs_batch_evaluate_matsubara(const spir_funcs *uiw,
     }
 }
 
-int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size)
+int spir_funcs_get_size(const spir_funcs *funcs, int *size)
 {
     if (funcs == nullptr || size == nullptr) {
         return SPIR_INVALID_ARGUMENT;
@@ -1008,8 +1069,8 @@ int32_t spir_funcs_get_size(const spir_funcs *funcs, int32_t *size)
     }
 }
 
-int32_t spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
-                                                       int32_t *num_points)
+int spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
+                                                       int *num_points)
 {
     if (!b || !num_points) {
         return SPIR_INVALID_ARGUMENT;
@@ -1051,7 +1112,7 @@ int32_t spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
     }
 }
 
-int32_t spir_basis_get_default_omega_sampling_points(const spir_basis *b,
+int spir_basis_get_default_omega_sampling_points(const spir_basis *b,
                                                    double *points)
 {
     if (!b || !points) {

@@ -39,6 +39,8 @@ class AbstractContinuousFunctions : public _AbstractFuncs {
 public:
     virtual ~AbstractContinuousFunctions() = default;
     virtual Eigen::VectorXd operator()(double x) const = 0;
+    // Returns a matrix of size n_funcs x n_points
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const = 0;
     virtual std::pair<double, double> get_domain() const = 0;
     virtual bool is_continuous_funcs() const override { return true; }
 };
@@ -56,6 +58,11 @@ public:
     }
 
     virtual int size() const override { return impl->size(); }
+
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const override
+    {
+        return impl->operator()(xs);
+    }
 
     virtual std::pair<double, double> get_domain() const override
     {
@@ -89,6 +96,11 @@ public:
         return impl->operator()(x);
     }
 
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const override
+    {
+        return impl->operator()(xs);
+    }
+
     virtual int size() const override { return impl->size(); }
 
     virtual std::pair<double, double> get_domain() const override
@@ -116,6 +128,11 @@ public:
             throw std::runtime_error("impl is not initialized");
         }
         return impl->operator()(x);
+    }
+
+    virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const override
+    {
+        return impl->operator()(xs);
     }
 
     virtual int size() const override { return impl->size(); }

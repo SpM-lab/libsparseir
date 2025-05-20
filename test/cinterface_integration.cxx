@@ -21,7 +21,7 @@
 using Catch::Approx;
 
 template <typename S>
-int32_t get_stat()
+int get_stat()
 {
     if (std::is_same<S, sparseir::Fermionic>::value) {
         return SPIR_STATISTICS_FERMIONIC;
@@ -30,7 +30,7 @@ int32_t get_stat()
     }
 }
 
-// int32_t get_order(Eigen::StorageOptions order)
+// int get_order(Eigen::StorageOptions order)
 //{
 // if (order == Eigen::ColMajor) {
 // return SPIR_ORDER_COLUMN_MAJOR;
@@ -61,7 +61,7 @@ TEST_CASE("Test _get_dims", "[cinterface]")
 {
     std::vector<int> extra_dims = {2,3,4};
     {
-        int32_t target_dim = 0;
+        int target_dim = 0;
         auto dims = _get_dims<4>(100, extra_dims, target_dim);
         REQUIRE(dims[0] == 100);
         REQUIRE(dims[1] == 2);
@@ -69,7 +69,7 @@ TEST_CASE("Test _get_dims", "[cinterface]")
         REQUIRE(dims[3] == 4);
     }
     {
-        int32_t target_dim = 1;
+        int target_dim = 1;
         auto dims = _get_dims<4>(100, extra_dims, target_dim);
         REQUIRE(dims[0] == 2);
         REQUIRE(dims[1] == 100);
@@ -77,7 +77,7 @@ TEST_CASE("Test _get_dims", "[cinterface]")
         REQUIRE(dims[3] == 4);
     }
     {
-        int32_t target_dim = 2;
+        int target_dim = 2;
         auto dims = _get_dims<4>(100, extra_dims, target_dim);
         REQUIRE(dims[0] == 2);
         REQUIRE(dims[1] == 3);
@@ -85,7 +85,7 @@ TEST_CASE("Test _get_dims", "[cinterface]")
         REQUIRE(dims[3] == 4);
     }
     {
-        int32_t target_dim = 3;
+        int target_dim = 3;
         auto dims = _get_dims<4>(100, extra_dims, target_dim);
         REQUIRE(dims[0] == 2);
         REQUIRE(dims[1] == 3);
@@ -99,8 +99,8 @@ template <typename T, Eigen::StorageOptions ORDER>
 Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER>
 _evaluate_basis_functions(const spir_funcs *u, const Eigen::VectorXd &x_values)
 {
-    int32_t status;
-    int32_t funcs_size;
+    int status;
+    int funcs_size;
     status = spir_funcs_get_size(u, &funcs_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -121,8 +121,8 @@ Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic, ORDER>
 _evaluate_matsubara_basis_functions(const spir_funcs *uhat,
                                     const Eigen::Vector<int64_t, Eigen::Dynamic> &matsubara_indices)
 {
-    int32_t status;
-    int32_t funcs_size;
+    int status;
+    int funcs_size;
     status = spir_funcs_get_size(uhat, &funcs_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -254,7 +254,7 @@ spir_kernel* _kernel_new(double lambda);
 template <>
 spir_kernel* _kernel_new<sparseir::LogisticKernel>(double lambda)
 {
-    int32_t status;
+    int status;
     spir_kernel* kernel = spir_logistic_kernel_new(lambda, &status);
     return kernel;
 }
@@ -262,7 +262,7 @@ spir_kernel* _kernel_new<sparseir::LogisticKernel>(double lambda)
 template <>
 spir_kernel* _kernel_new<sparseir::RegularizedBoseKernel>(double lambda)
 {
-    int32_t status;
+    int status;
     spir_kernel* kernel = spir_regularized_bose_kernel_new(lambda, &status);
     return kernel;
 }
@@ -283,8 +283,8 @@ std::complex<double> generate_random_coeff<std::complex<double>>(double random_v
 
 // Add these template functions before the integration_test function
 template <typename T>
-int32_t dlr_to_IR(spir_basis* dlr, int32_t order, int32_t ndim,
-                  const int32_t* dims, int32_t target_dim,
+int dlr_to_IR(spir_basis* dlr, int order, int ndim,
+                  const int* dims, int target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
         return spir_dlr_to_ir_dd(dlr, order, ndim, dims, target_dim,
@@ -300,8 +300,8 @@ int32_t dlr_to_IR(spir_basis* dlr, int32_t order, int32_t ndim,
 
 
 template <typename T>
-int32_t dlr_from_IR(spir_basis* dlr, int32_t order, int32_t ndim,
-                  const int32_t* dims, int32_t target_dim,
+int dlr_from_IR(spir_basis* dlr, int order, int ndim,
+                  const int* dims, int target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
         return spir_ir_to_dlr_dd(dlr, order, ndim, dims, target_dim,
@@ -316,8 +316,8 @@ int32_t dlr_from_IR(spir_basis* dlr, int32_t order, int32_t ndim,
 }
 
 template <typename T>
-int32_t _tau_sampling_evaluate(spir_sampling* sampling, int32_t order, int32_t ndim,
-                         const int32_t* dims, int32_t target_dim,
+int _tau_sampling_evaluate(spir_sampling* sampling, int order, int ndim,
+                         const int* dims, int target_dim,
                          const T* gIR, T* gtau) {
     if (std::is_same<T, double>::value) {
         return spir_sampling_evaluate_dd(sampling, order, ndim, dims, target_dim,
@@ -332,8 +332,8 @@ int32_t _tau_sampling_evaluate(spir_sampling* sampling, int32_t order, int32_t n
 }
 
 template <typename T>
-int32_t _tau_sampling_fit(spir_sampling* sampling, int32_t order, int32_t ndim,
-                         const int32_t* dims, int32_t target_dim,
+int _tau_sampling_fit(spir_sampling* sampling, int order, int ndim,
+                         const int* dims, int target_dim,
                          const T* gtau, T* gIR) {
     if (std::is_same<T, double>::value) {
         return spir_sampling_fit_dd(sampling, order, ndim, dims, target_dim,
@@ -348,8 +348,8 @@ int32_t _tau_sampling_fit(spir_sampling* sampling, int32_t order, int32_t ndim,
 }
 
 template <typename T>
-int32_t _matsubara_sampling_evaluate(spir_sampling* sampling, int32_t order, int32_t ndim,
-                                   const int32_t* dims, int32_t target_dim,
+int _matsubara_sampling_evaluate(spir_sampling* sampling, int order, int ndim,
+                                   const int* dims, int target_dim,
                                    const T* gIR, std::complex<double>* giw) {
     if (std::is_same<T, double>::value) {
         return spir_sampling_evaluate_dz(sampling, order, ndim, dims, target_dim,
@@ -383,7 +383,7 @@ T: double or std::complex<double>, scalar type of coeffs
 template <typename T, typename S, typename K, int ndim, Eigen::StorageOptions ORDER>
 void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
-                      const int32_t order, double tol, bool positive_only)
+                      const int order, double tol, bool positive_only)
 {
     // positive_only is not supported for complex numbers
     REQUIRE (!(std::is_same<T, std::complex<double>>::value && positive_only));
@@ -400,7 +400,7 @@ void integration_test(double beta, double wmax, double epsilon,
     }
 
     auto stat = get_stat<S>();
-    int32_t status;
+    int status;
 
     // IR basis
     spir_kernel* kernel = _kernel_new<K>(beta * wmax);
@@ -412,13 +412,13 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
-    int32_t basis_size;
+    int basis_size;
     status = spir_basis_get_size(basis, &basis_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Tau Sampling
     std::cout << "Tau sampling" << std::endl;
-    int32_t num_tau_points;
+    int num_tau_points;
     status = spir_basis_get_num_default_tau_sampling_points(basis, &num_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_tau_points > 0);
@@ -444,7 +444,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;
-    int32_t num_matsubara_points_org;
+    int num_matsubara_points_org;
     status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &num_matsubara_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_matsubara_points_org > 0);
@@ -460,7 +460,7 @@ void integration_test(double beta, double wmax, double epsilon,
         REQUIRE(num_matsubara_points_org >= basis_size);
     }
 
-    int32_t num_matsubara_points;
+    int num_matsubara_points;
     status =
         spir_sampling_get_num_points(matsubara_sampling, &num_matsubara_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
@@ -480,7 +480,7 @@ void integration_test(double beta, double wmax, double epsilon,
     spir_basis *dlr = spir_dlr_new(basis, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr != nullptr);
-    int32_t npoles;
+    int npoles;
     status = spir_dlr_get_num_poles(dlr, &npoles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(npoles >= basis_size);
@@ -513,7 +513,7 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<T, ndim, ORDER> g_IR(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
     status = dlr_to_IR(dlr, order, ndim,
-                      _get_dims<ndim, int32_t>(npoles, extra_dims, target_dim).data(), target_dim,
+                      _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(), target_dim,
                       coeffs.data(), g_IR.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -521,7 +521,7 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<T, ndim, ORDER> g_DLR_reconst(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
     status = dlr_from_IR(dlr, order, ndim,
-                        _get_dims<ndim, int32_t>(npoles, extra_dims, target_dim).data(), target_dim,
+                        _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(), target_dim,
                         g_IR.data(), g_DLR_reconst.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -529,28 +529,28 @@ void integration_test(double beta, double wmax, double epsilon,
     Eigen::Tensor<T, ndim, ORDER> g_dlr(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
     status = dlr_from_IR(dlr, order, ndim,
-                            _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim).data(), target_dim,
+                            _get_dims<ndim, int>(basis_size, extra_dims, target_dim).data(), target_dim,
                             g_IR.data(), g_dlr.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // DLR basis functions
-    int32_t dlr_u_status;
+    int dlr_u_status;
     spir_funcs *dlr_u = spir_basis_get_u(dlr, &dlr_u_status);
     REQUIRE(dlr_u_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr_u != nullptr);
 
-    int32_t dlr_uhat_status;
+    int dlr_uhat_status;
     spir_funcs *dlr_uhat = spir_basis_get_uhat(dlr, &dlr_uhat_status);
     REQUIRE(dlr_uhat_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr_uhat != nullptr);
 
     // IR basis functions
-    int32_t ir_u_status;
+    int ir_u_status;
     spir_funcs *ir_u = spir_basis_get_u(basis, &ir_u_status);
     REQUIRE(ir_u_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(ir_u != nullptr);
 
-    int32_t ir_uhat_status;
+    int ir_uhat_status;
     spir_funcs *ir_uhat = spir_basis_get_uhat(basis, &ir_uhat_status);
     REQUIRE(ir_uhat_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(ir_uhat != nullptr);
@@ -587,10 +587,10 @@ void integration_test(double beta, double wmax, double epsilon,
             giw_from_IR, giw_from_DLR, tol));
 
     auto dims_matsubara =
-        _get_dims<ndim, int32_t>(num_matsubara_points, extra_dims, target_dim);
-    auto dims_IR = _get_dims<ndim, int32_t>(basis_size, extra_dims, target_dim);
+        _get_dims<ndim, int>(num_matsubara_points, extra_dims, target_dim);
+    auto dims_IR = _get_dims<ndim, int>(basis_size, extra_dims, target_dim);
     auto dims_tau =
-        _get_dims<ndim, int32_t>(num_tau_points, extra_dims, target_dim);
+        _get_dims<ndim, int>(num_tau_points, extra_dims, target_dim);
 
     Eigen::Tensor<T, ndim, ORDER> gIR(
         _get_dims<ndim, Eigen::Index>(basis_size, extra_dims, target_dim));
@@ -669,7 +669,7 @@ TEST_CASE("Integration Test", "[cinterface]") {
         }
 
         {
-            int32_t target_dim = 0;
+            int target_dim = 0;
             std::vector<int> extra_dims = {};
             std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
             integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 1,
@@ -683,7 +683,7 @@ TEST_CASE("Integration Test", "[cinterface]") {
         }
 
         {
-            int32_t target_dim = 0;
+            int target_dim = 0;
             std::vector<int> extra_dims = {};
             std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
             integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 1,

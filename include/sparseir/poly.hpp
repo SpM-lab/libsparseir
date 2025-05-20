@@ -381,6 +381,7 @@ public:
     }
 
     // Evaluate the vector of polynomials at multiple x
+    // Returns a matrix of size n_funcs x n_points
     Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const
     {
         Eigen::MatrixXd results(polyvec.size(), xs.size());

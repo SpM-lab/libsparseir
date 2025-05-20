@@ -254,6 +254,66 @@ void test_finite_temp_basis_basis_functions()
         REQUIRE(out[i] == Approx(cpp_result(i)));
     }
 
+    // Test batch evaluation at multiple points
+    const int num_points = 5;
+    double *xs = (double *)malloc(num_points * sizeof(double));
+    double *batch_out = (double *)malloc(num_points * basis_size * sizeof(double));
+    
+    // Generate test points
+    for (int i = 0; i < num_points; ++i) {
+        xs[i] = 0.2 * (i + 1); // Points at 0.2, 0.4, 0.6, 0.8, 1.0
+    }
+
+    // Test row-major order for u basis
+    int batch_status = spir_funcs_batch_evaluate(u, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
+    REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
+
+    // Compare with C++ implementation for multiple points
+    Eigen::VectorXd cpp_xs = Eigen::Map<Eigen::VectorXd>(xs, num_points);
+    Eigen::MatrixXd cpp_batch_result = (*cpp_basis.u)(cpp_xs);
+    
+    for (int i = 0; i < num_points; ++i) {
+        for (int j = 0; j < basis_size; ++j) {
+            REQUIRE(batch_out[i * basis_size + j] == Approx(cpp_batch_result(j, i)));
+        }
+    }
+
+    // Test column-major order for u basis
+    batch_status = spir_funcs_batch_evaluate(u, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
+    REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
+
+    // Compare with C++ implementation for column-major order
+    for (int i = 0; i < num_points; ++i) {
+        for (int j = 0; j < basis_size; ++j) {
+            REQUIRE(batch_out[j * num_points + i] == Approx(cpp_batch_result(j, i)));
+        }
+    }
+
+    // Test row-major order for v basis
+    batch_status = spir_funcs_batch_evaluate(v, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
+    REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
+
+    // Compare with C++ implementation for v basis
+    cpp_batch_result = (*cpp_basis.v)(cpp_xs);
+    for (int i = 0; i < num_points; ++i) {
+        for (int j = 0; j < basis_size; ++j) {
+            REQUIRE(batch_out[i * basis_size + j] == Approx(cpp_batch_result(j, i)));
+        }
+    }
+
+    // Test column-major order for v basis
+    batch_status = spir_funcs_batch_evaluate(v, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
+    REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
+
+    // Compare with C++ implementation for column-major order
+    for (int i = 0; i < num_points; ++i) {
+        for (int j = 0; j < basis_size; ++j) {
+            REQUIRE(batch_out[j * num_points + i] == Approx(cpp_batch_result(j, i)));
+        }
+    }
+
+    free(xs);
+    free(batch_out);
     free(out);
     spir_funcs_release(u);
     spir_funcs_release(v);

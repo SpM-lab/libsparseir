@@ -16,7 +16,7 @@ using Catch::Approx;
 using xprec::DDouble;
 
 template <typename S>
-int32_t get_stat()
+int get_stat()
 {
     if (std::is_same<S, sparseir::Fermionic>::value) {
         return SPIR_STATISTICS_FERMIONIC;
@@ -828,7 +828,7 @@ void test_matsubara_sampling_constructor()
 {
     double beta = 1.0;
     double wmax = 10.0;
-    int32_t status;
+    int status;
 
     auto stat = get_stat<S>();
 
@@ -838,7 +838,7 @@ void test_matsubara_sampling_constructor()
     REQUIRE(basis != nullptr);
 
     int sampling_status;
-    int32_t n_points_org;
+    int n_points_org;
     status = spir_basis_get_num_default_matsubara_sampling_points(basis, false, &n_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_org > 0);
@@ -851,7 +851,7 @@ void test_matsubara_sampling_constructor()
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
-    int32_t n_points_positive_only_org;
+    int n_points_positive_only_org;
     status = spir_basis_get_num_default_matsubara_sampling_points(basis, true, &n_points_positive_only_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only_org > 0);
@@ -864,12 +864,12 @@ void test_matsubara_sampling_constructor()
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling_positive_only != nullptr);
 
-    int32_t n_points;
+    int n_points;
     status = spir_sampling_get_num_points(sampling, &n_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
-    int32_t n_points_positive_only;
+    int n_points_positive_only;
     status = spir_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only > 0);
