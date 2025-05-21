@@ -1,2 +1,6 @@
 add_subdirectory(cpp)
-add_subdirectory(fortran)
+
+if (SPARSEIR_BUILD_FORTRAN)
+    add_subdirectory(fortran)
+endif()
+
