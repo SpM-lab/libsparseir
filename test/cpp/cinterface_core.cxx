@@ -32,7 +32,7 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
     {
         auto cpp_kernel = sparseir::RegularizedBoseKernel(10);
         int status;
-        spir_kernel *kernel = spir_regularized_bose_kernel_new(10, &status);
+        spir_kernel *kernel = spir_reg_bose_kernel_new(10, &status);
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(kernel != nullptr);
     }
@@ -128,7 +128,7 @@ void test_finite_temp_basis_constructor_with_sve()
     REQUIRE(basis != nullptr);
 
     int stats;
-    int stats_status = spir_basis_get_statistics(basis, &stats);
+    int stats_status = spir_basis_get_stats(basis, &stats);
     REQUIRE(stats_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(stats == stat);
 
@@ -169,7 +169,7 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         double epsilon = 1e-6;
 
         int kernel_status;
-        spir_kernel *kernel = spir_regularized_bose_kernel_new(Lambda, &kernel_status);
+        spir_kernel *kernel = spir_reg_bose_kernel_new(Lambda, &kernel_status);
         REQUIRE(kernel_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(kernel != nullptr);
 
@@ -185,7 +185,7 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         REQUIRE(basis != nullptr);
 
         int stats;
-        int stats_status = spir_basis_get_statistics(basis, &stats);
+        int stats_status = spir_basis_get_stats(basis, &stats);
         REQUIRE(stats_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(stats == SPIR_STATISTICS_BOSONIC);
 
@@ -265,7 +265,7 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test row-major order for u basis
-    int batch_status = spir_funcs_batch_evaluate(u, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
+    int batch_status = spir_funcs_batch_eval(u, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for multiple points
@@ -279,7 +279,7 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test column-major order for u basis
-    batch_status = spir_funcs_batch_evaluate(u, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
+    batch_status = spir_funcs_batch_eval(u, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for column-major order
@@ -290,7 +290,7 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test row-major order for v basis
-    batch_status = spir_funcs_batch_evaluate(v, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
+    batch_status = spir_funcs_batch_eval(v, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for v basis
@@ -302,7 +302,7 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test column-major order for v basis
-    batch_status = spir_funcs_batch_evaluate(v, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
+    batch_status = spir_funcs_batch_eval(v, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for column-major order

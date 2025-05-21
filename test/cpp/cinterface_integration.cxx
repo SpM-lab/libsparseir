@@ -136,7 +136,7 @@ _evaluate_matsubara_basis_functions(const spir_funcs *uhat,
                                           matsubara_indices.size());
 
     // Evaluate all frequencies at once
-    status = spir_funcs_batch_evaluate_matsubara(
+    status = spir_funcs_batch_eval_matsu(
         uhat,
         ORDER == Eigen::ColMajor ? SPIR_ORDER_COLUMN_MAJOR
                                  : SPIR_ORDER_ROW_MAJOR,
@@ -263,7 +263,7 @@ template <>
 spir_kernel* _kernel_new<sparseir::RegularizedBoseKernel>(double lambda)
 {
     int status;
-    spir_kernel* kernel = spir_regularized_bose_kernel_new(lambda, &status);
+    spir_kernel* kernel = spir_reg_bose_kernel_new(lambda, &status);
     return kernel;
 }
 
@@ -287,11 +287,11 @@ int dlr_to_IR(spir_basis* dlr, int order, int ndim,
                   const int* dims, int target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
-        return spir_dlr_to_ir_dd(dlr, order, ndim, dims, target_dim,
+        return spir_dlr2ir_dd(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const double*>(coeffs),
                                 reinterpret_cast<double*>(g_IR));
     } else if (std::is_same<T, std::complex<double>>::value) {
-        return spir_dlr_to_ir_zz(dlr, order, ndim, dims, target_dim,
+        return spir_dlr2ir_zz(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const c_complex*>(coeffs),
                                 reinterpret_cast<c_complex*>(g_IR));
     }
@@ -304,11 +304,11 @@ int dlr_from_IR(spir_basis* dlr, int order, int ndim,
                   const int* dims, int target_dim,
                   const T* coeffs, T* g_IR) {
     if (std::is_same<T, double>::value) {
-        return spir_ir_to_dlr_dd(dlr, order, ndim, dims, target_dim,
+        return spir_ir2dlr_dd(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const double*>(coeffs),
                                 reinterpret_cast<double*>(g_IR));
     } else if (std::is_same<T, std::complex<double>>::value) {
-        return spir_ir_to_dlr_zz(dlr, order, ndim, dims, target_dim,
+        return spir_ir2dlr_zz(dlr, order, ndim, dims, target_dim,
                                 reinterpret_cast<const c_complex*>(coeffs),
                                 reinterpret_cast<c_complex*>(g_IR));
     }
@@ -320,11 +320,11 @@ int _tau_sampling_evaluate(spir_sampling* sampling, int order, int ndim,
                          const int* dims, int target_dim,
                          const T* gIR, T* gtau) {
     if (std::is_same<T, double>::value) {
-        return spir_sampling_evaluate_dd(sampling, order, ndim, dims, target_dim,
+        return spir_sampling_eval_dd(sampling, order, ndim, dims, target_dim,
                                        reinterpret_cast<const double*>(gIR),
                                        reinterpret_cast<double*>(gtau));
     } else if (std::is_same<T, std::complex<double>>::value) {
-        return spir_sampling_evaluate_zz(sampling, order, ndim, dims, target_dim,
+        return spir_sampling_eval_zz(sampling, order, ndim, dims, target_dim,
                                        reinterpret_cast<const c_complex*>(gIR),
                                        reinterpret_cast<c_complex*>(gtau));
     }
@@ -352,11 +352,11 @@ int _matsubara_sampling_evaluate(spir_sampling* sampling, int order, int ndim,
                                    const int* dims, int target_dim,
                                    const T* gIR, std::complex<double>* giw) {
     if (std::is_same<T, double>::value) {
-        return spir_sampling_evaluate_dz(sampling, order, ndim, dims, target_dim,
+        return spir_sampling_eval_dz(sampling, order, ndim, dims, target_dim,
                                        reinterpret_cast<const double*>(gIR),
                                        reinterpret_cast<c_complex*>(giw));
     } else if (std::is_same<T, std::complex<double>>::value) {
-        return spir_sampling_evaluate_zz(sampling, order, ndim, dims, target_dim,
+        return spir_sampling_eval_zz(sampling, order, ndim, dims, target_dim,
                                        reinterpret_cast<const c_complex*>(gIR),
                                        reinterpret_cast<c_complex*>(giw));
     }
@@ -419,22 +419,22 @@ void integration_test(double beta, double wmax, double epsilon,
     // Tau Sampling
     std::cout << "Tau sampling" << std::endl;
     int num_tau_points;
-    status = spir_basis_get_num_default_tau_sampling_points(basis, &num_tau_points);
+    status = spir_basis_get_n_default_taus(basis, &num_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_tau_points > 0);
 
     Eigen::VectorXd tau_points_org(num_tau_points);
-    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org.data());
+    status = spir_basis_get_default_taus(basis, tau_points_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *tau_sampling = spir_tau_sampling_new(basis, num_tau_points, tau_points_org.data(), &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(tau_sampling != nullptr);
 
-    status = spir_sampling_get_num_points(tau_sampling, &num_tau_points);
+    status = spir_sampling_get_npoints(tau_sampling, &num_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     Eigen::VectorXd tau_points(num_tau_points);
-    status = spir_sampling_get_tau_points(tau_sampling, tau_points.data());
+    status = spir_sampling_get_taus(tau_sampling, tau_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_tau_points >= basis_size);
     // compare tau_points and tau_points_org
@@ -445,13 +445,13 @@ void integration_test(double beta, double wmax, double epsilon,
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;
     int num_matsubara_points_org;
-    status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &num_matsubara_points_org);
+    status = spir_basis_get_nmatuss(basis, positive_only, &num_matsubara_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_matsubara_points_org > 0);
     Eigen::Vector<int64_t, Eigen::Dynamic> matsubara_points_org(num_matsubara_points_org);
-    status = spir_basis_get_default_matsubara_sampling_points(basis, positive_only, matsubara_points_org.data());
+    status = spir_basis_get_matsus(basis, positive_only, matsubara_points_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    spir_sampling *matsubara_sampling = spir_matsubara_sampling_new(basis, positive_only, num_matsubara_points_org, matsubara_points_org.data(), &status);
+    spir_sampling *matsubara_sampling = spir_matsu_sampling_new(basis, positive_only, num_matsubara_points_org, matsubara_points_org.data(), &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(matsubara_sampling != nullptr);
     if (positive_only) {
@@ -462,11 +462,11 @@ void integration_test(double beta, double wmax, double epsilon,
 
     int num_matsubara_points;
     status =
-        spir_sampling_get_num_points(matsubara_sampling, &num_matsubara_points);
+        spir_sampling_get_npoints(matsubara_sampling, &num_matsubara_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     Eigen::Vector<int64_t, Eigen::Dynamic> matsubara_points(
         num_matsubara_points);
-    status = spir_sampling_get_matsubara_points(matsubara_sampling,
+    status = spir_sampling_get_matsus(matsubara_sampling,
                                                 matsubara_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     // compare matsubara_points and matsubara_points_org
@@ -481,7 +481,7 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(dlr != nullptr);
     int npoles;
-    status = spir_dlr_get_num_poles(dlr, &npoles);
+    status = spir_dlr_get_npoles(dlr, &npoles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(npoles >= basis_size);
     Eigen::VectorXd poles(npoles);

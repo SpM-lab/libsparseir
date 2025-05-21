@@ -137,7 +137,7 @@ if (SPARSEIR_BUILD_TESTING)
     )
     FetchContent_MakeAvailable(Catch2)
 
-    # Pass include paths to test subdirectory
+    # Add test directory
     add_subdirectory("test")
 endif()
 

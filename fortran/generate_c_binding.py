@@ -18,9 +18,9 @@ def map_c_type_to_fortran(ctype):
     elif kind == TypeKind.DOUBLE:
         return 'real(c_double), value'
     elif kind == TypeKind.INT or kind == TypeKind.INT:
-        return 'integer(c_int32_t), value'
+        return 'integer(c_int), value'
     elif kind == TypeKind.UINT or kind == TypeKind.UINT:
-        return 'integer(c_uint32_t), value'
+        return 'integer(c_int), value'
     elif kind == TypeKind.POINTER:
         depth = count_pointer_depth(ctype)
         if depth == 1:
@@ -32,11 +32,11 @@ def map_c_type_to_fortran(ctype):
     elif kind == TypeKind.COMPLEX:
         return 'complex(c_double_complex), value'
     elif kind == TypeKind.ENUM:
-        return 'integer(c_int32_t), value'
+        return 'integer(c_int), value'
     elif kind == TypeKind.ELABORATED:
         type_name = ctype.get_canonical().spelling
         if type_name in ["int32_t", "int32_t"]:
-            return 'integer(c_int32_t), value'
+            return 'integer(c_int), value'
         return 'type(c_ptr)'
     else:
         return 'type(c_ptr)'  # default fallback
@@ -57,7 +57,6 @@ def generate_fortran_interface(cursor, types):
     fortran_body = []
     for arg in cursor.get_arguments():
         name = arg.spelling or 'arg'
-        print(f"Argument type: {arg.type.spelling}")
         ftype = map_c_type_to_fortran(arg.type)
         args.append(name)
         decls.append(f"  {ftype} :: {name}")
@@ -67,7 +66,6 @@ def generate_fortran_interface(cursor, types):
             # Get the actual type from the C type
             pointee = arg.type.get_pointee()
             type_name = pointee.get_canonical().spelling
-            #print(f"Pointee type: {type_name}")
             
             # Clean up type name: remove 'const' and 'struct _'
             type_name = type_name.replace('const ', '')
@@ -82,9 +80,13 @@ def generate_fortran_interface(cursor, types):
             if type_name in types:
                 # For output parameters, use intent(inout)
                 if 'intent(out)' in ftype:
-                    fortran_args.append(f"  type({type_name}), intent(inout) :: {name}")
+                    fortran_args.append(
+                        f"  type({type_name}), intent(inout) :: {name}"
+                    )
                 else:
-                    fortran_args.append(f"  type({type_name}), intent(in) :: {name}")
+                    fortran_args.append(
+                        f"  type({type_name}), intent(in) :: {name}"
+                    )
                 fortran_body.append(f"  {name}%%ptr")  # Use %% to escape %
             else:
                 fortran_args.append(f"  {ftype} :: {name}")
@@ -101,7 +103,8 @@ def generate_fortran_interface(cursor, types):
     # Generate C binding interface
     if result_type == 'subroutine':
         c_binding = f"""
-subroutine {fortran_func_name}({arglist}) bind(c, name="{func_name}")
+subroutine {fortran_func_name}({arglist}) &
+    bind(c, name="{func_name}")
   use iso_c_binding
 {decl_lines}
 end subroutine
@@ -109,7 +112,8 @@ end subroutine
     else:
         result_decl = f"  {result_type.split(',')[0]} :: {fortran_func_name}"
         c_binding = f"""
-function {fortran_func_name}({arglist}) bind(c, name="{func_name}") result({fortran_func_name})
+function {fortran_func_name}({arglist}) &
+    bind(c, name="{func_name}") result({fortran_func_name})
   use iso_c_binding
 {decl_lines}
 {result_decl}
@@ -136,12 +140,6 @@ function {fortran_name}({arglist}) result({fortran_name})
 end function
 """.strip()
 
-    #print("--------------------------------")
-    #print("C binding:")
-    #print(c_binding)
-    #print("--------------------------------")
-    #print("Fortran interface:")
-    #print(fortran_interface)
     return c_binding, fortran_interface
 
 
@@ -153,7 +151,7 @@ def generate_fortran_type_definition(types):
         content.append(f"""  type :: {fortran_type_name}
     type(c_ptr) :: handle = c_null_ptr
   contains
-    final :: {type_name}_release
+    final :: spir_release_{type_name}
   end type""")
     return "\n\n".join(content)
 
@@ -177,22 +175,22 @@ def generate_fortran_type_implementation(types):
     
     ! Clean up existing resource if present
     if (c_associated(lhs%handle)) then
-      call c_spir_{type_name_without_prefix}_release(lhs%handle)
+      call c_spir_release_{type_name_without_prefix}(lhs%handle)
       lhs%handle = c_null_ptr
     end if
     
     ! If RHS is valid, clone it
     if (c_associated(rhs%handle)) then
-      lhs%handle = c_spir_{type_name_without_prefix}_clone(rhs%handle)
+      lhs%handle = c_spir_clone_{type_name_without_prefix}(rhs%handle)
     end if
   end subroutine
 
   ! Finalizer for {type_name}
-  subroutine spir_{type_name_without_prefix}_release(this)
+  subroutine spir_release_{type_name}(this)
     type({fortran_type_name}), intent(inout) :: this
     
     if (c_associated(this%handle)) then
-      call c_spir_{type_name_without_prefix}_release(this%handle)
+      call c_spir_release_{type_name_without_prefix}(this%handle)
       this%handle = c_null_ptr
     end if
   end subroutine""")
@@ -287,15 +285,15 @@ def generate_proc_inc(types):
 
 
 def generate_fortran_assign_interfaces(types):
-    """Generate _fortran_assign.inc file content."""
-    content = ["! Assignment operator interfaces",
-              "interface assignment(=)"]
-    
+    """Generate Fortran assignment operator interfaces."""
+    code = []
+    code.append("! Assignment operator interfaces")
+    code.append("interface assignment(=)")
     for type_name in types:
-        content.append(f"  module procedure assign_{type_name}")
-    
-    content.append("end interface")
-    return "\n".join(content)
+        if type_name.startswith("spir_"):
+            code.append(f"  module procedure assign_{type_name}")
+    code.append("end interface")
+    return "\n".join(code)
 
 
 def generate_cbinding_public(cursor):
@@ -318,25 +316,71 @@ def generate_fortran_types_public(types):
 
 
 def main():
-    """Main function to generate Fortran bindings."""
-    header_path = "../include/sparseir/sparseir.h"
+    import sys
+    if len(sys.argv) < 2:
+        print("Usage: python generate_fortran_interfaces.py spir_sample.h")
+        return
+
+    header_path = sys.argv[1]
+    index = Index.create()
+    tu = index.parse(header_path, args=['-x', 'c', '-std=c99'])
+
+    # Find C types first
     types = find_c_types(header_path)
+
+    # Generate interface bindings
+    c_interfaces = []
+    c_public = []
+    fortran_interfaces = []
+    print("\nFound C functions:")
+    for cursor in tu.cursor.get_children():
+        if cursor.location.file and cursor.location.file.name == header_path:
+            if cursor.kind == CursorKind.FUNCTION_DECL:
+                print(f"  - {cursor.spelling}")
+            c_binding, fortran_interface = generate_fortran_interface(cursor, types)
+            if c_binding:
+                c_interfaces.append(c_binding)
+                c_public.append(generate_cbinding_public(cursor))
+            if fortran_interface:
+                fortran_interfaces.append(fortran_interface)
+
+    # Write C binding interfaces
+    with open("_cbinding.inc", 'w') as f:
+        f.write("! Autogenerated Fortran interfaces for " + header_path + "\n")
+        for code in c_interfaces:
+            f.write(code + "\n\n")
+
+    # Write C binding public declarations
+    with open("_cbinding_public.inc", 'w') as f:
+        f.write("! Autogenerated public declarations for C bindings\n")
+        for code in c_public:
+            f.write(code + "\n")
+
+    # Write Fortran-friendly interfaces
+    #with open("_fortran_funcs.inc", 'w') as f:
+        #f.write("! Autogenerated Fortran-friendly interfaces\n")
+        #for code in fortran_interfaces:
+            #f.write(code + "\n\n")
+
+    # Generate Fortran type definitions
+    #fortran_types = generate_fortran_type_definition(types)
+    #with open("_fortran_types.inc", "w") as f:
+        #f.write(fortran_types)
+
+    # Generate Fortran type public declarations
+    #fortran_types_public = generate_fortran_types_public(types)
+    #with open("_fortran_types_public.inc", "w") as f:
+        #f.write("! Autogenerated public declarations for handle types\n")
+        #f.write(fortran_types_public + "\n")
+
+    # Generate Fortran type implementations
+    #fortran_impl = generate_fortran_type_implementation(types)
+    #with open("_impl_types.inc", "w") as f:
+        #f.write(fortran_impl)
     
-    # Generate _fortran_types.inc
-    with open("_fortran_types.inc", "w") as f:
-        f.write(generate_fortran_type_definition(types))
-    
-    # Generate _fortran_proc.inc
-    with open("_fortran_proc.inc", "w") as f:
-        f.write(generate_proc_inc(types))
-    
-    # Generate _fortran_assign.inc
-    with open("_fortran_assign.inc", "w") as f:
-        f.write(generate_fortran_assign_interfaces(types))
-    
-    # Generate _fortran_impl.inc
-    with open("_fortran_impl.inc", "w") as f:
-        f.write(generate_fortran_type_implementation(types))
+    print("\nGenerated Fortran interfaces written to _cbinding.inc")
+    print("Generated Fortran-friendly interfaces written to _fortran_funcs.inc")
+    print("Generated Fortran type definitions written to _fortran_types.inc")
 
 
 if __name__ == "__main__":

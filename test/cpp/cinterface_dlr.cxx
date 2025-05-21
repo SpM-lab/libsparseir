@@ -50,11 +50,11 @@ void test_finite_temp_basis_dlr()
 
     // Poles
     int num_default_poles;
-    status = spir_basis_get_num_default_omega_sampling_points(basis, &num_default_poles);
+    status = spir_basis_get_n_default_ws(basis, &num_default_poles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_default_poles >= 0);
     std::vector<double> default_poles(num_default_poles);
-    status = spir_basis_get_default_omega_sampling_points(basis, default_poles.data());
+    status = spir_basis_get_default_ws(basis, default_poles.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // DLR constructor using the default poles
@@ -68,11 +68,11 @@ void test_finite_temp_basis_dlr()
     REQUIRE(dlr_with_poles != nullptr);
 
     int num_poles;
-    status = spir_dlr_get_num_poles(dlr, &num_poles);
+    status = spir_dlr_get_npoles(dlr, &num_poles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_poles == num_default_poles);
 
-    status = spir_dlr_get_num_poles(dlr_with_poles, &num_poles);
+    status = spir_dlr_get_npoles(dlr_with_poles, &num_poles);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_poles == num_default_poles);
 

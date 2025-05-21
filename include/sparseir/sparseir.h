@@ -100,7 +100,7 @@ spir_kernel *spir_logistic_kernel_new(double lambda, int *status);
  * @note The kernel is implemented using piecewise Legendre polynomial expansion
  *       for numerical stability and accuracy.
  */
-spir_kernel *spir_regularized_bose_kernel_new(double lambda, int *status);
+spir_kernel *spir_reg_bose_kernel_new(double lambda, int *status);
 
 /**
  * @brief Retrieves the domain boundaries of a kernel function.
@@ -214,7 +214,7 @@ int spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
  *            The values are stored in the order of basis functions.
  * @return int SPIR_COMPUTATION_SUCCESS on success, or an error code on failure
  */
-int spir_funcs_evaluate_matsubara(const spir_funcs *funcs, int64_t x, c_complex *out);
+int spir_funcs_eval_matsu(const spir_funcs *funcs, int64_t x, c_complex *out);
 
 /**
  * @brief Evaluate a funcs object at multiple points in the imaginary-time domain or the real frequency domain
@@ -239,7 +239,7 @@ int spir_funcs_evaluate_matsubara(const spir_funcs *funcs, int64_t x, c_complex 
  *            where nfuncs is the number of basis functions.
  * @return int SPIR_COMPUTATION_SUCCESS on success, or an error code on failure
  */
-int spir_funcs_batch_evaluate(const spir_funcs *funcs,
+int spir_funcs_batch_eval(const spir_funcs *funcs,
                                       int order, int num_points,
                                       double *xs,
                                       double *out);
@@ -269,7 +269,7 @@ int spir_funcs_batch_evaluate(const spir_funcs *funcs,
  * to ωn = nπ/β, where n are odd for fermionic frequencies and even for bosonic
  * frequencies.
  */
-int spir_funcs_batch_evaluate_matsubara(const spir_funcs *funcs,
+int spir_funcs_batch_eval_matsu(const spir_funcs *funcs,
                                       int order, int num_freqs,
                                       int64_t *matsubara_freq_indices,
                                       c_complex *out);
@@ -345,7 +345,7 @@ int spir_basis_get_size(const spir_basis *b, int *size);
  * @note The statistics type affects the form of the basis functions and the
  *       sampling points used for evaluation.
  */
-int spir_basis_get_statistics(const spir_basis *b,
+int spir_basis_get_stats(const spir_basis *b,
                                   int *statistics);
 
 /**
@@ -413,9 +413,9 @@ spir_funcs *spir_basis_get_uhat(const spir_basis *b, int *status);
  * @note This function is only available for IR basis objects
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
- * @see spir_basis_get_default_tau_sampling_points
+ * @see spir_basis_get_default_taus
  */
-int spir_basis_get_num_default_tau_sampling_points(const spir_basis *b,
+int spir_basis_get_n_default_taus(const spir_basis *b,
                                                        int *num_points);
 
 /**
@@ -434,12 +434,12 @@ int spir_basis_get_num_default_tau_sampling_points(const spir_basis *b,
  *
  * @note This function is only available for IR basis objects
  * @note The array must be pre-allocated with size >=
- *       spir_basis_get_num_default_tau_sampling_points(b)
+ *       spir_basis_get_n_default_taus(b)
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
- * @see spir_basis_get_num_default_tau_sampling_points
+ * @see spir_basis_get_n_default_taus
  */
-int spir_basis_get_default_tau_sampling_points(const spir_basis *b,
+int spir_basis_get_default_taus(const spir_basis *b,
                                                    double *points);
 
 /**
@@ -459,9 +459,9 @@ int spir_basis_get_default_tau_sampling_points(const spir_basis *b,
  * @note This function is only available for IR basis objects
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
- * @see spir_basis_get_default_omega_sampling_points
+ * @see spir_basis_get_default_ws
  */
-int spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
+int spir_basis_get_n_default_ws(const spir_basis *b,
                                                        int *num_points);
 
 /**
@@ -480,12 +480,12 @@ int spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
  *
  * @note This function is only available for IR basis objects
  * @note The array must be pre-allocated with size >=
- *       spir_basis_get_num_default_omega_sampling_points(b)
+ *       spir_basis_get_n_default_ws(b)
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
- * @see spir_basis_get_num_default_omega_sampling_points
+ * @see spir_basis_get_n_default_ws
  */
-int spir_basis_get_default_omega_sampling_points(const spir_basis *b,
+int spir_basis_get_default_ws(const spir_basis *b,
                                                    double *points);
 
 /**
@@ -506,9 +506,9 @@ int spir_basis_get_default_omega_sampling_points(const spir_basis *b,
  * @note This function is only available for IR basis objects
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
- * @see spir_basis_get_default_matsubara_sampling_points
+ * @see spir_basis_get_matsus
  */
-int spir_basis_get_num_default_matsubara_sampling_points(
+int spir_basis_get_nmatuss(
     const spir_basis *b, bool positive_only, int *num_points);
 
 /**
@@ -528,14 +528,14 @@ int spir_basis_get_num_default_matsubara_sampling_points(
  *
  * @note This function is only available for IR basis objects
  * @note The array must be pre-allocated with size >=
- *       spir_basis_get_num_default_matsubara_sampling_points(b)
+ *       spir_basis_get_nmatuss(b)
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
  * @note For fermionic case, the indices n give frequencies ωn = (2n + 1)π/β
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
- * @see spir_basis_get_num_default_matsubara_sampling_points
+ * @see spir_basis_get_nmatuss
  */
-int spir_basis_get_default_matsubara_sampling_points(const spir_basis *b,
+int spir_basis_get_matsus(const spir_basis *b,
                                                          bool positive_only,
                                                          int64_t *points);
 
@@ -600,7 +600,7 @@ spir_basis *spir_dlr_new_with_poles(const spir_basis *b, const int npoles,
  *
  * @see spir_dlr_get_poles
  */
-int spir_dlr_get_num_poles(const spir_basis *dlr, int *num_poles);
+int spir_dlr_get_npoles(const spir_basis *dlr, int *num_poles);
 
 /**
  * @brief Gets the poles in a DLR.
@@ -613,7 +613,7 @@ int spir_dlr_get_num_poles(const spir_basis *dlr, int *num_poles);
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
  *         - A non-zero error code on failure
  *
- * @see spir_dlr_get_num_poles
+ * @see spir_dlr_get_npoles
  */
 int spir_dlr_get_poles(const spir_basis *dlr, double *poles);
 
@@ -640,14 +640,14 @@ int spir_dlr_get_poles(const spir_basis *dlr, double *poles);
  *       specified order type. The output array will be in the specified order
  *       type.
  *
- * @see spir_ir_to_dlr
- * @see spir_dlr_to_ir_dd
+ * @see spir_ir2dlr
+ * @see spir_dlr2ir_dd
  */
-int spir_ir_to_dlr_dd(const spir_basis *dlr, int order,
+int spir_ir2dlr_dd(const spir_basis *dlr, int order,
                           int ndim, const int *input_dims,
                           int target_dim, const double *input, double *out);
 
-int spir_ir_to_dlr_zz(const spir_basis *dlr, int order,
+int spir_ir2dlr_zz(const spir_basis *dlr, int order,
                           int ndim, const int *input_dims,
                           int target_dim, const c_complex *input,
                           c_complex *out);
@@ -683,9 +683,9 @@ int spir_ir_to_dlr_zz(const spir_basis *dlr, int order,
  * @note The transformation is a direct matrix multiplication, which is
  *       typically faster than the inverse transformation
  *
- * @see spir_ir_to_dlr
+ * @see spir_ir2dlr
  */
-int spir_dlr_to_ir_dd(const spir_basis *dlr, int order,
+int spir_dlr2ir_dd(const spir_basis *dlr, int order,
                           int ndim, const int *input_dims,
                           int target_dim, const double *input, double *out);
 
@@ -721,10 +721,10 @@ int spir_dlr_to_ir_dd(const spir_basis *dlr, int order,
  * @note The transformation is a direct matrix multiplication, which is
  *       typically faster than the inverse transformation
  *
- * @see spir_ir_to_dlr_zz
- * @see spir_dlr_to_ir_dd
+ * @see spir_ir2dlr_zz
+ * @see spir_dlr2ir_dd
  */
-int spir_dlr_to_ir_zz(const spir_basis *dlr, int order,
+int spir_dlr2ir_zz(const spir_basis *dlr, int order,
                           int ndim, const int *input_dims,
                           int target_dim, const c_complex *input,
                           c_complex *out);
@@ -774,7 +774,7 @@ spir_sampling *spir_tau_sampling_new(const spir_basis *b, int num_points,
  * @return Pointer to the newly created sampling object, or NULL if creation
  * fails
  */
-spir_sampling *spir_matsubara_sampling_new(const spir_basis *b,
+spir_sampling *spir_matsu_sampling_new(const spir_basis *b,
                                            bool positive_only,
                                            int num_points,
                                            const int64_t *points,
@@ -793,17 +793,17 @@ spir_sampling *spir_matsubara_sampling_new(const spir_basis *b,
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
  *         - A non-zero error code on failure
  *
- * @see spir_sampling_get_tau_points
- * @see spir_sampling_get_matsubara_points
+ * @see spir_sampling_get_taus
+ * @see spir_sampling_get_matsus
  */
-int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
+int spir_sampling_get_npoints(const spir_sampling *s, int *num_points);
 
 /**
  * @brief Gets the imaginary time sampling points.
  *
  * This function fills the provided array with the imaginary time (τ) sampling
  * points used in the specified sampling object. The array must be pre-allocated
- * with sufficient size (use spir_sampling_get_num_points to determine the
+ * with sufficient size (use spir_sampling_get_npoints to determine the
  * required size).
  *
  * @param s Pointer to the sampling object
@@ -813,10 +813,10 @@ int spir_sampling_get_num_points(const spir_sampling *s, int *num_points);
  *         - A non-zero error code on failure
  *
  * @note The array must be pre-allocated with size >=
- *       spir_sampling_get_num_points(s)
- * @see spir_sampling_get_num_points
+ *       spir_sampling_get_npoints(s)
+ * @see spir_sampling_get_npoints
  */
-int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
+int spir_sampling_get_taus(const spir_sampling *s, double *points);
 
 /**
  * @brief Gets the Matsubara frequency sampling points.
@@ -825,7 +825,7 @@ int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  * (n) used in the specified sampling object. The actual Matsubara frequencies
  * are ωn = (2n + 1)π/β for fermionic case and ωn = 2nπ/β for bosonic case. The
  * array must be pre-allocated with sufficient size (use
- * spir_sampling_get_num_points to determine the required size).
+ * spir_sampling_get_npoints to determine the required size).
  *
  * @param s Pointer to the sampling object
  * @param points Pre-allocated array to store the Matsubara frequency indices
@@ -834,12 +834,12 @@ int spir_sampling_get_tau_points(const spir_sampling *s, double *points);
  *         - A non-zero error code on failure
  *
  * @note The array must be pre-allocated with size >=
- *       spir_sampling_get_num_points(s)
+ *       spir_sampling_get_npoints(s)
  * @note For fermionic case, the indices n give frequencies ωn = (2n + 1)π/β
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
- * @see spir_sampling_get_num_points
+ * @see spir_sampling_get_npoints
  */
-int spir_sampling_get_matsubara_points(const spir_sampling *s,
+int spir_sampling_get_matsus(const spir_sampling *s,
                                            int64_t *points);
 
 /**
@@ -870,11 +870,11 @@ int spir_sampling_get_matsubara_points(const spir_sampling *s,
  * @note The transformation is performed using a pre-computed sampling matrix
  *       that is factorized using SVD for efficiency
  *
- * @see spir_sampling_evaluate_dz
- * @see spir_sampling_evaluate_zz
+ * @see spir_sampling_eval_dz
+ * @see spir_sampling_eval_zz
  */
 int
-spir_sampling_evaluate_dd(const spir_sampling *s, // Sampling object
+spir_sampling_eval_dd(const spir_sampling *s, // Sampling object
                           int order,  // Order type (C or Fortran)
                           int ndim,           // Number of dimensions
                           const int *input_dims, // Array of dimensions
@@ -887,11 +887,11 @@ spir_sampling_evaluate_dd(const spir_sampling *s, // Sampling object
  * @brief Evaluates basis coefficients at sampling points (double to complex
  * version).
  *
- * For more details, see spir_sampling_evaluate_dd
- * @see spir_sampling_evaluate_dd
+ * For more details, see spir_sampling_eval_dd
+ * @see spir_sampling_eval_dd
  */
 int
-spir_sampling_evaluate_dz(const spir_sampling *s, // Sampling object
+spir_sampling_eval_dz(const spir_sampling *s, // Sampling object
                           int order,  // Order type (C or Fortran)
                           int ndim,           // Number of dimensions
                           const int *input_dims, // Array of dimensions
@@ -904,11 +904,11 @@ spir_sampling_evaluate_dz(const spir_sampling *s, // Sampling object
  * @brief Evaluates basis coefficients at sampling points (complex to complex
  * version).
  *
- * For more details, see spir_sampling_evaluate_dd
- * @see spir_sampling_evaluate_dd
+ * For more details, see spir_sampling_eval_dd
+ * @see spir_sampling_eval_dd
  */
 int
-spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
+spir_sampling_eval_zz(const spir_sampling *s, // Sampling object
                           int order,  // Order type (C or Fortran)
                           int ndim,           // Number of dimensions
                           const int *input_dims, // Array of dimensions
@@ -939,11 +939,11 @@ spir_sampling_evaluate_zz(const spir_sampling *s, // Sampling object
  *
  * @note The output array must be pre-allocated with the correct size
  * @note This function performs the inverse operation of
- *       spir_sampling_evaluate_dd
+ *       spir_sampling_eval_dd
  * @note The transformation is performed using a pre-computed sampling matrix
  *       that is factorized using SVD for efficiency
  *
- * @see spir_sampling_evaluate_dd
+ * @see spir_sampling_eval_dd
  * @see spir_sampling_fit_zz
  */
 int
