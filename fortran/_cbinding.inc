@@ -13,7 +13,7 @@ end function
 function c_spir_kernel_is_assigned(obj) bind(c, name="spir_kernel_is_assigned") result(c_spir_kernel_is_assigned)
   use iso_c_binding
   type(c_ptr), value :: obj
-  integer(c_int32_t) :: c_spir_kernel_is_assigned
+  integer(c_int) :: c_spir_kernel_is_assigned
 end function
 
 subroutine c_spir_funcs_release(obj) bind(c, name="spir_funcs_release")
@@ -30,7 +30,7 @@ end function
 function c_spir_funcs_is_assigned(obj) bind(c, name="spir_funcs_is_assigned") result(c_spir_funcs_is_assigned)
   use iso_c_binding
   type(c_ptr), value :: obj
-  integer(c_int32_t) :: c_spir_funcs_is_assigned
+  integer(c_int) :: c_spir_funcs_is_assigned
 end function
 
 subroutine c_spir_basis_release(obj) bind(c, name="spir_basis_release")
@@ -47,7 +47,7 @@ end function
 function c_spir_basis_is_assigned(obj) bind(c, name="spir_basis_is_assigned") result(c_spir_basis_is_assigned)
   use iso_c_binding
   type(c_ptr), value :: obj
-  integer(c_int32_t) :: c_spir_basis_is_assigned
+  integer(c_int) :: c_spir_basis_is_assigned
 end function
 
 subroutine c_spir_sampling_release(obj) bind(c, name="spir_sampling_release")
@@ -64,7 +64,7 @@ end function
 function c_spir_sampling_is_assigned(obj) bind(c, name="spir_sampling_is_assigned") result(c_spir_sampling_is_assigned)
   use iso_c_binding
   type(c_ptr), value :: obj
-  integer(c_int32_t) :: c_spir_sampling_is_assigned
+  integer(c_int) :: c_spir_sampling_is_assigned
 end function
 
 subroutine c_spir_sve_result_release(obj) bind(c, name="spir_sve_result_release")
@@ -81,7 +81,7 @@ end function
 function c_spir_sve_result_is_assigned(obj) bind(c, name="spir_sve_result_is_assigned") result(c_spir_sve_result_is_assigned)
   use iso_c_binding
   type(c_ptr), value :: obj
-  integer(c_int32_t) :: c_spir_sve_result_is_assigned
+  integer(c_int) :: c_spir_sve_result_is_assigned
 end function
 
 function c_spir_logistic_kernel_new(lambda, status) bind(c, name="spir_logistic_kernel_new") result(c_spir_logistic_kernel_new)
@@ -105,7 +105,7 @@ function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) bind(c, name="spir_kern
   type(c_ptr), value :: xmax
   type(c_ptr), value :: ymin
   type(c_ptr), value :: ymax
-  integer(c_int32_t) :: c_spir_kernel_domain
+  integer(c_int) :: c_spir_kernel_domain
 end function
 
 function c_spir_sve_result_new(k, epsilon, status) bind(c, name="spir_sve_result_new") result(c_spir_sve_result_new)
@@ -120,7 +120,7 @@ function c_spir_funcs_get_size(funcs, size) bind(c, name="spir_funcs_get_size") 
   use iso_c_binding
   type(c_ptr), value :: funcs
   type(c_ptr), value :: size
-  integer(c_int32_t) :: c_spir_funcs_get_size
+  integer(c_int) :: c_spir_funcs_get_size
 end function
 
 function c_spir_funcs_evaluate(funcs, x, out) bind(c, name="spir_funcs_evaluate") result(c_spir_funcs_evaluate)
@@ -128,22 +128,40 @@ function c_spir_funcs_evaluate(funcs, x, out) bind(c, name="spir_funcs_evaluate"
   type(c_ptr), value :: funcs
   real(c_double), value :: x
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_funcs_evaluate
+  integer(c_int) :: c_spir_funcs_evaluate
 end function
 
-function c_spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out) bind(c, name="spir_funcs_batch_evaluate_matsubara") result(c_spir_funcs_batch_evaluate_matsubara)
+function c_spir_funcs_evaluate_matsubara(funcs, x, out) bind(c, name="spir_funcs_evaluate_matsubara") result(c_spir_funcs_evaluate_matsubara)
   use iso_c_binding
-  type(c_ptr), value :: uiw
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: num_freqs
+  type(c_ptr), value :: funcs
+  integer(c_int), value :: x
+  type(c_ptr), value :: out
+  integer(c_int) :: c_spir_funcs_evaluate_matsubara
+end function
+
+function c_spir_funcs_batch_evaluate(funcs, order, num_points, xs, out) bind(c, name="spir_funcs_batch_evaluate") result(c_spir_funcs_batch_evaluate)
+  use iso_c_binding
+  type(c_ptr), value :: funcs
+  integer(c_int), value :: order
+  integer(c_int), value :: num_points
+  type(c_ptr), value :: xs
+  type(c_ptr), value :: out
+  integer(c_int) :: c_spir_funcs_batch_evaluate
+end function
+
+function c_spir_funcs_batch_evaluate_matsubara(funcs, order, num_freqs, matsubara_freq_indices, out) bind(c, name="spir_funcs_batch_evaluate_matsubara") result(c_spir_funcs_batch_evaluate_matsubara)
+  use iso_c_binding
+  type(c_ptr), value :: funcs
+  integer(c_int), value :: order
+  integer(c_int), value :: num_freqs
   type(c_ptr), value :: matsubara_freq_indices
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_funcs_batch_evaluate_matsubara
+  integer(c_int) :: c_spir_funcs_batch_evaluate_matsubara
 end function
 
 function c_spir_basis_new(statistics, beta, omega_max, k, sve, status) bind(c, name="spir_basis_new") result(c_spir_basis_new)
   use iso_c_binding
-  integer(c_int32_t), value :: statistics
+  integer(c_int), value :: statistics
   real(c_double), value :: beta
   real(c_double), value :: omega_max
   type(c_ptr), value :: k
@@ -156,14 +174,14 @@ function c_spir_basis_get_size(b, size) bind(c, name="spir_basis_get_size") resu
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: size
-  integer(c_int32_t) :: c_spir_basis_get_size
+  integer(c_int) :: c_spir_basis_get_size
 end function
 
 function c_spir_basis_get_statistics(b, statistics) bind(c, name="spir_basis_get_statistics") result(c_spir_basis_get_statistics)
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: statistics
-  integer(c_int32_t) :: c_spir_basis_get_statistics
+  integer(c_int) :: c_spir_basis_get_statistics
 end function
 
 function c_spir_basis_get_u(b, status) bind(c, name="spir_basis_get_u") result(c_spir_basis_get_u)
@@ -191,30 +209,44 @@ function c_spir_basis_get_num_default_tau_sampling_points(b, num_points) bind(c,
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: num_points
-  integer(c_int32_t) :: c_spir_basis_get_num_default_tau_sampling_points
+  integer(c_int) :: c_spir_basis_get_num_default_tau_sampling_points
 end function
 
 function c_spir_basis_get_default_tau_sampling_points(b, points) bind(c, name="spir_basis_get_default_tau_sampling_points") result(c_spir_basis_get_default_tau_sampling_points)
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: points
-  integer(c_int32_t) :: c_spir_basis_get_default_tau_sampling_points
+  integer(c_int) :: c_spir_basis_get_default_tau_sampling_points
+end function
+
+function c_spir_basis_get_num_default_omega_sampling_points(b, num_points) bind(c, name="spir_basis_get_num_default_omega_sampling_points") result(c_spir_basis_get_num_default_omega_sampling_points)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  type(c_ptr), value :: num_points
+  integer(c_int) :: c_spir_basis_get_num_default_omega_sampling_points
+end function
+
+function c_spir_basis_get_default_omega_sampling_points(b, points) bind(c, name="spir_basis_get_default_omega_sampling_points") result(c_spir_basis_get_default_omega_sampling_points)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  type(c_ptr), value :: points
+  integer(c_int) :: c_spir_basis_get_default_omega_sampling_points
 end function
 
 function c_spir_basis_get_num_default_matsubara_sampling_points(b, positive_only, num_points) bind(c, name="spir_basis_get_num_default_matsubara_sampling_points") result(c_spir_basis_get_num_default_matsubara_sampling_points)
   use iso_c_binding
   type(c_ptr), value :: b
-  integer(c_int32_t), value :: positive_only
+  integer(c_int), value :: positive_only
   type(c_ptr), value :: num_points
-  integer(c_int32_t) :: c_spir_basis_get_num_default_matsubara_sampling_points
+  integer(c_int) :: c_spir_basis_get_num_default_matsubara_sampling_points
 end function
 
 function c_spir_basis_get_default_matsubara_sampling_points(b, positive_only, points) bind(c, name="spir_basis_get_default_matsubara_sampling_points") result(c_spir_basis_get_default_matsubara_sampling_points)
   use iso_c_binding
   type(c_ptr), value :: b
-  integer(c_int32_t), value :: positive_only
+  integer(c_int), value :: positive_only
   type(c_ptr), value :: points
-  integer(c_int32_t) :: c_spir_basis_get_default_matsubara_sampling_points
+  integer(c_int) :: c_spir_basis_get_default_matsubara_sampling_points
 end function
 
 function c_spir_dlr_new(b, status) bind(c, name="spir_dlr_new") result(c_spir_dlr_new)
@@ -227,7 +259,7 @@ end function
 function c_spir_dlr_new_with_poles(b, npoles, poles, status) bind(c, name="spir_dlr_new_with_poles") result(c_spir_dlr_new_with_poles)
   use iso_c_binding
   type(c_ptr), value :: b
-  integer(c_int32_t), value :: npoles
+  integer(c_int), value :: npoles
   type(c_ptr), value :: poles
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_dlr_new_with_poles
@@ -237,68 +269,68 @@ function c_spir_dlr_get_num_poles(dlr, num_poles) bind(c, name="spir_dlr_get_num
   use iso_c_binding
   type(c_ptr), value :: dlr
   type(c_ptr), value :: num_poles
-  integer(c_int32_t) :: c_spir_dlr_get_num_poles
+  integer(c_int) :: c_spir_dlr_get_num_poles
 end function
 
 function c_spir_dlr_get_poles(dlr, poles) bind(c, name="spir_dlr_get_poles") result(c_spir_dlr_get_poles)
   use iso_c_binding
   type(c_ptr), value :: dlr
   type(c_ptr), value :: poles
-  integer(c_int32_t) :: c_spir_dlr_get_poles
+  integer(c_int) :: c_spir_dlr_get_poles
 end function
 
 function c_spir_ir_to_dlr_dd(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_ir_to_dlr_dd") result(c_spir_ir_to_dlr_dd)
   use iso_c_binding
   type(c_ptr), value :: dlr
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_ir_to_dlr_dd
+  integer(c_int) :: c_spir_ir_to_dlr_dd
 end function
 
 function c_spir_ir_to_dlr_zz(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_ir_to_dlr_zz") result(c_spir_ir_to_dlr_zz)
   use iso_c_binding
   type(c_ptr), value :: dlr
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_ir_to_dlr_zz
+  integer(c_int) :: c_spir_ir_to_dlr_zz
 end function
 
 function c_spir_dlr_to_ir_dd(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_to_ir_dd") result(c_spir_dlr_to_ir_dd)
   use iso_c_binding
   type(c_ptr), value :: dlr
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_dlr_to_ir_dd
+  integer(c_int) :: c_spir_dlr_to_ir_dd
 end function
 
 function c_spir_dlr_to_ir_zz(dlr, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_dlr_to_ir_zz") result(c_spir_dlr_to_ir_zz)
   use iso_c_binding
   type(c_ptr), value :: dlr
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_dlr_to_ir_zz
+  integer(c_int) :: c_spir_dlr_to_ir_zz
 end function
 
 function c_spir_tau_sampling_new(b, num_points, points, status) bind(c, name="spir_tau_sampling_new") result(c_spir_tau_sampling_new)
   use iso_c_binding
   type(c_ptr), value :: b
-  integer(c_int32_t), value :: num_points
+  integer(c_int), value :: num_points
   type(c_ptr), value :: points
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_tau_sampling_new
@@ -307,8 +339,8 @@ end function
 function c_spir_matsubara_sampling_new(b, positive_only, num_points, points, status) bind(c, name="spir_matsubara_sampling_new") result(c_spir_matsubara_sampling_new)
   use iso_c_binding
   type(c_ptr), value :: b
-  integer(c_int32_t), value :: positive_only
-  integer(c_int32_t), value :: num_points
+  integer(c_int), value :: positive_only
+  integer(c_int), value :: num_points
   type(c_ptr), value :: points
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_matsubara_sampling_new
@@ -318,80 +350,80 @@ function c_spir_sampling_get_num_points(s, num_points) bind(c, name="spir_sampli
   use iso_c_binding
   type(c_ptr), value :: s
   type(c_ptr), value :: num_points
-  integer(c_int32_t) :: c_spir_sampling_get_num_points
+  integer(c_int) :: c_spir_sampling_get_num_points
 end function
 
 function c_spir_sampling_get_tau_points(s, points) bind(c, name="spir_sampling_get_tau_points") result(c_spir_sampling_get_tau_points)
   use iso_c_binding
   type(c_ptr), value :: s
   type(c_ptr), value :: points
-  integer(c_int32_t) :: c_spir_sampling_get_tau_points
+  integer(c_int) :: c_spir_sampling_get_tau_points
 end function
 
 function c_spir_sampling_get_matsubara_points(s, points) bind(c, name="spir_sampling_get_matsubara_points") result(c_spir_sampling_get_matsubara_points)
   use iso_c_binding
   type(c_ptr), value :: s
   type(c_ptr), value :: points
-  integer(c_int32_t) :: c_spir_sampling_get_matsubara_points
+  integer(c_int) :: c_spir_sampling_get_matsubara_points
 end function
 
 function c_spir_sampling_evaluate_dd(s, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_sampling_evaluate_dd") result(c_spir_sampling_evaluate_dd)
   use iso_c_binding
   type(c_ptr), value :: s
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_sampling_evaluate_dd
+  integer(c_int) :: c_spir_sampling_evaluate_dd
 end function
 
 function c_spir_sampling_evaluate_dz(s, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_sampling_evaluate_dz") result(c_spir_sampling_evaluate_dz)
   use iso_c_binding
   type(c_ptr), value :: s
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_sampling_evaluate_dz
+  integer(c_int) :: c_spir_sampling_evaluate_dz
 end function
 
 function c_spir_sampling_evaluate_zz(s, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_sampling_evaluate_zz") result(c_spir_sampling_evaluate_zz)
   use iso_c_binding
   type(c_ptr), value :: s
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_sampling_evaluate_zz
+  integer(c_int) :: c_spir_sampling_evaluate_zz
 end function
 
 function c_spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_sampling_fit_dd") result(c_spir_sampling_fit_dd)
   use iso_c_binding
   type(c_ptr), value :: s
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_sampling_fit_dd
+  integer(c_int) :: c_spir_sampling_fit_dd
 end function
 
 function c_spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out) bind(c, name="spir_sampling_fit_zz") result(c_spir_sampling_fit_zz)
   use iso_c_binding
   type(c_ptr), value :: s
-  integer(c_int32_t), value :: order
-  integer(c_int32_t), value :: ndim
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
   type(c_ptr), value :: input_dims
-  integer(c_int32_t), value :: target_dim
+  integer(c_int), value :: target_dim
   type(c_ptr), value :: input
   type(c_ptr), value :: out
-  integer(c_int32_t) :: c_spir_sampling_fit_zz
+  integer(c_int) :: c_spir_sampling_fit_zz
 end function
 
