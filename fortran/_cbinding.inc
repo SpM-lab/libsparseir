@@ -143,13 +143,13 @@ function c_spir_funcs_get_size(funcs, size) &
   integer(c_int) :: c_spir_funcs_get_size
 end function
 
-function c_spir_funcs_evaluate(funcs, x, out) &
-    bind(c, name="spir_funcs_evaluate") result(c_spir_funcs_evaluate)
+function c_spir_funcs_eval(funcs, x, out) &
+    bind(c, name="spir_funcs_eval") result(c_spir_funcs_eval)
   use iso_c_binding
   type(c_ptr), value :: funcs
   real(c_double), value :: x
   type(c_ptr), value :: out
-  integer(c_int) :: c_spir_funcs_evaluate
+  integer(c_int) :: c_spir_funcs_eval
 end function
 
 function c_spir_funcs_eval_matsu(funcs, x, out) &

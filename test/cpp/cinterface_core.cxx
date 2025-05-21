@@ -228,7 +228,7 @@ void test_finite_temp_basis_basis_functions()
     double x = 0.5;        // Test point for u basis (imaginary time)
     double y = 0.5 * wmax; // Test point for v basis (real frequency)
     double *out = (double *)malloc(basis_size * sizeof(double));
-    int eval_status = spir_funcs_evaluate(u, x, out);
+    int eval_status = spir_funcs_eval(u, x, out);
     REQUIRE(eval_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for u basis
@@ -245,7 +245,7 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(v != nullptr);
 
     // Test v basis function evaluation
-    eval_status = spir_funcs_evaluate(v, y, out);
+    eval_status = spir_funcs_eval(v, y, out);
     REQUIRE(eval_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for v basis
@@ -320,10 +320,10 @@ void test_finite_temp_basis_basis_functions()
     spir_funcs_release(uhat);
 
     // Test error cases
-    eval_status = spir_funcs_evaluate(nullptr, x, out);
+    eval_status = spir_funcs_eval(nullptr, x, out);
     REQUIRE(eval_status != SPIR_COMPUTATION_SUCCESS);
 
-    eval_status = spir_funcs_evaluate(u, x, nullptr);
+    eval_status = spir_funcs_eval(u, x, nullptr);
     REQUIRE(eval_status != SPIR_COMPUTATION_SUCCESS);
 
     // Clean up

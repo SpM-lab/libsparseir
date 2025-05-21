@@ -908,7 +908,7 @@ int spir_basis_get_stats(const spir_basis *b,
     }
 }
 
-int spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
+int spir_funcs_eval(const spir_funcs *funcs, double x, double *out)
 {
     if (!out) {
         std::cerr << "Error: out is null" << std::endl;
@@ -928,7 +928,7 @@ int spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_evaluate: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_eval: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }
