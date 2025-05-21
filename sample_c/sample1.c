@@ -43,7 +43,7 @@ assert(u != NULL);
 
 double tau = 0.5 * beta;
 double* uval = (double*)malloc(n_basis * sizeof(double));
-status = spir_funcs_evaluate(u, tau, uval);
+status = spir_funcs_eval(u, tau, uval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("u[%d] = %f\n", i, uval[i]);
@@ -56,7 +56,7 @@ assert(v != NULL);
 
 double omega = 0.5 * omega_max;
 double* vval = (double*)malloc(n_basis * sizeof(double));
-status = spir_funcs_evaluate(v, omega, vval);
+status = spir_funcs_eval(v, omega, vval);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_basis; ++i) {
     printf("v[%d] = %f\n", i, vval[i]);

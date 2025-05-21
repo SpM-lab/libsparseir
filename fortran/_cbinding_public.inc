@@ -19,7 +19,7 @@
   public :: c_spir_kernel_domain
   public :: c_spir_sve_result_new
   public :: c_spir_funcs_get_size
-  public :: c_spir_funcs_evaluate
+  public :: c_spir_funcs_eval
   public :: c_spir_funcs_eval_matsu
   public :: c_spir_funcs_batch_eval
   public :: c_spir_funcs_batch_eval_matsu

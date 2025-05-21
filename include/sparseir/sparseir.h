@@ -199,7 +199,7 @@ int spir_funcs_get_size(const spir_funcs *funcs, int *size);
  * @note The output array must be pre-allocated with sufficient size to store
  *       all function values
  */
-int spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out);
+int spir_funcs_eval(const spir_funcs *funcs, double x, double *out);
 
 /**
  * @brief Evaluate a funcs object at a single Matsubara frequency
