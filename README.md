@@ -105,4 +105,4 @@ This will create the `docs/html` directory. Open `docs/html/index.html` with you
 
 # Sample code in C
 
-Please refer [`sample_c.md`](./sample_c/sample_c.md) to learn more.
+Please refer [`./sample_c/README.md`](./sample_c/README.md) to learn more.
