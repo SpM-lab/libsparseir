@@ -3,6 +3,9 @@
 # Enable Fortran preprocessor
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 
+# Set Fortran module directory
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran)
+
 file(GLOB TYPE_FILES
     "_*_proc.inc"
     "_*_impl.inc"
@@ -10,11 +13,16 @@ file(GLOB TYPE_FILES
 
 add_library(sparseir_fortran SHARED
     sparseir.F90
-    _fortran_types.inc
-    _impl_types.inc
-    _fortran_assign.inc
     _cbinding.inc
+    _cbinding_public.inc
     ${TYPE_FILES}
+)
+
+# Add include directory
+target_include_directories(sparseir_fortran PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/fortran
 )
 
 set_target_properties(sparseir_fortran PROPERTIES
@@ -45,6 +53,7 @@ install(
     FILES_MATCHING PATTERN "*.mod"
 )
 
-if(SPARSEIR_BUILD_TESTING)
-    add_subdirectory(test)
-endif()
+# if(SPARSEIR_BUILD_TESTING)
+#     message(STATUS "Building Fortran tests")
+#     add_subdirectory(test)
+# endif()

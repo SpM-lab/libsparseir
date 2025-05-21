@@ -1,0 +1,173 @@
+interface is_initialized
+
+  ! Check if spir_basis is initialized
+  module function spir_basis_is_initialized(this) result(initialized)
+    class(spir_basis), intent(in) :: this
+    logical :: initialized
+  end function
+
+  ! Check if spir_funcs is initialized
+  module function spir_funcs_is_initialized(this) result(initialized)
+    class(spir_funcs), intent(in) :: this
+    logical :: initialized
+  end function
+
+  ! Check if spir_kernel is initialized
+  module function spir_kernel_is_initialized(this) result(initialized)
+    class(spir_kernel), intent(in) :: this
+    logical :: initialized
+  end function
+
+  ! Check if spir_sampling is initialized
+  module function spir_sampling_is_initialized(this) result(initialized)
+    class(spir_sampling), intent(in) :: this
+    logical :: initialized
+  end function
+
+  ! Check if spir_sve_result is initialized
+  module function spir_sve_result_is_initialized(this) result(initialized)
+    class(spir_sve_result), intent(in) :: this
+    logical :: initialized
+  end function
+
+end interface
+
+
+interface clone
+
+  ! Clone the spir_basis object (create a copy)
+  module function spir_basis_clone(this) result(copy)
+    class(spir_basis), intent(in) :: this
+    type(spir_basis) :: copy
+  end function
+
+  ! Clone the spir_funcs object (create a copy)
+  module function spir_funcs_clone(this) result(copy)
+    class(spir_funcs), intent(in) :: this
+    type(spir_funcs) :: copy
+  end function
+
+  ! Clone the spir_kernel object (create a copy)
+  module function spir_kernel_clone(this) result(copy)
+    class(spir_kernel), intent(in) :: this
+    type(spir_kernel) :: copy
+  end function
+
+  ! Clone the spir_sampling object (create a copy)
+  module function spir_sampling_clone(this) result(copy)
+    class(spir_sampling), intent(in) :: this
+    type(spir_sampling) :: copy
+  end function
+
+  ! Clone the spir_sve_result object (create a copy)
+  module function spir_sve_result_clone(this) result(copy)
+    class(spir_sve_result), intent(in) :: this
+    type(spir_sve_result) :: copy
+  end function
+
+end interface
+
+
+interface assign
+
+  ! Assignment operator implementation
+  module subroutine spir_basis_assign(lhs, rhs)
+    class(spir_basis), intent(inout) :: lhs
+    class(spir_basis), intent(in) :: rhs
+  end subroutine
+
+  ! Assignment operator implementation
+  module subroutine spir_funcs_assign(lhs, rhs)
+    class(spir_funcs), intent(inout) :: lhs
+    class(spir_funcs), intent(in) :: rhs
+  end subroutine
+
+  ! Assignment operator implementation
+  module subroutine spir_kernel_assign(lhs, rhs)
+    class(spir_kernel), intent(inout) :: lhs
+    class(spir_kernel), intent(in) :: rhs
+  end subroutine
+
+  ! Assignment operator implementation
+  module subroutine spir_sampling_assign(lhs, rhs)
+    class(spir_sampling), intent(inout) :: lhs
+    class(spir_sampling), intent(in) :: rhs
+  end subroutine
+
+  ! Assignment operator implementation
+  module subroutine spir_sve_result_assign(lhs, rhs)
+    class(spir_sve_result), intent(inout) :: lhs
+    class(spir_sve_result), intent(in) :: rhs
+  end subroutine
+
+end interface
+
+
+interface finalize
+
+  ! Finalizer for spir_basis
+  module subroutine spir_basis_finalize(this)
+    type(spir_basis), intent(inout) :: this
+  end subroutine
+
+  ! Finalizer for spir_funcs
+  module subroutine spir_funcs_finalize(this)
+    type(spir_funcs), intent(inout) :: this
+  end subroutine
+
+  ! Finalizer for spir_kernel
+  module subroutine spir_kernel_finalize(this)
+    type(spir_kernel), intent(inout) :: this
+  end subroutine
+
+  ! Finalizer for spir_sampling
+  module subroutine spir_sampling_finalize(this)
+    type(spir_sampling), intent(inout) :: this
+  end subroutine
+
+  ! Finalizer for spir_sve_result
+  module subroutine spir_sve_result_finalize(this)
+    type(spir_sve_result), intent(inout) :: this
+  end subroutine
+
+end interface
+
+
+interface is_assigned
+
+  ! Check if spir_basis's shared_ptr is assigned
+  ! (contains a valid C++ object)
+  module function spir_basis_is_assigned(this) result(assigned)
+    type(spir_basis), intent(in) :: this
+    logical :: assigned
+  end function
+
+  ! Check if spir_funcs's shared_ptr is assigned
+  ! (contains a valid C++ object)
+  module function spir_funcs_is_assigned(this) result(assigned)
+    type(spir_funcs), intent(in) :: this
+    logical :: assigned
+  end function
+
+  ! Check if spir_kernel's shared_ptr is assigned
+  ! (contains a valid C++ object)
+  module function spir_kernel_is_assigned(this) result(assigned)
+    type(spir_kernel), intent(in) :: this
+    logical :: assigned
+  end function
+
+  ! Check if spir_sampling's shared_ptr is assigned
+  ! (contains a valid C++ object)
+  module function spir_sampling_is_assigned(this) result(assigned)
+    type(spir_sampling), intent(in) :: this
+    logical :: assigned
+  end function
+
+  ! Check if spir_sve_result's shared_ptr is assigned
+  ! (contains a valid C++ object)
+  module function spir_sve_result_is_assigned(this) result(assigned)
+    type(spir_sve_result), intent(in) :: this
+    logical :: assigned
+  end function
+
+end interface
