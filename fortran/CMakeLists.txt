@@ -49,7 +49,7 @@ install(TARGETS sparseir_fortran
 # Install Fortran module files
 install(
     DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran/
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/sparseir/fortran
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/sparseir/fortran"
     FILES_MATCHING PATTERN "*.mod"
 )
 
