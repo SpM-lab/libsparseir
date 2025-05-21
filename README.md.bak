@@ -117,7 +117,7 @@ The following example demonstrates how to create a fermionic finite-temperature 
 and perform transformations of a single-variable Green's function between Matsubara frequency and imaginary-time domains.
 
 For fitting, we use the `spir_sampling_fit_XY`, where `X` is the element type of the input data, and `Y` is that of the output data:  `z` corresponds to `c_complex`, `d` to `double`.
-The same naming convention is used for evaluation: `spir_sampling_evaluate_XY`.
+The same naming convention is used for evaluation: `spir_sampling_eval_XY`.
 
 The logistic kernel is defined as
 
@@ -145,14 +145,14 @@ spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis)
 
 // Create Green's function with a pole at 0.5*omega_max
 int n_matsubara;
-int status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
+int status = spir_sampling_get_npoints(matsubara_sampling, &n_matsubara);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
 int* matsubara_indices = (int*)malloc(n_matsubara * sizeof(int));
 
 // Get Matsubara frequency indices
-status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indices);
+status = spir_sampling_get_matsus(matsubara_sampling, matsubara_indices);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Set pole position
@@ -202,17 +202,17 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Basis coefficients to imaginary-time sampling points
 int n_tau;
-status = spir_sampling_get_num_points(tau_sampling, &n_tau);
+status = spir_sampling_get_npoints(tau_sampling, &n_tau);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 c_complex* g_tau = (c_complex*)malloc(n_tau * sizeof(c_complex));
-status = spir_sampling_evaluate_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
+status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit, g_tau);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Compare with expected result:
 //   G(tau) = -exp(-tau * pole_position) / (1 + exp(-beta * pole_position))
 double* tau_points = (double*)malloc(n_tau * sizeof(double));
-status = spir_sampling_get_tau_points(tau_sampling, tau_points);
+status = spir_sampling_get_taus(tau_sampling, tau_points);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_tau; ++i) {
     double tau = tau_points[i];
@@ -229,7 +229,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Basis coefficients to Matsubara Green's function
 c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
-status = spir_sampling_evaluate_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit2, g_matsubara_reconstructed);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 for (int i = 0; i < n_matsubara; ++i) {
@@ -259,7 +259,7 @@ This can be achived by replacing `fermionic` by `bosonic` in the above code.
 
 // Create kernels for different statistics
 spir_kernel* fermionic_kernel = spir_logistic_kernel_new(9.0);
-spir_kernel* bosonic_kernel = spir_regularized_bose_kernel_new(9.0);
+spir_kernel* bosonic_kernel = spir_reg_bose_kernel_new(9.0);
 
 // Get kernel domain
 double xmin, xmax, ymin, ymax;
@@ -288,7 +288,7 @@ spir_sampling* matsubara_sampling = spir_fermionic_matsubara_sampling_new(basis)
 
 // Create Green's function with a pole at 0.5*omega_max
 int n_matsubara;
-int status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
+int status = spir_sampling_get_npoints(matsubara_sampling, &n_matsubara);
 if (status != 0) {
     // Handle error
     exit(-1);
@@ -298,7 +298,7 @@ c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
 int* matsubara_indices = (int*)malloc(n_matsubara * sizeof(int));
 
 // Get Matsubara frequency indices
-status = spir_sampling_get_matsubara_points(matsubara_sampling, matsubara_indices);
+status = spir_sampling_get_matsus(matsubara_sampling, matsubara_indices);
 if (status != 0) {
     // Handle error
     free(matsubara_indices);
@@ -349,7 +349,7 @@ double input[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}
 double output[12];
 
 // Real to real transformation
-spir_sampling_evaluate_dd(
+spir_sampling_eval_dd(
     tau_sampling,
     SPIR_ORDER_COLUMN_MAJOR,
     ndim,
@@ -452,7 +452,7 @@ for (int i = 0; i < 12; i++) {
 }
 
 // Complex to complex transformation
-spir_sampling_evaluate_zz(
+spir_sampling_eval_zz(
     matsubara_sampling,
     SPIR_ORDER_COLUMN_MAJOR,
     ndim,

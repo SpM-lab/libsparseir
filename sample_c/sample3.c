@@ -32,11 +32,11 @@ assert(basis != NULL);
 
 // Get imaginary-time sampling points
 int32_t n_tau;
-status = spir_basis_get_num_default_tau_sampling_points(basis, &n_tau);
+status = spir_basis_get_n_default_taus(basis, &n_tau);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 double* tau_points = (double*)malloc(n_tau * sizeof(double));
-status = spir_basis_get_default_tau_sampling_points(basis, tau_points);
+status = spir_basis_get_default_taus(basis, tau_points);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Create sampling object for imaginary-time domain
@@ -47,19 +47,19 @@ assert(tau_sampling != NULL);
 // Get Matsubara frequency indices
 bool positive_only = false;
 int32_t n_matsubara;
-status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &n_matsubara);
+status = spir_basis_get_nmatuss(basis, positive_only, &n_matsubara);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 int64_t* matsubara_indices = (int64_t*)malloc(n_matsubara * sizeof(int64_t));
-status = spir_basis_get_default_matsubara_sampling_points(basis, positive_only, matsubara_indices);
+status = spir_basis_get_matsus(basis, positive_only, matsubara_indices);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Create sampling object for Matsubara domain
-spir_sampling* matsubara_sampling = spir_matsubara_sampling_new(basis, positive_only, n_matsubara, matsubara_indices, &status);
+spir_sampling* matsubara_sampling = spir_matsu_sampling_new(basis, positive_only, n_matsubara, matsubara_indices, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(matsubara_sampling != NULL);
 
 // Create Green's function with a pole at 0.5*omega_max
-status = spir_sampling_get_num_points(matsubara_sampling, &n_matsubara);
+status = spir_sampling_get_npoints(matsubara_sampling, &n_matsubara);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
@@ -91,7 +91,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 // Basis coefficients to imaginary-time sampling points
 c_complex* g_tau = (c_complex*)malloc(n_tau * sizeof(c_complex));
 dims[0] = n_basis;
-status = spir_sampling_evaluate_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
+status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit, g_tau);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
@@ -119,7 +119,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 // Basis coefficients to Matsubara Green's function
 c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
 dims[0] = n_basis;
-status = spir_sampling_evaluate_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
                                   1, dims, target_dim, g_fit2, g_matsubara_reconstructed);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 

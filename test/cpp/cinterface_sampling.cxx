@@ -30,11 +30,11 @@ spir_sampling *create_tau_sampling(spir_basis *basis)
 {
     int status;
     int n_tau_points;
-    status = spir_basis_get_num_default_tau_sampling_points(basis, &n_tau_points);
+    status = spir_basis_get_n_default_taus(basis, &n_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     double *tau_points_org = (double *)malloc(n_tau_points * sizeof(double));
-    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org);
+    status = spir_basis_get_default_taus(basis, tau_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     return spir_tau_sampling_new(basis, n_tau_points, tau_points_org, &status);
@@ -45,14 +45,14 @@ spir_sampling *create_matsubara_sampling(spir_basis *basis, bool positive_only)
 {
     int status;
     int n_matsubara_points;
-    status = spir_basis_get_num_default_matsubara_sampling_points(basis, positive_only, &n_matsubara_points);
+    status = spir_basis_get_nmatuss(basis, positive_only, &n_matsubara_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     std::vector<int64_t> smpl_points(n_matsubara_points);
-    status = spir_basis_get_default_matsubara_sampling_points(basis, positive_only, smpl_points.data());
+    status = spir_basis_get_matsus(basis, positive_only, smpl_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_sampling *sampling = spir_matsubara_sampling_new(basis, positive_only, n_matsubara_points, smpl_points.data(), &status);
+    spir_sampling *sampling = spir_matsu_sampling_new(basis, positive_only, n_matsubara_points, smpl_points.data(), &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
@@ -74,12 +74,12 @@ void test_tau_sampling()
     REQUIRE(basis != nullptr);
 
     int n_tau_points;
-    status = spir_basis_get_num_default_tau_sampling_points(basis, &n_tau_points);
+    status = spir_basis_get_n_default_taus(basis, &n_tau_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_tau_points > 0);
 
     double *tau_points_org = (double *)malloc(n_tau_points * sizeof(double));
-    status = spir_basis_get_default_tau_sampling_points(basis, tau_points_org);
+    status = spir_basis_get_default_taus(basis, tau_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     int sampling_status;
@@ -89,13 +89,13 @@ void test_tau_sampling()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     // Test getting sampling points
     double *tau_points = (double *)malloc(n_points * sizeof(double));
-    int tau_status = spir_sampling_get_tau_points(sampling, tau_points);
+    int tau_status = spir_sampling_get_taus(sampling, tau_points);
     REQUIRE(tau_status == SPIR_COMPUTATION_SUCCESS);
 
     // compare tau_points and tau_points_org
@@ -104,7 +104,7 @@ void test_tau_sampling()
     }
 
     std::vector<int64_t> matsubara_points(n_points);
-    int matsubara_status = spir_sampling_get_matsubara_points(sampling, matsubara_points.data());
+    int matsubara_status = spir_sampling_get_matsus(sampling, matsubara_points.data());
     REQUIRE(matsubara_status == SPIR_NOT_SUPPORTED);
 
     // Clean up
@@ -132,7 +132,7 @@ void test_tau_sampling_evaluation_1d_column_major()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -166,7 +166,7 @@ void test_tau_sampling_evaluation_1d_column_major()
     double *fit_output = (double *)malloc(basis_size * sizeof(double));
 
     // Evaluate using C API
-    int evaluate_status = spir_sampling_evaluate_dd(
+    int evaluate_status = spir_sampling_eval_dd(
         sampling,
         SPIR_ORDER_COLUMN_MAJOR, // Assuming this enum is defined in the
                                  // header
@@ -219,7 +219,7 @@ void test_tau_sampling_evaluation_4d_row_major()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -285,7 +285,7 @@ void test_tau_sampling_evaluation_4d_row_major()
         }
 
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_dd(
+        int evaluate_status = spir_sampling_eval_dd(
             sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
             gl_cpp_rowmajor.data(), evaluate_output);
 
@@ -351,7 +351,7 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -423,7 +423,7 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
                                             gl_cpp_rowmajor.data()[i].imag()};
         }
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_zz(
+        int evaluate_status = spir_sampling_eval_zz(
             sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
             evaluate_input, evaluate_output);
 
@@ -491,7 +491,7 @@ void test_tau_sampling_evaluation_4d_column_major()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -543,7 +543,7 @@ void test_tau_sampling_evaluation_4d_column_major()
         int target_dim = dim;
 
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_dd(
+        int evaluate_status = spir_sampling_eval_dd(
             sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
             gl_cpp.data(), evaluate_output);
 
@@ -590,7 +590,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     std::cout << "n_points" << n_points << std::endl;
     REQUIRE(n_points > 0);
@@ -648,7 +648,7 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
         int target_dim = dim;
 
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_zz(
+        int evaluate_status = spir_sampling_eval_zz(
             sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
             evaluate_input, evaluate_output);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
@@ -733,7 +733,7 @@ TEST_CASE("TauSampling", "[cinterface]")
 
         // Test getting number of sampling points
         int n_points;
-        int points_status = spir_sampling_get_num_points(sampling, &n_points);
+        int points_status = spir_sampling_get_npoints(sampling, &n_points);
         REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(n_points > 0);
 
@@ -785,7 +785,7 @@ TEST_CASE("TauSampling", "[cinterface]")
             int *dims = dims_list[dim];
             int target_dim = dim;
 
-            //int status_not_supported = spir_sampling_evaluate_dd(
+            //int status_not_supported = spir_sampling_eval_dd(
                 //sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
                 //gl_cpp.data(), output_double);
             //REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
@@ -800,7 +800,7 @@ TEST_CASE("TauSampling", "[cinterface]")
             }
 
             // Evaluate using C API that has dimension mismatch
-            int status_dimension_mismatch = spir_sampling_evaluate_dd(
+            int status_dimension_mismatch = spir_sampling_eval_dd(
                 sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
                 gl_cpp.data(), output_double);
             REQUIRE(status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);
@@ -839,43 +839,43 @@ void test_matsubara_sampling_constructor()
 
     int sampling_status;
     int n_points_org;
-    status = spir_basis_get_num_default_matsubara_sampling_points(basis, false, &n_points_org);
+    status = spir_basis_get_nmatuss(basis, false, &n_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_org > 0);
 
     std::vector<int64_t> smpl_points_org(n_points_org);
-    status = spir_basis_get_default_matsubara_sampling_points(basis, false, smpl_points_org.data());
+    status = spir_basis_get_matsus(basis, false, smpl_points_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_sampling *sampling = spir_matsubara_sampling_new(basis, false, n_points_org, smpl_points_org.data(), &sampling_status);
+    spir_sampling *sampling = spir_matsu_sampling_new(basis, false, n_points_org, smpl_points_org.data(), &sampling_status);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
     int n_points_positive_only_org;
-    status = spir_basis_get_num_default_matsubara_sampling_points(basis, true, &n_points_positive_only_org);
+    status = spir_basis_get_nmatuss(basis, true, &n_points_positive_only_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only_org > 0);
 
     std::vector<int64_t> smpl_points_positive_only_org(n_points_positive_only_org);
-    status = spir_basis_get_default_matsubara_sampling_points(basis, true, smpl_points_positive_only_org.data());
+    status = spir_basis_get_matsus(basis, true, smpl_points_positive_only_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    spir_sampling *sampling_positive_only = spir_matsubara_sampling_new(basis, true, n_points_positive_only_org, smpl_points_positive_only_org.data(), &status);
+    spir_sampling *sampling_positive_only = spir_matsu_sampling_new(basis, true, n_points_positive_only_org, smpl_points_positive_only_org.data(), &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling_positive_only != nullptr);
 
     int n_points;
-    status = spir_sampling_get_num_points(sampling, &n_points);
+    status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
     int n_points_positive_only;
-    status = spir_sampling_get_num_points(sampling_positive_only, &n_points_positive_only);
+    status = spir_sampling_get_npoints(sampling_positive_only, &n_points_positive_only);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only > 0);
 
     std::vector<int64_t> smpl_points(n_points);
-    status = spir_sampling_get_matsubara_points(sampling, smpl_points.data());
+    status = spir_sampling_get_matsus(sampling, smpl_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     // compare with smpl_points_org
     for (int i = 0; i < n_points; ++i) {
@@ -883,7 +883,7 @@ void test_matsubara_sampling_constructor()
     }
 
     std::vector<int64_t> smpl_points_positive_only(n_points_positive_only);
-    status = spir_sampling_get_matsubara_points(sampling_positive_only, smpl_points_positive_only.data());
+    status = spir_sampling_get_matsus(sampling_positive_only, smpl_points_positive_only.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     // compare with smpl_points_positive_only_org
     for (int i = 0; i < n_points_positive_only; ++i) {
@@ -916,7 +916,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     std::cout << "n_points " << n_points << std::endl;
     REQUIRE(n_points > 0);
@@ -977,7 +977,7 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
         int target_dim = dim;
 
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_dz(
+        int evaluate_status = spir_sampling_eval_dz(
             sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
             gl_cpp.data(), evaluate_output);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
@@ -1026,7 +1026,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -1083,7 +1083,7 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
                 (c_complex){gl_cpp.data()[i].real(), gl_cpp.data()[i].imag()};
         }
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_zz(
+        int evaluate_status = spir_sampling_eval_zz(
             sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
             evaluate_input, evaluate_output);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
@@ -1130,7 +1130,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -1194,7 +1194,7 @@ void test_matsubara_sampling_evaluation_4d_row_major()
             }
         }
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_dz(
+        int evaluate_status = spir_sampling_eval_dz(
             sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
             gl_cpp_rowmajor.data(), evaluate_output);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
@@ -1261,7 +1261,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -1330,7 +1330,7 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
                                             gl_cpp_rowmajor.data()[i].imag()};
         }
         // Evaluate using C API
-        int evaluate_status = spir_sampling_evaluate_zz(
+        int evaluate_status = spir_sampling_eval_zz(
             sampling, SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim,
             evaluate_input, evaluate_output);
         REQUIRE(evaluate_status == SPIR_COMPUTATION_SUCCESS);
@@ -1398,7 +1398,7 @@ void test_matsubara_sampling_error_status()
 
     // Test getting number of sampling points
     int n_points;
-    int points_status = spir_sampling_get_num_points(sampling, &n_points);
+    int points_status = spir_sampling_get_npoints(sampling, &n_points);
     REQUIRE(points_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points > 0);
 
@@ -1449,7 +1449,7 @@ void test_matsubara_sampling_error_status()
         int target_dim = dim;
 
         // Evaluate using C API that is not supported
-        int status_not_supported = spir_sampling_evaluate_dd(
+        int status_not_supported = spir_sampling_eval_dd(
             sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim,
             gl_cpp.data(), output_double);
         REQUIRE(status_not_supported == SPIR_NOT_SUPPORTED);
@@ -1464,7 +1464,7 @@ void test_matsubara_sampling_error_status()
         }
 
         // Evaluate using C API that has dimension mismatch
-        int status_dimension_mismatch = spir_sampling_evaluate_dz(
+        int status_dimension_mismatch = spir_sampling_eval_dz(
             sampling, SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim,
             gl_cpp.data(), output_complex);
         REQUIRE(status_dimension_mismatch == SPIR_INPUT_DIMENSION_MISMATCH);

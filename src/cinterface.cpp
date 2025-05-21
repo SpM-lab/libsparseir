@@ -42,7 +42,7 @@ spir_kernel* spir_logistic_kernel_new(double lambda, int* status)
     }
 }
 
-spir_kernel* spir_regularized_bose_kernel_new(double lambda, int* status)
+spir_kernel* spir_reg_bose_kernel_new(double lambda, int* status)
 {
     DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
     try {
@@ -51,11 +51,11 @@ spir_kernel* spir_regularized_bose_kernel_new(double lambda, int* status)
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_kernel(abstract_kernel);
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_regularized_bose_kernel_new: " << e.what());
+        DEBUG_LOG("Exception in spir_reg_bose_kernel_new: " << e.what());
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     } catch (...) {
-        DEBUG_LOG("Unknown exception in spir_regularized_bose_kernel_new");
+        DEBUG_LOG("Unknown exception in spir_reg_bose_kernel_new");
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -230,7 +230,7 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const 
     }
 }
 
-spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_only, int num_points, const int64_t *points, int* status)
+spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, int num_points, const int64_t *points, int* status)
 {
     if (!b || !points || num_points <= 0) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -262,17 +262,17 @@ spir_sampling* spir_matsubara_sampling_new(const spir_basis *b, bool positive_on
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_matsubara_sampling_new_with_points<sparseir::Fermionic,
+            return _spir_matsu_sampling_new_with_points<sparseir::Fermionic,
                                                 sparseir::MatsubaraSampling<sparseir::Fermionic>>(
                 b, positive_only, num_points, points);
         } else {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_matsubara_sampling_new_with_points<sparseir::Bosonic,
+            return _spir_matsu_sampling_new_with_points<sparseir::Bosonic,
                                                 sparseir::MatsubaraSampling<sparseir::Bosonic>>(
                 b, positive_only, num_points, points);
         }
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_matsubara_sampling_new: " << e.what());
+        DEBUG_LOG("Exception in spir_matsu_sampling_new: " << e.what());
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -292,7 +292,7 @@ spir_basis* spir_dlr_new(const spir_basis *b, int* status)
     }
 
     int stat;
-    int status_basis = spir_basis_get_statistics(b, &stat);
+    int status_basis = spir_basis_get_stats(b, &stat);
     if (status_basis != SPIR_COMPUTATION_SUCCESS) {
         *status = SPIR_GET_IMPL_FAILED;
         return nullptr;
@@ -321,7 +321,7 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
     }
 
     int stat;
-    int status_basis = spir_basis_get_statistics(b, &stat);
+    int status_basis = spir_basis_get_stats(b, &stat);
     if (status_basis != SPIR_COMPUTATION_SUCCESS) {
         *status = SPIR_GET_IMPL_FAILED;
         return nullptr;
@@ -336,7 +336,7 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
     }
 }
 
-int spir_sampling_evaluate_dd(const spir_sampling *s, int order,
+int spir_sampling_eval_dd(const spir_sampling *s, int order,
                                   int ndim, const int *input_dims,
                                   int target_dim, const double *input,
                                   double *out)
@@ -345,7 +345,7 @@ int spir_sampling_evaluate_dd(const spir_sampling *s, int order,
                          &sparseir::AbstractSampling::evaluate_inplace_dd);
 }
 
-int spir_sampling_evaluate_dz(const spir_sampling *s, int order,
+int spir_sampling_eval_dz(const spir_sampling *s, int order,
                                   int ndim, const int *input_dims,
                                   int target_dim, const double *input,
                                   c_complex *out)
@@ -355,7 +355,7 @@ int spir_sampling_evaluate_dz(const spir_sampling *s, int order,
                          &sparseir::AbstractSampling::evaluate_inplace_dz);
 }
 
-int spir_sampling_evaluate_zz(const spir_sampling *s, int order,
+int spir_sampling_eval_zz(const spir_sampling *s, int order,
                                   int ndim, const int *input_dims,
                                   int target_dim, const c_complex *input,
                                   c_complex *out)
@@ -388,7 +388,7 @@ int spir_sampling_fit_zz(const spir_sampling *s, int order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
-int spir_dlr_to_ir_dd(const spir_basis *dlr, int order, int ndim,
+int spir_dlr2ir_dd(const spir_basis *dlr, int order, int ndim,
                        const int *input_dims, int target_dim,
                        const double *input, double *out)
 {
@@ -402,15 +402,15 @@ int spir_dlr_to_ir_dd(const spir_basis *dlr, int order, int ndim,
     }
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_dlr_to_ir<sparseir::Fermionic, double>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr2ir<sparseir::Fermionic, double>(dlr, order, ndim, input_dims, target_dim,
                                                    input, out);
     } else {
-        return spir_dlr_to_ir<sparseir::Bosonic, double>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr2ir<sparseir::Bosonic, double>(dlr, order, ndim, input_dims, target_dim,
                                                  input, out);
     }
 }
 
-int spir_dlr_to_ir_zz(const spir_basis *dlr, int order, int ndim,
+int spir_dlr2ir_zz(const spir_basis *dlr, int order, int ndim,
                        const int *input_dims, int target_dim,
                        const c_complex *input, c_complex *out)
 {
@@ -427,15 +427,15 @@ int spir_dlr_to_ir_zz(const spir_basis *dlr, int order, int ndim,
     std::complex<double> *cpp_out = (std::complex<double> *)(out);
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_dlr_to_ir<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr2ir<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
                                                    cpp_input, cpp_out);
     } else {
-        return spir_dlr_to_ir<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
+        return spir_dlr2ir<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims, target_dim,
                                                  cpp_input, cpp_out);
     }
 }
 
-int spir_ir_to_dlr_dd(const spir_basis *dlr, int order,
+int spir_ir2dlr_dd(const spir_basis *dlr, int order,
                          int ndim, const int *input_dims, int target_dim,
                          const double *input, double *out)
 {
@@ -449,15 +449,15 @@ int spir_ir_to_dlr_dd(const spir_basis *dlr, int order,
     }
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_ir_to_dlr<sparseir::Fermionic, double>(dlr, order, ndim,
+        return spir_ir2dlr<sparseir::Fermionic, double>(dlr, order, ndim,
                                                      input_dims, target_dim, input, out);
     } else {
-        return spir_ir_to_dlr<sparseir::Bosonic, double>(dlr, order, ndim, input_dims,
+        return spir_ir2dlr<sparseir::Bosonic, double>(dlr, order, ndim, input_dims,
                                                    target_dim, input, out);
     }
 }
 
-int spir_ir_to_dlr_zz(const spir_basis *dlr, int order,
+int spir_ir2dlr_zz(const spir_basis *dlr, int order,
                          int ndim, const int *input_dims, int target_dim,
                          const c_complex *input, c_complex *out)
 {
@@ -474,15 +474,15 @@ int spir_ir_to_dlr_zz(const spir_basis *dlr, int order,
     std::complex<double> *cpp_out = (std::complex<double> *)(out);
 
     if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-        return spir_ir_to_dlr<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim,
+        return spir_ir2dlr<sparseir::Fermionic, std::complex<double>>(dlr, order, ndim,
                                                      input_dims, target_dim, cpp_input, cpp_out);
     } else {
-        return spir_ir_to_dlr<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims,
+        return spir_ir2dlr<sparseir::Bosonic, std::complex<double>>(dlr, order, ndim, input_dims,
                                                    target_dim, cpp_input, cpp_out);
     }
 }
 
-int spir_dlr_get_num_poles(const spir_basis *dlr, int *num_poles)
+int spir_dlr_get_npoles(const spir_basis *dlr, int *num_poles)
 {
     if (!dlr || !num_poles) {
         return SPIR_INVALID_ARGUMENT;
@@ -649,7 +649,7 @@ spir_funcs* spir_basis_get_uhat(const spir_basis *b, int *status)
 }
 
 // TODO: USE THIS
-int spir_sampling_get_num_points(const spir_sampling *s,
+int spir_sampling_get_npoints(const spir_sampling *s,
                                      int *num_points)
 {
     auto impl = get_impl_sampling(s);
@@ -667,7 +667,7 @@ int spir_sampling_get_num_points(const spir_sampling *s,
     }
 }
 
-int spir_sampling_get_tau_points(const spir_sampling *s, double *points)
+int spir_sampling_get_taus(const spir_sampling *s, double *points)
 {
     auto impl = get_impl_sampling(s);
     if (!impl) {
@@ -700,7 +700,7 @@ int spir_sampling_get_tau_points(const spir_sampling *s, double *points)
 }
 
 // TODO: USE THIS
-int spir_sampling_get_matsubara_points(const spir_sampling *s,
+int spir_sampling_get_matsus(const spir_sampling *s,
                                            int64_t *points)
 {
     auto impl = get_impl_sampling(s);
@@ -758,7 +758,7 @@ int spir_basis_get_size(const spir_basis *b,
     }
 }
 
-int spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int *num_points)
+int spir_basis_get_n_default_taus(const spir_basis *b, int *num_points)
 {
     if (!b || !num_points) {
         return SPIR_INVALID_ARGUMENT;
@@ -791,7 +791,7 @@ int spir_basis_get_num_default_tau_sampling_points(const spir_basis *b, int *num
     }
 }
 
-int spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *points)
+int spir_basis_get_default_taus(const spir_basis *b, double *points)
 {
     if (!b || !points) {
         return SPIR_INVALID_ARGUMENT;
@@ -824,7 +824,7 @@ int spir_basis_get_default_tau_sampling_points(const spir_basis *b, double *poin
     }
 }
 
-int spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int *num_points)
+int spir_basis_get_nmatuss(const spir_basis *b, bool positive_only, int *num_points)
 {
     if (!b || !num_points) {
         return SPIR_INVALID_ARGUMENT;
@@ -857,7 +857,7 @@ int spir_basis_get_num_default_matsubara_sampling_points(const spir_basis *b, bo
     }
 }
 
-int spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool positive_only, int64_t *points)
+int spir_basis_get_matsus(const spir_basis *b, bool positive_only, int64_t *points)
 {
     if (!b || !points) {
         return SPIR_INVALID_ARGUMENT;
@@ -890,7 +890,7 @@ int spir_basis_get_default_matsubara_sampling_points(const spir_basis *b, bool p
     }
 }
 
-int spir_basis_get_statistics(const spir_basis *b,
+int spir_basis_get_stats(const spir_basis *b,
                                   int *statistics)
 {
     auto impl = get_impl_basis(b);
@@ -933,17 +933,17 @@ int spir_funcs_evaluate(const spir_funcs *funcs, double x, double *out)
     }
 }
 
-int spir_funcs_evaluate_matsubara(const spir_funcs *funcs, int64_t x, c_complex *out)
+int spir_funcs_eval_matsu(const spir_funcs *funcs, int64_t x, c_complex *out)
 {
     if (!funcs || !out) {
         return SPIR_INVALID_ARGUMENT;
     }
 
     // Use batch_evaluate_matsubara with num_freqs = 1
-    return spir_funcs_batch_evaluate_matsubara(funcs, SPIR_ORDER_COLUMN_MAJOR, 1, &x, out);
+    return spir_funcs_batch_eval_matsu(funcs, SPIR_ORDER_COLUMN_MAJOR, 1, &x, out);
 }
 
-int spir_funcs_batch_evaluate(const spir_funcs *funcs,
+int spir_funcs_batch_eval(const spir_funcs *funcs,
                                  int order, int num_points,
                                  double *xs, double *out)
 {
@@ -986,15 +986,15 @@ int spir_funcs_batch_evaluate(const spir_funcs *funcs,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_batch_evaluate: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_batch_eval: " << e.what());
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
-        DEBUG_LOG("Unknown exception in spir_funcs_batch_evaluate");
+        DEBUG_LOG("Unknown exception in spir_funcs_batch_eval");
         return SPIR_INTERNAL_ERROR;
     }
 }
 
-int spir_funcs_batch_evaluate_matsubara(const spir_funcs *uiw,
+int spir_funcs_batch_eval_matsu(const spir_funcs *uiw,
                                           int order,
                                           int num_freqs,
                                           int64_t *matsubara_freq_indices,
@@ -1046,7 +1046,7 @@ int spir_funcs_batch_evaluate_matsubara(const spir_funcs *uiw,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_batch_evaluate_matsubara: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_batch_eval_matsu: " << e.what());
         return SPIR_INTERNAL_ERROR;
     }
 }
@@ -1069,7 +1069,7 @@ int spir_funcs_get_size(const spir_funcs *funcs, int *size)
     }
 }
 
-int spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
+int spir_basis_get_n_default_ws(const spir_basis *b,
                                                        int *num_points)
 {
     if (!b || !num_points) {
@@ -1104,15 +1104,15 @@ int spir_basis_get_num_default_omega_sampling_points(const spir_basis *b,
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_basis_get_num_default_omega_sampling_points: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_get_n_default_ws: " << e.what());
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
-        DEBUG_LOG("Unknown exception in spir_basis_get_num_default_omega_sampling_points");
+        DEBUG_LOG("Unknown exception in spir_basis_get_n_default_ws");
         return SPIR_INTERNAL_ERROR;
     }
 }
 
-int spir_basis_get_default_omega_sampling_points(const spir_basis *b,
+int spir_basis_get_default_ws(const spir_basis *b,
                                                    double *points)
 {
     if (!b || !points) {
@@ -1147,10 +1147,10 @@ int spir_basis_get_default_omega_sampling_points(const spir_basis *b,
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_basis_get_default_omega_sampling_points: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_get_default_ws: " << e.what());
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
-        DEBUG_LOG("Unknown exception in spir_basis_get_default_omega_sampling_points");
+        DEBUG_LOG("Unknown exception in spir_basis_get_default_ws");
         return SPIR_INTERNAL_ERROR;
     }
 }

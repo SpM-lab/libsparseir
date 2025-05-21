@@ -8,8 +8,8 @@
 	end
 
 	@testset "Regularized Bose kernel" begin
-		k = LibSparseIR.spir_regularized_bose_kernel_new(10.0)
-		LibSparseIR.spir_release_regularized_bose_kernel(k)
+		k = LibSparseIR.spir_reg_bose_kernel_new(10.0)
+		LibSparseIR.spir_release_reg_bose_kernel(k)
 		@test true
 	end
 

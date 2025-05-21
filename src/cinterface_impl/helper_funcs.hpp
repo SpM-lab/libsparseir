@@ -148,7 +148,7 @@ spir_funcs *_create_omega_funcs(std::shared_ptr<InternalType> impl)
 }
 
 template <typename S, typename T>
-int spir_dlr_to_ir(const spir_basis *dlr, int order, int ndim,
+int spir_dlr2ir(const spir_basis *dlr, int order, int ndim,
                        const int *input_dims, int target_dim, const T *input, T *out)
 {
     std::shared_ptr<DLRAdapter<S>> impl =
@@ -175,7 +175,7 @@ int spir_dlr_to_ir(const spir_basis *dlr, int order, int ndim,
 }
 
 template <typename S, typename T>
-int spir_ir_to_dlr(const spir_basis *dlr, int order,
+int spir_ir2dlr(const spir_basis *dlr, int order,
                          int ndim, const int *input_dims, int target_dim,
                          const T *input, T *out)
 {
@@ -260,7 +260,7 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_p
 }
 
 template<typename S, typename SMPL>
-spir_sampling* _spir_matsubara_sampling_new_with_points(const spir_basis *b, bool positive_only, int num_points, const int64_t *points) {
+spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool positive_only, int num_points, const int64_t *points) {
     std::shared_ptr<AbstractFiniteTempBasis> impl = get_impl_basis(b);
     if (!impl)
         return nullptr;

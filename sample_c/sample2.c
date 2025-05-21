@@ -36,7 +36,7 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis_bosonic != NULL);
 
 // Create a regularized bosonic basis
-spir_kernel* regularized_kernel = spir_regularized_bose_kernel_new(beta * omega_max, &status);
+spir_kernel* regularized_kernel = spir_reg_bose_kernel_new(beta * omega_max, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(regularized_kernel != NULL);
 

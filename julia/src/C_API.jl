@@ -51,20 +51,20 @@ function spir_is_assigned_logistic_kernel(obj)
     ccall((:spir_is_assigned_logistic_kernel, libsparseir), Cint, (Ptr{spir_logistic_kernel},), obj)
 end
 
-mutable struct _spir_regularized_bose_kernel end
+mutable struct _spir_reg_bose_kernel end
 
-const spir_regularized_bose_kernel = _spir_regularized_bose_kernel
+const spir_reg_bose_kernel = _spir_reg_bose_kernel
 
-function spir_release_regularized_bose_kernel(obj)
-    ccall((:spir_release_regularized_bose_kernel, libsparseir), Cvoid, (Ptr{spir_regularized_bose_kernel},), obj)
+function spir_release_reg_bose_kernel(obj)
+    ccall((:spir_release_reg_bose_kernel, libsparseir), Cvoid, (Ptr{spir_reg_bose_kernel},), obj)
 end
 
-function spir_clone_regularized_bose_kernel(src)
-    ccall((:spir_clone_regularized_bose_kernel, libsparseir), Ptr{spir_regularized_bose_kernel}, (Ptr{spir_regularized_bose_kernel},), src)
+function spir_clone_reg_bose_kernel(src)
+    ccall((:spir_clone_reg_bose_kernel, libsparseir), Ptr{spir_reg_bose_kernel}, (Ptr{spir_reg_bose_kernel},), src)
 end
 
-function spir_is_assigned_regularized_bose_kernel(obj)
-    ccall((:spir_is_assigned_regularized_bose_kernel, libsparseir), Cint, (Ptr{spir_regularized_bose_kernel},), obj)
+function spir_is_assigned_reg_bose_kernel(obj)
+    ccall((:spir_is_assigned_reg_bose_kernel, libsparseir), Cint, (Ptr{spir_reg_bose_kernel},), obj)
 end
 
 mutable struct _spir_continuous_functions end
@@ -220,7 +220,7 @@ function spir_logistic_kernel_new(lambda)
 end
 
 """
-    spir_regularized_bose_kernel_new(lambda)
+    spir_reg_bose_kernel_new(lambda)
 
 Creates a new regularized bosonic kernel for analytical continuation.
 
@@ -239,8 +239,8 @@ Special care is taken in evaluating this expression around y = 0 to handle the s
 # Returns
 A pointer to the newly created kernel object, or NULL if creation fails
 """
-function spir_regularized_bose_kernel_new(lambda)
-    ccall((:spir_regularized_bose_kernel_new, libsparseir), Ptr{spir_kernel}, (Cdouble,), lambda)
+function spir_reg_bose_kernel_new(lambda)
+    ccall((:spir_reg_bose_kernel_new, libsparseir), Ptr{spir_kernel}, (Cdouble,), lambda)
 end
 
 """
@@ -570,7 +570,7 @@ function spir_bosonic_dlr_new_with_poles(b, npoles, poles)
 end
 
 """
-    spir_sampling_evaluate_dd(s, order, ndim, input_dims, target_dim, input, out)
+    spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out)
 
 Evaluates basis coefficients at sampling points (double to double version).
 
@@ -599,14 +599,14 @@ Transforms basis coefficients to values at sampling points, where both input and
 # Returns
 0 on success, non-zero on failure
 # See also
-[`spir_sampling_evaluate_dz`](@ref), [`spir_sampling_evaluate_zz`](@ref)
+[`spir_sampling_eval_dz`](@ref), [`spir_sampling_eval_zz`](@ref)
 """
-function spir_sampling_evaluate_dd(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
+function spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_eval_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
-    spir_sampling_evaluate_dz(s, order, ndim, input_dims, target_dim, input, out)
+    spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, out)
 
 Evaluates basis coefficients at sampling points (double to complex version).
 
@@ -639,14 +639,14 @@ Transforms basis coefficients to values at sampling points, where input is real 
 # Returns
 0 on success, non-zero on failure
 # See also
-[`spir_sampling_evaluate_dd`](@ref), [`spir_sampling_evaluate_zz`](@ref)
+[`spir_sampling_eval_dd`](@ref), [`spir_sampling_eval_zz`](@ref)
 """
-function spir_sampling_evaluate_dz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_dz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+function spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_eval_dz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
-function spir_sampling_evaluate_zz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_evaluate_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+function spir_sampling_eval_zz(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_eval_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
@@ -670,7 +670,7 @@ Transforms values at sampling points back to basis coefficients, where both inpu
 
 !!! note
 
-    This function performs the inverse operation of [`spir_sampling_evaluate_dd`](@ref)
+    This function performs the inverse operation of [`spir_sampling_eval_dd`](@ref)
 
 # Arguments
 * `s`: Pointer to the sampling object
@@ -683,7 +683,7 @@ Transforms values at sampling points back to basis coefficients, where both inpu
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
 # See also
-[`spir_sampling_evaluate_dd`](@ref), [`spir_sampling_fit_zz`](@ref)
+[`spir_sampling_eval_dd`](@ref), [`spir_sampling_fit_zz`](@ref)
 """
 function spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out)
     ccall((:spir_sampling_fit_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
@@ -714,7 +714,7 @@ Transforms values at sampling points back to basis coefficients, where both inpu
 
 !!! note
 
-    This function performs the inverse operation of [`spir_sampling_evaluate_zz`](@ref)
+    This function performs the inverse operation of [`spir_sampling_eval_zz`](@ref)
 
 # Arguments
 * `s`: Pointer to the sampling object
@@ -727,7 +727,7 @@ Transforms values at sampling points back to basis coefficients, where both inpu
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
 # See also
-[`spir_sampling_evaluate_zz`](@ref), [`spir_sampling_fit_dd`](@ref)
+[`spir_sampling_eval_zz`](@ref), [`spir_sampling_fit_dd`](@ref)
 """
 function spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out)
     ccall((:spir_sampling_fit_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
@@ -1224,7 +1224,7 @@ function spir_evaluate_continuous_functions(uv, x, out)
 end
 
 """
-    spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
+    spir_funcs_batch_eval_matsu(uiw, order, num_freqs, matsubara_freq_indices, out)
 
 Evaluates basis functions at multiple Matsubara frequencies.
 
@@ -1243,12 +1243,12 @@ This function evaluates all basis functions contained in a Matsubara basis funct
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success, error code on failure
 """
-function spir_funcs_batch_evaluate_matsubara(uiw, order, num_freqs, matsubara_freq_indices, out)
-    ccall((:spir_funcs_batch_evaluate_matsubara, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, int32_t, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
+function spir_funcs_batch_eval_matsu(uiw, order, num_freqs, matsubara_freq_indices, out)
+    ccall((:spir_funcs_batch_eval_matsu, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, int32_t, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
 end
 
 """
-    spir_sampling_get_num_points(s, num_points)
+    spir_sampling_get_npoints(s, num_points)
 
 Gets the number of sampling points in a sampling object.
 
@@ -1260,22 +1260,22 @@ This function returns the number of sampling points used in the specified sampli
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED if the sampling object is invalid
 # See also
-[`spir_sampling_get_tau_points`](@ref), [`spir_sampling_get_matsubara_points`](@ref)
+[`spir_sampling_get_taus`](@ref), [`spir_sampling_get_matsus`](@ref)
 """
-function spir_sampling_get_num_points(s, num_points)
-    ccall((:spir_sampling_get_num_points, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cint}), s, num_points)
+function spir_sampling_get_npoints(s, num_points)
+    ccall((:spir_sampling_get_npoints, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cint}), s, num_points)
 end
 
 """
-    spir_sampling_get_tau_points(s, points)
+    spir_sampling_get_taus(s, points)
 
 Gets the imaginary time sampling points.
 
-This function fills the provided array with the imaginary time (τ) sampling points used in the specified sampling object. The array must be pre-allocated with sufficient size (use [`spir_sampling_get_num_points`](@ref) to determine the required size).
+This function fills the provided array with the imaginary time (τ) sampling points used in the specified sampling object. The array must be pre-allocated with sufficient size (use [`spir_sampling_get_npoints`](@ref) to determine the required size).
 
 !!! note
 
-    The array must be pre-allocated with size >= [`spir_sampling_get_num_points`](@ref)(s)
+    The array must be pre-allocated with size >= [`spir_sampling_get_npoints`](@ref)(s)
 
 # Arguments
 * `s`: Pointer to the sampling object
@@ -1283,22 +1283,22 @@ This function fills the provided array with the imaginary time (τ) sampling poi
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success SPIR\\_GET\\_IMPL\\_FAILED if s is invalid SPIR\\_NOT\\_SUPPORTED if the sampling object is not for τ sampling
 # See also
-[`spir_sampling_get_num_points`](@ref)
+[`spir_sampling_get_npoints`](@ref)
 """
-function spir_sampling_get_tau_points(s, points)
-    ccall((:spir_sampling_get_tau_points, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cdouble}), s, points)
+function spir_sampling_get_taus(s, points)
+    ccall((:spir_sampling_get_taus, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cdouble}), s, points)
 end
 
 """
-    spir_sampling_get_matsubara_points(s, points)
+    spir_sampling_get_matsus(s, points)
 
 Gets the Matsubara frequency sampling points.
 
-This function fills the provided array with the Matsubara frequency indices (n) used in the specified sampling object. The actual Matsubara frequencies are ωn = (2n + 1)π/β for fermionic case and ωn = 2nπ/β for bosonic case. The array must be pre-allocated with sufficient size (use [`spir_sampling_get_num_points`](@ref) to determine the required size).
+This function fills the provided array with the Matsubara frequency indices (n) used in the specified sampling object. The actual Matsubara frequencies are ωn = (2n + 1)π/β for fermionic case and ωn = 2nπ/β for bosonic case. The array must be pre-allocated with sufficient size (use [`spir_sampling_get_npoints`](@ref) to determine the required size).
 
 !!! note
 
-    The array must be pre-allocated with size >= [`spir_sampling_get_num_points`](@ref)(s)
+    The array must be pre-allocated with size >= [`spir_sampling_get_npoints`](@ref)(s)
 
 !!! note
 
@@ -1314,10 +1314,10 @@ This function fills the provided array with the Matsubara frequency indices (n) 
 # Returns
 SPIR\\_COMPUTATION\\_SUCCESS on success SPIR\\_GET\\_IMPL\\_FAILED if s is invalid SPIR\\_NOT\\_SUPPORTED if the sampling object is not for Matsubara sampling
 # See also
-[`spir_sampling_get_num_points`](@ref)
+[`spir_sampling_get_npoints`](@ref)
 """
-function spir_sampling_get_matsubara_points(s, points)
-    ccall((:spir_sampling_get_matsubara_points, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cint}), s, points)
+function spir_sampling_get_matsus(s, points)
+    ccall((:spir_sampling_get_matsus, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cint}), s, points)
 end
 
 @cenum int32_t::Int32 begin

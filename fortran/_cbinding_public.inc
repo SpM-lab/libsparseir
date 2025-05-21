@@ -15,41 +15,41 @@
   public :: c_spir_sve_result_clone
   public :: c_spir_sve_result_is_assigned
   public :: c_spir_logistic_kernel_new
-  public :: c_spir_regularized_bose_kernel_new
+  public :: c_spir_reg_bose_kernel_new
   public :: c_spir_kernel_domain
   public :: c_spir_sve_result_new
   public :: c_spir_funcs_get_size
   public :: c_spir_funcs_evaluate
-  public :: c_spir_funcs_evaluate_matsubara
-  public :: c_spir_funcs_batch_evaluate
-  public :: c_spir_funcs_batch_evaluate_matsubara
+  public :: c_spir_funcs_eval_matsu
+  public :: c_spir_funcs_batch_eval
+  public :: c_spir_funcs_batch_eval_matsu
   public :: c_spir_basis_new
   public :: c_spir_basis_get_size
-  public :: c_spir_basis_get_statistics
+  public :: c_spir_basis_get_stats
   public :: c_spir_basis_get_u
   public :: c_spir_basis_get_v
   public :: c_spir_basis_get_uhat
-  public :: c_spir_basis_get_num_default_tau_sampling_points
-  public :: c_spir_basis_get_default_tau_sampling_points
-  public :: c_spir_basis_get_num_default_omega_sampling_points
-  public :: c_spir_basis_get_default_omega_sampling_points
-  public :: c_spir_basis_get_num_default_matsubara_sampling_points
-  public :: c_spir_basis_get_default_matsubara_sampling_points
+  public :: c_spir_basis_get_n_default_taus
+  public :: c_spir_basis_get_default_taus
+  public :: c_spir_basis_get_n_default_ws
+  public :: c_spir_basis_get_default_ws
+  public :: c_spir_basis_get_nmatuss
+  public :: c_spir_basis_get_matsus
   public :: c_spir_dlr_new
   public :: c_spir_dlr_new_with_poles
-  public :: c_spir_dlr_get_num_poles
+  public :: c_spir_dlr_get_npoles
   public :: c_spir_dlr_get_poles
-  public :: c_spir_ir_to_dlr_dd
-  public :: c_spir_ir_to_dlr_zz
-  public :: c_spir_dlr_to_ir_dd
-  public :: c_spir_dlr_to_ir_zz
+  public :: c_spir_ir2dlr_dd
+  public :: c_spir_ir2dlr_zz
+  public :: c_spir_dlr2ir_dd
+  public :: c_spir_dlr2ir_zz
   public :: c_spir_tau_sampling_new
-  public :: c_spir_matsubara_sampling_new
-  public :: c_spir_sampling_get_num_points
-  public :: c_spir_sampling_get_tau_points
-  public :: c_spir_sampling_get_matsubara_points
-  public :: c_spir_sampling_evaluate_dd
-  public :: c_spir_sampling_evaluate_dz
-  public :: c_spir_sampling_evaluate_zz
+  public :: c_spir_matsu_sampling_new
+  public :: c_spir_sampling_get_npoints
+  public :: c_spir_sampling_get_taus
+  public :: c_spir_sampling_get_matsus
+  public :: c_spir_sampling_eval_dd
+  public :: c_spir_sampling_eval_dz
+  public :: c_spir_sampling_eval_zz
   public :: c_spir_sampling_fit_dd
   public :: c_spir_sampling_fit_zz

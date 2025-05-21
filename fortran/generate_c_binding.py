@@ -66,7 +66,6 @@ def generate_fortran_interface(cursor, types):
             # Get the actual type from the C type
             pointee = arg.type.get_pointee()
             type_name = pointee.get_canonical().spelling
-            #print(f"Pointee type: {type_name}")
             
             # Clean up type name: remove 'const' and 'struct _'
             type_name = type_name.replace('const ', '')
@@ -81,9 +80,13 @@ def generate_fortran_interface(cursor, types):
             if type_name in types:
                 # For output parameters, use intent(inout)
                 if 'intent(out)' in ftype:
-                    fortran_args.append(f"  type({type_name}), intent(inout) :: {name}")
+                    fortran_args.append(
+                        f"  type({type_name}), intent(inout) :: {name}"
+                    )
                 else:
-                    fortran_args.append(f"  type({type_name}), intent(in) :: {name}")
+                    fortran_args.append(
+                        f"  type({type_name}), intent(in) :: {name}"
+                    )
                 fortran_body.append(f"  {name}%%ptr")  # Use %% to escape %
             else:
                 fortran_args.append(f"  {ftype} :: {name}")
@@ -100,7 +103,8 @@ def generate_fortran_interface(cursor, types):
     # Generate C binding interface
     if result_type == 'subroutine':
         c_binding = f"""
-subroutine {fortran_func_name}({arglist}) bind(c, name="{func_name}")
+subroutine {fortran_func_name}({arglist}) &
+    bind(c, name="{func_name}")
   use iso_c_binding
 {decl_lines}
 end subroutine
@@ -108,7 +112,8 @@ end subroutine
     else:
         result_decl = f"  {result_type.split(',')[0]} :: {fortran_func_name}"
         c_binding = f"""
-function {fortran_func_name}({arglist}) bind(c, name="{func_name}") result({fortran_func_name})
+function {fortran_func_name}({arglist}) &
+    bind(c, name="{func_name}") result({fortran_func_name})
   use iso_c_binding
 {decl_lines}
 {result_decl}
@@ -135,12 +140,6 @@ function {fortran_name}({arglist}) result({fortran_name})
 end function
 """.strip()
 
-    #print("--------------------------------")
-    #print("C binding:")
-    #print(c_binding)
-    #print("--------------------------------")
-    #print("Fortran interface:")
-    #print(fortran_interface)
     return c_binding, fortran_interface
 
 
