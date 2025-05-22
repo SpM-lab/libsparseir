@@ -275,6 +275,9 @@ public:
     default_matsubara_sampling_points(int L, bool fence = false,
                                       bool positive_only = false) const override
     {
+        (void)L; // Silence unused parameter warning
+        (void)fence; // Silence unused parameter warning
+        (void)positive_only; // Silence unused parameter warning
         throw std::runtime_error("default_matsubara_sampling_points is not implemented for DiscreteLehmannRepresentation");
         return std::vector<MatsubaraFreq<S>>();
         //return basis.default_matsubara_sampling_points(L, fence, positive_only);

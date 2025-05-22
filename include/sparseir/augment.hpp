@@ -171,6 +171,7 @@ public:
 
     std::function<double(double)> deriv(int order = 1) const override
     {
+        (void)order;  // Silence unused parameter warning
         return [this](double tau) { return (*this)(tau); };
     }
 
