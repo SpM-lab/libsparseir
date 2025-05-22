@@ -334,7 +334,7 @@ public:
     std::function<T(T, T)> weight_func(Bosonic) const
     {
         using std::tanh;
-        return [this](T beta, T omega) { return 1.0 / tanh(0.5 * beta * omega); };
+        return [](T beta, T omega) { return 1.0 / tanh(0.5 * beta * omega); };
     }
 
 private:
