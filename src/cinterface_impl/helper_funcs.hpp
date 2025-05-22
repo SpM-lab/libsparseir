@@ -56,7 +56,7 @@ evaluate_impl(const spir_sampling *s, int order, int ndim,
         std::array<int, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = impl.get()->n_sampling_points();
+        output_dims_3d[1] = static_cast<int>(impl.get()->n_sampling_points());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -67,7 +67,7 @@ evaluate_impl(const spir_sampling *s, int order, int ndim,
     } else {
         std::array<int, 3> input_dims_3d = dims_3d;
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = impl.get()->n_sampling_points();
+        output_dims_3d[1] = static_cast<int>(impl.get()->n_sampling_points());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -102,7 +102,7 @@ fit_impl(const spir_sampling *s, int order, int ndim,
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
 
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = impl.get()->basis_size();
+        output_dims_3d[1] = static_cast<int>(impl.get()->basis_size());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -114,7 +114,7 @@ fit_impl(const spir_sampling *s, int order, int ndim,
     } else {
         std::array<int, 3> input_dims_3d = dims_3d;
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = impl.get()->basis_size();
+        output_dims_3d[1] = static_cast<int>(impl.get()->basis_size());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -161,12 +161,12 @@ int spir_dlr2ir(const spir_basis *dlr, int order, int ndim,
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
     Eigen::Tensor<T, 3> input_tensor(input_dims_3d[0], input_dims_3d[1], input_dims_3d[2]);
-    size_t total_input_size = input_dims_3d[0] * input_dims_3d[1] * input_dims_3d[2];
-    for (size_t i = 0; i < total_input_size; i++) {
+    std::size_t total_input_size = input_dims_3d[0] * input_dims_3d[1] * input_dims_3d[2];
+    for (std::size_t i = 0; i < total_input_size; i++) {
         input_tensor.data()[i] = input[i];
     }
     Eigen::Tensor<T, 3> out_tensor = impl->get_impl()->to_IR(input_tensor, 1);
-    size_t total_output_size =
+    std::size_t total_output_size =
         out_tensor.dimension(0) * out_tensor.dimension(1) * out_tensor.dimension(2);
     for (std::size_t i = 0; i < total_output_size; i++) {
         out[i] = out_tensor.data()[i];
@@ -252,7 +252,7 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_p
         std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
 
     Eigen::VectorXd sampling_points(num_points);
-    for (std::size_t i = 0; i < num_points; i++) {
+    for (int i = 0; i < num_points; i++) {
         sampling_points(i) = points[i];
     }
     return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
@@ -278,7 +278,7 @@ spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool po
 
     std::vector<sparseir::MatsubaraFreq<S>> matsubara_points;
     matsubara_points.reserve(num_points);
-    for (std::size_t i = 0; i < num_points; i++) {
+    for (int i = 0; i < num_points; i++) {
         matsubara_points.emplace_back(points[i]);
     }
     return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(

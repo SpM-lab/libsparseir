@@ -14,6 +14,7 @@ TEST_CASE("reflector", "[linalg]")
         Eigen::VectorXd v(3);
         v << 1, 2, 3;
         auto tau = sparseir::reflector(v);
+        REQUIRE(std::is_same<decltype(tau), double>::value);
 
         Eigen::VectorXd refv(3);
         // obtained by
@@ -30,6 +31,7 @@ TEST_CASE("reflector", "[linalg]")
         Eigen::VectorX<DDouble> v(3);
         v << 1, 2, 3;
         auto tau = sparseir::reflector(v);
+        REQUIRE(std::is_same<decltype(tau), DDouble>::value);
 
         Eigen::VectorX<DDouble> refv(3);
         refv << -3.7416574, 0.42179344, 0.63269017;
@@ -70,13 +72,8 @@ TEST_CASE("reflectorApply", "[linalg]")
     */
     Eigen::MatrixX<double> A = Eigen::MatrixX<double>::Random(3, 3);
     A << 1, 1, 1, 1, 1, 1, 1, 1, 1;
-    int m = A.rows();
-    int n = A.cols();
-    int k = std::min(m, n);
-    double rtol = 0.1;
     int i = 0;
-
-    auto Ainp = A.col(i).tail(m - i);
+    auto Ainp = A.col(i).tail(A.rows() - i);
     REQUIRE(Ainp.size() == 3);
     auto tau_i = sparseir::reflector(Ainp);
     REQUIRE(std::abs(tau_i - 1.5773502691896257) < 1e-7);
@@ -87,7 +84,7 @@ TEST_CASE("reflectorApply", "[linalg]")
         REQUIRE(std::abs(Ainp(i) - refv(i)) < 1e-7);
     }
 
-    auto block = A.bottomRightCorner(m - i, n - (i + 1));
+    auto block = A.bottomRightCorner(A.rows() - i, A.cols() - (i + 1));
     sparseir::reflectorApply(Ainp, tau_i, block);
     Eigen::MatrixX<double> refA(3, 3);
     refA << -1.7320508075688772, -1.7320508075688772, -1.7320508075688772,
@@ -123,7 +120,6 @@ TEST_CASE("sparseir::rrqr simple", "[linalg]")
     A << 1, 1, 1, 1, 1, 1, 1, 1, 1;
 
     double A_eps = A.norm() * std::numeric_limits<double>::epsilon();
-    double rtol = 0.1;
     sparseir::QRPivoted<double> A_qr;
     int A_rank;
     std::tie(A_qr, A_rank) = sparseir::rrqr<double>(A);
@@ -279,7 +275,7 @@ TEST_CASE("TSVD", "[linalg]")
 
             auto S_diag = s.asDiagonal();
             auto Areconst = U * S_diag * V.transpose();
-            auto diff = (A - Areconst).norm() / A.norm();
+            // auto diff = (A - Areconst).norm() / A.norm();
             // std::cout << "diff " << diff << std::endl;
             // std::cout << "Areconst " << Areconst.norm() << std::endl;
             // std::cout << "Aorig " << Aorig.norm() << std::endl;

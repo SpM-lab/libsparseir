@@ -61,14 +61,14 @@ inline std::pair<double, double> regularize_tau(double tau, double beta, int fer
 
 /**
  * @brief A class for handling periodic functions with fermionic/bosonic statistics.
- * 
+ *
  * This class manages periodic functions that can be either fermionic or bosonic,
  * handling the periodicity and sign changes appropriately. It wraps an implementation
  * class and provides methods to evaluate the function at single or multiple points
  * in the range [-beta, beta] while respecting the periodic boundary conditions.
  * The treatment of tau = -beta, 0^+, 0^-, beta can be found in the regularize_tau function.
  * The underlying implementation class must support evaluations in the range [0, beta].
- * 
+ *
  * @tparam S Statistics type (Fermionic or Bosonic)
  * @tparam ImplType Implementation type for the underlying functions
  */
@@ -89,7 +89,7 @@ public:
     {
     }
 
-    Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const {
+    Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const override {
         if (!impl) {
             throw std::runtime_error("impl is not initialized");
         }
@@ -111,7 +111,7 @@ public:
         return result;
     }
 
-    Eigen::VectorXd operator()(double x) const {
+    Eigen::VectorXd operator()(double x) const override {
         if (!impl) {
             throw std::runtime_error("impl is not initialized");
         }
