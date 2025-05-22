@@ -138,8 +138,8 @@ public:
 // Type trait to check if a type is a concrete kernel
 template <typename T>
 struct is_concrete_kernel {
-    static constexpr bool value = 
-        !std::is_abstract<T>::value && 
+    static constexpr bool value =
+        !std::is_abstract<T>::value &&
         std::is_base_of<AbstractKernel, T>::value;
 };
 
@@ -401,7 +401,7 @@ private:
  * function on [-1, 1] × [-1, 1]:
  *
  *     K(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
- * 
+ *
  * This non-dimensionalized kernel is connected to the dimensionalized kernel as
  *     K(τ, ω) = ωmax * K(2τ/β - 1, ω/ωmax),
  * where ωmax = Λ/β.
