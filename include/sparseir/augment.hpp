@@ -325,8 +325,8 @@ public:
     AugmentedBasis(
         std::shared_ptr<FiniteTempBasis<S>> basis,
         const std::vector<std::shared_ptr<AbstractAugmentation>> &augmentations)
-        : basis(basis),
-          augmentations(augmentations),
+        : augmentations(augmentations),
+          basis(basis),
           u(std::make_shared<AugmentedTauFunction<S>>(basis->u, augmentations)),
           uhat(std::make_shared<AugmentedMatsubaraFunction<S>>(basis->uhat,
                                                                augmentations))

@@ -73,7 +73,7 @@ TEST_CASE("basis.u[0] test", "[basis]")
     double x = 0.3;
     sparseir::PiecewiseLegendrePoly u0 = _singleout_poly_from_irtaufuncs(*(basis->u), 0);
     auto u0x = u0(x);
-
+    REQUIRE(std::is_same<decltype(u0x), double>::value);
     REQUIRE(u0.get_xmin() == 0.0);
     REQUIRE(u0.get_xmax() == 1.0);
     REQUIRE(u0.get_polyorder() == 16);
@@ -167,6 +167,7 @@ TEST_CASE("basis.u(x)", "[basis]")
     double x = 0.3;
     sparseir::PiecewiseLegendrePoly u0 = _singleout_poly_from_irtaufuncs(*basis->u, 0);
     auto u0x = u0(x);
+    REQUIRE(std::is_same<decltype(u0x), double>::value);
 
     vector<double> u0_data_vec = {
         0.1306343289249387,      -0.003088620328392153,
@@ -468,7 +469,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         double beta = 1.0;
         double omega_max = 1.0;
         double epsilon = 1e-5;
-        using T = double;
 
         // Define the kernel
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
@@ -497,7 +497,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         double beta = 2.0;
         double omega_max = 5.0;
         double epsilon = 1e-5;
-        using T = double;
 
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
 
@@ -534,7 +533,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         double beta = 1e-3;
         double omega_max = 1e-3;
         double epsilon = 1e-100;
-        using T = xprec::DDouble;
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
         auto sve_result = sparseir::compute_sve(kernel, epsilon);
         sparseir::FiniteTempBasis<sparseir::Fermionic> basis(
@@ -557,7 +555,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         double beta = 3.0;
         double omega_max = 4.0;
         double epsilon = 1e-6;
-        using T = double;
 
         // Specify both template parameters
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
@@ -573,7 +570,6 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
 
     SECTION("default_sampling_points")
     {
-        using T = double;
         auto beta = 3.0;
         auto omega_max = 4.0;
         auto epsilon = 1e-6;

@@ -84,7 +84,6 @@ void test_finite_temp_basis_constructor()
 {
     double beta = 2.0;
     double wmax = 5.0;
-    double Lambda = 10.0;
     double epsilon = 1e-6;
 
     auto stat = get_stat<S>();
@@ -258,7 +257,7 @@ void test_finite_temp_basis_basis_functions()
     const int num_points = 5;
     double *xs = (double *)malloc(num_points * sizeof(double));
     double *batch_out = (double *)malloc(num_points * basis_size * sizeof(double));
-    
+
     // Generate test points
     for (int i = 0; i < num_points; ++i) {
         xs[i] = 0.2 * (i + 1); // Points at 0.2, 0.4, 0.6, 0.8, 1.0
@@ -271,7 +270,7 @@ void test_finite_temp_basis_basis_functions()
     // Compare with C++ implementation for multiple points
     Eigen::VectorXd cpp_xs = Eigen::Map<Eigen::VectorXd>(xs, num_points);
     Eigen::MatrixXd cpp_batch_result = (*cpp_basis.u)(cpp_xs);
-    
+
     for (int i = 0; i < num_points; ++i) {
         for (int j = 0; j < basis_size; ++j) {
             REQUIRE(batch_out[i * basis_size + j] == Approx(cpp_batch_result(j, i)));

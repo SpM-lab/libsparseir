@@ -55,7 +55,7 @@ public:
     {
         Eigen::VectorXcd result(poles.size());
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            double y = poles(i) / wmax;
+            // double y = poles(i) / wmax;
             double weight = weights[i];
             result(i) = 1.0 / ((n.valueim(beta) - poles(i)) * weight);
         }
@@ -125,7 +125,7 @@ public:
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
             double x = 2.0 * tau / beta - 1.0;
             double y = poles(i) / wmax;
-            double xtau = poles(i) * tau;
+            //double xtau = poles(i) * tau;
             double k_tau_omega = kernel.compute(x, y);
             result(i) = - k_tau_omega / (y * weights(i));
         }
@@ -206,7 +206,10 @@ public:
     // Constructor with basis and poles
     DiscreteLehmannRepresentation(const FiniteTempBasis<S> &b,
                                   const Eigen::VectorXd &poles)
-        : beta(b.get_beta()), wmax(b.get_wmax()), poles(poles), accuracy(b.get_accuracy()),
+        : poles(poles),
+          beta(b.get_beta()),
+          wmax(b.get_wmax()),
+          accuracy(b.get_accuracy()),
           u(nullptr),
           uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
           _ir_default_tau_sampling_points(b.default_tau_sampling_points())
