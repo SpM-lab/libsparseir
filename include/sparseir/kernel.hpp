@@ -57,12 +57,12 @@ public:
      */
     template <typename T>
     std::function<T(T, T)> weight_func(Fermionic) const {
-        return [](T beta, T omega) { return 1.0; };
+        return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     template <typename T>
     std::function<T(T, T)> weight_func(Bosonic) const {
-        return [](T beta, T omega) { return 1.0; };
+        return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     virtual double compute(
@@ -327,7 +327,7 @@ public:
     template <typename T>
     std::function<T(T, T)> weight_func(Fermionic) const
     {
-        return [](T beta , T omega) { return 1.0; };
+        return [](T beta , T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     template <typename T>
@@ -525,7 +525,10 @@ public:
     std::function<T(T, T)> weight_func(Bosonic) const
     {
         using std::tanh;
-        return [this](T beta, T omega) { return static_cast<T>(1.0) / omega; };
+        return [](T beta, T omega) {
+            (void)beta;  // Silence unused parameter warning
+            return static_cast<T>(1.0) / omega;
+        };
     }
 
     template <typename T>
