@@ -267,22 +267,22 @@ function c_spir_basis_get_default_ws(b, points) &
   integer(c_int) :: c_spir_basis_get_default_ws
 end function
 
-function c_spir_basis_get_nmatuss(b, positive_only, num_points) &
-    bind(c, name="spir_basis_get_nmatuss") result(c_spir_basis_get_nmatuss)
+function c_spir_basis_get_n_default_matsus(b, positive_only, num_points) &
+    bind(c, name="spir_basis_get_n_default_matsus") result(c_spir_basis_get_n_default_matsus)
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
   type(c_ptr), value :: num_points
-  integer(c_int) :: c_spir_basis_get_nmatuss
+  integer(c_int) :: c_spir_basis_get_n_default_matsus
 end function
 
-function c_spir_basis_get_matsus(b, positive_only, points) &
-    bind(c, name="spir_basis_get_matsus") result(c_spir_basis_get_matsus)
+function c_spir_basis_get_default_matsus(b, positive_only, points) &
+    bind(c, name="spir_basis_get_default_matsus") result(c_spir_basis_get_default_matsus)
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
   type(c_ptr), value :: points
-  integer(c_int) :: c_spir_basis_get_matsus
+  integer(c_int) :: c_spir_basis_get_default_matsus
 end function
 
 function c_spir_dlr_new(b, status) &

@@ -4,16 +4,23 @@ program test_kernel
   use, intrinsic :: iso_c_binding
   implicit none
   real(c_double),target :: xmin, xmax, ymin, ymax
-  integer(c_int32_t), target :: status
+  integer(c_int), target :: status
+  integer(c_int), target :: ntaus, nmatsus
 
   real(c_double) :: beta = 1.0_c_double
   real(c_double) :: omega_max = 10.0_c_double
   real(c_double) :: epsilon = 1.0e-6_c_double
   real(c_double) :: lambda
+  integer(c_int) :: positive_only = 1
+
   type(c_ptr) :: k_ptr, k_copy_ptr
   type(c_ptr) :: sve_ptr
   type(c_ptr) :: basis_ptr
-  integer(c_int32_t), target :: basis_size
+  type(c_ptr) :: tau_sampling_ptr, matsu_sampling_ptr
+  integer(c_int), target :: basis_size
+  real(c_double), allocatable, target :: taus(:)
+  integer(c_int64_t), allocatable, target :: matsus(:) ! Use int64_t for Matsubara indices
+
 
   ! Create a new kernel
   lambda = beta * omega_max
@@ -72,5 +79,50 @@ program test_kernel
     stop
   end if
   print *, "Basis size =", basis_size
+
+  ! Tau sampling
+  print *, "Sampling tau"
+  status = c_spir_basis_get_n_default_taus(basis_ptr, c_loc(ntaus))
+  if (status /= 0) then
+    print *, "Error getting number of tau points"
+    stop
+  end if
+  print *, "Number of tau points =", ntaus
+  allocate(taus(ntaus))
+  status = c_spir_basis_get_default_taus(basis_ptr, c_loc(taus))
+  if (status /= 0) then
+    print *, "Error getting tau points"
+    stop
+  end if
+  print *, "Tau =", taus
+  tau_sampling_ptr = c_spir_tau_sampling_new( &
+    basis_ptr, ntaus, c_loc(taus), c_loc(status))
+  if (status /= 0) then
+    print *, "Error sampling tau"
+    stop
+  end if
+
+  ! Matsubara sampling
+  print *, "Sampling matsubara"
+  status = c_spir_basis_get_n_default_matsus(basis_ptr, positive_only, c_loc(nmatsus))
+  if (status /= 0) then
+    print *, "Error getting number of matsubara points"
+    stop
+  end if
+  print *, "Number of matsubara points =", nmatsus
+  allocate(matsus(nmatsus))
+  status = c_spir_basis_get_default_matsus(basis_ptr, positive_only, c_loc(matsus))
+  if (status /= 0) then
+    print *, "Error getting matsubara points"
+    stop
+  end if
+  print *, "Matsubara =", matsus
+  matsu_sampling_ptr = c_spir_matsu_sampling_new( &
+    basis_ptr, positive_only, nmatsus, c_loc(matsus), c_loc(status))
+  if (status /= 0) then
+    print *, "Error sampling matsubara"
+    stop
+  end if
+
 
 end program test_kernel 

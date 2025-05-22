@@ -445,11 +445,11 @@ void integration_test(double beta, double wmax, double epsilon,
     // Matsubara Sampling
     std::cout << "Matsubara sampling" << std::endl;
     int num_matsubara_points_org;
-    status = spir_basis_get_nmatuss(basis, positive_only, &num_matsubara_points_org);
+    status = spir_basis_get_n_default_matsus(basis, positive_only, &num_matsubara_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(num_matsubara_points_org > 0);
     Eigen::Vector<int64_t, Eigen::Dynamic> matsubara_points_org(num_matsubara_points_org);
-    status = spir_basis_get_matsus(basis, positive_only, matsubara_points_org.data());
+    status = spir_basis_get_default_matsus(basis, positive_only, matsubara_points_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     spir_sampling *matsubara_sampling = spir_matsu_sampling_new(basis, positive_only, num_matsubara_points_org, matsubara_points_org.data(), &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);

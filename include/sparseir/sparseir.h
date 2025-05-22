@@ -506,9 +506,9 @@ int spir_basis_get_default_ws(const spir_basis *b,
  * @note This function is only available for IR basis objects
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
- * @see spir_basis_get_matsus
+ * @see spir_basis_get_default_matsus
  */
-int spir_basis_get_nmatuss(
+int spir_basis_get_n_default_matsus(
     const spir_basis *b, bool positive_only, int *num_points);
 
 /**
@@ -528,14 +528,14 @@ int spir_basis_get_nmatuss(
  *
  * @note This function is only available for IR basis objects
  * @note The array must be pre-allocated with size >=
- *       spir_basis_get_nmatuss(b)
+ *       spir_basis_get_n_default_matsus(b)
  * @note The default sampling points are chosen to provide near-optimal
  *       conditioning for the given basis size
  * @note For fermionic case, the indices n give frequencies ωn = (2n + 1)π/β
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
- * @see spir_basis_get_nmatuss
+ * @see spir_basis_get_n_default_matsus
  */
-int spir_basis_get_matsus(const spir_basis *b,
+int spir_basis_get_default_matsus(const spir_basis *b,
                                                          bool positive_only,
                                                          int64_t *points);
 

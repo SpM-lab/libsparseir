@@ -47,10 +47,10 @@ assert(tau_sampling != NULL);
 // Get Matsubara frequency indices
 bool positive_only = false;
 int32_t n_matsubara;
-status = spir_basis_get_nmatuss(basis, positive_only, &n_matsubara);
+status = spir_basis_get_n_default_matsus(basis, positive_only, &n_matsubara);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 int64_t* matsubara_indices = (int64_t*)malloc(n_matsubara * sizeof(int64_t));
-status = spir_basis_get_matsus(basis, positive_only, matsubara_indices);
+status = spir_basis_get_default_matsus(basis, positive_only, matsubara_indices);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
 // Create sampling object for Matsubara domain
