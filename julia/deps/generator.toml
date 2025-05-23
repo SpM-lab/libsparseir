@@ -4,5 +4,5 @@ library_name = "libsparseir"
 output_file_path = "./../src/C_API.jl"
 module_name = "LibSparseIR_C_API"
 # jll_pkg_name = "LibSparseIR_jll"
-export_symbol_prefixes = ["spir_"]
+export_symbol_prefixes = ["spir_", "SPIR_"]
 extract_c_comment_style = "doxygen"
