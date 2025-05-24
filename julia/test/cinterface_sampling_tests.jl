@@ -12,7 +12,7 @@
 
     # Helper function to generate multi-dimensional tensor dimensions
     function get_dims(target_dim_size, extra_dims, target_dim, ndim)
-        dims = zeros(Int, ndim)
+        dims = zeros(Int32, ndim)
         dims[target_dim + 1] = target_dim_size  # Julia is 1-indexed
         pos = 1
         for i in 1:ndim
@@ -100,7 +100,7 @@
                 tau_sampling,
                 LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
                 ndim,
-                Int32.(dims_tau),
+                dims_tau,
                 target_dim,
                 result_tau,
                 coeffs_reconst
@@ -145,8 +145,8 @@
         @test status[] == 0
 
         # Test 2D case with different storage orders
-        dims_2d = [basis_size, 5]
-        dims_tau_2d = [num_tau_points, 5]
+        dims_2d = Int32[basis_size, 5]
+        dims_tau_2d = Int32[num_tau_points, 5]
         coeffs_2d = rand(Float64, prod(dims_2d)) .- 0.5
 
         # Test Column-Major
@@ -155,7 +155,7 @@
             tau_sampling,
             LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
             2,
-            Int32.(dims_2d),
+            dims_2d,
             0,  # target_dim = 0
             coeffs_2d,
             result_colmajor
@@ -168,7 +168,7 @@
             tau_sampling,
             LibSparseIR.SPIR_ORDER_ROW_MAJOR,
             2,
-            Int32.(dims_2d),
+            dims_2d,
             0,  # target_dim = 0
             coeffs_2d,
             result_rowmajor
@@ -184,7 +184,7 @@
             tau_sampling,
             LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
             2,
-            Int32.(dims_tau_2d),
+            dims_tau_2d,
             0,
             result_colmajor,
             coeffs_reconst_colmajor
@@ -197,7 +197,7 @@
             tau_sampling,
             LibSparseIR.SPIR_ORDER_ROW_MAJOR,
             2,
-            Int32.(dims_tau_2d),
+            dims_tau_2d,
             0,
             result_rowmajor,
             coeffs_reconst_rowmajor
@@ -241,8 +241,8 @@
         @test status[] == 0
 
         # Test complex coefficient operations
-        dims_2d = [basis_size, 3]
-        dims_matsu_2d = [num_matsubara_points, 3]
+        dims_2d = Int32[basis_size, 3]
+        dims_matsu_2d = Int32[num_matsubara_points, 3]
 
         # Create complex coefficients (real IR coefficients)
         coeffs_real = rand(Float64, prod(dims_2d)) .- 0.5
@@ -253,7 +253,7 @@
             matsu_sampling,
             LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
             2,
-            Int32.(dims_2d),
+            dims_2d,
             0,
             coeffs_real,
             reinterpret(ComplexF32, result_complex)
@@ -266,7 +266,7 @@
             matsu_sampling,
             LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
             2,
-            Int32.(dims_matsu_2d),
+            dims_matsu_2d,
             0,
             reinterpret(ComplexF32, result_complex),
             reinterpret(ComplexF32, coeffs_complex)

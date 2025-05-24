@@ -1,11 +1,11 @@
 # Tests corresponding to test/cpp/cinterface_integration.cxx
 # Comprehensive integration tests for the full workflow: DLR ↔ IR ↔ Sampling transformations
 
-@testitem "Helper Function _get_dims" begin
+@testitem "Helper Function get_dims" begin
     using LibSparseIR
 
-    # Test the _get_dims helper function (corresponds to C++ _get_dims template)
-    function _get_dims(target_dim_size::Int, extra_dims::Vector{Int}, target_dim::Int, ndim::Int)
+    # Test the get_dims helper function (corresponds to C++ get_dims template)
+    function get_dims(target_dim_size::Int, extra_dims::Vector{Int}, target_dim::Int, ndim::Int)
         dims = Vector{Int}(undef, ndim)
         dims[target_dim + 1] = target_dim_size  # Julia is 1-indexed
         pos = 1
@@ -19,23 +19,23 @@
         return dims
     end
 
-    @testset "Test _get_dims functionality" begin
+    @testset "Test get_dims functionality" begin
         extra_dims = [2, 3, 4]
 
         # target_dim = 0 (first dimension)
-        dims = _get_dims(100, extra_dims, 0, 4)
+        dims = get_dims(100, extra_dims, 0, 4)
         @test dims == [100, 2, 3, 4]
 
         # target_dim = 1 (second dimension)
-        dims = _get_dims(100, extra_dims, 1, 4)
+        dims = get_dims(100, extra_dims, 1, 4)
         @test dims == [2, 100, 3, 4]
 
         # target_dim = 2 (third dimension)
-        dims = _get_dims(100, extra_dims, 2, 4)
+        dims = get_dims(100, extra_dims, 2, 4)
         @test dims == [2, 3, 100, 4]
 
         # target_dim = 3 (fourth dimension)
-        dims = _get_dims(100, extra_dims, 3, 4)
+        dims = get_dims(100, extra_dims, 3, 4)
         @test dims == [2, 3, 4, 100]
     end
 end
@@ -314,8 +314,8 @@ end
     const c_complex = ComplexF32
 
     # Include helper functions from previous test items
-    function _get_dims(target_dim_size::Integer, extra_dims::Vector{<:Integer}, target_dim::Integer, ndim::Integer)
-        dims = Vector{Int}(undef, ndim)
+    function get_dims(target_dim_size::Integer, extra_dims::Vector{<:Integer}, target_dim::Integer, ndim::Integer)
+        dims = Vector{Int32}(undef, ndim)
         dims[target_dim + 1] = target_dim_size  # Julia is 1-indexed
         pos = 1
         for i in 1:ndim
@@ -457,7 +457,7 @@ end
 
                         # Generate random DLR coefficients
                         Random.seed!(982743)  # Same seed as C++ test
-                        coeffs_dims = _get_dims(npoles_val, extra_dims, target_dim, ndim)
+                        coeffs_dims = get_dims(npoles_val, extra_dims, target_dim, ndim)
                         coeffs = Vector{T}(undef, prod(coeffs_dims))
 
                         # Fill coefficients with random values
@@ -470,15 +470,15 @@ end
                         println("Generated $(length(coeffs)) coefficients")
 
                         # Test basic DLR to IR transformation
-                        ir_dims = _get_dims(basis_size_val, extra_dims, target_dim, ndim)
-                        status, g_IR = dlr_to_IR(dlr, order, Int32.(coeffs_dims), Int32(target_dim), coeffs)
+                        ir_dims = get_dims(basis_size_val, extra_dims, target_dim, ndim)
+                        status, g_IR = dlr_to_IR(dlr, order, coeffs_dims, target_dim, coeffs)
                         @test status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
                         @test length(g_IR) == prod(ir_dims)
 
                         println("DLR to IR transformation successful")
 
                         # Test IR to DLR transformation
-                        status2, g_DLR_reconst = dlr_from_IR(dlr, order, Int32.(ir_dims), Int32(target_dim), g_IR)
+                        status2, g_DLR_reconst = dlr_from_IR(dlr, order, ir_dims, target_dim, g_IR)
                         @test status2 == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
                         println("IR to DLR transformation successful")
