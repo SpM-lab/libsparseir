@@ -1,6 +1,5 @@
-# This file corresponds to DLR functionality in test/cpp/cinterface_integration.cxx
-# Comprehensive DLR (Discrete Lehmann Representation) functionality tests.
-# Currently simplified to avoid segmentation faults
+# Tests corresponding to test/cpp/cinterface_dlr.cxx
+# Comprehensive DLR (Discrete Lehmann Representation) functionality tests
 
 @testitem "DiscreteLehmannRepresentation" begin
     using LibSparseIR
