@@ -83,7 +83,7 @@ end
         return basis_size[]
     end
 
-    function test_basis_constructor_with_sve(statistics::Int32, use_reg_bose=false)
+    function test_basis_constructor_with_sve(statistics::Integer, use_reg_bose=false)
         beta = 2.0
         wmax = 5.0
         Lambda = 10.0
@@ -132,15 +132,15 @@ end
     end
 
     @testset "FiniteTempBasis Constructor with SVE Fermionic/LogisticKernel" begin
-        test_basis_constructor_with_sve(Int32(LibSparseIR.SPIR_STATISTICS_FERMIONIC), false)
+        test_basis_constructor_with_sve(LibSparseIR.SPIR_STATISTICS_FERMIONIC, false)
     end
 
     @testset "FiniteTempBasis Constructor with SVE Bosonic/LogisticKernel" begin
-        test_basis_constructor_with_sve(Int32(LibSparseIR.SPIR_STATISTICS_BOSONIC), false)
+        test_basis_constructor_with_sve(LibSparseIR.SPIR_STATISTICS_BOSONIC, false)
     end
 
     @testset "FiniteTempBasis Constructor with SVE Bosonic/RegularizedBoseKernel" begin
-        test_basis_constructor_with_sve(Int32(LibSparseIR.SPIR_STATISTICS_BOSONIC), true)
+        test_basis_constructor_with_sve(LibSparseIR.SPIR_STATISTICS_BOSONIC, true)
     end
 end
 
@@ -149,7 +149,7 @@ end
 
     # Test basis function evaluation (corresponds to cinterface_core.cxx TEST_CASE "FiniteTempBasis Basis Functions")
 
-    function test_basis_functions(statistics::Int32)
+    function test_basis_functions(statistics::Integer)
         beta = 2.0
         wmax = 5.0
         epsilon = 1e-6

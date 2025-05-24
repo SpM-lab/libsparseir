@@ -207,15 +207,15 @@ end
     using LibSparseIR
 
     # Helper functions for DLR transformations (corresponds to C++ template functions)
-    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                       target_dim::Int32, coeffs::Vector{Float64})
+    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                       target_dim::Integer, coeffs::Vector{Float64})
         g_IR = Vector{Float64}(undef, prod(dims))
         status = LibSparseIR.spir_dlr2ir_dd(dlr, order, length(dims), dims, target_dim, coeffs, g_IR)
         return status, g_IR
     end
 
-    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                       target_dim::Int32, coeffs::Vector{ComplexF64})
+    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                       target_dim::Integer, coeffs::Vector{ComplexF64})
         g_IR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_dlr2ir_zz(dlr, order, length(dims), dims, target_dim,
                                            reinterpret(c_complex, coeffs),
@@ -223,15 +223,15 @@ end
         return status, g_IR
     end
 
-    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                        target_dim::Int32, coeffs::Vector{Float64})
+    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                        target_dim::Integer, coeffs::Vector{Float64})
         g_DLR = Vector{Float64}(undef, prod(dims))
         status = LibSparseIR.spir_ir2dlr_dd(dlr, order, length(dims), dims, target_dim, coeffs, g_DLR)
         return status, g_DLR
     end
 
-    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                        target_dim::Int32, coeffs::Vector{ComplexF64})
+    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                        target_dim::Integer, coeffs::Vector{ComplexF64})
         g_DLR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_ir2dlr_zz(dlr, order, length(dims), dims, target_dim,
                                            reinterpret(c_complex, coeffs),
@@ -361,15 +361,15 @@ end
     end
 
     # DLR transformation helper functions
-    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                       target_dim::Int32, coeffs::Vector{Float64})
+    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                       target_dim::Integer, coeffs::Vector{Float64})
         g_IR = Vector{Float64}(undef, prod(dims))
         status = LibSparseIR.spir_dlr2ir_dd(dlr, order, length(dims), dims, target_dim, coeffs, g_IR)
         return status, g_IR
     end
 
-    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                       target_dim::Int32, coeffs::Vector{ComplexF64})
+    function dlr_to_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                       target_dim::Integer, coeffs::Vector{ComplexF64})
         g_IR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_dlr2ir_zz(dlr, order, length(dims), dims, target_dim,
                                            reinterpret(c_complex, coeffs),
@@ -377,15 +377,15 @@ end
         return status, g_IR
     end
 
-    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                        target_dim::Int32, coeffs::Vector{Float64})
+    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                        target_dim::Integer, coeffs::Vector{Float64})
         g_DLR = Vector{Float64}(undef, prod(dims))
         status = LibSparseIR.spir_ir2dlr_dd(dlr, order, length(dims), dims, target_dim, coeffs, g_DLR)
         return status, g_DLR
     end
 
-    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Int32, dims::Vector{Int32},
-                        target_dim::Int32, coeffs::Vector{ComplexF64})
+    function dlr_from_IR(dlr::Ptr{LibSparseIR.spir_basis}, order::Integer, dims::Vector{Int32},
+                        target_dim::Integer, coeffs::Vector{ComplexF64})
         g_DLR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_ir2dlr_zz(dlr, order, length(dims), dims, target_dim,
                                            reinterpret(c_complex, coeffs),
@@ -394,9 +394,9 @@ end
     end
 
     # Main integration test function (corresponds to C++ integration_test template)
-    function integration_test(::Type{T}, statistics::Int32, beta::Float64, wmax::Float64,
+    function integration_test(::Type{T}, statistics::Integer, beta::Float64, wmax::Float64,
                              epsilon::Float64, extra_dims::Vector{Int}, target_dim::Int,
-                             order::Int32, tol::Float64, positive_only::Bool) where T
+                             order::Integer, tol::Float64, positive_only::Bool) where T
 
         # positive_only is not supported for complex numbers
         if T == ComplexF64 && positive_only
@@ -513,14 +513,14 @@ end
         # Test with simple 1D case first
         extra_dims = Int[]
         target_dim = 0
-        order = Int32(LibSparseIR.SPIR_ORDER_COLUMN_MAJOR)
+        order = LibSparseIR.SPIR_ORDER_COLUMN_MAJOR
 
         # Test real coefficients
-        integration_test(Float64, Int32(LibSparseIR.SPIR_STATISTICS_BOSONIC), beta, wmax, epsilon,
+        integration_test(Float64, LibSparseIR.SPIR_STATISTICS_BOSONIC, beta, wmax, epsilon,
                         extra_dims, target_dim, order, tol, false)
 
         # Test complex coefficients (only when positive_only = false)
-        integration_test(ComplexF64, Int32(LibSparseIR.SPIR_STATISTICS_BOSONIC), beta, wmax, epsilon,
+        integration_test(ComplexF64, LibSparseIR.SPIR_STATISTICS_BOSONIC, beta, wmax, epsilon,
                         extra_dims, target_dim, order, tol, false)
     end
 
@@ -532,10 +532,10 @@ end
 
         extra_dims = Int[]
         target_dim = 0
-        order = Int32(LibSparseIR.SPIR_ORDER_COLUMN_MAJOR)
+        order = LibSparseIR.SPIR_ORDER_COLUMN_MAJOR
 
         # Test fermionic case
-        integration_test(Float64, Int32(LibSparseIR.SPIR_STATISTICS_FERMIONIC), beta, wmax, epsilon,
+        integration_test(Float64, LibSparseIR.SPIR_STATISTICS_FERMIONIC, beta, wmax, epsilon,
                         extra_dims, target_dim, order, tol, false)
     end
 end
