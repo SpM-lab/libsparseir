@@ -8,11 +8,13 @@ module sparseir
   ! Export public interfaces
   !include '_fortran_types_public.inc'
   include '_cbinding_public.inc'
-  public :: SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC
+  public :: SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC, SPIR_ORDER_COLUMN_MAJOR
 
   ! Constants for statistics types
   integer(c_int32_t), parameter :: SPIR_STATISTICS_FERMIONIC = 1_c_int32_t
   integer(c_int32_t), parameter :: SPIR_STATISTICS_BOSONIC = 0_c_int32_t
+  integer(c_int32_t), parameter :: SPIR_ORDER_ROW_MAJOR = 0_c_int32_t
+  integer(c_int32_t), parameter :: SPIR_ORDER_COLUMN_MAJOR = 1_c_int32_t
 
   ! Type definitions
   !include '_fortran_types.inc'

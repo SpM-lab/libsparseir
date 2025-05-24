@@ -6,24 +6,31 @@ program test_kernel
   real(c_double),target :: xmin, xmax, ymin, ymax
   integer(c_int), target :: status
   integer(c_int), target :: ntaus, nmatsus
+  integer(c_int), target :: npoles
 
-  real(c_double) :: beta = 1.0_c_double
-  real(c_double) :: omega_max = 10.0_c_double
-  real(c_double) :: epsilon = 1.0e-6_c_double
+  real(c_double) :: beta = 10.0_c_double
+  real(c_double) :: omega_max = 2.0_c_double
+  real(c_double) :: epsilon = 1.0e-10_c_double
   real(c_double) :: lambda
   integer(c_int) :: positive_only = 1
+  integer(c_int) :: order = SPIR_ORDER_COLUMN_MAJOR
 
   type(c_ptr) :: k_ptr, k_copy_ptr
   type(c_ptr) :: sve_ptr
-  type(c_ptr) :: basis_ptr
+  type(c_ptr) :: basis_ptr, dlr_ptr
   type(c_ptr) :: tau_sampling_ptr, matsu_sampling_ptr
   integer(c_int), target :: basis_size
   real(c_double), allocatable, target :: taus(:)
   integer(c_int64_t), allocatable, target :: matsus(:) ! Use int64_t for Matsubara indices
+  real(c_double), allocatable, target :: poles(:)
 
+  ! Parameters
+  !beta = 10.0_c_double
+  !omega_max = 2.0_c_double
+  !epsilon = 1.0e-10_c_double
+  lambda = beta * omega_max
 
   ! Create a new kernel
-  lambda = beta * omega_max
   k_ptr = c_spir_logistic_kernel_new(lambda, c_loc(status))
   if (status /= 0) then
     print *, "Error creating kernel"
@@ -124,5 +131,49 @@ program test_kernel
     stop
   end if
 
+  ! DLR
+  print *, "Creating DLR"
+  dlr_ptr = c_spir_dlr_new(basis_ptr, c_loc(status))
+  if (status /= 0) then
+    print *, "Error creating DLR"
+    stop
+  end if
+  if (.not. c_associated(dlr_ptr)) then
+    print *, "Error: DLR is not assigned"
+    stop
+  end if
 
-end program test_kernel 
+  ! Get the number of poles
+  print *, "Getting number of poles"
+  status = c_spir_dlr_get_npoles(dlr_ptr, c_loc(npoles))
+  if (status /= 0) then
+    print *, "Error getting number of poles"
+    stop
+  end if
+  print *, "Number of poles =", npoles
+
+  ! Get the poles
+  print *, "Getting poles"
+  allocate(poles(npoles))
+  status = c_spir_dlr_get_poles(dlr_ptr, c_loc(poles))
+  if (status /= 0) then
+    print *, "Error getting poles"
+    stop
+  end if
+  print *, "Poles =", poles
+
+  ! Deallocate
+  deallocate(taus)
+  deallocate(matsus)
+  deallocate(poles)
+
+  ! Release
+  call c_spir_kernel_release(k_ptr)
+  call c_spir_kernel_release(k_copy_ptr)
+  call c_spir_sve_result_release(sve_ptr)
+  call c_spir_basis_release(basis_ptr)
+  call c_spir_basis_release(dlr_ptr)
+  call c_spir_sampling_release(tau_sampling_ptr)
+  call c_spir_sampling_release(matsu_sampling_ptr)
+
+end program test_kernel
