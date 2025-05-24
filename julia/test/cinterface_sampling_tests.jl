@@ -1,286 +1,273 @@
-# This file corresponds to test/cpp/cinterface_integration.cxx
-# Multi-dimensional tensor operations test covering different dimensions,
-# target dimensions, and storage orders.
+# Tests corresponding to test/cpp/cinterface_sampling.cxx
+# Comprehensive sampling functionality tests including TauSampling and MatsubaraSampling
 
-@testitem "tensor" begin
+@testitem "TauSampling" begin
     using LibSparseIR
 
-    β = 10.0
-    ωmax = 2.0
-    ε = 1e-10
-    tol = 10 * ε
-
-    # Helper function to generate multi-dimensional tensor dimensions
-    function get_dims(target_dim_size, extra_dims, target_dim, ndim)
-        dims = zeros(Int32, ndim)
-        dims[target_dim + 1] = target_dim_size  # Julia is 1-indexed
-        pos = 1
-        for i in 1:ndim
-            if i == target_dim + 1
-                continue
-            end
-            dims[i] = extra_dims[pos]
-            pos += 1
-        end
-        return dims
-    end
-
-    # Helper function to compare arrays with relative error
-    function compare_with_relative_error(a, b, tolerance)
-        diff = abs.(a - b)
-        ref = abs.(a)
-        max_diff = maximum(diff)
-        max_ref = maximum(ref)
-        return max_diff <= tolerance * max_ref
-    end
-
-    @testset "Multi-dimensional Tensor Operations" begin
+    # Helper function to create tau sampling (corresponds to C++ create_tau_sampling)
+    function create_tau_sampling(basis::Ptr{LibSparseIR.spir_basis})
         status = Ref{Int32}(0)
 
-        # Create basic setup
-        k = LibSparseIR.spir_logistic_kernel_new(β * ωmax, status)
-        @test status[] == 0
-        sve = LibSparseIR.spir_sve_result_new(k, ε, status)
-        @test status[] == 0
-        basis = LibSparseIR.spir_basis_new(LibSparseIR.SPIR_STATISTICS_BOSONIC, β, ωmax, k, sve, status)
-        @test status[] == 0
+        n_tau_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_basis_get_n_default_taus(basis, n_tau_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_tau_points = n_tau_points_ref[]
 
-        basis_size_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
-        @test status_val == 0
-        basis_size = basis_size_ref[]
+        tau_points = Vector{Float64}(undef, n_tau_points)
+        get_points_status = LibSparseIR.spir_basis_get_default_taus(basis, tau_points)
+        @test get_points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Test tau sampling points
-        num_tau_points_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_basis_get_n_default_taus(basis, num_tau_points_ref)
-        @test status_val == 0
-        num_tau_points = num_tau_points_ref[]
+        sampling = LibSparseIR.spir_tau_sampling_new(basis, n_tau_points, tau_points, status)
+        @test status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test sampling != C_NULL
 
-        tau_points = zeros(Float64, num_tau_points)
-        status_val = LibSparseIR.spir_basis_get_default_taus(basis, pointer(tau_points))
-        @test status_val == 0
+        return sampling
+    end
 
-        tau_sampling = LibSparseIR.spir_tau_sampling_new(basis, num_tau_points, tau_points, status)
-        @test status[] == 0
+    # Test tau sampling constructor (corresponds to C++ test_tau_sampling template)
+    function test_tau_sampling(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-15
 
-        # Test multi-dimensional tensor operations
-        extra_dims = [2, 3, 4]
-        ndim = 4
+        # Create basis using kernel and SVE (equivalent to _spir_basis_new)
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        for target_dim in 0:(ndim-1)
-            println("Testing target_dim = $target_dim")
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-            # Get dimensions for different shapes
-            dims_basis = get_dims(basis_size, extra_dims, target_dim, ndim)
-            dims_tau = get_dims(num_tau_points, extra_dims, target_dim, ndim)
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test basis != C_NULL
 
-            # Create random coefficients tensor
-            total_size_basis = prod(dims_basis)
-            coeffs = rand(Float64, total_size_basis) .- 0.5
+        # Get tau points
+        n_tau_points_ref = Ref{Int32}(0)
+        status = LibSparseIR.spir_basis_get_n_default_taus(basis, n_tau_points_ref)
+        @test status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_tau_points = n_tau_points_ref[]
+        @test n_tau_points > 0
 
-            # Test sampling evaluation: coeffs -> tau values
-            total_size_tau = prod(dims_tau)
-            result_tau = zeros(Float64, total_size_tau)
+        tau_points_org = Vector{Float64}(undef, n_tau_points)
+        tau_status = LibSparseIR.spir_basis_get_default_taus(basis, tau_points_org)
+        @test tau_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-            status_val = LibSparseIR.spir_sampling_eval_dd(
-                tau_sampling,
-                LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
-                ndim,
-                dims_basis,
-                target_dim,
-                coeffs,
-                result_tau
-            )
-            @test status_val == 0
+        # Create sampling
+        sampling_status = Ref{Int32}(0)
+        sampling = LibSparseIR.spir_tau_sampling_new(basis, n_tau_points, tau_points_org, sampling_status)
+        @test sampling_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test sampling != C_NULL
 
-            # Test sampling fitting: tau values -> coeffs
-            coeffs_reconst = zeros(Float64, total_size_basis)
+        # Test getting number of sampling points
+        n_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
+        @test n_points > 0
 
-            status_val = LibSparseIR.spir_sampling_fit_dd(
-                tau_sampling,
-                LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
-                ndim,
-                dims_tau,
-                target_dim,
-                result_tau,
-                coeffs_reconst
-            )
-            @test status_val == 0
+        # Test getting sampling points
+        tau_points = Vector{Float64}(undef, n_points)
+        get_tau_status = LibSparseIR.spir_sampling_get_taus(sampling, tau_points)
+        @test get_tau_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-            # Check round-trip accuracy
-            @test compare_with_relative_error(coeffs, coeffs_reconst, tol)
+        # Compare tau_points and tau_points_org (corresponds to C++ comparison)
+        for i in 1:n_points
+            @test tau_points[i] ≈ tau_points_org[i] atol=1e-14
         end
 
-        LibSparseIR.spir_sampling_release(tau_sampling)
+        # Test that matsubara points are not supported for tau sampling
+        matsubara_points = Vector{Int64}(undef, n_points)
+        matsubara_status = LibSparseIR.spir_sampling_get_matsus(sampling, matsubara_points)
+        @test matsubara_status == LibSparseIR.SPIR_NOT_SUPPORTED
+
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling)
         LibSparseIR.spir_basis_release(basis)
         LibSparseIR.spir_sve_result_release(sve)
-        LibSparseIR.spir_kernel_release(k)
+        LibSparseIR.spir_kernel_release(kernel)
     end
 
-    @testset "Row-Major vs Column-Major Storage" begin
-        status = Ref{Int32}(0)
+    # Test 1D evaluation (corresponds to C++ test_tau_sampling_evaluation_1d_column_major)
+    function test_tau_sampling_evaluation_1d(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-10
 
-        k = LibSparseIR.spir_logistic_kernel_new(β * ωmax, status)
-        @test status[] == 0
-        sve = LibSparseIR.spir_sve_result_new(k, ε, status)
-        @test status[] == 0
-        basis = LibSparseIR.spir_basis_new(LibSparseIR.SPIR_STATISTICS_BOSONIC, β, ωmax, k, sve, status)
-        @test status[] == 0
+        # Create basis
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        basis_size_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
-        @test status_val == 0
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Create sampling
+        sampling = create_tau_sampling(basis)
+
+        # Get basis and sampling sizes
+        basis_size_ref = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
         basis_size = basis_size_ref[]
 
-        num_tau_points_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_basis_get_n_default_taus(basis, num_tau_points_ref)
-        @test status_val == 0
-        num_tau_points = num_tau_points_ref[]
+        n_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
 
-        tau_points = zeros(Float64, num_tau_points)
-        status_val = LibSparseIR.spir_basis_get_default_taus(basis, pointer(tau_points))
-        @test status_val == 0
+        # Set up parameters for evaluation
+        ndim = 1
+        dims = Int32[basis_size]
+        target_dim = 0
 
-        tau_sampling = LibSparseIR.spir_tau_sampling_new(basis, num_tau_points, tau_points, status)
-        @test status[] == 0
+        # Create test coefficients
+        coeffs = rand(Float64, basis_size) .- 0.5
 
-        # Test 2D case with different storage orders
-        dims_2d = Int32[basis_size, 5]
-        dims_tau_2d = Int32[num_tau_points, 5]
-        coeffs_2d = rand(Float64, prod(dims_2d)) .- 0.5
+        # Test evaluation
+        evaluate_output = Vector{Float64}(undef, n_points)
+        evaluate_status = LibSparseIR.spir_sampling_eval_dd(
+            sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim, coeffs, evaluate_output)
+        @test evaluate_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Test Column-Major
-        result_colmajor = zeros(Float64, prod(dims_tau_2d))
-        status_val = LibSparseIR.spir_sampling_eval_dd(
-            tau_sampling,
-            LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
-            2,
-            dims_2d,
-            0,  # target_dim = 0
-            coeffs_2d,
-            result_colmajor
-        )
-        @test status_val == 0
+        # Test fitting
+        fit_output = Vector{Float64}(undef, basis_size)
+        fit_status = LibSparseIR.spir_sampling_fit_dd(
+            sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim, evaluate_output, fit_output)
+        @test fit_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Test Row-Major
-        result_rowmajor = zeros(Float64, prod(dims_tau_2d))
-        status_val = LibSparseIR.spir_sampling_eval_dd(
-            tau_sampling,
-            LibSparseIR.SPIR_ORDER_ROW_MAJOR,
-            2,
-            dims_2d,
-            0,  # target_dim = 0
-            coeffs_2d,
-            result_rowmajor
-        )
-        @test status_val == 0
+        # Check round-trip accuracy
+        for i in 1:basis_size
+            @test fit_output[i] ≈ coeffs[i] atol=1e-10
+        end
 
-        # Results should be different due to different memory layout interpretation
-        @test !compare_with_relative_error(result_colmajor, result_rowmajor, 1e-15)
-
-        # But round-trip should work for each
-        coeffs_reconst_colmajor = zeros(Float64, prod(dims_2d))
-        status_val = LibSparseIR.spir_sampling_fit_dd(
-            tau_sampling,
-            LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
-            2,
-            dims_tau_2d,
-            0,
-            result_colmajor,
-            coeffs_reconst_colmajor
-        )
-        @test status_val == 0
-        @test compare_with_relative_error(coeffs_2d, coeffs_reconst_colmajor, tol)
-
-        coeffs_reconst_rowmajor = zeros(Float64, prod(dims_2d))
-        status_val = LibSparseIR.spir_sampling_fit_dd(
-            tau_sampling,
-            LibSparseIR.SPIR_ORDER_ROW_MAJOR,
-            2,
-            dims_tau_2d,
-            0,
-            result_rowmajor,
-            coeffs_reconst_rowmajor
-        )
-        @test status_val == 0
-        @test compare_with_relative_error(coeffs_2d, coeffs_reconst_rowmajor, tol)
-
-        LibSparseIR.spir_sampling_release(tau_sampling)
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling)
         LibSparseIR.spir_basis_release(basis)
         LibSparseIR.spir_sve_result_release(sve)
-        LibSparseIR.spir_kernel_release(k)
+        LibSparseIR.spir_kernel_release(kernel)
     end
 
-    @testset "Complex Tensor Operations" begin
+    @testset "TauSampling Constructor (fermionic)" begin
+        test_tau_sampling(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "TauSampling Constructor (bosonic)" begin
+        test_tau_sampling(LibSparseIR.SPIR_STATISTICS_BOSONIC)
+    end
+
+    @testset "TauSampling Evaluation 1-dimensional input COLUMN-MAJOR" begin
+        test_tau_sampling_evaluation_1d(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+end
+
+@testitem "MatsubaraSampling" begin
+    using LibSparseIR
+
+    # Helper function to create matsubara sampling (corresponds to C++ create_matsubara_sampling)
+    function create_matsubara_sampling(basis::Ptr{LibSparseIR.spir_basis}, positive_only::Bool)
         status = Ref{Int32}(0)
 
-        k = LibSparseIR.spir_logistic_kernel_new(β * ωmax, status)
-        @test status[] == 0
-        sve = LibSparseIR.spir_sve_result_new(k, ε, status)
-        @test status[] == 0
-        basis = LibSparseIR.spir_basis_new(LibSparseIR.SPIR_STATISTICS_FERMIONIC, β, ωmax, k, sve, status)
-        @test status[] == 0
+        n_matsubara_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_basis_get_nmatuss(basis, positive_only, n_matsubara_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_matsubara_points = n_matsubara_points_ref[]
 
-        basis_size_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
-        @test status_val == 0
-        basis_size = basis_size_ref[]
+        smpl_points = Vector{Int64}(undef, n_matsubara_points)
+        get_points_status = LibSparseIR.spir_basis_get_matsus(basis, positive_only, smpl_points)
+        @test get_points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Get Matsubara sampling points
-        positive_only = false
-        num_matsubara_points_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_basis_get_nmatuss(basis, positive_only, num_matsubara_points_ref)
-        @test status_val == 0
-        num_matsubara_points = num_matsubara_points_ref[]
+        sampling = LibSparseIR.spir_matsu_sampling_new(basis, positive_only, n_matsubara_points, smpl_points, status)
+        @test status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test sampling != C_NULL
 
-        matsubara_indices = zeros(Int64, num_matsubara_points)
-        status_val = LibSparseIR.spir_basis_get_matsus(basis, positive_only, pointer(matsubara_indices))
-        @test status_val == 0
+        return sampling
+    end
 
-        matsu_sampling = LibSparseIR.spir_matsu_sampling_new(basis, positive_only, num_matsubara_points, matsubara_indices, status)
-        @test status[] == 0
+    # Test matsubara sampling constructor (corresponds to C++ test_matsubara_sampling_constructor)
+    function test_matsubara_sampling_constructor(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-10
 
-        # Test complex coefficient operations
-        dims_2d = Int32[basis_size, 3]
-        dims_matsu_2d = Int32[num_matsubara_points, 3]
+        # Create basis
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Create complex coefficients (real IR coefficients)
-        coeffs_real = rand(Float64, prod(dims_2d)) .- 0.5
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Evaluate at Matsubara frequencies (produces complex result)
-        result_complex = zeros(ComplexF64, prod(dims_matsu_2d))
-        status_val = LibSparseIR.spir_sampling_eval_dz(
-            matsu_sampling,
-            LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
-            2,
-            dims_2d,
-            0,
-            coeffs_real,
-            reinterpret(ComplexF32, result_complex)
-        )
-        @test status_val == 0
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Fit back to get complex IR coefficients
-        coeffs_complex = zeros(ComplexF64, prod(dims_2d))
-        status_val = LibSparseIR.spir_sampling_fit_zz(
-            matsu_sampling,
-            LibSparseIR.SPIR_ORDER_COLUMN_MAJOR,
-            2,
-            dims_matsu_2d,
-            0,
-            reinterpret(ComplexF32, result_complex),
-            reinterpret(ComplexF32, coeffs_complex)
-        )
-        @test status_val == 0
+        # Test with positive_only = false
+        n_points_org_ref = Ref{Int32}(0)
+        status = LibSparseIR.spir_basis_get_nmatuss(basis, false, n_points_org_ref)
+        @test status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points_org = n_points_org_ref[]
+        @test n_points_org > 0
 
-        # Check that the real part matches original coefficients
-        @test compare_with_relative_error(coeffs_real, real.(coeffs_complex), tol)
-        # Imaginary part should be small (approximately zero)
-        @test maximum(abs.(imag.(coeffs_complex))) < tol
+        smpl_points_org = Vector{Int64}(undef, n_points_org)
+        points_status = LibSparseIR.spir_basis_get_matsus(basis, false, smpl_points_org)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        LibSparseIR.spir_sampling_release(matsu_sampling)
+        sampling_status = Ref{Int32}(0)
+        sampling = LibSparseIR.spir_matsu_sampling_new(basis, false, n_points_org, smpl_points_org, sampling_status)
+        @test sampling_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test sampling != C_NULL
+
+        # Test with positive_only = true
+        n_points_positive_only_org_ref = Ref{Int32}(0)
+        positive_status = LibSparseIR.spir_basis_get_nmatuss(basis, true, n_points_positive_only_org_ref)
+        @test positive_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points_positive_only_org = n_points_positive_only_org_ref[]
+        @test n_points_positive_only_org > 0
+
+        smpl_points_positive_only_org = Vector{Int64}(undef, n_points_positive_only_org)
+        positive_points_status = LibSparseIR.spir_basis_get_matsus(basis, true, smpl_points_positive_only_org)
+        @test positive_points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        sampling_positive_status = Ref{Int32}(0)
+        sampling_positive_only = LibSparseIR.spir_matsu_sampling_new(basis, true, n_points_positive_only_org, smpl_points_positive_only_org, sampling_positive_status)
+        @test sampling_positive_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test sampling_positive_only != C_NULL
+
+        # Test getting number of points
+        n_points_ref = Ref{Int32}(0)
+        get_points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test get_points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
+        @test n_points > 0
+
+        n_points_positive_only_ref = Ref{Int32}(0)
+        get_positive_points_status = LibSparseIR.spir_sampling_get_npoints(sampling_positive_only, n_points_positive_only_ref)
+        @test get_positive_points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points_positive_only = n_points_positive_only_ref[]
+        @test n_points_positive_only > 0
+
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling_positive_only)
+        LibSparseIR.spir_sampling_release(sampling)
         LibSparseIR.spir_basis_release(basis)
         LibSparseIR.spir_sve_result_release(sve)
-        LibSparseIR.spir_kernel_release(k)
+        LibSparseIR.spir_kernel_release(kernel)
+    end
+
+    @testset "MatsubaraSampling Constructor (fermionic)" begin
+        test_matsubara_sampling_constructor(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "MatsubaraSampling Constructor (bosonic)" begin
+        test_matsubara_sampling_constructor(LibSparseIR.SPIR_STATISTICS_BOSONIC)
     end
 end

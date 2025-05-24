@@ -2,49 +2,97 @@
 # Comprehensive DLR (Discrete Lehmann Representation) functionality tests.
 # Currently simplified to avoid segmentation faults
 
-@testitem "dlr" begin
+@testitem "DiscreteLehmannRepresentation" begin
     using LibSparseIR
 
-    β = 10.0
-    ωmax = 2.0
-    ε = 1e-10
+    # Template function equivalent for different statistics (corresponds to C++ template functions)
+    function test_finite_temp_basis_dlr(statistics::Integer)
+        beta = 10000.0  # Same as C++ version
+        wmax = 1.0
+        epsilon = 1e-12
 
-    @testset "DLR Basic Test" begin
         status = Ref{Int32}(0)
 
-        # Create IR basis
-        k = LibSparseIR.spir_logistic_kernel_new(β * ωmax, status)
-        @test status[] == 0
-        sve = LibSparseIR.spir_sve_result_new(k, ε, status)
-        @test status[] == 0
-        ir_basis = LibSparseIR.spir_basis_new(LibSparseIR.SPIR_STATISTICS_BOSONIC, β, ωmax, k, sve, status)
-        @test status[] == 0
+        # Create IR basis using kernel and SVE (equivalent to _spir_basis_new)
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Create DLR basis from IR basis
-        dlr_basis = LibSparseIR.spir_dlr_new(ir_basis, status)
-        @test status[] == 0
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-        # Get basic properties
-        ir_basis_size_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_basis_get_size(ir_basis, ir_basis_size_ref)
-        @test status_val == 0
-        ir_basis_size = ir_basis_size_ref[]
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test basis != C_NULL
 
-        npoles_ref = Ref{Cint}(0)
-        status_val = LibSparseIR.spir_dlr_get_npoles(dlr_basis, npoles_ref)
-        @test status_val == 0
-        npoles = npoles_ref[]
-        @test npoles >= ir_basis_size
+        # Get basis size
+        basis_size_ref = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        basis_size = basis_size_ref[]
+        @test basis_size >= 0
 
-        # Get poles
-        poles = zeros(Float64, npoles)
-        status_val = LibSparseIR.spir_dlr_get_poles(dlr_basis, pointer(poles))
-        @test status_val == 0
-        @test maximum(abs.(poles)) <= ωmax
+        # Get default poles (corresponds to C++ spir_basis_get_default_ws)
+        num_default_poles_ref = Ref{Int32}(0)
+        poles_status = LibSparseIR.spir_basis_get_n_default_ws(basis, num_default_poles_ref)
+        @test poles_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        num_default_poles = num_default_poles_ref[]
+        @test num_default_poles >= 0
 
-        LibSparseIR.spir_basis_release(dlr_basis)
-        LibSparseIR.spir_basis_release(ir_basis)
+        default_poles = Vector{Float64}(undef, num_default_poles)
+        get_poles_status = LibSparseIR.spir_basis_get_default_ws(basis, default_poles)
+        @test get_poles_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # DLR constructor using default poles (corresponds to C++ spir_dlr_new)
+        dlr_status = Ref{Int32}(0)
+        dlr = LibSparseIR.spir_dlr_new(basis, dlr_status)
+        @test dlr_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test dlr != C_NULL
+
+        # DLR constructor using custom poles (corresponds to C++ spir_dlr_new_with_poles)
+        dlr_with_poles_status = Ref{Int32}(0)
+        dlr_with_poles = LibSparseIR.spir_dlr_new_with_poles(basis, num_default_poles, default_poles, dlr_with_poles_status)
+        @test dlr_with_poles_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test dlr_with_poles != C_NULL
+
+        # Test number of poles consistency
+        num_poles_ref = Ref{Int32}(0)
+        npoles_status = LibSparseIR.spir_dlr_get_npoles(dlr, num_poles_ref)
+        @test npoles_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        num_poles = num_poles_ref[]
+        @test num_poles == num_default_poles
+
+        num_poles_with_poles_ref = Ref{Int32}(0)
+        npoles_with_poles_status = LibSparseIR.spir_dlr_get_npoles(dlr_with_poles, num_poles_with_poles_ref)
+        @test npoles_with_poles_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        num_poles_with_poles = num_poles_with_poles_ref[]
+        @test num_poles_with_poles == num_default_poles
+
+        # Test poles reconstruction (corresponds to C++ strict comparison)
+        poles_reconst = Vector{Float64}(undef, num_poles)
+        reconst_status = LibSparseIR.spir_dlr_get_poles(dlr, poles_reconst)
+        @test reconst_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Strict numerical comparison (corresponds to C++ Approx comparison)
+        for i in 1:num_poles
+            @test poles_reconst[i] ≈ default_poles[i] atol=1e-14
+        end
+
+        # Clean up (corresponds to C++ cleanup)
+        LibSparseIR.spir_basis_release(dlr_with_poles)
+        LibSparseIR.spir_basis_release(dlr)
+        LibSparseIR.spir_basis_release(basis)
         LibSparseIR.spir_sve_result_release(sve)
-        LibSparseIR.spir_kernel_release(k)
+        LibSparseIR.spir_kernel_release(kernel)
+    end
+
+    @testset "DiscreteLehmannRepresentation Constructor Fermionic" begin
+        test_finite_temp_basis_dlr(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "DiscreteLehmannRepresentation Constructor Bosonic" begin
+        test_finite_temp_basis_dlr(LibSparseIR.SPIR_STATISTICS_BOSONIC)
     end
 end

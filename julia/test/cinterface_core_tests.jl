@@ -236,15 +236,28 @@ end
         @test batch_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
         @test all(isfinite, batch_out)
 
-        # Test error cases
+        # Test error cases (corresponds to C++ error case testing)
+        # Test with null function pointer
         eval_status = LibSparseIR.spir_funcs_eval(C_NULL, x, out)
         @test eval_status != LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Test with null output array - create a null pointer for testing
+        # Note: In Julia, we can't easily pass null for the output array as it would be unsafe
+        # This corresponds to spir_funcs_eval(u, x, nullptr) in C++
+        # We skip this test for safety reasons in Julia
+
+        # Test batch evaluation error cases
+        batch_status = LibSparseIR.spir_funcs_batch_eval(
+            C_NULL, LibSparseIR.SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out)
+        @test batch_status != LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
         # Clean up
         LibSparseIR.spir_funcs_release(u)
         LibSparseIR.spir_funcs_release(v)
         LibSparseIR.spir_funcs_release(uhat)
         LibSparseIR.spir_basis_release(basis)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
     end
 
     @testset "Basis Functions Fermionic" begin
