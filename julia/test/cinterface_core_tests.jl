@@ -53,7 +53,7 @@ end
 
     # Test basis constructors (corresponds to cinterface_core.cxx TEST_CASE "FiniteTempBasis")
 
-    function test_basis_constructor(statistics::Int32)
+    function test_basis_constructor(statistics::Integer)
         beta = 2.0
         wmax = 5.0
         epsilon = 1e-6
@@ -124,11 +124,11 @@ end
     end
 
     @testset "FiniteTempBasis Constructor Fermionic" begin
-        test_basis_constructor(Int32(LibSparseIR.SPIR_STATISTICS_FERMIONIC))
+        test_basis_constructor(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
     end
 
     @testset "FiniteTempBasis Constructor Bosonic" begin
-        test_basis_constructor(Int32(LibSparseIR.SPIR_STATISTICS_BOSONIC))
+        test_basis_constructor(LibSparseIR.SPIR_STATISTICS_BOSONIC)
     end
 
     @testset "FiniteTempBasis Constructor with SVE Fermionic/LogisticKernel" begin
@@ -248,10 +248,10 @@ end
     end
 
     @testset "Basis Functions Fermionic" begin
-        test_basis_functions(Int32(LibSparseIR.SPIR_STATISTICS_FERMIONIC))
+        test_basis_functions(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
     end
 
     @testset "Basis Functions Bosonic" begin
-        test_basis_functions(Int32(LibSparseIR.SPIR_STATISTICS_BOSONIC))
+        test_basis_functions(LibSparseIR.SPIR_STATISTICS_BOSONIC)
     end
 end
