@@ -1,4 +1,5 @@
+using LibSparseIR
 using ReTestItems
-import LibSparseIR
 
+# Run all test files
 runtests(LibSparseIR)
