@@ -407,7 +407,7 @@ int fit_inplace_impl(
     }
 
     if (sampler.n_sampling_points() !=
-        static_cast<std::size_t>(input.dimension(dim))) {
+        static_cast<int32_t>(input.dimension(dim))) {
         // Dimension mismatch
         return SPIR_INPUT_DIMENSION_MISMATCH;
     }
@@ -450,7 +450,7 @@ eval_matrix(const std::shared_ptr<Base> &basis,
     Eigen::MatrixXcd m(basis->uhat->size(), sampling_points.size());
     // FIXME: this can be slow. Evaluate uhat[i] for multiple frequencies at
     // once.
-    for (int i = 0; i < sampling_points.size(); ++i) {
+    for (size_t i = 0; i < sampling_points.size(); ++i) {
         m.col(i) = (*(basis->uhat))(sampling_points[i]);
     }
     Eigen::MatrixXcd matrix = m.transpose();
@@ -540,7 +540,7 @@ public:
 
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points.size() ||
-            matrix_.cols() != static_cast<std::size_t>(basis->size())) {
+            matrix_.cols() != static_cast<long>(basis->size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
@@ -747,8 +747,8 @@ public:
         matrix_ = eval_matrix(basis, sampling_points_);
 
         // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != basis->size()) {
+        if (matrix_.rows() != static_cast<long>(sampling_points_.size()) ||
+            matrix_.cols() != static_cast<long>(basis->size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +

@@ -57,12 +57,12 @@ public:
      */
     template <typename T>
     std::function<T(T, T)> weight_func(Fermionic) const {
-        return [](T beta, T omega) { return 1.0; };
+        return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     template <typename T>
     std::function<T(T, T)> weight_func(Bosonic) const {
-        return [](T beta, T omega) { return 1.0; };
+        return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     virtual double compute(
@@ -138,8 +138,8 @@ public:
 // Type trait to check if a type is a concrete kernel
 template <typename T>
 struct is_concrete_kernel {
-    static constexpr bool value = 
-        !std::is_abstract<T>::value && 
+    static constexpr bool value =
+        !std::is_abstract<T>::value &&
         std::is_base_of<AbstractKernel, T>::value;
 };
 
@@ -327,14 +327,14 @@ public:
     template <typename T>
     std::function<T(T, T)> weight_func(Fermionic) const
     {
-        return [](T beta , T omega) { return 1.0; };
+        return [](T beta , T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     template <typename T>
     std::function<T(T, T)> weight_func(Bosonic) const
     {
         using std::tanh;
-        return [this](T beta, T omega) { return 1.0 / tanh(0.5 * beta * omega); };
+        return [](T beta, T omega) { return 1.0 / tanh(0.5 * beta * omega); };
     }
 
 private:
@@ -401,7 +401,7 @@ private:
  * function on [-1, 1] × [-1, 1]:
  *
  *     K(x, y) = y * exp(-Λ y (x + 1) / 2) / (1 - exp(-Λ y))
- * 
+ *
  * This non-dimensionalized kernel is connected to the dimensionalized kernel as
  *     K(τ, ω) = ωmax * K(2τ/β - 1, ω/ωmax),
  * where ωmax = Λ/β.
@@ -525,7 +525,10 @@ public:
     std::function<T(T, T)> weight_func(Bosonic) const
     {
         using std::tanh;
-        return [this](T beta, T omega) { return static_cast<T>(1.0) / omega; };
+        return [](T beta, T omega) {
+            (void)beta;  // Silence unused parameter warning
+            return static_cast<T>(1.0) / omega;
+        };
     }
 
     template <typename T>

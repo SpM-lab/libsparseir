@@ -782,7 +782,7 @@ TEST_CASE("TauSampling", "[cinterface]")
                 sparseir::movedim(rhol_tensor, 0, dim);
 
             // Set up parameters for evaluation
-            int *dims = dims_list[dim];
+            //int *dims = dims_list[dim];
             int target_dim = dim;
 
             //int status_not_supported = spir_sampling_eval_dd(

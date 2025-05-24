@@ -26,13 +26,13 @@ TEST_CASE("sve_result.u(x)", "[sve]")
         u0(x)
     end
     */
-    double beta = 1.0;
     double lambda = 10.0;
     auto kernel = sparseir::LogisticKernel(lambda);
     auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
     double x = 0.3;
     auto u0 = (*sve_result.u)[0];
     auto u0x = u0(x);
+    REQUIRE(std::is_same<decltype(u0x), double>::value);
     REQUIRE(u0.l == 0);
     REQUIRE(u0.symm == 1);
     REQUIRE(u0.polyorder == 16);
@@ -385,7 +385,7 @@ void _test_sve()
 
     // sve_hints for epsilon = 1e-6
     auto hints = sparseir::sve_hints<T>(lk_ptr, 1e-6);
-    int nsvals_hint = hints->nsvals();
+
     int n_gauss = hints->ngauss();
     std::vector<T> segs_x = hints->segments_x();
     std::vector<T> segs_y = hints->segments_y();
@@ -424,7 +424,7 @@ void _test_centrosymmsve()
     auto lk = sparseir::LogisticKernel(10.0);
     auto lk_ptr = std::make_shared<sparseir::LogisticKernel>(lk);
     auto hints = sparseir::sve_hints<T>(lk_ptr, 1e-6);
-    int nsvals_hint = hints->nsvals();
+
     int n_gauss = hints->ngauss();
     std::vector<T> segs_x = hints->segments_x();
     std::vector<T> segs_y = hints->segments_y();
@@ -539,7 +539,6 @@ TEST_CASE("compute_sve/LogisticKernel", "[sve]")
 
     REQUIRE(Twork_actual == "Float64x2");
 
-    using T = xprec::DDouble;
     auto lk = sparseir::LogisticKernel(12.0);
 
     // auto sve = sparseir::compute_sve<sparseir::LogisticKernel, T>(lk,

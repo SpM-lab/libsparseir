@@ -9,194 +9,88 @@ libsparseir = expanduser("~/opt/libsparseir/lib/libsparseir.$(dlext)")
 
 const c_complex = ComplexF32
 
-@cenum int32_t::UInt32 begin
-    SPIR_STATISTICS_FERMIONIC = 1
-    SPIR_STATISTICS_BOSONIC = 0
-end
-
-@cenum int32_t::UInt32 begin
-    SPIR_ORDER_COLUMN_MAJOR = 1
-    SPIR_ORDER_ROW_MAJOR = 0
-end
-
 mutable struct _spir_kernel end
 
 const spir_kernel = _spir_kernel
 
-function spir_release_kernel(obj)
-    ccall((:spir_release_kernel, libsparseir), Cvoid, (Ptr{spir_kernel},), obj)
+function spir_kernel_release(obj)
+    ccall((:spir_kernel_release, libsparseir), Cvoid, (Ptr{spir_kernel},), obj)
 end
 
-function spir_clone_kernel(src)
-    ccall((:spir_clone_kernel, libsparseir), Ptr{spir_kernel}, (Ptr{spir_kernel},), src)
+function spir_kernel_clone(src)
+    ccall((:spir_kernel_clone, libsparseir), Ptr{spir_kernel}, (Ptr{spir_kernel},), src)
 end
 
-function spir_is_assigned_kernel(obj)
-    ccall((:spir_is_assigned_kernel, libsparseir), Cint, (Ptr{spir_kernel},), obj)
+function spir_kernel_is_assigned(obj)
+    ccall((:spir_kernel_is_assigned, libsparseir), Cint, (Ptr{spir_kernel},), obj)
 end
 
-mutable struct _spir_logistic_kernel end
+mutable struct _spir_funcs end
 
-const spir_logistic_kernel = _spir_logistic_kernel
+const spir_funcs = _spir_funcs
 
-function spir_release_logistic_kernel(obj)
-    ccall((:spir_release_logistic_kernel, libsparseir), Cvoid, (Ptr{spir_logistic_kernel},), obj)
+function spir_funcs_release(obj)
+    ccall((:spir_funcs_release, libsparseir), Cvoid, (Ptr{spir_funcs},), obj)
 end
 
-function spir_clone_logistic_kernel(src)
-    ccall((:spir_clone_logistic_kernel, libsparseir), Ptr{spir_logistic_kernel}, (Ptr{spir_logistic_kernel},), src)
+function spir_funcs_clone(src)
+    ccall((:spir_funcs_clone, libsparseir), Ptr{spir_funcs}, (Ptr{spir_funcs},), src)
 end
 
-function spir_is_assigned_logistic_kernel(obj)
-    ccall((:spir_is_assigned_logistic_kernel, libsparseir), Cint, (Ptr{spir_logistic_kernel},), obj)
+function spir_funcs_is_assigned(obj)
+    ccall((:spir_funcs_is_assigned, libsparseir), Cint, (Ptr{spir_funcs},), obj)
 end
 
-mutable struct _spir_reg_bose_kernel end
+mutable struct _spir_basis end
 
-const spir_reg_bose_kernel = _spir_reg_bose_kernel
+const spir_basis = _spir_basis
 
-function spir_release_reg_bose_kernel(obj)
-    ccall((:spir_release_reg_bose_kernel, libsparseir), Cvoid, (Ptr{spir_reg_bose_kernel},), obj)
+function spir_basis_release(obj)
+    ccall((:spir_basis_release, libsparseir), Cvoid, (Ptr{spir_basis},), obj)
 end
 
-function spir_clone_reg_bose_kernel(src)
-    ccall((:spir_clone_reg_bose_kernel, libsparseir), Ptr{spir_reg_bose_kernel}, (Ptr{spir_reg_bose_kernel},), src)
+function spir_basis_clone(src)
+    ccall((:spir_basis_clone, libsparseir), Ptr{spir_basis}, (Ptr{spir_basis},), src)
 end
 
-function spir_is_assigned_reg_bose_kernel(obj)
-    ccall((:spir_is_assigned_reg_bose_kernel, libsparseir), Cint, (Ptr{spir_reg_bose_kernel},), obj)
-end
-
-mutable struct _spir_continuous_functions end
-
-const spir_continuous_functions = _spir_continuous_functions
-
-function spir_release_continuous_functions(obj)
-    ccall((:spir_release_continuous_functions, libsparseir), Cvoid, (Ptr{spir_continuous_functions},), obj)
-end
-
-function spir_clone_continuous_functions(src)
-    ccall((:spir_clone_continuous_functions, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_continuous_functions},), src)
-end
-
-function spir_is_assigned_continuous_functions(obj)
-    ccall((:spir_is_assigned_continuous_functions, libsparseir), Cint, (Ptr{spir_continuous_functions},), obj)
-end
-
-mutable struct _spir_matsubara_funcs end
-
-const spir_matsubara_funcs = _spir_matsubara_funcs
-
-function spir_release_matsubara_funcs(obj)
-    ccall((:spir_release_matsubara_funcs, libsparseir), Cvoid, (Ptr{spir_matsubara_funcs},), obj)
-end
-
-function spir_clone_matsubara_funcs(src)
-    ccall((:spir_clone_matsubara_funcs, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_matsubara_funcs},), src)
-end
-
-function spir_is_assigned_matsubara_funcs(obj)
-    ccall((:spir_is_assigned_matsubara_funcs, libsparseir), Cint, (Ptr{spir_matsubara_funcs},), obj)
-end
-
-mutable struct _spir_fermionic_finite_temp_basis end
-
-const spir_fermionic_finite_temp_basis = _spir_fermionic_finite_temp_basis
-
-function spir_release_fermionic_finite_temp_basis(obj)
-    ccall((:spir_release_fermionic_finite_temp_basis, libsparseir), Cvoid, (Ptr{spir_fermionic_finite_temp_basis},), obj)
-end
-
-function spir_clone_fermionic_finite_temp_basis(src)
-    ccall((:spir_clone_fermionic_finite_temp_basis, libsparseir), Ptr{spir_fermionic_finite_temp_basis}, (Ptr{spir_fermionic_finite_temp_basis},), src)
-end
-
-function spir_is_assigned_fermionic_finite_temp_basis(obj)
-    ccall((:spir_is_assigned_fermionic_finite_temp_basis, libsparseir), Cint, (Ptr{spir_fermionic_finite_temp_basis},), obj)
-end
-
-mutable struct _spir_bosonic_finite_temp_basis end
-
-const spir_bosonic_finite_temp_basis = _spir_bosonic_finite_temp_basis
-
-function spir_release_bosonic_finite_temp_basis(obj)
-    ccall((:spir_release_bosonic_finite_temp_basis, libsparseir), Cvoid, (Ptr{spir_bosonic_finite_temp_basis},), obj)
-end
-
-function spir_clone_bosonic_finite_temp_basis(src)
-    ccall((:spir_clone_bosonic_finite_temp_basis, libsparseir), Ptr{spir_bosonic_finite_temp_basis}, (Ptr{spir_bosonic_finite_temp_basis},), src)
-end
-
-function spir_is_assigned_bosonic_finite_temp_basis(obj)
-    ccall((:spir_is_assigned_bosonic_finite_temp_basis, libsparseir), Cint, (Ptr{spir_bosonic_finite_temp_basis},), obj)
+function spir_basis_is_assigned(obj)
+    ccall((:spir_basis_is_assigned, libsparseir), Cint, (Ptr{spir_basis},), obj)
 end
 
 mutable struct _spir_sampling end
 
 const spir_sampling = _spir_sampling
 
-function spir_release_sampling(obj)
-    ccall((:spir_release_sampling, libsparseir), Cvoid, (Ptr{spir_sampling},), obj)
+function spir_sampling_release(obj)
+    ccall((:spir_sampling_release, libsparseir), Cvoid, (Ptr{spir_sampling},), obj)
 end
 
-function spir_clone_sampling(src)
-    ccall((:spir_clone_sampling, libsparseir), Ptr{spir_sampling}, (Ptr{spir_sampling},), src)
+function spir_sampling_clone(src)
+    ccall((:spir_sampling_clone, libsparseir), Ptr{spir_sampling}, (Ptr{spir_sampling},), src)
 end
 
-function spir_is_assigned_sampling(obj)
-    ccall((:spir_is_assigned_sampling, libsparseir), Cint, (Ptr{spir_sampling},), obj)
+function spir_sampling_is_assigned(obj)
+    ccall((:spir_sampling_is_assigned, libsparseir), Cint, (Ptr{spir_sampling},), obj)
 end
 
 mutable struct _spir_sve_result end
 
 const spir_sve_result = _spir_sve_result
 
-function spir_release_sve_result(obj)
-    ccall((:spir_release_sve_result, libsparseir), Cvoid, (Ptr{spir_sve_result},), obj)
+function spir_sve_result_release(obj)
+    ccall((:spir_sve_result_release, libsparseir), Cvoid, (Ptr{spir_sve_result},), obj)
 end
 
-function spir_clone_sve_result(src)
-    ccall((:spir_clone_sve_result, libsparseir), Ptr{spir_sve_result}, (Ptr{spir_sve_result},), src)
+function spir_sve_result_clone(src)
+    ccall((:spir_sve_result_clone, libsparseir), Ptr{spir_sve_result}, (Ptr{spir_sve_result},), src)
 end
 
-function spir_is_assigned_sve_result(obj)
-    ccall((:spir_is_assigned_sve_result, libsparseir), Cint, (Ptr{spir_sve_result},), obj)
-end
-
-mutable struct _spir_fermionic_dlr end
-
-const spir_fermionic_dlr = _spir_fermionic_dlr
-
-function spir_release_fermionic_dlr(obj)
-    ccall((:spir_release_fermionic_dlr, libsparseir), Cvoid, (Ptr{spir_fermionic_dlr},), obj)
-end
-
-function spir_clone_fermionic_dlr(src)
-    ccall((:spir_clone_fermionic_dlr, libsparseir), Ptr{spir_fermionic_dlr}, (Ptr{spir_fermionic_dlr},), src)
-end
-
-function spir_is_assigned_fermionic_dlr(obj)
-    ccall((:spir_is_assigned_fermionic_dlr, libsparseir), Cint, (Ptr{spir_fermionic_dlr},), obj)
-end
-
-mutable struct _spir_bosonic_dlr end
-
-const spir_bosonic_dlr = _spir_bosonic_dlr
-
-function spir_release_bosonic_dlr(obj)
-    ccall((:spir_release_bosonic_dlr, libsparseir), Cvoid, (Ptr{spir_bosonic_dlr},), obj)
-end
-
-function spir_clone_bosonic_dlr(src)
-    ccall((:spir_clone_bosonic_dlr, libsparseir), Ptr{spir_bosonic_dlr}, (Ptr{spir_bosonic_dlr},), src)
-end
-
-function spir_is_assigned_bosonic_dlr(obj)
-    ccall((:spir_is_assigned_bosonic_dlr, libsparseir), Cint, (Ptr{spir_bosonic_dlr},), obj)
+function spir_sve_result_is_assigned(obj)
+    ccall((:spir_sve_result_is_assigned, libsparseir), Cint, (Ptr{spir_sve_result},), obj)
 end
 
 """
-    spir_logistic_kernel_new(lambda)
+    spir_logistic_kernel_new(lambda, status)
 
 Creates a new logistic kernel for fermionic/bosonic analytical continuation.
 
@@ -210,17 +104,22 @@ While LogisticKernel is primarily a fermionic analytic continuation kernel, it c
 
 where ρ'(y) = w(y)ρ(y) and the weight function w(y) = 1/tanh(Λy/2)
 
+!!! note
+
+    The kernel is implemented using piecewise Legendre polynomial expansion for numerical stability and accuracy.
+
 # Arguments
 * `lambda`: The cutoff parameter Λ (must be non-negative)
+* `status`: Pointer to store the status code
 # Returns
-A pointer to the newly created kernel object, or NULL if creation fails
+Pointer to the newly created kernel object, or NULL if creation fails
 """
-function spir_logistic_kernel_new(lambda)
-    ccall((:spir_logistic_kernel_new, libsparseir), Ptr{spir_kernel}, (Cdouble,), lambda)
+function spir_logistic_kernel_new(lambda, status)
+    ccall((:spir_logistic_kernel_new, libsparseir), Ptr{spir_kernel}, (Cdouble, Ptr{Cint}), lambda, status)
 end
 
 """
-    spir_reg_bose_kernel_new(lambda)
+    spir_reg_bose_kernel_new(lambda, status)
 
 Creates a new regularized bosonic kernel for analytical continuation.
 
@@ -234,46 +133,18 @@ Special care is taken in evaluating this expression around y = 0 to handle the s
 
     This kernel is specifically designed for bosonic correlation functions and should not be used for fermionic cases.
 
+!!! note
+
+    The kernel is implemented using piecewise Legendre polynomial expansion for numerical stability and accuracy.
+
 # Arguments
 * `lambda`: The cutoff parameter Λ (must be non-negative)
+* `status`: Pointer to store the status code
 # Returns
-A pointer to the newly created kernel object, or NULL if creation fails
+Pointer to the newly created kernel object, or NULL if creation fails
 """
-function spir_reg_bose_kernel_new(lambda)
-    ccall((:spir_reg_bose_kernel_new, libsparseir), Ptr{spir_kernel}, (Cdouble,), lambda)
-end
-
-"""
-    spir_sve_result_new(k, epsilon)
-
-Perform truncated singular value expansion (SVE) of a kernel.
-
-Computes a truncated singular value expansion of an integral kernel K: [xmin, xmax] × [ymin, ymax] → ℝ in the form:
-
-K(x, y) = ∑ s[l] * u[l](x) * v[l](y) for l = 1, 2, 3, ...
-
-where: - s[l] are singular values in non-increasing order - u[l](x) are left singular functions, forming an orthonormal system on [xmin, xmax] - v[l](y) are right singular functions, forming an orthonormal system on [ymin, ymax]
-
-The SVE is computed by mapping it onto a singular value decomposition (SVD) of a matrix using piecewise Legendre polynomial expansion.
-
-!!! note
-
-    The computation automatically uses optimized strategies: - For centrosymmetric kernels, specialized algorithms are employed - The working precision is adjusted to meet accuracy requirements
-
-!!! note
-
-    The returned object must be freed using [`spir_release_sve_result`](@ref) when no longer needed
-
-# Arguments
-* `k`: Pointer to the kernel object for which to compute SVE
-* `epsilon`: Accuracy target for the basis. Determines: - The relative magnitude of included singular values - The accuracy of computed singular values and vectors
-# Returns
-A pointer to the newly created SVE result object containing the truncated singular value expansion, or NULL if creation fails
-# See also
-[`spir_release_sve_result`](@ref)
-"""
-function spir_sve_result_new(k, epsilon)
-    ccall((:spir_sve_result_new, libsparseir), Ptr{spir_sve_result}, (Ptr{spir_kernel}, Cdouble), k, epsilon)
+function spir_reg_bose_kernel_new(lambda, status)
+    ccall((:spir_reg_bose_kernel_new, libsparseir), Ptr{spir_kernel}, (Cdouble, Ptr{Cint}), lambda, status)
 end
 
 """
@@ -283,620 +154,602 @@ Retrieves the domain boundaries of a kernel function.
 
 This function obtains the domain boundaries (ranges) for both the x and y variables of the specified kernel function. The kernel domain is typically defined as a rectangle in the (x,y) plane.
 
+!!! note
+
+    For the logistic and regularized bosonic kernels, the domain is typically [-1, 1] × [-1, 1] in dimensionless variables.
+
 # Arguments
-* `k`: Pointer to the kernel object whose domain is to be retrieved
-* `xmin`: Pointer to store the minimum value of the x-range
-* `xmax`: Pointer to store the maximum value of the x-range
-* `ymin`: Pointer to store the minimum value of the y-range
-* `ymax`: Pointer to store the maximum value of the y-range
+* `k`: Pointer to the kernel object whose domain is to be retrieved.
+* `xmin`: Pointer to store the minimum value of the x-range.
+* `xmax`: Pointer to store the maximum value of the x-range.
+* `ymin`: Pointer to store the minimum value of the y-range.
+* `ymax`: Pointer to store the maximum value of the y-range.
 # Returns
-0 on success, -1 on failure (if the kernel is invalid or an exception occurs)
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 """
 function spir_kernel_domain(k, xmin, xmax, ymin, ymax)
     ccall((:spir_kernel_domain, libsparseir), Cint, (Ptr{spir_kernel}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}), k, xmin, xmax, ymin, ymax)
 end
 
 """
-    spir_kernel_matrix(k, x, nx, y, ny, out)
+    spir_sve_result_new(k, epsilon, status)
 
-Takes a kernel `k`, an array `x` of size `nx`, an array `y` of size `ny` and an array `out` of size `nx * ny`. On exit, set `out[ix*ny + iy] = K(x[ix], y[iy])`.
-"""
-function spir_kernel_matrix(k, x, nx, y, ny, out)
-    ccall((:spir_kernel_matrix, libsparseir), Cint, (Ptr{spir_kernel}, Ptr{Cdouble}, Cint, Ptr{Cdouble}, Cint, Ptr{Cdouble}), k, x, nx, y, ny, out)
-end
+Perform truncated singular value expansion (SVE) of a kernel.
 
-function spir_fermionic_finite_temp_basis_get_size(b, size)
-    ccall((:spir_fermionic_finite_temp_basis_get_size, libsparseir), Cint, (Ptr{spir_fermionic_finite_temp_basis}, Ptr{Cint}), b, size)
-end
+Computes a truncated singular value expansion of an integral kernel K: [xmin, xmax] × [ymin, ymax] → ℝ in the form:
 
-function spir_bosonic_finite_temp_basis_get_size(b, size)
-    ccall((:spir_bosonic_finite_temp_basis_get_size, libsparseir), Cint, (Ptr{spir_bosonic_finite_temp_basis}, Ptr{Cint}), b, size)
-end
+K(x, y) = ∑ s[l] * u[l](x) * v[l](y) for l = 1, 2, 3, ...
 
-"""
-    spir_fermionic_tau_sampling_new(b)
+where: - s[l] are singular values in non-increasing order - u[l](x) are left singular functions, forming an orthonormal system on [xmin, xmax] - v[l](y) are right singular functions, forming an orthonormal system on [ymin, ymax]
 
-Creates a new fermionic tau sampling object for sparse sampling in imaginary time.
-
-Constructs a sampling object that allows transformation between the IR basis and a set of sampling points in imaginary time (τ). The sampling points are automatically chosen as the extrema of the highest-order basis function in imaginary time, which provides near-optimal conditioning for the given basis size.
+The SVE is computed by mapping it onto a singular value decomposition (SVD) of a matrix using piecewise Legendre polynomial expansion. The accuracy of the computation is controlled by the epsilon parameter, which determines: - The relative magnitude of included singular values - The accuracy of computed singular values and vectors
 
 !!! note
 
-    The sampling points are chosen to optimize numerical stability and accuracy
+    The computation automatically uses optimized strategies: - For centrosymmetric kernels, specialized algorithms are employed - The working precision is adjusted to meet accuracy requirements - If epsilon is below √ε (where ε is machine epsilon), a warning is issued and higher precision arithmetic is used
 
 !!! note
 
-    The sampling matrix is automatically factorized using SVD for efficient transformations
-
-!!! note
-
-    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
+    The returned object must be freed using spir\\_release\\_sve\\_result when no longer needed
 
 # Arguments
-* `b`: Pointer to a fermionic finite temperature basis object
+* `k`: Pointer to the kernel object for which to compute SVE
+* `epsilon`: Accuracy target for the basis. Determines: - The relative magnitude of included singular values - The accuracy of computed singular values and vectors
+* `status`: Pointer to store the status code
 # Returns
-A pointer to the newly created sampling object, or NULL if creation fails
+Pointer to the newly created SVE result, or NULL if creation fails
 # See also
-[`spir_release_sampling`](@ref)
+spir\\_release\\_sve\\_result
 """
-function spir_fermionic_tau_sampling_new(b)
-    ccall((:spir_fermionic_tau_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_fermionic_finite_temp_basis},), b)
+function spir_sve_result_new(k, epsilon, status)
+    ccall((:spir_sve_result_new, libsparseir), Ptr{spir_sve_result}, (Ptr{spir_kernel}, Cdouble, Ptr{Cint}), k, epsilon, status)
 end
 
 """
-    spir_fermionic_matsubara_sampling_new(b)
+    spir_funcs_get_size(funcs, size)
 
-Creates a new fermionic Matsubara sampling object for sparse sampling in Matsubara frequencies.
+Gets the number of functions in a functions object.
 
-Constructs a sampling object that allows transformation between the IR basis and a set of sampling points in Matsubara frequencies (iωn). The sampling points are automatically chosen as the (discrete) extrema of the highest-order basis function in Matsubara frequencies, which provides near-optimal conditioning for the given basis size.
-
-For fermionic Matsubara frequencies, the sampling points are odd integers: iωn = (2n + 1)π/β, where n is an integer.
-
-!!! note
-
-    The sampling points are chosen to optimize numerical stability and accuracy
-
-!!! note
-
-    The sampling matrix is automatically factorized using SVD for efficient transformations
-
-!!! note
-
-    For fermionic functions, the Matsubara frequencies are odd multiples of π/β, i.e. iωn = (2n + 1)π/β.
-
-!!! note
-
-    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
+This function returns the number of functions contained in the specified functions object. This number is needed to allocate arrays of the correct size when evaluating the functions.
 
 # Arguments
-* `b`: Pointer to a fermionic finite temperature basis object
+* `funcs`: Pointer to the functions object
+* `size`: Pointer to store the number of functions
 # Returns
-A pointer to the newly created sampling object, or NULL if creation fails
-# See also
-[`spir_release_sampling`](@ref)
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 """
-function spir_fermionic_matsubara_sampling_new(b)
-    ccall((:spir_fermionic_matsubara_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_fermionic_finite_temp_basis},), b)
+function spir_funcs_get_size(funcs, size)
+    ccall((:spir_funcs_get_size, libsparseir), Cint, (Ptr{spir_funcs}, Ptr{Cint}), funcs, size)
 end
 
 """
-    spir_bosonic_tau_sampling_new(b)
+    spir_funcs_eval(funcs, x, out)
 
-Creates a new bosonic tau sampling object for sparse sampling in imaginary time.
+Evaluates functions at a single point in the imaginary-time domain or the real frequency domain.
 
-Constructs a sampling object that allows transformation between the IR basis and a set of sampling points in imaginary time (τ). The sampling points are automatically chosen as the extrema of the highest-order basis function in imaginary time, which provides near-optimal conditioning for the given basis size.
-
-!!! note
-
-    The sampling points are chosen to optimize numerical stability and accuracy
+This function evaluates all functions at a specified point x. The values of each basis function at x are stored in the output array. The output array out[j] contains the value of the j-th function evaluated at x.
 
 !!! note
 
-    The sampling matrix is automatically factorized using SVD for efficient transformations
-
-!!! note
-
-    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
+    The output array must be pre-allocated with sufficient size to store all function values
 
 # Arguments
-* `b`: Pointer to a bosonic finite temperature basis object
+* `funcs`: Pointer to a functions object
+* `x`: Point at which to evaluate the functions
+* `out`: Pre-allocated array to store the evaluation results.
 # Returns
-A pointer to the newly created sampling object, or NULL if creation fails
-# See also
-[`spir_release_sampling`](@ref)
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 """
-function spir_bosonic_tau_sampling_new(b)
-    ccall((:spir_bosonic_tau_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_bosonic_finite_temp_basis},), b)
+function spir_funcs_eval(funcs, x, out)
+    ccall((:spir_funcs_eval, libsparseir), Cint, (Ptr{spir_funcs}, Cdouble, Ptr{Cdouble}), funcs, x, out)
 end
 
 """
-    spir_bosonic_matsubara_sampling_new(b)
+    spir_funcs_eval_matsu(funcs, x, out)
 
-Creates a new bosonic Matsubara sampling object for sparse sampling in Matsubara frequencies.
+Evaluate a funcs object at a single Matsubara frequency
 
-Constructs a sampling object that allows transformation between the IR basis and a set of sampling points in Matsubara frequencies (iωn). The sampling points are automatically chosen as the (discrete) extrema of the highest-order basis function in Matsubara frequencies, which provides near-optimal conditioning for the given basis size.
-
-For bosonic Matsubara frequencies, the sampling points are even integers: iωn = 2nπ/β, where n is an integer.
-
-!!! note
-
-    The sampling points are chosen to optimize numerical stability and accuracy
-
-!!! note
-
-    The sampling matrix is automatically factorized using SVD for efficient transformations
-
-!!! note
-
-    For bosonic functions, the Matsubara frequencies are even multiples of π/β
-
-!!! note
-
-    The returned object must be freed using [`spir_release_sampling`](@ref) when no longer needed
+This function evaluates the basis functions at a single Matsubara frequency index. The output array will contain the values of all basis functions at the specified frequency.
 
 # Arguments
-* `b`: Pointer to a bosonic finite temperature basis object
+* `funcs`: Pointer to the funcs object to evaluate
+* `x`: The Matsubara frequency index (integer)
+* `out`: Pointer to the output array where the results will be stored. The array must have enough space to store all basis function values. The values are stored in the order of basis functions.
 # Returns
-A pointer to the newly created sampling object, or NULL if creation fails
-# See also
-[`spir_release_sampling`](@ref)
+int [`SPIR_COMPUTATION_SUCCESS`](@ref) on success, or an error code on failure
 """
-function spir_bosonic_matsubara_sampling_new(b)
-    ccall((:spir_bosonic_matsubara_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_bosonic_finite_temp_basis},), b)
+function spir_funcs_eval_matsu(funcs, x, out)
+    ccall((:spir_funcs_eval_matsu, libsparseir), Cint, (Ptr{spir_funcs}, Int64, Ptr{c_complex}), funcs, x, out)
 end
 
 """
-    spir_fermionic_dlr_new(b)
+    spir_funcs_batch_eval(funcs, order, num_points, xs, out)
 
-Creates a new fermionic Discrete Lehmann Representation (DLR).
+Evaluate a funcs object at multiple points in the imaginary-time domain or the real frequency domain
+
+This function evaluates the basis functions at multiple points. The points can be either in the imaginary-time domain or the real frequency domain, depending on the type of the funcs object (u or v basis functions).
+
+The output array can be stored in either row-major or column-major order, specified by the order parameter. In row-major order, the output is stored as (num\\_points, nfuncs), while in column-major order, it is stored as (nfuncs, num\\_points).
+
+# Arguments
+* `funcs`: Pointer to the funcs object to evaluate
+* `order`: Memory layout of the output array: - [`SPIR_ORDER_ROW_MAJOR`](@ref): (num\\_points, nfuncs) - [`SPIR_ORDER_COLUMN_MAJOR`](@ref): (nfuncs, num\\_points)
+* `num_points`: Number of points to evaluate
+* `xs`: Array of points to evaluate at. The points should be in the appropriate domain (imaginary time for u basis, real frequency for v basis)
+* `out`: Pointer to the output array where the results will be stored. The array must have enough space to store num\\_points * nfuncs values, where nfuncs is the number of basis functions.
+# Returns
+int [`SPIR_COMPUTATION_SUCCESS`](@ref) on success, or an error code on failure
+"""
+function spir_funcs_batch_eval(funcs, order, num_points, xs, out)
+    ccall((:spir_funcs_batch_eval, libsparseir), Cint, (Ptr{spir_funcs}, Cint, Cint, Ptr{Cdouble}, Ptr{Cdouble}), funcs, order, num_points, xs, out)
+end
+
+"""
+    spir_funcs_batch_eval_matsu(funcs, order, num_freqs, matsubara_freq_indices, out)
+
+Evaluates basis functions at multiple Matsubara frequencies.
+
+This function evaluates all functions contained in a functions object at the specified Matsubara frequency indices. The values of each function at each frequency are stored in the output array.
+
+!!! note
+
+    The output array must be pre-allocated with sufficient size to store all function values at all requested frequencies. Indices n correspond to ωn = nπ/β, where n are odd for fermionic frequencies and even for bosonic frequencies.
+
+# Arguments
+* `funcs`: Pointer to the functions object
+* `order`: Specifies the memory layout of the output array: [`SPIR_ORDER_ROW_MAJOR`](@ref) for row-major order (frequency index varies fastest), [`SPIR_ORDER_COLUMN_MAJOR`](@ref) for column-major order (function index varies fastest)
+* `num_freqs`: Number of Matsubara frequencies at which to evaluate
+* `matsubara_freq_indices`: Array of Matsubara frequency indices
+* `out`: Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size num\\_freqs x n\\_funcs.
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+"""
+function spir_funcs_batch_eval_matsu(funcs, order, num_freqs, matsubara_freq_indices, out)
+    ccall((:spir_funcs_batch_eval_matsu, libsparseir), Cint, (Ptr{spir_funcs}, Cint, Cint, Ptr{Int64}, Ptr{c_complex}), funcs, order, num_freqs, matsubara_freq_indices, out)
+end
+
+"""
+    spir_basis_new(statistics, beta, omega_max, k, sve, status)
+
+Creates a new finite temperature IR basis using a pre-computed SVE result.
+
+This function creates a intermediate representation (IR) basis using a pre-computed singular value expansion (SVE) result. This allows for reusing an existing SVE computation, which can be more efficient than recomputing it.
+
+!!! note
+
+    Using a pre-computed SVE can significantly improve performance when creating multiple basis objects with the same kernel
+
+# Arguments
+* `statistics`: Statistics type ([`SPIR_STATISTICS_FERMIONIC`](@ref) or [`SPIR_STATISTICS_BOSONIC`](@ref))
+* `beta`: Inverse temperature β (must be positive)
+* `omega_max`: Frequency cutoff ωmax (must be non-negative)
+* `k`: Pointer to the kernel object used for the basis construction
+* `sve`: Pointer to a pre-computed SVE result for the kernel
+* `status`: Pointer to store the status code
+# Returns
+Pointer to the newly created basis object, or NULL if creation fails
+# See also
+[`spir_sve_result_new`](@ref), spir\\_release\\_finite\\_temp\\_basis
+"""
+function spir_basis_new(statistics, beta, omega_max, k, sve, status)
+    ccall((:spir_basis_new, libsparseir), Ptr{spir_basis}, (Cint, Cdouble, Cdouble, Ptr{spir_kernel}, Ptr{spir_sve_result}, Ptr{Cint}), statistics, beta, omega_max, k, sve, status)
+end
+
+"""
+    spir_basis_get_size(b, size)
+
+Gets the size (number of basis functions) of a finite temperature basis.
+
+This function returns the number of basis functions in the specified finite temperature basis object. This size determines the dimensionality of the basis and is needed when allocating arrays for basis function evaluations.
+
+!!! note
+
+    For an IR basis, the size is determined automatically during basis construction based on the specified parameters (β, ωmax, ε) and the kernel's singular value expansion.
+
+!!! note
+
+    For a DLR basis, the size is the number of poles.
+
+# Arguments
+* `b`: Pointer to the finite temperature basis object
+* `size`: Pointer to store the number of basis functions
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+"""
+function spir_basis_get_size(b, size)
+    ccall((:spir_basis_get_size, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cint}), b, size)
+end
+
+"""
+    spir_basis_get_stats(b, statistics)
+
+Gets the statistics type (Fermionic or Bosonic) of a finite temperature basis.
+
+This function returns the statistics type of the specified finite temperature basis object. The statistics type determines whether the basis is for fermionic or bosonic Green's functions.
+
+!!! note
+
+    The statistics type is determined during basis construction and cannot be changed
+
+!!! note
+
+    The statistics type affects the form of the basis functions and the sampling points used for evaluation.
+
+# Arguments
+* `b`: Pointer to the finite temperature basis object
+* `statistics`: Pointer to store the statistics type ([`SPIR_STATISTICS_FERMIONIC`](@ref) or [`SPIR_STATISTICS_BOSONIC`](@ref))
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+"""
+function spir_basis_get_stats(b, statistics)
+    ccall((:spir_basis_get_stats, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cint}), b, statistics)
+end
+
+"""
+    spir_basis_get_u(b, status)
+
+Gets the basis functions of a finite temperature basis.
+
+This function returns an object representing the basis functions in the imaginary-time domain of the specified finite temperature basis.
+
+!!! note
+
+    The returned object must be freed using spir\\_release\\_funcs when no longer needed
+
+# Arguments
+* `b`: Pointer to the finite temperature basis object
+* `status`: Pointer to store the status code
+# Returns
+Pointer to the basis functions object, or NULL if creation fails
+# See also
+spir\\_release\\_funcs
+"""
+function spir_basis_get_u(b, status)
+    ccall((:spir_basis_get_u, libsparseir), Ptr{spir_funcs}, (Ptr{spir_basis}, Ptr{Cint}), b, status)
+end
+
+"""
+    spir_basis_get_v(b, status)
+
+Gets the basis functions of a finite temperature basis.
+
+This function returns an object representing the basis functions in the real-frequency domain of the specified finite temperature basis.
+
+!!! note
+
+    The returned object must be freed using spir\\_release\\_funcs when no longer needed
+
+# Arguments
+* `b`: Pointer to the finite temperature basis object
+* `status`: Pointer to store the status code
+# Returns
+Pointer to the basis functions object, or NULL if creation fails
+# See also
+spir\\_release\\_funcs
+"""
+function spir_basis_get_v(b, status)
+    ccall((:spir_basis_get_v, libsparseir), Ptr{spir_funcs}, (Ptr{spir_basis}, Ptr{Cint}), b, status)
+end
+
+"""
+    spir_basis_get_uhat(b, status)
+
+Gets the basis functions in Matsubara frequency domain.
+
+This function returns an object representing the basis functions in the Matsubara-frequency domain of the specified finite temperature basis.
+
+!!! note
+
+    The returned object must be freed using spir\\_release\\_funcs when no longer needed
+
+# Arguments
+* `b`: Pointer to the finite temperature basis object
+* `status`: Pointer to store the status code
+# Returns
+Pointer to the basis functions object, or NULL if creation fails
+# See also
+spir\\_release\\_funcs
+"""
+function spir_basis_get_uhat(b, status)
+    ccall((:spir_basis_get_uhat, libsparseir), Ptr{spir_funcs}, (Ptr{spir_basis}, Ptr{Cint}), b, status)
+end
+
+"""
+    spir_basis_get_n_default_taus(b, num_points)
+
+Gets the number of default tau sampling points for an IR basis.
+
+This function returns the number of default sampling points in imaginary time (τ) that are automatically chosen for optimal conditioning of the sampling matrix. These points are the extrema of the highest-order basis function in imaginary time.
+
+!!! note
+
+    This function is only available for IR basis objects
+
+!!! note
+
+    The default sampling points are chosen to provide near-optimal conditioning for the given basis size
+
+# Arguments
+* `b`: Pointer to a finite temperature basis object (must be an IR basis)
+* `num_points`: Pointer to store the number of sampling points
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_basis_get_default_taus`](@ref)
+"""
+function spir_basis_get_n_default_taus(b, num_points)
+    ccall((:spir_basis_get_n_default_taus, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cint}), b, num_points)
+end
+
+"""
+    spir_basis_get_default_taus(b, points)
+
+Gets the default tau sampling points for an IR basis.
+
+This function fills the provided array with the default sampling points in imaginary time (τ) that are automatically chosen for optimal conditioning of the sampling matrix. These points are the extrema of the highest-order basis function in imaginary time.
+
+!!! note
+
+    This function is only available for IR basis objects
+
+!!! note
+
+    The array must be pre-allocated with size >= [`spir_basis_get_n_default_taus`](@ref)(b)
+
+!!! note
+
+    The default sampling points are chosen to provide near-optimal conditioning for the given basis size
+
+# Arguments
+* `b`: Pointer to a finite temperature basis object (must be an IR basis)
+* `points`: Pre-allocated array to store the τ sampling points
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_basis_get_n_default_taus`](@ref)
+"""
+function spir_basis_get_default_taus(b, points)
+    ccall((:spir_basis_get_default_taus, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cdouble}), b, points)
+end
+
+"""
+    spir_basis_get_n_default_ws(b, num_points)
+
+Gets the number of default omega sampling points for an IR basis.
+
+This function returns the number of default sampling points in real frequency (ω) that are automatically chosen for optimal conditioning of the sampling matrix. These points are the extrema of the highest-order basis function in real frequency.
+
+!!! note
+
+    This function is only available for IR basis objects
+
+!!! note
+
+    The default sampling points are chosen to provide near-optimal conditioning for the given basis size
+
+# Arguments
+* `b`: Pointer to a finite temperature basis object (must be an IR basis)
+* `num_points`: Pointer to store the number of sampling points
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_basis_get_default_ws`](@ref)
+"""
+function spir_basis_get_n_default_ws(b, num_points)
+    ccall((:spir_basis_get_n_default_ws, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cint}), b, num_points)
+end
+
+"""
+    spir_basis_get_default_ws(b, points)
+
+Gets the default omega sampling points for an IR basis.
+
+This function fills the provided array with the default sampling points in real frequency (ω) that are automatically chosen for optimal conditioning of the sampling matrix. These points are the extrema of the highest-order basis function in real frequency.
+
+!!! note
+
+    This function is only available for IR basis objects
+
+!!! note
+
+    The array must be pre-allocated with size >= [`spir_basis_get_n_default_ws`](@ref)(b)
+
+!!! note
+
+    The default sampling points are chosen to provide near-optimal conditioning for the given basis size
+
+# Arguments
+* `b`: Pointer to a finite temperature basis object (must be an IR basis)
+* `points`: Pre-allocated array to store the ω sampling points
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_basis_get_n_default_ws`](@ref)
+"""
+function spir_basis_get_default_ws(b, points)
+    ccall((:spir_basis_get_default_ws, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cdouble}), b, points)
+end
+
+"""
+    spir_basis_get_nmatuss(b, positive_only, num_points)
+
+Gets the number of default Matsubara sampling points for an IR basis.
+
+This function returns the number of default sampling points in Matsubara frequencies (iωn) that are automatically chosen for optimal conditioning of the sampling matrix. These points are the extrema of the highest-order basis function in Matsubara frequencies.
+
+!!! note
+
+    This function is only available for IR basis objects
+
+!!! note
+
+    The default sampling points are chosen to provide near-optimal conditioning for the given basis size
+
+# Arguments
+* `b`: Pointer to a finite temperature basis object (must be an IR basis)
+* `positive_only`: If true, only positive frequencies are used
+* `num_points`: Pointer to store the number of sampling points
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_basis_get_matsus`](@ref)
+"""
+function spir_basis_get_nmatuss(b, positive_only, num_points)
+    ccall((:spir_basis_get_nmatuss, libsparseir), Cint, (Ptr{spir_basis}, Bool, Ptr{Cint}), b, positive_only, num_points)
+end
+
+"""
+    spir_basis_get_matsus(b, positive_only, points)
+
+Gets the default Matsubara sampling points for an IR basis.
+
+This function fills the provided array with the default sampling points in Matsubara frequencies (iωn) that are automatically chosen for optimal conditioning of the sampling matrix. These points are the extrema of the highest-order basis function in Matsubara frequencies.
+
+!!! note
+
+    This function is only available for IR basis objects
+
+!!! note
+
+    The array must be pre-allocated with size >= [`spir_basis_get_nmatuss`](@ref)(b)
+
+!!! note
+
+    The default sampling points are chosen to provide near-optimal conditioning for the given basis size
+
+!!! note
+
+    For fermionic case, the indices n give frequencies ωn = (2n + 1)π/β
+
+!!! note
+
+    For bosonic case, the indices n give frequencies ωn = 2nπ/β
+
+# Arguments
+* `b`: Pointer to a finite temperature basis object (must be an IR basis)
+* `positive_only`: If true, only positive frequencies are used
+* `points`: Pre-allocated array to store the Matsubara frequency indices
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_basis_get_nmatuss`](@ref)
+"""
+function spir_basis_get_matsus(b, positive_only, points)
+    ccall((:spir_basis_get_matsus, libsparseir), Cint, (Ptr{spir_basis}, Bool, Ptr{Int64}), b, positive_only, points)
+end
+
+"""
+    spir_dlr_new(b, status)
+
+Creates a new Discrete Lehmann Representation (DLR) basis.
 
 This function implements a variant of the discrete Lehmann representation (DLR). Unlike the IR which uses truncated singular value expansion of the analytic continuation kernel K, the DLR is based on a "sketching" of K. The resulting basis is a linear combination of discrete set of poles on the real-frequency axis, continued to the imaginary-frequency axis:
 
-G(iν) = ∑ a[i] / (iν - w[i]) for i = 1, 2, ..., L
+G(iν) = ∑ a[i] * reg[i] / (iν - w[i]) for i = 1, 2, ..., L
 
-where: - a[i] are the expansion coefficients - w[i] are the poles on the real axis - iν are the fermionic Matsubara frequencies
-
-!!! note
-
-    The poles on the real-frequency axis are selected based on the zeros of the IR basis functions on the real axis
-
-!!! note
-
-    The returned object must be freed using [`spir_release_fermionic_dlr`](@ref) when no longer needed
-
-!!! warning
-
-    This implementation uses a heuristic approach for pole selection, which differs from the original DLR method that uses rank-revealing decomposition
+where: - a[i] are the expansion coefficients - w[i] are the poles on the real axis - reg[i] are the regularization factors, which are 1 for fermionic frequencies. For bosonic frequencies, we take reg[i] = tanh(βω[i]/2) (logistic kernel), reg[i] = w[i] (regularized bosonic kernel). The DLR basis functions are given by u[i](iν) = reg[i] / (iν - w[i]) in the imaginary-frequency domain. In the imaginary-time domain, the basis functions are given by u[i](τ) = reg[i] * exp(-w[i]τ) / (1 + exp(-w[i]β)) for fermionic frequencies, u[i](τ) = reg[i] * exp(-w[i]τ) / (1 - exp(-w[i]β)) for bosonic frequencies. - iν are Matsubara frequencies
 
 # Arguments
-* `b`: Pointer to a fermionic finite temperature basis object
+* `b`: Pointer to a finite temperature basis object
+* `status`: Pointer to store the status code
 # Returns
-A pointer to the newly created DLR object, or NULL if creation fails
-# See also
-[`spir_release_fermionic_dlr`](@ref), [`spir_fermionic_dlr_new_with_poles`](@ref)
+Pointer to the newly created DLR object, or NULL if creation fails
 """
-function spir_fermionic_dlr_new(b)
-    ccall((:spir_fermionic_dlr_new, libsparseir), Ptr{spir_fermionic_dlr}, (Ptr{spir_fermionic_finite_temp_basis},), b)
+function spir_dlr_new(b, status)
+    ccall((:spir_dlr_new, libsparseir), Ptr{spir_basis}, (Ptr{spir_basis}, Ptr{Cint}), b, status)
 end
 
 """
-    spir_fermionic_dlr_new_with_poles(b, npoles, poles)
+    spir_dlr_new_with_poles(b, npoles, poles, status)
 
-Creates a new fermionic Discrete Lehmann Representation (DLR) with custom poles.
+Creates a new Discrete Lehmann Representation (DLR) with custom poles.
 
-This function creates a fermionic DLR using a set of user-specified poles on the real-frequency axis. The DLR represents Green's functions as a sum of poles:
-
-G(iν) = ∑ a[i] / (iν - w[i]) for i = 1, 2, ..., npoles
-
-where w[i] are the specified poles and a[i] are the expansion coefficients.
-
-!!! note
-
-    This function allows for more control over the pole selection compared to the automatic pole selection in [`spir_fermionic_dlr_new`](@ref)
+This function creates a DLR basis with user-specified pole locations on the real-frequency axis. This allows for more control over the pole selection compared to the automatic pole selection in [`spir_dlr_new`](@ref).
 
 # Arguments
-* `b`: Pointer to a fermionic finite temperature basis object
+* `b`: Pointer to a finite temperature basis object
 * `npoles`: Number of poles to use in the representation
 * `poles`: Array of pole locations on the real-frequency axis
+* `status`: Pointer to store the status code
 # Returns
-A pointer to the newly created DLR object with custom poles, or NULL if creation fails
-# See also
-[`spir_fermionic_dlr_new`](@ref), [`spir_release_fermionic_dlr`](@ref)
+Pointer to the newly created DLR object, or NULL if creation fails
 """
-function spir_fermionic_dlr_new_with_poles(b, npoles, poles)
-    ccall((:spir_fermionic_dlr_new_with_poles, libsparseir), Ptr{spir_fermionic_dlr}, (Ptr{spir_fermionic_finite_temp_basis}, Cint, Ptr{Cdouble}), b, npoles, poles)
+function spir_dlr_new_with_poles(b, npoles, poles, status)
+    ccall((:spir_dlr_new_with_poles, libsparseir), Ptr{spir_basis}, (Ptr{spir_basis}, Cint, Ptr{Cdouble}, Ptr{Cint}), b, npoles, poles, status)
 end
 
 """
-    spir_bosonic_dlr_new(b)
+    spir_dlr_get_npoles(dlr, num_poles)
 
-Creates a new bosonic Discrete Lehmann Representation (DLR).
+Gets the number of poles in a DLR.
 
-This function implements a variant of the discrete Lehmann representation (DLR). Unlike the IR which uses truncated singular value expansion of the analytic continuation kernel K, the DLR is based on a "sketching" of K. The resulting basis is a linear combination of discrete set of poles on the real-frequency axis, continued to the imaginary-frequency axis:
-
-G(iωn) = ∑ a[i] / (iωn - w[i]) for i = 1, 2, ..., L
-
-where: - a[i] are the expansion coefficients - w[i] are the poles on the real axis - iωn are the bosonic Matsubara frequencies (even multiples of π/β)
-
-!!! note
-
-    The poles on the real-frequency axis are selected based on the zeros of the IR basis functions on the real axis
-
-!!! note
-
-    The returned object must be freed using [`spir_release_bosonic_dlr`](@ref) when no longer needed
-
-!!! warning
-
-    This implementation uses a heuristic approach for pole selection, which differs from the original DLR method that uses rank-revealing decomposition
+This function returns the number of poles in the specified DLR object.
 
 # Arguments
-* `b`: Pointer to a bosonic finite temperature basis object
+* `dlr`: Pointer to the DLR object
+* `num_poles`: Pointer to store the number of poles
 # Returns
-A pointer to the newly created DLR object, or NULL if creation fails
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
-[`spir_release_bosonic_dlr`](@ref), [`spir_bosonic_dlr_new_with_poles`](@ref)
+[`spir_dlr_get_poles`](@ref)
 """
-function spir_bosonic_dlr_new(b)
-    ccall((:spir_bosonic_dlr_new, libsparseir), Ptr{spir_bosonic_dlr}, (Ptr{spir_bosonic_finite_temp_basis},), b)
+function spir_dlr_get_npoles(dlr, num_poles)
+    ccall((:spir_dlr_get_npoles, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cint}), dlr, num_poles)
 end
 
 """
-    spir_bosonic_dlr_new_with_poles(b, npoles, poles)
+    spir_dlr_get_poles(dlr, poles)
 
-Creates a new bosonic Discrete Lehmann Representation (DLR) with custom poles.
+Gets the poles in a DLR.
 
-This function creates a bosonic DLR using a set of user-specified poles on the real-frequency axis. The DLR represents correlation functions as a sum of poles:
-
-G(iωn) = ∑ a[i] / (iωn - w[i]) for i = 1, 2, ..., npoles
-
-where w[i] are the specified poles and a[i] are the expansion coefficients.
-
-!!! note
-
-    This function allows for more control over the pole selection compared to the automatic pole selection in [`spir_bosonic_dlr_new`](@ref)
+This function returns the poles in the specified DLR object.
 
 # Arguments
-* `b`: Pointer to a bosonic finite temperature basis object
-* `npoles`: Number of poles to use in the representation
-* `poles`: Array of pole locations on the real-frequency axis
+* `dlr`: Pointer to the DLR object
+* `poles`: Pointer to store the poles
 # Returns
-A pointer to the newly created DLR object with custom poles, or NULL if creation fails
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
-[`spir_bosonic_dlr_new`](@ref), [`spir_release_bosonic_dlr`](@ref)
+[`spir_dlr_get_npoles`](@ref)
 """
-function spir_bosonic_dlr_new_with_poles(b, npoles, poles)
-    ccall((:spir_bosonic_dlr_new_with_poles, libsparseir), Ptr{spir_bosonic_dlr}, (Ptr{spir_bosonic_finite_temp_basis}, Cint, Ptr{Cdouble}), b, npoles, poles)
+function spir_dlr_get_poles(dlr, poles)
+    ccall((:spir_dlr_get_poles, libsparseir), Cint, (Ptr{spir_basis}, Ptr{Cdouble}), dlr, poles)
 end
 
 """
-    spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out)
+    spir_ir2dlr_dd(dlr, order, ndim, input_dims, target_dim, input, out)
 
-Evaluates basis coefficients at sampling points (double to double version).
-
-Transforms basis coefficients to values at sampling points, where both input and output are real (double precision) values. The operation can be performed along any dimension of a multidimensional array.
-
-!!! note
-
-    For optimal performance, the target dimension should be either the first (0) or the last (ndim-1) dimension to avoid large temporary array allocations
-
-!!! note
-
-    The output array must be pre-allocated with the correct size
-
-!!! note
-
-    The input and output arrays must be contiguous in memory
-
-# Arguments
-* `s`: Pointer to the sampling object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
-* `ndim`: Number of dimensions in the input/output arrays
-* `input_dims`: Array of dimension sizes
-* `target_dim`: Target dimension for the transformation (0-based)
-* `input`: Input array of basis coefficients
-* `out`: Output array for the evaluated values at sampling points
-# Returns
-0 on success, non-zero on failure
-# See also
-[`spir_sampling_eval_dz`](@ref), [`spir_sampling_eval_zz`](@ref)
-"""
-function spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_eval_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
-end
-
-"""
-    spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, out)
-
-Evaluates basis coefficients at sampling points (double to complex version).
-
-Transforms basis coefficients to values at sampling points, where input is real (double precision) and output is complex (double precision) values. The operation can be performed along any dimension of a multidimensional array.
-
-!!! note
-
-    For optimal performance, the target dimension should be either the first (0) or the last (ndim-1) dimension to avoid large temporary array allocations
-
-!!! note
-
-    The output array must be pre-allocated with the correct size
-
-!!! note
-
-    The input and output arrays must be contiguous in memory
-
-!!! note
-
-    Complex numbers are stored as pairs of consecutive double values (real, imag)
-
-# Arguments
-* `s`: Pointer to the sampling object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
-* `ndim`: Number of dimensions in the input/output arrays
-* `input_dims`: Array of dimension sizes
-* `target_dim`: Target dimension for the transformation (0-based)
-* `input`: Input array of real basis coefficients
-* `out`: Output array for the evaluated complex values at sampling points
-# Returns
-0 on success, non-zero on failure
-# See also
-[`spir_sampling_eval_dd`](@ref), [`spir_sampling_eval_zz`](@ref)
-"""
-function spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_eval_dz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
-end
-
-function spir_sampling_eval_zz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_eval_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
-end
-
-"""
-    spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out)
-
-Fits values at sampling points to basis coefficients (double to double version).
-
-Transforms values at sampling points back to basis coefficients, where both input and output are real (double precision) values. The operation can be performed along any dimension of a multidimensional array.
-
-!!! note
-
-    For optimal performance, the target dimension should be either the first (0) or the last (ndim-1) dimension to avoid large temporary array allocations
-
-!!! note
-
-    The output array must be pre-allocated with the correct size
-
-!!! note
-
-    The input and output arrays must be contiguous in memory
-
-!!! note
-
-    This function performs the inverse operation of [`spir_sampling_eval_dd`](@ref)
-
-# Arguments
-* `s`: Pointer to the sampling object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
-* `ndim`: Number of dimensions in the input/output arrays
-* `input_dims`: Array of dimension sizes
-* `target_dim`: Target dimension for the transformation (0-based)
-* `input`: Input array of values at sampling points
-* `out`: Output array for the fitted basis coefficients
-# Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
-# See also
-[`spir_sampling_eval_dd`](@ref), [`spir_sampling_fit_zz`](@ref)
-"""
-function spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_fit_dd, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
-end
-
-"""
-    spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out)
-
-Fits values at sampling points to basis coefficients (complex to complex version).
-
-Transforms values at sampling points back to basis coefficients, where both input and output are complex (double precision) values. The operation can be performed along any dimension of a multidimensional array.
-
-!!! note
-
-    For optimal performance, the target dimension should be either the first (0) or the last (ndim-1) dimension to avoid large temporary array allocations
-
-!!! note
-
-    The output array must be pre-allocated with the correct size
-
-!!! note
-
-    The input and output arrays must be contiguous in memory
-
-!!! note
-
-    Complex numbers are stored as pairs of consecutive double values (real, imag)
-
-!!! note
-
-    This function performs the inverse operation of [`spir_sampling_eval_zz`](@ref)
-
-# Arguments
-* `s`: Pointer to the sampling object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
-* `ndim`: Number of dimensions in the input/output arrays
-* `input_dims`: Array of dimension sizes
-* `target_dim`: Target dimension for the transformation (0-based)
-* `input`: Input array of complex values at sampling points
-* `out`: Output array for the fitted complex basis coefficients
-# Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, non-zero on failure
-# See also
-[`spir_sampling_eval_zz`](@ref), [`spir_sampling_fit_dd`](@ref)
-"""
-function spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out)
-    ccall((:spir_sampling_fit_zz, libsparseir), Cint, (Ptr{spir_sampling}, int32_t, Int32, Ptr{Int32}, Int32, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
-end
-
-"""
-    spir_bosonic_dlr_fitmat_rows(dlr)
-
-Gets the number of rows in the fitting matrix of a bosonic DLR.
-
-This function returns the number of rows in the fitting matrix of the specified bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to transform between the DLR representation and values at sampling points.
-
-!!! note
-
-    The fitting matrix dimensions determine the size of valid input/output arrays for transformations involving this DLR object
-
-# Arguments
-* `dlr`: Pointer to the bosonic DLR object
-# Returns
-The number of rows in the fitting matrix, or SPIR\\_GET\\_IMPL\\_FAILED if the DLR object is invalid
-# See also
-[`spir_bosonic_dlr_fitmat_cols`](@ref), [`spir_bosonic_dlr_from_IR`](@ref), [`spir_bosonic_dlr_to_IR`](@ref)
-"""
-function spir_bosonic_dlr_fitmat_rows(dlr)
-    ccall((:spir_bosonic_dlr_fitmat_rows, libsparseir), Cint, (Ptr{spir_bosonic_dlr},), dlr)
-end
-
-"""
-    spir_bosonic_dlr_fitmat_cols(dlr)
-
-Gets the number of columns in the fitting matrix of a bosonic DLR.
-
-This function returns the number of columns in the fitting matrix of the specified bosonic Discrete Lehmann Representation (DLR). The fitting matrix is used to transform between the DLR representation and values at sampling points.
-
-!!! note
-
-    The fitting matrix dimensions determine the size of valid input/output arrays for transformations involving this DLR object
-
-# Arguments
-* `dlr`: Pointer to the bosonic DLR object
-# Returns
-The number of columns in the fitting matrix, or SPIR\\_GET\\_IMPL\\_FAILED if the DLR object is invalid
-# See also
-[`spir_bosonic_dlr_fitmat_rows`](@ref), [`spir_bosonic_dlr_from_IR`](@ref), [`spir_bosonic_dlr_to_IR`](@ref)
-"""
-function spir_bosonic_dlr_fitmat_cols(dlr)
-    ccall((:spir_bosonic_dlr_fitmat_cols, libsparseir), Cint, (Ptr{spir_bosonic_dlr},), dlr)
-end
-
-"""
-    spir_fermionic_dlr_fitmat_rows(dlr)
-
-Gets the number of rows in the fitting matrix of a fermionic DLR.
-
-This function returns the number of rows in the fitting matrix of the specified fermionic Discrete Lehmann Representation (DLR). The fitting matrix is used to transform between the DLR representation and values at sampling points.
-
-!!! note
-
-    The fitting matrix dimensions determine the size of valid input/output arrays for transformations involving this DLR object
-
-# Arguments
-* `dlr`: Pointer to the fermionic DLR object
-# Returns
-The number of rows in the fitting matrix, or SPIR\\_GET\\_IMPL\\_FAILED if the DLR object is invalid
-# See also
-[`spir_fermionic_dlr_fitmat_cols`](@ref), [`spir_fermionic_dlr_from_IR`](@ref), [`spir_fermionic_dlr_to_IR`](@ref)
-"""
-function spir_fermionic_dlr_fitmat_rows(dlr)
-    ccall((:spir_fermionic_dlr_fitmat_rows, libsparseir), Cint, (Ptr{spir_fermionic_dlr},), dlr)
-end
-
-"""
-    spir_fermionic_dlr_fitmat_cols(dlr)
-
-Gets the number of columns in the fitting matrix of a fermionic DLR.
-
-This function returns the number of columns in the fitting matrix of the specified fermionic Discrete Lehmann Representation (DLR). The fitting matrix is used to transform between the DLR representation and values at sampling points.
-
-!!! note
-
-    The fitting matrix dimensions determine the size of valid input/output arrays for transformations involving this DLR object
-
-# Arguments
-* `dlr`: Pointer to the fermionic DLR object
-# Returns
-The number of columns in the fitting matrix, or SPIR\\_GET\\_IMPL\\_FAILED if the DLR object is invalid
-# See also
-[`spir_fermionic_dlr_fitmat_rows`](@ref), [`spir_fermionic_dlr_from_IR`](@ref), [`spir_fermionic_dlr_to_IR`](@ref)
-"""
-function spir_fermionic_dlr_fitmat_cols(dlr)
-    ccall((:spir_fermionic_dlr_fitmat_cols, libsparseir), Cint, (Ptr{spir_fermionic_dlr},), dlr)
-end
-
-"""
-    spir_fermionic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
-
-Transforms a given input array from the Imaginary Frequency (IR) representation to the Fermionic Discrete Lehmann Representation (DLR) using the specified DLR object.
+Transforms a given input array from the Intermediate Representation (IR) to the Discrete Lehmann Representation (DLR) using the specified DLR object. This version handles real (double precision) input and output arrays.
 
 !!! note
 
     The input and output arrays must be allocated with sufficient memory. The size of the input and output arrays should match the dimensions specified. The order type determines the memory layout of the input and output arrays. The function assumes that the input array is in the specified order type. The output array will be in the specified order type.
 
 # Arguments
-* `dlr`: Pointer to the fermionic DLR object
+* `dlr`: Pointer to the DLR basis object
 * `order`: Order type (C or Fortran)
-* `ndim`: Number of dimensions
+* `ndim`: Number of dimensions of input/output arrays
 * `input_dims`: Array of dimensions
-* `input`: Input coefficients array in IR representation
-* `out`: Output array in DLR representation
+* `target_dim`: Target dimension for the transformation (0-based)
+* `input`: Input coefficients array in IR
+* `out`: Output array in DLR
 # Returns
-0 on success, or a negative value if an error occurred
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
-[`spir_fermionic_dlr_to_IR`](@ref), [`spir_fermionic_dlr_fitmat_rows`](@ref), [`spir_fermionic_dlr_fitmat_cols`](@ref)
+spir\\_ir2dlr, [`spir_dlr2ir_dd`](@ref)
 """
-function spir_fermionic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_fermionic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+function spir_ir2dlr_dd(dlr, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_ir2dlr_dd, libsparseir), Cint, (Ptr{spir_basis}, Cint, Cint, Ptr{Cint}, Cint, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, target_dim, input, out)
+end
+
+function spir_ir2dlr_zz(dlr, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_ir2dlr_zz, libsparseir), Cint, (Ptr{spir_basis}, Cint, Cint, Ptr{Cint}, Cint, Ptr{c_complex}, Ptr{c_complex}), dlr, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
-    spir_bosonic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
+    spir_dlr2ir_dd(dlr, order, ndim, input_dims, target_dim, input, out)
 
-Transforms coefficients from IR basis to bosonic DLR representation.
-
-This function converts expansion coefficients from the Intermediate Representation (IR) basis to the Discrete Lehmann Representation (DLR). The transformation is performed by solving a linear system using the fitting matrix:
-
-g\\_DLR = matrix \\ g\\_IR
-
-where: - g\\_DLR are the coefficients in the DLR basis - g\\_IR are the coefficients in the IR basis - matrix is the SVD-factorized transformation matrix
-
-!!! note
-
-    The output array must be pre-allocated with the correct size
-
-!!! note
-
-    The input and output arrays must be contiguous in memory
-
-!!! note
-
-    This function is specifically for bosonic (symmetric) Green's functions
-
-!!! note
-
-    The transformation preserves the numerical properties of the representation
-
-!!! note
-
-    The transformation involves solving a linear system, which may be computationally more intensive than the forward transformation
-
-# Arguments
-* `dlr`: Pointer to the bosonic DLR object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
-* `ndim`: Number of dimensions in the input/output arrays
-* `input_dims`: Array of dimension sizes
-* `input`: Input array of IR coefficients (double precision)
-* `out`: Output array for the DLR coefficients (double precision)
-# Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (if the DLR object is invalid or an error occurs)
-# See also
-[`spir_bosonic_dlr_to_IR`](@ref), [`spir_fermionic_dlr_from_IR`](@ref)
-"""
-function spir_bosonic_dlr_from_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_bosonic_dlr_from_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
-end
-
-"""
-    spir_bosonic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
-
-Transforms coefficients from DLR basis to bosonic IR representation.
+Transforms coefficients from DLR basis to IR representation.
 
 This function converts expansion coefficients from the Discrete Lehmann Representation (DLR) basis to the Intermediate Representation (IR) basis. The transformation is performed using the fitting matrix:
 
@@ -914,32 +767,29 @@ where: - g\\_IR are the coefficients in the IR basis - g\\_DLR are the coefficie
 
 !!! note
 
-    This function is specifically for bosonic (symmetric) Green's functions
-
-!!! note
-
     The transformation is a direct matrix multiplication, which is typically faster than the inverse transformation
 
 # Arguments
-* `dlr`: Pointer to the bosonic DLR object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
+* `dlr`: Pointer to the DLR object
+* `order`: Memory layout order ([`SPIR_ORDER_ROW_MAJOR`](@ref) or [`SPIR_ORDER_COLUMN_MAJOR`](@ref))
 * `ndim`: Number of dimensions in the input/output arrays
 * `input_dims`: Array of dimension sizes
+* `target_dim`: Target dimension for the transformation (0-based)
 * `input`: Input array of DLR coefficients (double precision)
 * `out`: Output array for the IR coefficients (double precision)
 # Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (if the DLR object is invalid or an error occurs)
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
-[`spir_bosonic_dlr_from_IR`](@ref), [`spir_fermionic_dlr_to_IR`](@ref)
+spir\\_ir2dlr
 """
-function spir_bosonic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_bosonic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_bosonic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
+function spir_dlr2ir_dd(dlr, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_dlr2ir_dd, libsparseir), Cint, (Ptr{spir_basis}, Cint, Cint, Ptr{Cint}, Cint, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
-    spir_fermionic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
+    spir_dlr2ir_zz(dlr, order, ndim, input_dims, target_dim, input, out)
 
-Transforms coefficients from DLR basis to fermionic IR representation.
+Transforms coefficients from DLR basis to IR representation. This version handles complex input and output arrays.
 
 This function converts expansion coefficients from the Discrete Lehmann Representation (DLR) basis to the Intermediate Representation (IR) basis. The transformation is performed using the fitting matrix:
 
@@ -957,294 +807,76 @@ where: - g\\_IR are the coefficients in the IR basis - g\\_DLR are the coefficie
 
 !!! note
 
-    This function is specifically for fermionic Green's functions
-
-!!! note
-
     The transformation is a direct matrix multiplication, which is typically faster than the inverse transformation
 
 # Arguments
-* `dlr`: Pointer to the fermionic DLR object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
+* `dlr`: Pointer to the DLR object
+* `order`: Memory layout order ([`SPIR_ORDER_ROW_MAJOR`](@ref) or [`SPIR_ORDER_COLUMN_MAJOR`](@ref))
 * `ndim`: Number of dimensions in the input/output arrays
 * `input_dims`: Array of dimension sizes
-* `input`: Input array of DLR coefficients (double precision)
-* `out`: Output array for the IR coefficients (double precision)
+* `target_dim`: Target dimension for the transformation (0-based)
+* `input`: Input array of DLR coefficients (complex)
+* `out`: Output array for the IR coefficients (complex)
 # Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED on failure (if the DLR object is invalid or an error occurs)
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
-[`spir_fermionic_dlr_from_IR`](@ref), [`spir_bosonic_dlr_to_IR`](@ref)
+[`spir_ir2dlr_zz`](@ref), [`spir_dlr2ir_dd`](@ref)
 """
-function spir_fermionic_dlr_to_IR(dlr, order, ndim, input_dims, input, out)
-    ccall((:spir_fermionic_dlr_to_IR, libsparseir), Cint, (Ptr{spir_fermionic_dlr}, int32_t, Int32, Ptr{Int32}, Ptr{Cdouble}, Ptr{Cdouble}), dlr, order, ndim, input_dims, input, out)
-end
-
-function spir_fermionic_finite_temp_basis_new(beta, omega_max, epsilon)
-    ccall((:spir_fermionic_finite_temp_basis_new, libsparseir), Ptr{spir_fermionic_finite_temp_basis}, (Cdouble, Cdouble, Cdouble), beta, omega_max, epsilon)
+function spir_dlr2ir_zz(dlr, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_dlr2ir_zz, libsparseir), Cint, (Ptr{spir_basis}, Cint, Cint, Ptr{Cint}, Cint, Ptr{c_complex}, Ptr{c_complex}), dlr, order, ndim, input_dims, target_dim, input, out)
 end
 
 """
-    spir_bosonic_finite_temp_basis_new(beta, omega_max, epsilon)
+    spir_tau_sampling_new(b, num_points, points, status)
 
-Creates a new bosonic finite temperature IR basis.
+Creates a new tau sampling object for sparse sampling in imaginary time with custom sampling points.
 
-For a continuation kernel K from real frequencies, ω ∈ [-ωmax, ωmax], to imaginary time, τ ∈ [0, β], this function creates an intermediate representation (IR) basis that stores the truncated singular value expansion:
-
-K(τ, ω) ≈ ∑ u[l](τ) * s[l] * v[l](ω) for l = 1, 2, 3, ...
-
-where: - u[l](τ) are IR basis functions on the imaginary time axis (stored as piecewise Legendre polynomials) - s[l] are singular values of the continuation kernel - v[l](ω) are IR basis functions on the real frequency axis (stored as piecewise Legendre polynomials)
+Constructs a sampling object that allows transformation between the IR basis and a user-specified set of sampling points in imaginary time (τ). The sampling points are provided by the user, allowing for custom sampling strategies.
 
 !!! note
 
-    The basis includes both imaginary time and Matsubara frequency representations
+    The sampling points should be chosen to ensure numerical stability and accuracy for the given basis
 
 !!! note
 
-    For Matsubara frequencies, bosonic basis uses even numbers (2n)
+    The sampling matrix is automatically factorized using SVD for efficient transformations
 
 !!! note
 
-    The returned object must be freed using [`spir_release_bosonic_finite_temp_basis`](@ref) when no longer needed
+    The returned object must be freed using spir\\_release\\_sampling when no longer needed
 
 # Arguments
-* `beta`: Inverse temperature β (must be positive)
-* `omega_max`: Frequency cutoff ωmax (must be non-negative)
-* `epsilon`: Accuracy target for the basis
+* `b`: Pointer to a finite temperature basis object
+* `num_points`: Number of sampling points
+* `points`: Array of sampling points in imaginary time (τ)
+* `status`: Pointer to store the status code
 # Returns
-A pointer to the newly created bosonic finite temperature basis object, or NULL if creation fails
+Pointer to the newly created sampling object, or NULL if creation fails
 # See also
-[`spir_release_bosonic_finite_temp_basis`](@ref)
+spir\\_release\\_sampling
 """
-function spir_bosonic_finite_temp_basis_new(beta, omega_max, epsilon)
-    ccall((:spir_bosonic_finite_temp_basis_new, libsparseir), Ptr{spir_bosonic_finite_temp_basis}, (Cdouble, Cdouble, Cdouble), beta, omega_max, epsilon)
+function spir_tau_sampling_new(b, num_points, points, status)
+    ccall((:spir_tau_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_basis}, Cint, Ptr{Cdouble}, Ptr{Cint}), b, num_points, points, status)
 end
 
 """
-    spir_fermionic_finite_temp_basis_new_with_sve(beta, omega_max, k, sve)
+    spir_matsu_sampling_new(b, positive_only, num_points, points, status)
 
-Creates a new fermionic finite temperature IR basis using a pre-computed SVE result.
+Creates a new Matsubara sampling object for sparse sampling in Matsubara frequencies with custom sampling points.
 
-This function creates a fermionic intermediate representation (IR) basis using a pre-computed singular value expansion (SVE) result. This allows for reusing an existing SVE computation, which can be more efficient than recomputing it.
-
-!!! note
-
-    Using a pre-computed SVE can significantly improve performance when creating multiple basis objects with the same kernel
+Constructs a sampling object that allows transformation between the IR basis and a user-specified set of sampling points in Matsubara frequencies (iωn). The sampling points are provided by the user, allowing for custom sampling strategies.
 
 # Arguments
-* `beta`: Inverse temperature β (must be positive)
-* `omega_max`: Frequency cutoff ωmax (must be non-negative)
-* `k`: Pointer to the kernel object used for the basis construction
-* `sve`: Pointer to a pre-computed SVE result for the kernel
+* `b`: Pointer to a finite temperature basis object
+* `positive_only`: If true, only positive frequencies are used
+* `num_points`: Number of sampling points
+* `points`: Array of Matsubara frequency indices (n) for the sampling points
+* `status`: Pointer to store the status code
 # Returns
-A pointer to the newly created fermionic finite temperature basis object, or NULL if creation fails (invalid inputs or exception occurs)
-# See also
-[`spir_sve_result_new`](@ref), [`spir_release_fermionic_finite_temp_basis`](@ref)
+Pointer to the newly created sampling object, or NULL if creation fails
 """
-function spir_fermionic_finite_temp_basis_new_with_sve(beta, omega_max, k, sve)
-    ccall((:spir_fermionic_finite_temp_basis_new_with_sve, libsparseir), Ptr{spir_fermionic_finite_temp_basis}, (Cdouble, Cdouble, Ptr{spir_kernel}, Ptr{spir_sve_result}), beta, omega_max, k, sve)
-end
-
-"""
-    spir_bosonic_finite_temp_basis_new_with_sve(beta, omega_max, k, sve)
-
-Creates a new bosonic finite temperature IR basis using a pre-computed SVE result.
-
-This function creates a bosonic intermediate representation (IR) basis using a pre-computed singular value expansion (SVE) result. This allows for reusing an existing SVE computation, which can be more efficient than recomputing it.
-
-!!! note
-
-    Using a pre-computed SVE can significantly improve performance when creating multiple basis objects with the same kernel
-
-# Arguments
-* `beta`: Inverse temperature β (must be positive)
-* `omega_max`: Frequency cutoff ωmax (must be non-negative)
-* `k`: Pointer to the kernel object used for the basis construction
-* `sve`: Pointer to a pre-computed SVE result for the kernel
-# Returns
-A pointer to the newly created bosonic finite temperature basis object, or NULL if creation fails (invalid inputs or exception occurs)
-# See also
-[`spir_sve_result_new`](@ref), [`spir_release_bosonic_finite_temp_basis`](@ref)
-"""
-function spir_bosonic_finite_temp_basis_new_with_sve(beta, omega_max, k, sve)
-    ccall((:spir_bosonic_finite_temp_basis_new_with_sve, libsparseir), Ptr{spir_bosonic_finite_temp_basis}, (Cdouble, Cdouble, Ptr{spir_kernel}, Ptr{spir_sve_result}), beta, omega_max, k, sve)
-end
-
-"""
-    spir_fermionic_finite_temp_basis_get_u(b)
-
-Gets the basis functions of a fermionic finite temperature basis.
-
-This function returns a polynomial vector containing the basis functions of the specified fermionic finite temperature basis. The basis functions are stored as piecewise Legendre polynomials.
-
-!!! note
-
-    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
-
-# Arguments
-* `b`: Pointer to the fermionic finite temperature basis object
-# Returns
-A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
-# See also
-spir\\_release\\_polyvector
-"""
-function spir_fermionic_finite_temp_basis_get_u(b)
-    ccall((:spir_fermionic_finite_temp_basis_get_u, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_fermionic_finite_temp_basis},), b)
-end
-
-"""
-    spir_fermionic_finite_temp_basis_get_v(b)
-
-Gets the basis functions of a fermionic finite temperature basis.
-
-This function returns a polynomial vector containing the basis functions of the specified fermionic finite temperature basis. The basis functions are stored as piecewise Legendre polynomials.
-
-!!! note
-
-    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
-
-# Arguments
-* `b`: Pointer to the fermionic finite temperature basis object
-# Returns
-A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
-# See also
-spir\\_release\\_polyvector
-"""
-function spir_fermionic_finite_temp_basis_get_v(b)
-    ccall((:spir_fermionic_finite_temp_basis_get_v, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_fermionic_finite_temp_basis},), b)
-end
-
-"""
-    spir_fermionic_finite_temp_basis_get_uhat(b)
-
-Gets the basis functions of a fermionic finite temperature basis in Matsubara frequency domain.
-
-This function returns a polynomial vector containing the basis functions of the specified fermionic finite temperature basis in Matsubara frequency domain.
-
-!!! note
-
-    The returned object must be freed using [`spir_release_matsubara_funcs`](@ref) when no longer needed
-
-# Arguments
-* `b`: Pointer to the fermionic finite temperature basis object
-# Returns
-A pointer to the object containing the basis functions, or NULL if the basis object is invalid
-# See also
-[`spir_release_matsubara_funcs`](@ref)
-"""
-function spir_fermionic_finite_temp_basis_get_uhat(b)
-    ccall((:spir_fermionic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_fermionic_finite_temp_basis},), b)
-end
-
-"""
-    spir_bosonic_finite_temp_basis_get_u(b)
-
-Gets the basis functions of a bosonic finite temperature basis.
-
-This function returns a polynomial vector containing the basis functions of the specified bosonic finite temperature basis. The basis functions are stored as piecewise Legendre polynomials.
-
-!!! note
-
-    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
-
-# Arguments
-* `b`: Pointer to the bosonic finite temperature basis object
-# Returns
-A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
-# See also
-spir\\_release\\_polyvector
-"""
-function spir_bosonic_finite_temp_basis_get_u(b)
-    ccall((:spir_bosonic_finite_temp_basis_get_u, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_bosonic_finite_temp_basis},), b)
-end
-
-"""
-    spir_bosonic_finite_temp_basis_get_v(b)
-
-Gets the basis functions of a bosonic finite temperature basis on the real frequency axis.
-
-This function returns a polynomial vector containing the basis functions of the specified bosonic finite temperature basis on the real frequency axis. The basis functions are stored as piecewise Legendre polynomials.
-
-!!! note
-
-    The returned polynomial vector must be freed using spir\\_release\\_polyvector when no longer needed
-
-# Arguments
-* `b`: Pointer to the bosonic finite temperature basis object
-# Returns
-A pointer to the polynomial vector containing the basis functions, or NULL if the basis object is invalid
-# See also
-spir\\_release\\_polyvector
-"""
-function spir_bosonic_finite_temp_basis_get_v(b)
-    ccall((:spir_bosonic_finite_temp_basis_get_v, libsparseir), Ptr{spir_continuous_functions}, (Ptr{spir_bosonic_finite_temp_basis},), b)
-end
-
-"""
-    spir_bosonic_finite_temp_basis_get_uhat(b)
-
-Gets the basis functions of a bosonic finite temperature basis in Matsubara frequency domain.
-
-This function returns a polynomial vector containing the basis functions of the specified bosonic finite temperature basis in Matsubara frequency domain.
-
-!!! note
-
-    The returned object must be freed using [`spir_release_matsubara_funcs`](@ref) when no longer needed
-
-# Arguments
-* `b`: Pointer to the bosonic finite temperature basis object
-# Returns
-A pointer to the object containing the basis functions, or NULL if the basis object is invalid
-# See also
-[`spir_release_matsubara_funcs`](@ref)
-"""
-function spir_bosonic_finite_temp_basis_get_uhat(b)
-    ccall((:spir_bosonic_finite_temp_basis_get_uhat, libsparseir), Ptr{spir_matsubara_funcs}, (Ptr{spir_bosonic_finite_temp_basis},), b)
-end
-
-"""
-    spir_evaluate_continuous_functions(uv, x, out)
-
-Evaluates basis functions at a single point in the imaginary-time domain or the real frequency domain.
-
-This function evaluates all basis functions contained in a polynomial vector at a specified point x. The values of each basis function at x are stored in the output array. The output array out[j] contains the value of the j-th basis function evaluated at x.
-
-!!! note
-
-    The output array must be pre-allocated with sufficient size to store all basis function values
-
-# Arguments
-* `uv`: Pointer to the polynomial vector containing the basis functions
-* `x`: Point at which to evaluate the basis functions
-* `out`: Pre-allocated array to store the evaluation results. Must have size >= n\\_basis
-# Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, error code on failure
-"""
-function spir_evaluate_continuous_functions(uv, x, out)
-    ccall((:spir_evaluate_continuous_functions, libsparseir), Int32, (Ptr{spir_continuous_functions}, Cdouble, Ptr{Cdouble}), uv, x, out)
-end
-
-"""
-    spir_funcs_batch_eval_matsu(uiw, order, num_freqs, matsubara_freq_indices, out)
-
-Evaluates basis functions at multiple Matsubara frequencies.
-
-This function evaluates all basis functions contained in a Matsubara basis functions object at the specified Matsubara frequency indices. The values of each basis function at each frequency are stored in the output array.
-
-!!! note
-
-    The output array must be pre-allocated with sufficient size to store all basis function values at all requested frequencies. Indices n correspond to ωn = nπ/β, where n are odd for fermionic frequencies and even for bosonic frequencies.
-
-# Arguments
-* `uiw`: Pointer to the Matsubara basis functions object
-* `order`: Memory layout order (SPIR\\_ORDER\\_ROW\\_MAJOR or SPIR\\_ORDER\\_COLUMN\\_MAJOR)
-* `num_freqs`: Number of Matsubara frequencies at which to evaluate
-* `matsubara_freq_indices`: Array of Matsubara frequency indices
-* `out`: Pre-allocated array to store the evaluation results. The results are stored as a 2D array of size n\\_basis x num\\_freqs.
-# Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, error code on failure
-"""
-function spir_funcs_batch_eval_matsu(uiw, order, num_freqs, matsubara_freq_indices, out)
-    ccall((:spir_funcs_batch_eval_matsu, libsparseir), Int32, (Ptr{spir_matsubara_funcs}, int32_t, Int32, Ptr{Int32}, Ptr{c_complex}), uiw, order, num_freqs, matsubara_freq_indices, out)
+function spir_matsu_sampling_new(b, positive_only, num_points, points, status)
+    ccall((:spir_matsu_sampling_new, libsparseir), Ptr{spir_sampling}, (Ptr{spir_basis}, Bool, Cint, Ptr{Int64}, Ptr{Cint}), b, positive_only, num_points, points, status)
 end
 
 """
@@ -1258,7 +890,7 @@ This function returns the number of sampling points used in the specified sampli
 * `s`: Pointer to the sampling object
 * `num_points`: Pointer to store the number of sampling points
 # Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success, SPIR\\_GET\\_IMPL\\_FAILED if the sampling object is invalid
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
 [`spir_sampling_get_taus`](@ref), [`spir_sampling_get_matsus`](@ref)
 """
@@ -1281,7 +913,7 @@ This function fills the provided array with the imaginary time (τ) sampling poi
 * `s`: Pointer to the sampling object
 * `points`: Pre-allocated array to store the τ sampling points
 # Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success SPIR\\_GET\\_IMPL\\_FAILED if s is invalid SPIR\\_NOT\\_SUPPORTED if the sampling object is not for τ sampling
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
 [`spir_sampling_get_npoints`](@ref)
 """
@@ -1312,24 +944,155 @@ This function fills the provided array with the Matsubara frequency indices (n) 
 * `s`: Pointer to the sampling object
 * `points`: Pre-allocated array to store the Matsubara frequency indices
 # Returns
-SPIR\\_COMPUTATION\\_SUCCESS on success SPIR\\_GET\\_IMPL\\_FAILED if s is invalid SPIR\\_NOT\\_SUPPORTED if the sampling object is not for Matsubara sampling
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
 # See also
 [`spir_sampling_get_npoints`](@ref)
 """
 function spir_sampling_get_matsus(s, points)
-    ccall((:spir_sampling_get_matsus, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Cint}), s, points)
+    ccall((:spir_sampling_get_matsus, libsparseir), Cint, (Ptr{spir_sampling}, Ptr{Int64}), s, points)
 end
 
-@cenum int32_t::Int32 begin
-    SPIR_COMPUTATION_SUCCESS = 0
-    SPIR_GET_IMPL_FAILED = -1
-    SPIR_INVALID_DIMENSION = -2
-    SPIR_INPUT_DIMENSION_MISMATCH = -3
-    SPIR_OUTPUT_DIMENSION_MISMATCH = -4
-    SPIR_NOT_SUPPORTED = -5
-    SPIR_INVALID_ARGUMENT = -6
-    SPIR_INTERNAL_ERROR = -7
+"""
+    spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out)
+
+Evaluates basis coefficients at sampling points (double to double version).
+
+Transforms basis coefficients to values at sampling points, where both input and output are real (double precision) values. The operation can be performed along any dimension of a multidimensional array.
+
+!!! note
+
+    For optimal performance, the target dimension should be either the first (0) or the last (ndim-1) dimension to avoid large temporary array allocations
+
+!!! note
+
+    The output array must be pre-allocated with the correct size
+
+!!! note
+
+    The input and output arrays must be contiguous in memory
+
+!!! note
+
+    The transformation is performed using a pre-computed sampling matrix that is factorized using SVD for efficiency
+
+# Arguments
+* `s`: Pointer to the sampling object
+* `order`: Memory layout order ([`SPIR_ORDER_ROW_MAJOR`](@ref) or [`SPIR_ORDER_COLUMN_MAJOR`](@ref))
+* `ndim`: Number of dimensions in the input/output arrays
+* `input_dims`: Array of dimension sizes
+* `target_dim`: Target dimension for the transformation (0-based)
+* `input`: Input array of basis coefficients
+* `out`: Output array for the evaluated values at sampling points
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_sampling_eval_dz`](@ref), [`spir_sampling_eval_zz`](@ref)
+"""
+function spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_eval_dd, libsparseir), Cint, (Ptr{spir_sampling}, Cint, Cint, Ptr{Cint}, Cint, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
 end
+
+"""
+    spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, out)
+
+Evaluates basis coefficients at sampling points (double to complex version).
+
+For more details, see [`spir_sampling_eval_dd`](@ref)
+
+# See also
+[`spir_sampling_eval_dd`](@ref)
+"""
+function spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_eval_dz, libsparseir), Cint, (Ptr{spir_sampling}, Cint, Cint, Ptr{Cint}, Cint, Ptr{Cdouble}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+end
+
+"""
+    spir_sampling_eval_zz(s, order, ndim, input_dims, target_dim, input, out)
+
+Evaluates basis coefficients at sampling points (complex to complex version).
+
+For more details, see [`spir_sampling_eval_dd`](@ref)
+
+# See also
+[`spir_sampling_eval_dd`](@ref)
+"""
+function spir_sampling_eval_zz(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_eval_zz, libsparseir), Cint, (Ptr{spir_sampling}, Cint, Cint, Ptr{Cint}, Cint, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+end
+
+"""
+    spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out)
+
+Fits values at sampling points to basis coefficients (double to double version).
+
+Transforms values at sampling points back to basis coefficients, where both input and output are real (double precision) values. The operation can be performed along any dimension of a multidimensional array.
+
+!!! note
+
+    The output array must be pre-allocated with the correct size
+
+!!! note
+
+    This function performs the inverse operation of [`spir_sampling_eval_dd`](@ref)
+
+!!! note
+
+    The transformation is performed using a pre-computed sampling matrix that is factorized using SVD for efficiency
+
+# Arguments
+* `s`: Pointer to the sampling object
+* `order`: Memory layout order ([`SPIR_ORDER_ROW_MAJOR`](@ref) or [`SPIR_ORDER_COLUMN_MAJOR`](@ref))
+* `ndim`: Number of dimensions in the input/output arrays
+* `input_dims`: Array of dimension sizes
+* `target_dim`: Target dimension for the transformation (0-based)
+* `input`: Input array of values at sampling points
+* `out`: Output array for the fitted basis coefficients
+# Returns
+An integer status code: - 0 ([`SPIR_COMPUTATION_SUCCESS`](@ref)) on success - A non-zero error code on failure
+# See also
+[`spir_sampling_eval_dd`](@ref), [`spir_sampling_fit_zz`](@ref)
+"""
+function spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_fit_dd, libsparseir), Cint, (Ptr{spir_sampling}, Cint, Cint, Ptr{Cint}, Cint, Ptr{Cdouble}, Ptr{Cdouble}), s, order, ndim, input_dims, target_dim, input, out)
+end
+
+"""
+    spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out)
+
+Fits values at sampling points to basis coefficients (complex to complex version).
+
+For more details, see [`spir_sampling_fit_dd`](@ref)
+
+# See also
+[`spir_sampling_fit_dd`](@ref)
+"""
+function spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out)
+    ccall((:spir_sampling_fit_zz, libsparseir), Cint, (Ptr{spir_sampling}, Cint, Cint, Ptr{Cint}, Cint, Ptr{c_complex}, Ptr{c_complex}), s, order, ndim, input_dims, target_dim, input, out)
+end
+
+const SPIR_COMPUTATION_SUCCESS = 0
+
+const SPIR_GET_IMPL_FAILED = -1
+
+const SPIR_INVALID_DIMENSION = -2
+
+const SPIR_INPUT_DIMENSION_MISMATCH = -3
+
+const SPIR_OUTPUT_DIMENSION_MISMATCH = -4
+
+const SPIR_NOT_SUPPORTED = -5
+
+const SPIR_INVALID_ARGUMENT = -6
+
+const SPIR_INTERNAL_ERROR = -7
+
+const SPIR_STATISTICS_FERMIONIC = 1
+
+const SPIR_STATISTICS_BOSONIC = 0
+
+const SPIR_ORDER_COLUMN_MAJOR = 1
+
+const SPIR_ORDER_ROW_MAJOR = 0
 
 const SPARSEIR_VERSION_MAJOR = 0
 
@@ -1338,7 +1101,7 @@ const SPARSEIR_VERSION_MINOR = 1
 const SPARSEIR_VERSION_PATCH = 0
 
 # exports
-const PREFIXES = ["spir_"]
+const PREFIXES = ["spir_", "SPIR_"]
 for name in names(@__MODULE__; all=true), prefix in PREFIXES
     if startswith(string(name), prefix)
         @eval export $name

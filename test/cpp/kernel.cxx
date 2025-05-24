@@ -378,7 +378,6 @@ TEST_CASE("Symmetrized Kernel Tests", "[kernel]")
 {
     SECTION("even")
     {
-        double epsilon = 2.220446049250313e-16;
         auto kernel = sparseir::LogisticKernel(5.0);
 
         // Use the correct symmetrization function
@@ -390,7 +389,6 @@ TEST_CASE("Symmetrized Kernel Tests", "[kernel]")
 
     SECTION("odd")
     {
-        double epsilon = 2.220446049250313e-16;
         auto kernel = sparseir::LogisticKernel(5.0);
 
         // Use the correct symmetrization function
@@ -442,8 +440,8 @@ TEST_CASE("Kernel Unit Tests", "[kernel]")
         REQUIRE(K.ypower() == 1);
 
         // Use member function for symmetrization instead of free function
-        std::integral_constant<int, -1> minus_one{};
-        std::integral_constant<int, +1> plus_one{};
+        //std::integral_constant<int, -1> minus_one{};
+        //std::integral_constant<int, +1> plus_one{};
 
 // Only use symmetrization if it's supported for this kernel type
 #ifdef SPARSEIR_SUPPORTS_BOSE_SYMMETRIZATION

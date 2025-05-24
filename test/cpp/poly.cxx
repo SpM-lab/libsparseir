@@ -39,7 +39,7 @@ TEST_CASE("StableRNG", "[poly]")
     REQUIRE(std::is_sorted(knots.data(), knots.data() + knots.size()));
 
     // Initialize randsymm and ddata
-    int randsymm = 9;
+    // int randsymm = 9;
     Eigen::MatrixXd ddata(3, 3);
     ddata << 0.5328437345518631, 0.8443074122979211, 0.6722336389122814,
         0.1799506228788046, 0.6805545318460489, 0.17641780726469292,
