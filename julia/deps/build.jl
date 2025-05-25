@@ -24,3 +24,5 @@ ctx = create_context(headers, args, options)
 
 # run generator
 build!(ctx)
+
+run(`sed -i '' 's/const c_complex = ComplexF32/const c_complex = ComplexF64/g' $(joinpath(@__DIR__, "../src/C_API.jl"))`)

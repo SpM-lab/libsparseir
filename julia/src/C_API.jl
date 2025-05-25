@@ -7,7 +7,7 @@ using Libdl: dlext
 libsparseir = expanduser("~/opt/libsparseir/lib/libsparseir.$(dlext)")
 
 
-const c_complex = ComplexF32
+const c_complex = ComplexF64
 
 mutable struct _spir_kernel end
 
