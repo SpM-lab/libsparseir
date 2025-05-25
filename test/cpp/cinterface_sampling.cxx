@@ -45,11 +45,11 @@ spir_sampling *create_matsubara_sampling(spir_basis *basis, bool positive_only)
 {
     int status;
     int n_matsubara_points;
-    status = spir_basis_get_nmatuss(basis, positive_only, &n_matsubara_points);
+    status = spir_basis_get_n_default_matsus(basis, positive_only, &n_matsubara_points);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     std::vector<int64_t> smpl_points(n_matsubara_points);
-    status = spir_basis_get_matsus(basis, positive_only, smpl_points.data());
+    status = spir_basis_get_default_matsus(basis, positive_only, smpl_points.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *sampling = spir_matsu_sampling_new(basis, positive_only, n_matsubara_points, smpl_points.data(), &status);
@@ -839,12 +839,12 @@ void test_matsubara_sampling_constructor()
 
     int sampling_status;
     int n_points_org;
-    status = spir_basis_get_nmatuss(basis, false, &n_points_org);
+    status = spir_basis_get_n_default_matsus(basis, false, &n_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_org > 0);
 
     std::vector<int64_t> smpl_points_org(n_points_org);
-    status = spir_basis_get_matsus(basis, false, smpl_points_org.data());
+    status = spir_basis_get_default_matsus(basis, false, smpl_points_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *sampling = spir_matsu_sampling_new(basis, false, n_points_org, smpl_points_org.data(), &sampling_status);
@@ -852,12 +852,12 @@ void test_matsubara_sampling_constructor()
     REQUIRE(sampling != nullptr);
 
     int n_points_positive_only_org;
-    status = spir_basis_get_nmatuss(basis, true, &n_points_positive_only_org);
+    status = spir_basis_get_n_default_matsus(basis, true, &n_points_positive_only_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(n_points_positive_only_org > 0);
 
     std::vector<int64_t> smpl_points_positive_only_org(n_points_positive_only_org);
-    status = spir_basis_get_matsus(basis, true, smpl_points_positive_only_org.data());
+    status = spir_basis_get_default_matsus(basis, true, smpl_points_positive_only_org.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     spir_sampling *sampling_positive_only = spir_matsu_sampling_new(basis, true, n_points_positive_only_org, smpl_points_positive_only_org.data(), &status);

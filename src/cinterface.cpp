@@ -824,7 +824,7 @@ int spir_basis_get_default_taus(const spir_basis *b, double *points)
     }
 }
 
-int spir_basis_get_nmatuss(const spir_basis *b, bool positive_only, int *num_points)
+int spir_basis_get_n_default_matsus(const spir_basis *b, bool positive_only, int *num_points)
 {
     if (!b || !num_points) {
         return SPIR_INVALID_ARGUMENT;
@@ -857,7 +857,7 @@ int spir_basis_get_nmatuss(const spir_basis *b, bool positive_only, int *num_poi
     }
 }
 
-int spir_basis_get_matsus(const spir_basis *b, bool positive_only, int64_t *points)
+int spir_basis_get_default_matsus(const spir_basis *b, bool positive_only, int64_t *points)
 {
     if (!b || !points) {
         return SPIR_INVALID_ARGUMENT;
