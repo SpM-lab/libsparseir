@@ -111,7 +111,7 @@ double gamma_func(double _x)
 
 // Cylindrical Bessel function of the first kind, J_nu(x)
 // Uses the series expansion:
-//   J_nu(x) = sum_{m=0}^∞ (-1)^m / (m! * Gamma(nu+m+1)) * (x/2)^(2m+nu)
+//   J_nu(x) = sum_{m=0}^inf (-1)^m / (m! * Gamma(nu+m+1)) * (x/2)^(2m+nu)
 double cyl_bessel_j(double nu, double x)
 {
     const int maxIter = 1000;
@@ -160,7 +160,7 @@ bool sphericalbesselj_small_args_cutoff(double nu, double x)
 }
 
 // besselj_ratio_jnu_jnum1:
-// Computes the continued-fraction for the ratio J_{ν}(x) / J_{ν-1}(x)
+// Computes the continued-fraction for the ratio J_{nu}(x) / J_{nu-1}(x)
 double besselj_ratio_jnu_jnum1(double n, double x)
 {
     const int MaxIter = 5000;

@@ -53,7 +53,7 @@ choose_accuracy(double epsilon, const std::string &Twork)
             return std::make_tuple(epsilon, Twork, "default");
         } else {
             std::cerr << "Warning: Basis cutoff is " << epsilon
-                      << ", which is below √ε with ε = "
+                      << ", which is below sqrt(ε) with ε = "
                       << std::numeric_limits<double>::epsilon() << ".\n"
                       << "Expect singular values and basis functions for large "
                          "l to have lower precision than the cutoff.\n";
@@ -64,7 +64,7 @@ choose_accuracy(double epsilon, const std::string &Twork)
             return std::make_tuple(epsilon, Twork, "default");
         } else {
             std::cerr << "Warning: Basis cutoff is " << epsilon
-                      << ", which is below √ε with ε = "
+                      << ", which is below sqrt(ε) with ε = "
                       << std::numeric_limits<xprec::DDouble>::epsilon() << ".\n"
                       << "Expect singular values and basis functions for large "
                          "l to have lower precision than the cutoff.\n";
@@ -82,7 +82,7 @@ std::tuple<double, std::string, std::string> choose_accuracy(double epsilon,
         if (epsilon < std::sqrt(std::numeric_limits<double>::epsilon())) {
             std::cerr
                 << "Warning: Basis cutoff is " << epsilon << ", which is"
-                << " below √ε with ε = "
+                << " below sqrt(ε) with ε = "
                 << std::numeric_limits<double>::epsilon() << ".\n"
                 << "Expect singular values and basis functions for large l"
                 << " to have lower precision than the cutoff.\n";

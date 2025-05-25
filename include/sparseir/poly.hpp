@@ -244,7 +244,7 @@ public:
     */
     PiecewiseLegendrePolyVector(const PiecewiseLegendrePolyVector &polys,
                                 const Eigen::VectorXd &knots,
-                                const Eigen::VectorXd &Δx,
+                                const Eigen::VectorXd &delta_x,
                                 const Eigen::VectorXi &symm = Eigen::VectorXi())
         : polyvec(polys.size())
     {
@@ -255,7 +255,7 @@ public:
         }
         for (size_t i = 0; i < polys.size(); ++i) {
             polyvec[i] = PiecewiseLegendrePoly(polys[i].get_data(), knots,
-                                               polys[i].l, Δx, symm(i));
+                                               polys[i].l, delta_x, symm(i));
         }
     }
 
@@ -397,7 +397,7 @@ inline
 std::vector<std::shared_ptr<PiecewiseLegendrePoly>>
 make_polyvec(const PiecewiseLegendrePolyVector &polys,
                             const Eigen::VectorXd &knots,
-                                const Eigen::VectorXd &Δx,
+                                const Eigen::VectorXd &delta_x,
                                 const Eigen::VectorXi &symm = Eigen::VectorXi())
 {
     std::vector<std::shared_ptr<PiecewiseLegendrePoly>> polyvec(polys.size());
@@ -409,7 +409,7 @@ make_polyvec(const PiecewiseLegendrePolyVector &polys,
     for (size_t i = 0; i < polys.size(); ++i) {
         Eigen::MatrixXd data = polys[i].get_data();
         Eigen::VectorXd knots_copy = knots;
-        Eigen::VectorXd delta_x_copy = Δx;
+        Eigen::VectorXd delta_x_copy = delta_x;
         polyvec[i] = std::make_shared<PiecewiseLegendrePoly>(data, knots_copy,
                                                polys[i].l, delta_x_copy, symm(i));
     }
