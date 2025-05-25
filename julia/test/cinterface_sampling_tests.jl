@@ -155,6 +155,425 @@
         LibSparseIR.spir_kernel_release(kernel)
     end
 
+    # Test 4D evaluation with row-major layout (corresponds to C++ test_tau_sampling_evaluation_4d_row_major)
+    function test_tau_sampling_evaluation_4d_row_major(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-10
+
+        # Create basis
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Create sampling
+        sampling = create_tau_sampling(basis)
+
+        # Get basis and sampling sizes
+        basis_size_ref = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        basis_size = basis_size_ref[]
+
+        n_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
+
+        # Set up 4D tensor dimensions
+        d1, d2, d3 = 2, 3, 4
+        ndim = 4
+
+        # Test evaluation and fitting along each dimension
+        for dim in 0:3
+            # Create dimension arrays for different target dimensions
+            if dim == 0
+                dims = Int32[basis_size, d1, d2, d3]
+                output_dims = Int32[n_points, d1, d2, d3]
+            elseif dim == 1
+                dims = Int32[d1, basis_size, d2, d3]
+                output_dims = Int32[d1, n_points, d2, d3]
+            elseif dim == 2
+                dims = Int32[d1, d2, basis_size, d3]
+                output_dims = Int32[d1, d2, n_points, d3]
+            else # dim == 3
+                dims = Int32[d1, d2, d3, basis_size]
+                output_dims = Int32[d1, d2, d3, n_points]
+            end
+
+            target_dim = dim
+            total_size = prod(dims)
+            output_total_size = prod(output_dims)
+
+            # Create random test data (row-major layout)
+            coeffs = rand(Float64, total_size) .- 0.5
+
+            # Test evaluation
+            evaluate_output = Vector{Float64}(undef, output_total_size)
+            evaluate_status = LibSparseIR.spir_sampling_eval_dd(
+                sampling, LibSparseIR.SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim, coeffs, evaluate_output)
+            @test evaluate_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Test fitting
+            fit_output = Vector{Float64}(undef, total_size)
+            fit_status = LibSparseIR.spir_sampling_fit_dd(
+                sampling, LibSparseIR.SPIR_ORDER_ROW_MAJOR, ndim, output_dims, target_dim, evaluate_output, fit_output)
+            @test fit_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Check round-trip accuracy
+            for i in 1:total_size
+                @test fit_output[i] ≈ coeffs[i] atol=1e-10
+            end
+        end
+
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling)
+        LibSparseIR.spir_basis_release(basis)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+    end
+
+    # Test 4D evaluation with column-major layout (corresponds to C++ test_tau_sampling_evaluation_4d_column_major)
+    function test_tau_sampling_evaluation_4d_column_major(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-10
+
+        # Create basis
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Create sampling
+        sampling = create_tau_sampling(basis)
+
+        # Get basis and sampling sizes
+        basis_size_ref = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        basis_size = basis_size_ref[]
+
+        n_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
+
+        # Set up 4D tensor dimensions
+        d1, d2, d3 = 2, 3, 4
+        ndim = 4
+
+        # Test evaluation and fitting along each dimension
+        for dim in 0:3
+            # Create dimension arrays for different target dimensions
+            if dim == 0
+                dims = Int32[basis_size, d1, d2, d3]
+                output_dims = Int32[n_points, d1, d2, d3]
+            elseif dim == 1
+                dims = Int32[d1, basis_size, d2, d3]
+                output_dims = Int32[d1, n_points, d2, d3]
+            elseif dim == 2
+                dims = Int32[d1, d2, basis_size, d3]
+                output_dims = Int32[d1, d2, n_points, d3]
+            else # dim == 3
+                dims = Int32[d1, d2, d3, basis_size]
+                output_dims = Int32[d1, d2, d3, n_points]
+            end
+
+            target_dim = dim
+            total_size = prod(dims)
+            output_total_size = prod(output_dims)
+
+            # Create random test data (column-major layout)
+            coeffs = rand(Float64, total_size) .- 0.5
+
+            # Test evaluation
+            evaluate_output = Vector{Float64}(undef, output_total_size)
+            evaluate_status = LibSparseIR.spir_sampling_eval_dd(
+                sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim, coeffs, evaluate_output)
+            @test evaluate_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Test fitting
+            fit_output = Vector{Float64}(undef, total_size)
+            fit_status = LibSparseIR.spir_sampling_fit_dd(
+                sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, output_dims, target_dim, evaluate_output, fit_output)
+            @test fit_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Check round-trip accuracy
+            for i in 1:total_size
+                @test fit_output[i] ≈ coeffs[i] atol=1e-10
+            end
+        end
+
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling)
+        LibSparseIR.spir_basis_release(basis)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+    end
+
+    # Test 4D evaluation with complex data and row-major layout (corresponds to C++ test_tau_sampling_evaluation_4d_row_major_complex)
+    function test_tau_sampling_evaluation_4d_row_major_complex(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-10
+
+        # Create basis
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Create sampling
+        sampling = create_tau_sampling(basis)
+
+        # Get basis and sampling sizes
+        basis_size_ref = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        basis_size = basis_size_ref[]
+
+        n_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
+
+        # Set up 4D tensor dimensions
+        d1, d2, d3 = 2, 3, 4
+        ndim = 4
+
+        # Test evaluation and fitting along each dimension
+        for dim in 0:3
+            # Create dimension arrays for different target dimensions
+            if dim == 0
+                dims = Int32[basis_size, d1, d2, d3]
+                output_dims = Int32[n_points, d1, d2, d3]
+            elseif dim == 1
+                dims = Int32[d1, basis_size, d2, d3]
+                output_dims = Int32[d1, n_points, d2, d3]
+            elseif dim == 2
+                dims = Int32[d1, d2, basis_size, d3]
+                output_dims = Int32[d1, d2, n_points, d3]
+            else # dim == 3
+                dims = Int32[d1, d2, d3, basis_size]
+                output_dims = Int32[d1, d2, d3, n_points]
+            end
+
+            target_dim = dim
+            total_size = prod(dims)
+            output_total_size = prod(output_dims)
+
+            # Create random complex test data (row-major layout)
+            coeffs_real = rand(Float64, total_size) .- 0.5
+            coeffs_imag = rand(Float64, total_size) .- 0.5
+            coeffs = [ComplexF64(coeffs_real[i], coeffs_imag[i]) for i in 1:total_size]
+
+            # Test evaluation
+            evaluate_output = Vector{ComplexF64}(undef, output_total_size)
+            evaluate_status = LibSparseIR.spir_sampling_eval_zz(
+                sampling, LibSparseIR.SPIR_ORDER_ROW_MAJOR, ndim, dims, target_dim, coeffs, evaluate_output)
+            @test evaluate_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Test fitting
+            fit_output = Vector{ComplexF64}(undef, total_size)
+            fit_status = LibSparseIR.spir_sampling_fit_zz(
+                sampling, LibSparseIR.SPIR_ORDER_ROW_MAJOR, ndim, output_dims, target_dim, evaluate_output, fit_output)
+            @test fit_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Check round-trip accuracy
+            for i in 1:total_size
+                @test real(fit_output[i]) ≈ real(coeffs[i]) atol=1e-10
+                @test imag(fit_output[i]) ≈ imag(coeffs[i]) atol=1e-10
+            end
+        end
+
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling)
+        LibSparseIR.spir_basis_release(basis)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+    end
+
+    # Test 4D evaluation with complex data and column-major layout (corresponds to C++ test_tau_sampling_evaluation_4d_column_major_complex)
+    function test_tau_sampling_evaluation_4d_column_major_complex(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-10
+
+        # Create basis
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Create sampling
+        sampling = create_tau_sampling(basis)
+
+        # Get basis and sampling sizes
+        basis_size_ref = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        basis_size = basis_size_ref[]
+
+        n_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
+
+        # Set up 4D tensor dimensions
+        d1, d2, d3 = 2, 3, 4
+        ndim = 4
+
+        # Test evaluation and fitting along each dimension
+        for dim in 0:3
+            # Create dimension arrays for different target dimensions
+            if dim == 0
+                dims = Int32[basis_size, d1, d2, d3]
+                output_dims = Int32[n_points, d1, d2, d3]
+            elseif dim == 1
+                dims = Int32[d1, basis_size, d2, d3]
+                output_dims = Int32[d1, n_points, d2, d3]
+            elseif dim == 2
+                dims = Int32[d1, d2, basis_size, d3]
+                output_dims = Int32[d1, d2, n_points, d3]
+            else # dim == 3
+                dims = Int32[d1, d2, d3, basis_size]
+                output_dims = Int32[d1, d2, d3, n_points]
+            end
+
+            target_dim = dim
+            total_size = prod(dims)
+            output_total_size = prod(output_dims)
+
+            # Create random complex test data (column-major layout)
+            coeffs_real = rand(Float64, total_size) .- 0.5
+            coeffs_imag = rand(Float64, total_size) .- 0.5
+            coeffs = [ComplexF64(coeffs_real[i], coeffs_imag[i]) for i in 1:total_size]
+
+            # Test evaluation
+            evaluate_output = Vector{ComplexF64}(undef, output_total_size)
+            evaluate_status = LibSparseIR.spir_sampling_eval_zz(
+                sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, dims, target_dim, coeffs, evaluate_output)
+            @test evaluate_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Test fitting
+            fit_output = Vector{ComplexF64}(undef, total_size)
+            fit_status = LibSparseIR.spir_sampling_fit_zz(
+                sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, output_dims, target_dim, evaluate_output, fit_output)
+            @test fit_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+            # Check round-trip accuracy
+            for i in 1:total_size
+                @test real(fit_output[i]) ≈ real(coeffs[i]) atol=1e-10
+                @test imag(fit_output[i]) ≈ imag(coeffs[i]) atol=1e-10
+            end
+        end
+
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling)
+        LibSparseIR.spir_basis_release(basis)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+    end
+
+    # Test error status handling (corresponds to C++ TauSampling Error Status section)
+    function test_tau_sampling_error_status(statistics::Integer)
+        beta = 1.0
+        wmax = 10.0
+        epsilon = 1e-10
+
+        # Create basis
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Create sampling
+        sampling = create_tau_sampling(basis)
+
+        # Get basis and sampling sizes
+        basis_size_ref = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size_ref)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        basis_size = basis_size_ref[]
+
+        n_points_ref = Ref{Int32}(0)
+        points_status = LibSparseIR.spir_sampling_get_npoints(sampling, n_points_ref)
+        @test points_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        n_points = n_points_ref[]
+
+        # Set up 4D tensor dimensions
+        d1, d2, d3 = 2, 3, 4
+        ndim = 4
+        total_size = basis_size * d1 * d2 * d3
+
+        # Create test data
+        coeffs = rand(Float64, total_size) .- 0.5
+        output_double = Vector{Float64}(undef, total_size)
+        output_complex = Vector{ComplexF64}(undef, total_size)
+        fit_output_double = Vector{Float64}(undef, total_size)
+        fit_output_complex = Vector{ComplexF64}(undef, total_size)
+
+        # Test dimension mismatch errors for different target dimensions
+        dims1 = Int32[basis_size, d1, d2, d3]
+
+        for dim in 1:3  # Skip dim=0 as it should work
+            target_dim = dim
+
+            # Test dimension mismatch for evaluation
+            status_dimension_mismatch = LibSparseIR.spir_sampling_eval_dd(
+                sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim, coeffs, output_double)
+            @test status_dimension_mismatch == LibSparseIR.SPIR_INPUT_DIMENSION_MISMATCH
+
+            # Test dimension mismatch for fitting
+            fit_status_dimension_mismatch = LibSparseIR.spir_sampling_fit_zz(
+                sampling, LibSparseIR.SPIR_ORDER_COLUMN_MAJOR, ndim, dims1, target_dim, output_complex, fit_output_complex)
+            @test fit_status_dimension_mismatch == LibSparseIR.SPIR_INPUT_DIMENSION_MISMATCH
+        end
+
+        # Clean up
+        LibSparseIR.spir_sampling_release(sampling)
+        LibSparseIR.spir_basis_release(basis)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+    end
+
     @testset "TauSampling Constructor (fermionic)" begin
         test_tau_sampling(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
     end
@@ -165,6 +584,26 @@
 
     @testset "TauSampling Evaluation 1-dimensional input COLUMN-MAJOR" begin
         test_tau_sampling_evaluation_1d(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "TauSampling Evaluation 4-dimensional input ROW-MAJOR" begin
+        test_tau_sampling_evaluation_4d_row_major(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "TauSampling Evaluation 4-dimensional input COLUMN-MAJOR" begin
+        test_tau_sampling_evaluation_4d_column_major(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "TauSampling Evaluation 4-dimensional complex input/output ROW-MAJOR" begin
+        test_tau_sampling_evaluation_4d_row_major_complex(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "TauSampling Evaluation 4-dimensional complex input/output COLUMN-MAJOR" begin
+        test_tau_sampling_evaluation_4d_column_major_complex(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
+    end
+
+    @testset "TauSampling Error Status" begin
+        test_tau_sampling_error_status(LibSparseIR.SPIR_STATISTICS_FERMIONIC)
     end
 end
 

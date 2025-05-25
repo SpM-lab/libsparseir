@@ -4,26 +4,50 @@
 @testitem "DiscreteLehmannRepresentation" begin
     using LibSparseIR
 
+    # Helper function equivalent to C++ _spir_basis_new
+    function _spir_basis_new(statistics::Integer, beta::Float64, omega_max::Float64, epsilon::Float64)
+        status = Ref{Int32}(0)
+
+        # Create logistic kernel
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * omega_max, kernel_status)
+        if kernel_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || kernel == C_NULL
+            return C_NULL, kernel_status[]
+        end
+
+        # Create SVE result
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        if sve_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || sve == C_NULL
+            LibSparseIR.spir_kernel_release(kernel)
+            return C_NULL, sve_status[]
+        end
+
+        # Create basis
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, omega_max, kernel, sve, basis_status)
+        if basis_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || basis == C_NULL
+            LibSparseIR.spir_sve_result_release(sve)
+            LibSparseIR.spir_kernel_release(kernel)
+            return C_NULL, basis_status[]
+        end
+
+        # Clean up intermediate objects (like C++ version)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+
+        return basis, LibSparseIR.SPIR_COMPUTATION_SUCCESS
+    end
+
     # Template function equivalent for different statistics (corresponds to C++ template functions)
     function test_finite_temp_basis_dlr(statistics::Integer)
         beta = 10000.0  # Same as C++ version
         wmax = 1.0
         epsilon = 1e-12
 
-        status = Ref{Int32}(0)
-
-        # Create IR basis using kernel and SVE (equivalent to _spir_basis_new)
-        kernel_status = Ref{Int32}(0)
-        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
-        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-        sve_status = Ref{Int32}(0)
-        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
-        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-        basis_status = Ref{Int32}(0)
-        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
-        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        # Create IR basis using helper function (equivalent to C++ _spir_basis_new)
+        basis, basis_status = _spir_basis_new(statistics, beta, wmax, epsilon)
+        @test basis_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
         @test basis != C_NULL
 
         # Get basis size
@@ -83,8 +107,6 @@
         LibSparseIR.spir_basis_release(dlr_with_poles)
         LibSparseIR.spir_basis_release(dlr)
         LibSparseIR.spir_basis_release(basis)
-        LibSparseIR.spir_sve_result_release(sve)
-        LibSparseIR.spir_kernel_release(kernel)
     end
 
     @testset "DiscreteLehmannRepresentation Constructor Fermionic" begin

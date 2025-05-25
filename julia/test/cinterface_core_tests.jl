@@ -51,6 +51,41 @@ end
 @testitem "FiniteTempBasis Constructor Tests" begin
     using LibSparseIR
 
+    # Helper function equivalent to C++ _spir_basis_new
+    function _spir_basis_new(statistics::Integer, beta::Float64, omega_max::Float64, epsilon::Float64)
+        status = Ref{Int32}(0)
+
+        # Create logistic kernel
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * omega_max, kernel_status)
+        if kernel_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || kernel == C_NULL
+            return C_NULL, kernel_status[]
+        end
+
+        # Create SVE result
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        if sve_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || sve == C_NULL
+            LibSparseIR.spir_kernel_release(kernel)
+            return C_NULL, sve_status[]
+        end
+
+        # Create basis
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, omega_max, kernel, sve, basis_status)
+        if basis_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || basis == C_NULL
+            LibSparseIR.spir_sve_result_release(sve)
+            LibSparseIR.spir_kernel_release(kernel)
+            return C_NULL, basis_status[]
+        end
+
+        # Clean up intermediate objects (like C++ version)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+
+        return basis, LibSparseIR.SPIR_COMPUTATION_SUCCESS
+    end
+
     # Test basis constructors (corresponds to cinterface_core.cxx TEST_CASE "FiniteTempBasis")
 
     function test_basis_constructor(statistics::Integer)
@@ -58,22 +93,12 @@ end
         wmax = 5.0
         epsilon = 1e-6
 
-        # Create kernel and SVE for basis creation
-        kernel_status = Ref{Int32}(0)
-        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
-        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-        sve_status = Ref{Int32}(0)
-        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
-        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-        basis_status = Ref{Int32}(0)
-        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
-        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        # Create basis using helper function (equivalent to C++ _spir_basis_new)
+        basis, basis_status = _spir_basis_new(statistics, beta, wmax, epsilon)
+        @test basis_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
         @test basis != C_NULL
 
         # Check basis size
-        size_status = Ref{Int32}(0)
         basis_size = Ref{Int32}(0)
         size_result = LibSparseIR.spir_basis_get_size(basis, basis_size)
         @test size_result == LibSparseIR.SPIR_COMPUTATION_SUCCESS
@@ -147,6 +172,41 @@ end
 @testitem "FiniteTempBasis Basis Functions Tests" begin
     using LibSparseIR
 
+    # Helper function equivalent to C++ _spir_basis_new
+    function _spir_basis_new(statistics::Integer, beta::Float64, omega_max::Float64, epsilon::Float64)
+        status = Ref{Int32}(0)
+
+        # Create logistic kernel
+        kernel_status = Ref{Int32}(0)
+        kernel = LibSparseIR.spir_logistic_kernel_new(beta * omega_max, kernel_status)
+        if kernel_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || kernel == C_NULL
+            return C_NULL, kernel_status[]
+        end
+
+        # Create SVE result
+        sve_status = Ref{Int32}(0)
+        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
+        if sve_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || sve == C_NULL
+            LibSparseIR.spir_kernel_release(kernel)
+            return C_NULL, sve_status[]
+        end
+
+        # Create basis
+        basis_status = Ref{Int32}(0)
+        basis = LibSparseIR.spir_basis_new(statistics, beta, omega_max, kernel, sve, basis_status)
+        if basis_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || basis == C_NULL
+            LibSparseIR.spir_sve_result_release(sve)
+            LibSparseIR.spir_kernel_release(kernel)
+            return C_NULL, basis_status[]
+        end
+
+        # Clean up intermediate objects (like C++ version)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
+
+        return basis, LibSparseIR.SPIR_COMPUTATION_SUCCESS
+    end
+
     # Test basis function evaluation (corresponds to cinterface_core.cxx TEST_CASE "FiniteTempBasis Basis Functions")
 
     function test_basis_functions(statistics::Integer)
@@ -154,18 +214,9 @@ end
         wmax = 5.0
         epsilon = 1e-6
 
-        # Create kernel and SVE for basis creation
-        kernel_status = Ref{Int32}(0)
-        kernel = LibSparseIR.spir_logistic_kernel_new(beta * wmax, kernel_status)
-        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-        sve_status = Ref{Int32}(0)
-        sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
-        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-        basis_status = Ref{Int32}(0)
-        basis = LibSparseIR.spir_basis_new(statistics, beta, wmax, kernel, sve, basis_status)
-        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        # Create basis using helper function (equivalent to C++ _spir_basis_new)
+        basis, basis_status = _spir_basis_new(statistics, beta, wmax, epsilon)
+        @test basis_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
         @test basis != C_NULL
 
         # Get basis size
@@ -256,8 +307,6 @@ end
         LibSparseIR.spir_funcs_release(v)
         LibSparseIR.spir_funcs_release(uhat)
         LibSparseIR.spir_basis_release(basis)
-        LibSparseIR.spir_sve_result_release(sve)
-        LibSparseIR.spir_kernel_release(kernel)
     end
 
     @testset "Basis Functions Fermionic" begin
