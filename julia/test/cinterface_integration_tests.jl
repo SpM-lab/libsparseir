@@ -105,28 +105,24 @@ end
         @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
         @test basis != C_NULL
 
-        try
-            # Get u basis functions
-            u_status = Ref{Int32}(0)
-            u = LibSparseIR.spir_basis_get_u(basis, u_status)
-            @test u_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-            @test u != C_NULL
+        # Get u basis functions
+        u_status = Ref{Int32}(0)
+        u = LibSparseIR.spir_basis_get_u(basis, u_status)
+        @test u_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test u != C_NULL
 
-            try
-                # Test evaluation at a few points
-                x_values = [0.0, 0.5, 1.0]
-                u_eval_mat = evaluate_basis_functions(u, x_values)
-                @test size(u_eval_mat, 1) == length(x_values)
-                @test size(u_eval_mat, 2) > 0  # Should have some basis functions
-                @test all(isfinite, u_eval_mat)
-            finally
-                LibSparseIR.spir_funcs_release(u)
-            end
-        finally
-            LibSparseIR.spir_basis_release(basis)
-            LibSparseIR.spir_sve_result_release(sve)
-            LibSparseIR.spir_kernel_release(kernel)
-        end
+        # Test evaluation at a few points
+        x_values = [0.0, 0.5, 1.0]
+        u_eval_mat = evaluate_basis_functions(u, x_values)
+        @test size(u_eval_mat, 1) == length(x_values)
+        @test size(u_eval_mat, 2) > 0  # Should have some basis functions
+        @test all(isfinite, u_eval_mat)
+
+        # Cleanup
+        LibSparseIR.spir_funcs_release(u)
+        LibSparseIR.spir_basis_release(basis)
+        LibSparseIR.spir_sve_result_release(sve)
+        LibSparseIR.spir_kernel_release(kernel)
     end
 end
 
@@ -314,37 +310,29 @@ end
 
     # Helper function equivalent to C++ _spir_basis_new
     function _spir_basis_new(statistics::Integer, beta::Float64, omega_max::Float64, epsilon::Float64)
-        status = Ref{Int32}(0)
-
         # Create logistic kernel
         kernel_status = Ref{Int32}(0)
         kernel = LibSparseIR.spir_logistic_kernel_new(beta * omega_max, kernel_status)
-        if kernel_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || kernel == C_NULL
-            return C_NULL, kernel_status[]
-        end
+        @test kernel_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test kernel != C_NULL
 
         # Create SVE result
         sve_status = Ref{Int32}(0)
         sve = LibSparseIR.spir_sve_result_new(kernel, epsilon, sve_status)
-        if sve_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || sve == C_NULL
-            LibSparseIR.spir_kernel_release(kernel)
-            return C_NULL, sve_status[]
-        end
+        @test sve_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test sve != C_NULL
 
         # Create basis
         basis_status = Ref{Int32}(0)
         basis = LibSparseIR.spir_basis_new(statistics, beta, omega_max, kernel, sve, basis_status)
-        if basis_status[] != LibSparseIR.SPIR_COMPUTATION_SUCCESS || basis == C_NULL
-            LibSparseIR.spir_sve_result_release(sve)
-            LibSparseIR.spir_kernel_release(kernel)
-            return C_NULL, basis_status[]
-        end
+        @test basis_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test basis != C_NULL
 
         # Clean up intermediate objects (like C++ version)
         LibSparseIR.spir_sve_result_release(sve)
         LibSparseIR.spir_kernel_release(kernel)
 
-        return basis, LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        return basis
     end
 
     # Include helper functions from previous test items
@@ -493,184 +481,157 @@ end
         println("Running integration test: T=$T, statistics=$statistics, target_dim=$target_dim, positive_only=$positive_only")
 
         # Create IR basis using helper function (equivalent to C++ _spir_basis_new)
-        basis, basis_status = _spir_basis_new(statistics, beta, wmax, epsilon)
-        @test basis_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-        @test basis != C_NULL
+        basis = _spir_basis_new(statistics, beta, wmax, epsilon)
 
-        try
-            # Get basis size
-            basis_size = Ref{Int32}(0)
-            size_status = LibSparseIR.spir_basis_get_size(basis, basis_size)
-            @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-            basis_size_val = basis_size[]
+        # Get basis size
+        basis_size = Ref{Int32}(0)
+        size_status = LibSparseIR.spir_basis_get_size(basis, basis_size)
+        @test size_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        basis_size_val = basis_size[]
 
-            # Tau Sampling
-            println("Tau sampling")
-            num_tau_points = Ref{Int32}(0)
-            tau_status = LibSparseIR.spir_basis_get_n_default_taus(basis, num_tau_points)
-            @test tau_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-            @test num_tau_points[] > 0
+        # Tau Sampling
+        println("Tau sampling")
+        num_tau_points = Ref{Int32}(0)
+        tau_status = LibSparseIR.spir_basis_get_n_default_taus(basis, num_tau_points)
+        @test tau_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test num_tau_points[] > 0
 
-            tau_points = Vector{Float64}(undef, num_tau_points[])
-            tau_get_status = LibSparseIR.spir_basis_get_default_taus(basis, tau_points)
-            @test tau_get_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        tau_points = Vector{Float64}(undef, num_tau_points[])
+        tau_get_status = LibSparseIR.spir_basis_get_default_taus(basis, tau_points)
+        @test tau_get_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-            tau_sampling_status = Ref{Int32}(0)
-            tau_sampling = LibSparseIR.spir_tau_sampling_new(basis, num_tau_points[], tau_points, tau_sampling_status)
-            @test tau_sampling_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-            @test tau_sampling != C_NULL
+        tau_sampling_status = Ref{Int32}(0)
+        tau_sampling = LibSparseIR.spir_tau_sampling_new(basis, num_tau_points[], tau_points, tau_sampling_status)
+        @test tau_sampling_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test tau_sampling != C_NULL
 
-            try
-                # Matsubara Sampling
-                println("Matsubara sampling")
-                num_matsubara_points = Ref{Int32}(0)
-                matsu_status = LibSparseIR.spir_basis_get_nmatuss(basis, positive_only, num_matsubara_points)
-                @test matsu_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                @test num_matsubara_points[] > 0
+        # Matsubara Sampling
+        println("Matsubara sampling")
+        num_matsubara_points = Ref{Int32}(0)
+        matsu_status = LibSparseIR.spir_basis_get_nmatuss(basis, positive_only, num_matsubara_points)
+        @test matsu_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test num_matsubara_points[] > 0
 
-                matsubara_points = Vector{Int64}(undef, num_matsubara_points[])
-                matsu_get_status = LibSparseIR.spir_basis_get_matsus(basis, positive_only, matsubara_points)
-                @test matsu_get_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        matsubara_points = Vector{Int64}(undef, num_matsubara_points[])
+        matsu_get_status = LibSparseIR.spir_basis_get_matsus(basis, positive_only, matsubara_points)
+        @test matsu_get_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
-                matsubara_sampling_status = Ref{Int32}(0)
-                matsubara_sampling = LibSparseIR.spir_matsu_sampling_new(basis, positive_only, num_matsubara_points[], matsubara_points, matsubara_sampling_status)
-                @test matsubara_sampling_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                @test matsubara_sampling != C_NULL
+        matsubara_sampling_status = Ref{Int32}(0)
+        matsubara_sampling = LibSparseIR.spir_matsu_sampling_new(basis, positive_only, num_matsubara_points[], matsubara_points, matsubara_sampling_status)
+        @test matsubara_sampling_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test matsubara_sampling != C_NULL
 
-                try
-                    # DLR
-                    println("DLR")
-                    dlr_status = Ref{Int32}(0)
-                    dlr = LibSparseIR.spir_dlr_new(basis, dlr_status)
-                    @test dlr_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                    @test dlr != C_NULL
+        # DLR
+        println("DLR")
+        dlr_status = Ref{Int32}(0)
+        dlr = LibSparseIR.spir_dlr_new(basis, dlr_status)
+        @test dlr_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test dlr != C_NULL
 
-                    try
-                        # Get number of poles
-                        npoles = Ref{Int32}(0)
-                        poles_status = LibSparseIR.spir_dlr_get_npoles(dlr, npoles)
-                        @test poles_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                        npoles_val = npoles[]
-                        @test npoles_val >= basis_size_val
+        # Get number of poles
+        npoles = Ref{Int32}(0)
+        poles_status = LibSparseIR.spir_dlr_get_npoles(dlr, npoles)
+        @test poles_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        npoles_val = npoles[]
+        @test npoles_val >= basis_size_val
 
-                        # Get poles
-                        poles = Vector{Float64}(undef, npoles_val)
-                        poles_get_status = LibSparseIR.spir_dlr_get_poles(dlr, poles)
-                        @test poles_get_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                        @test maximum(abs.(poles)) <= wmax
+        # Get poles
+        poles = Vector{Float64}(undef, npoles_val)
+        poles_get_status = LibSparseIR.spir_dlr_get_poles(dlr, poles)
+        @test poles_get_status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test maximum(abs.(poles)) <= wmax
 
-                        # Generate random DLR coefficients
-                        Random.seed!(982743)  # Same seed as C++ test
-                        coeffs_dims = get_dims(npoles_val, extra_dims, target_dim, ndim)
-                        coeffs = Vector{T}(undef, prod(coeffs_dims))
+        # Generate random DLR coefficients
+        Random.seed!(982743)  # Same seed as C++ test
+        coeffs_dims = get_dims(npoles_val, extra_dims, target_dim, ndim)
+        coeffs = Vector{T}(undef, prod(coeffs_dims))
 
-                        # Fill coefficients with random values
-                        for i in 1:length(coeffs)
-                            pole_idx = ((i - 1) % npoles_val) + 1
-                            random_val = rand()
-                            coeffs[i] = generate_random_coeff(T, random_val, poles[pole_idx])
-                        end
-
-                        println("Generated $(length(coeffs)) coefficients")
-
-                        # Convert DLR coefficients to IR coefficients
-                        ir_dims = get_dims(basis_size_val, extra_dims, target_dim, ndim)
-                        status, g_IR = dlr_to_IR(dlr, order, coeffs_dims, target_dim, coeffs)
-                        @test status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                        @test length(g_IR) == prod(ir_dims)
-
-                        println("DLR to IR transformation successful")
-
-                        # Convert IR coefficients back to DLR coefficients
-                        status2, g_DLR_reconst = dlr_from_IR(dlr, order, ir_dims, target_dim, g_IR)
-                        @test status2 == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-                        println("IR to DLR transformation successful")
-
-                        # Test full sampling workflow: Matsubara -> IR -> tau -> IR -> Matsubara
-                        println("Testing full sampling workflow")
-
-                        # Get basis functions for evaluation
-                        ir_u_status = Ref{Int32}(0)
-                        ir_u = LibSparseIR.spir_basis_get_u(basis, ir_u_status)
-                        @test ir_u_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                        @test ir_u != C_NULL
-
-                        try
-                            ir_uhat_status = Ref{Int32}(0)
-                            ir_uhat = LibSparseIR.spir_basis_get_uhat(basis, ir_uhat_status)
-                            @test ir_uhat_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-                            @test ir_uhat != C_NULL
-
-                            try
-                                # Evaluate Green's function at Matsubara frequencies using IR coefficients
-                                matsu_dims = get_dims(num_matsubara_points[], extra_dims, target_dim, ndim)
-                                status_giw, giw_from_IR = matsubara_sampling_evaluate(matsubara_sampling, order, ir_dims, target_dim, g_IR)
-                                @test status_giw == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-                                # Fit Matsubara data back to IR coefficients
-                                gIR_work = if T == Float64
-                                    # For real coefficients, we need to handle the complex Matsubara data
-                                    real.(giw_from_IR)  # Take real part for real coefficient case
-                                else
-                                    giw_from_IR
-                                end
-
-                                status_fit, gIR_reconst = if T == Float64
-                                    # Use complex fit and take real part
-                                    status_temp, gIR_temp = LibSparseIR.spir_sampling_fit_zz(matsubara_sampling, order, length(matsu_dims), matsu_dims, target_dim, giw_from_IR, Vector{ComplexF64}(undef, prod(ir_dims)))
-                                    status_temp, real.(gIR_temp)
-                                else
-                                    LibSparseIR.spir_sampling_fit_zz(matsubara_sampling, order, length(matsu_dims), matsu_dims, target_dim, giw_from_IR, Vector{ComplexF64}(undef, prod(ir_dims)))
-                                end
-                                @test status_fit == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-                                # IR -> tau
-                                tau_dims = get_dims(num_tau_points[], extra_dims, target_dim, ndim)
-                                status_tau, gtau = tau_sampling_evaluate(tau_sampling, order, ir_dims, target_dim, gIR_reconst)
-                                @test status_tau == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-                                # tau -> IR
-                                status_tau_fit, gIR2 = tau_sampling_fit(tau_sampling, order, tau_dims, target_dim, gtau)
-                                @test status_tau_fit == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-                                # IR -> Matsubara (final check)
-                                status_final, giw_reconst = matsubara_sampling_evaluate(matsubara_sampling, order, ir_dims, target_dim, gIR2)
-                                @test status_final == LibSparseIR.SPIR_COMPUTATION_SUCCESS
-
-                                # Verify consistency (basic checks)
-                                @test all(isfinite, g_IR)
-                                @test all(isfinite, g_DLR_reconst)
-                                @test all(isfinite, gtau)
-                                @test all(isfinite, gIR2)
-                                @test all(isfinite, giw_reconst)
-
-                                # Check that the round-trip transformations are reasonably consistent
-                                # Note: We use a relaxed tolerance due to numerical precision in the transformations
-                                relaxed_tol = max(tol * 100, 1e-8)
-                                @test compare_arrays_with_relative_error(gIR_reconst, gIR2, relaxed_tol)
-
-                                println("Integration test completed successfully")
-
-                            finally
-                                LibSparseIR.spir_funcs_release(ir_uhat)
-                            end
-                        finally
-                            LibSparseIR.spir_funcs_release(ir_u)
-                        end
-
-                    finally
-                        LibSparseIR.spir_basis_release(dlr)
-                    end
-                finally
-                    LibSparseIR.spir_sampling_release(matsubara_sampling)
-                end
-            finally
-                LibSparseIR.spir_sampling_release(tau_sampling)
-            end
-        finally
-            LibSparseIR.spir_basis_release(basis)
+        # Fill coefficients with random values
+        for i in 1:length(coeffs)
+            pole_idx = ((i - 1) % npoles_val) + 1
+            random_val = rand()
+            coeffs[i] = generate_random_coeff(T, random_val, poles[pole_idx])
         end
+
+        println("Generated $(length(coeffs)) coefficients")
+
+        # Convert DLR coefficients to IR coefficients
+        ir_dims = get_dims(basis_size_val, extra_dims, target_dim, ndim)
+        status, g_IR = dlr_to_IR(dlr, order, coeffs_dims, target_dim, coeffs)
+        @test status == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test length(g_IR) == prod(ir_dims)
+
+        println("DLR to IR transformation successful")
+
+        # Convert IR coefficients back to DLR coefficients
+        status2, g_DLR_reconst = dlr_from_IR(dlr, order, ir_dims, target_dim, g_IR)
+        @test status2 == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        println("IR to DLR transformation successful")
+
+        # Test full sampling workflow: Matsubara -> IR -> tau -> IR -> Matsubara
+        println("Testing full sampling workflow")
+
+        # Get basis functions for evaluation
+        ir_u_status = Ref{Int32}(0)
+        ir_u = LibSparseIR.spir_basis_get_u(basis, ir_u_status)
+        @test ir_u_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test ir_u != C_NULL
+
+        ir_uhat_status = Ref{Int32}(0)
+        ir_uhat = LibSparseIR.spir_basis_get_uhat(basis, ir_uhat_status)
+        @test ir_uhat_status[] == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+        @test ir_uhat != C_NULL
+
+        # Evaluate Green's function at Matsubara frequencies using IR coefficients
+        matsu_dims = get_dims(num_matsubara_points[], extra_dims, target_dim, ndim)
+        status_giw, giw_from_IR = matsubara_sampling_evaluate(matsubara_sampling, order, ir_dims, target_dim, g_IR)
+        @test status_giw == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Fit Matsubara data back to IR coefficients
+        status_fit, gIR_reconst = if T == Float64
+            # Use complex fit and take real part
+            status_temp, gIR_temp = LibSparseIR.spir_sampling_fit_zz(matsubara_sampling, order, length(matsu_dims), matsu_dims, target_dim, giw_from_IR, Vector{ComplexF64}(undef, prod(ir_dims)))
+            status_temp, real.(gIR_temp)
+        else
+            LibSparseIR.spir_sampling_fit_zz(matsubara_sampling, order, length(matsu_dims), matsu_dims, target_dim, giw_from_IR, Vector{ComplexF64}(undef, prod(ir_dims)))
+        end
+        @test status_fit == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # IR -> tau
+        tau_dims = get_dims(num_tau_points[], extra_dims, target_dim, ndim)
+        status_tau, gtau = tau_sampling_evaluate(tau_sampling, order, ir_dims, target_dim, gIR_reconst)
+        @test status_tau == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # tau -> IR
+        status_tau_fit, gIR2 = tau_sampling_fit(tau_sampling, order, tau_dims, target_dim, gtau)
+        @test status_tau_fit == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # IR -> Matsubara (final check)
+        status_final, giw_reconst = matsubara_sampling_evaluate(matsubara_sampling, order, ir_dims, target_dim, gIR2)
+        @test status_final == LibSparseIR.SPIR_COMPUTATION_SUCCESS
+
+        # Verify consistency (basic checks)
+        @test all(isfinite, g_IR)
+        @test all(isfinite, g_DLR_reconst)
+        @test all(isfinite, gtau)
+        @test all(isfinite, gIR2)
+        @test all(isfinite, giw_reconst)
+
+        # Check that the round-trip transformations are reasonably consistent
+        # Note: We use a relaxed tolerance due to numerical precision in the transformations
+        relaxed_tol = max(tol * 100, 1e-8)
+        @test compare_arrays_with_relative_error(gIR_reconst, gIR2, relaxed_tol)
+
+        println("Integration test completed successfully")
+
+        # Cleanup
+        LibSparseIR.spir_funcs_release(ir_uhat)
+        LibSparseIR.spir_funcs_release(ir_u)
+        LibSparseIR.spir_basis_release(dlr)
+        LibSparseIR.spir_sampling_release(matsubara_sampling)
+        LibSparseIR.spir_sampling_release(tau_sampling)
+        LibSparseIR.spir_basis_release(basis)
     end
 
     @testset "Comprehensive Integration Tests" begin
