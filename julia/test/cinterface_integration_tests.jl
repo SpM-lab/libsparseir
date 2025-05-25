@@ -79,7 +79,7 @@ end
         # Evaluate all frequencies at once using batch evaluation
         status_code = LibSparseIR.spir_funcs_batch_eval_matsu(
             uhat, LibSparseIR.SPIR_ORDER_ROW_MAJOR, nfreqs, matsubara_indices,
-            reinterpret(c_complex, uhat_eval_mat))
+            uhat_eval_mat)
         @test status_code == LibSparseIR.SPIR_COMPUTATION_SUCCESS
 
         return uhat_eval_mat
@@ -218,8 +218,8 @@ end
                        target_dim::Integer, coeffs::Vector{ComplexF64})
         g_IR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_dlr2ir_zz(dlr, order, length(dims), dims, target_dim,
-                                           reinterpret(c_complex, coeffs),
-                                           reinterpret(c_complex, g_IR))
+                                           coeffs,
+                                           g_IR)
         return status, g_IR
     end
 
@@ -234,8 +234,8 @@ end
                         target_dim::Integer, coeffs::Vector{ComplexF64})
         g_DLR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_ir2dlr_zz(dlr, order, length(dims), dims, target_dim,
-                                           reinterpret(c_complex, coeffs),
-                                           reinterpret(c_complex, g_DLR))
+                                           coeffs,
+                                           g_DLR)
         return status, g_DLR
     end
 
@@ -261,8 +261,8 @@ end
                                   dims::Vector{Int32}, target_dim::Int32, gIR::Vector{ComplexF64})
         gtau = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_sampling_eval_zz(sampling, order, length(dims), dims, target_dim,
-                                                  reinterpret(c_complex, gIR),
-                                                  reinterpret(c_complex, gtau))
+                                                  gIR,
+                                                  gtau)
         return status, gtau
     end
 
@@ -277,8 +277,8 @@ end
                              dims::Vector{Int32}, target_dim::Int32, gtau::Vector{ComplexF64})
         gIR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_sampling_fit_zz(sampling, order, length(dims), dims, target_dim,
-                                                 reinterpret(c_complex, gtau),
-                                                 reinterpret(c_complex, gIR))
+                                                 gtau,
+                                                 gIR)
         return status, gIR
     end
 
@@ -286,7 +286,7 @@ end
                                         dims::Vector{Int32}, target_dim::Int32, gIR::Vector{Float64})
         giw = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_sampling_eval_dz(sampling, order, length(dims), dims, target_dim, gIR,
-                                                  reinterpret(c_complex, giw))
+                                                  giw)
         return status, giw
     end
 
@@ -294,8 +294,8 @@ end
                                         dims::Vector{Int32}, target_dim::Int32, gIR::Vector{ComplexF64})
         giw = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_sampling_eval_zz(sampling, order, length(dims), dims, target_dim,
-                                                  reinterpret(c_complex, gIR),
-                                                  reinterpret(c_complex, giw))
+                                                  gIR,
+                                                  giw)
         return status, giw
     end
 
@@ -309,9 +309,6 @@ end
 @testitem "Main Integration Test" begin
     using LibSparseIR
     using Random
-
-    # Define local constant for complex type used in C API
-    const c_complex = ComplexF32
 
     # Include helper functions from previous test items
     function get_dims(target_dim_size::Integer, extra_dims::Vector{<:Integer}, target_dim::Integer, ndim::Integer)
@@ -372,8 +369,8 @@ end
                        target_dim::Integer, coeffs::Vector{ComplexF64})
         g_IR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_dlr2ir_zz(dlr, order, length(dims), dims, target_dim,
-                                           reinterpret(c_complex, coeffs),
-                                           reinterpret(c_complex, g_IR))
+                                           coeffs,
+                                           g_IR)
         return status, g_IR
     end
 
@@ -388,8 +385,8 @@ end
                         target_dim::Integer, coeffs::Vector{ComplexF64})
         g_DLR = Vector{ComplexF64}(undef, prod(dims))
         status = LibSparseIR.spir_ir2dlr_zz(dlr, order, length(dims), dims, target_dim,
-                                           reinterpret(c_complex, coeffs),
-                                           reinterpret(c_complex, g_DLR))
+                                           coeffs,
+                                           g_DLR)
         return status, g_DLR
     end
 
