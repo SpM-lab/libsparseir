@@ -39,6 +39,37 @@ if(SPARSEIR_BUILD_FORTRAN)
 endif()
 
 # Eigen3
+# BLAS/LAPACK options
+option(SPARSEIR_USE_BLAS "Enable BLAS support" ON)
+option(SPARSEIR_USE_LAPACK "Enable LAPACK support" ON)
+
+# BLAS/LAPACK search and configuration
+if(SPARSEIR_USE_BLAS OR SPARSEIR_USE_LAPACK)
+    # Disable Eigen's BLAS/LAPACK usage for compatibility
+    add_compile_definitions(EIGEN_DONT_USE_BLAS_LAPACK)
+    message(STATUS "BLAS/LAPACK support disabled for compatibility")
+endif()
+
+# macOS-specific configuration
+if(APPLE)
+    # Explicitly add Accelerate Framework
+    find_library(ACCELERATE_FRAMEWORK Accelerate)
+    if(ACCELERATE_FRAMEWORK)
+        list(APPEND BLAS_LIBRARIES ${ACCELERATE_FRAMEWORK})
+        list(APPEND LAPACK_LIBRARIES ${ACCELERATE_FRAMEWORK})
+    endif()
+
+    # Specify LAPACKE header location
+    find_path(LAPACKE_INCLUDE_DIR lapacke.h
+        PATHS /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
+        /usr/local/include
+        /opt/homebrew/include
+    )
+    if(LAPACKE_INCLUDE_DIR)
+        include_directories(${LAPACKE_INCLUDE_DIR})
+    endif()
+endif()
+
 set(EIGEN3_REQUIRED_VERSION "3.4.0")
 find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
 if(NOT Eigen3_FOUND)
@@ -110,6 +141,20 @@ set_target_properties(sparseir PROPERTIES
     )
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
+
+# Add BLAS/LAPACK linking
+if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
+    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+endif()
+
+if(SPARSEIR_USE_LAPACK AND LAPACK_FOUND)
+    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
+endif()
+
+# macOS-specific configuration
+if(APPLE AND ACCELERATE_FRAMEWORK)
+    target_link_libraries(sparseir PRIVATE ${ACCELERATE_FRAMEWORK})
+endif()
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
