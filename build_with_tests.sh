@@ -18,7 +18,7 @@ cmake .. \
   -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=ON \
   -DSPARSEIR_USE_BLAS=ON \
-  -DSPARSEIR_USE_LAPACKE=ON
+  -DSPARSEIR_USE_LAPACK=ON
 
 # Build (including tests)
 cmake --build . --config Release -j 4
