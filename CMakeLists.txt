@@ -169,7 +169,7 @@ endif()
 # -------------------------------------
 # Testing
 
-option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." ${BUILD_TESTING})
+option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." OFF)
 
 if (SPARSEIR_BUILD_TESTING)
     enable_testing()
