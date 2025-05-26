@@ -83,10 +83,10 @@ TEST_CASE(
     // pwlp(x::Real)
     double x = 0.5328437345518631;
     int i;
-    double x̃;
-    std::tie(i, x̃) = pwlp.split(x);
+    double tildex;
+    std::tie(i, tildex) = pwlp.split(x);
     REQUIRE(i == 0);
-    REQUIRE(x̃ == Approx(-0.25995538114498773));
+    REQUIRE(tildex == Approx(-0.25995538114498773));
 
     // pwlp(x::AbstractVector)
     Eigen::VectorXd xs(2);
