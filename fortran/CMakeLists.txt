@@ -32,7 +32,7 @@ set_target_properties(sparseir_fortran PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
-target_link_libraries(sparseir_fortran PRIVATE sparseir)
+target_link_libraries(sparseir_fortran PUBLIC sparseir)
 
 # Add alias
 add_library(SparseIR::sparseir_fortran ALIAS sparseir_fortran)
