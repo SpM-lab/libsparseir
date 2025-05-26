@@ -14,6 +14,7 @@ file(GLOB TEST_FILES "*.cxx" "*.hpp")
 add_executable(libsparseirtests ${TEST_FILES})
 target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(libsparseirtests PRIVATE SparseIR::sparseir)
+target_link_libraries(libsparseirtests PRIVATE Eigen3::Eigen Threads::Threads)
 
 # Add include paths
 if(DEFINED TEST_INCLUDE_DIRS)
