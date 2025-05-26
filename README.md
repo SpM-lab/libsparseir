@@ -93,6 +93,20 @@ cd build
 ./test_kernel
 ```
 
+## BLAS/LAPACK Support
+
+The library can optionally use BLAS/LAPACK for improved performance. By default, BLAS/LAPACK usage is disabled for compatibility reasons to avoid linking issues. You can control this with CMake options:
+
+```bash
+# Disable BLAS/LAPACK (default, uses Eigen's internal implementations)
+cmake .. -DSPARSEIR_USE_BLAS=OFF -DSPARSEIR_USE_LAPACK=OFF
+
+# Enable BLAS/LAPACK (may require additional system libraries)
+cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_LAPACK=ON
+```
+
+Note: When enabling BLAS/LAPACK, ensure that the appropriate libraries (such as OpenBLAS, Intel MKL, or Apple Accelerate) are properly installed and linked.
+
 ## Generating documentation with Doxygen
 
 Install `doxygen` and `graphviz`. Then, run the following command:
