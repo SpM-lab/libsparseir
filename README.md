@@ -99,10 +99,10 @@ The library can optionally use BLAS/LAPACK for improved performance. By default,
 
 ```bash
 # Disable BLAS/LAPACK (default, uses Eigen's internal implementations)
-cmake .. -DSPARSEIR_USE_BLAS=OFF -DSPARSEIR_USE_LAPACK=OFF
+cmake .. -DSPARSEIR_USE_BLAS=OFF -DSPARSEIR_USE_LAPACKE=OFF
 
 # Enable BLAS/LAPACK (may require additional system libraries)
-cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_LAPACK=ON
+cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_LAPACKE=ON
 ```
 
 Note: When enabling BLAS/LAPACK, ensure that the appropriate libraries (such as OpenBLAS, Intel MKL, or Apple Accelerate) are properly installed and linked.

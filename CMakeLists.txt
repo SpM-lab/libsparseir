@@ -40,11 +40,11 @@ endif()
 
 # Eigen3
 # BLAS/LAPACK options
-option(SPARSEIR_USE_BLAS "Enable BLAS support" ON)
-option(SPARSEIR_USE_LAPACK "Enable LAPACK support" ON)
+option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
+option(SPARSEIR_USE_LAPACKE "Enable LAPACK support" OFF)
 
 # BLAS/LAPACK search and configuration
-if(SPARSEIR_USE_BLAS OR SPARSEIR_USE_LAPACK)
+if(SPARSEIR_USE_BLAS OR SPARSEIR_USE_LAPACKE)
     # Disable Eigen's BLAS/LAPACK usage for compatibility
     add_compile_definitions(EIGEN_DONT_USE_BLAS_LAPACK)
     message(STATUS "BLAS/LAPACK support disabled for compatibility")
@@ -147,7 +147,7 @@ if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
     target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
 endif()
 
-if(SPARSEIR_USE_LAPACK AND LAPACK_FOUND)
+if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
     target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
 endif()
 
