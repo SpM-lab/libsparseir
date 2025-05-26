@@ -479,27 +479,27 @@ TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
         double Gl_magn = Gl_.norm();
 
         // Evaluate
-        Eigen::Tensor<double, 1> Gτ = tau_sampling->evaluate(Gl);
+        Eigen::Tensor<double, 1> Gtau = tau_sampling->evaluate(Gl);
 
         // Compute norm
-        double Gτ_norm = 0.0;
-        for (Eigen::Index i = 0; i < Gτ.size(); ++i) {
-            Gτ_norm += Gτ(i) * Gτ(i);
+        double Gtau_norm = 0.0;
+        for (Eigen::Index i = 0; i < Gtau.size(); ++i) {
+            Gtau_norm += Gtau(i) * Gtau(i);
         }
-        Gτ_norm = std::sqrt(Gτ_norm);
+        Gtau_norm = std::sqrt(Gtau_norm);
 
         // Add noise
         double noise = 1e-5;
         std::random_device rd;
         std::mt19937 generator(rd());
         std::normal_distribution<double> distribution(0.0, 1.0);
-        Eigen::Tensor<double, 1> Gτ_n(Gτ.size());
-        for (Eigen::Index i = 0; i < Gτ.size(); ++i) {
-            Gτ_n(i) = Gτ(i) + noise * Gτ_norm * distribution(generator);
+        Eigen::Tensor<double, 1> Gtau_n(Gtau.size());
+        for (Eigen::Index i = 0; i < Gtau.size(); ++i) {
+            Gtau_n(i) = Gtau(i) + noise * Gtau_norm * distribution(generator);
         }
 
         // Fit back
-        Eigen::Tensor<double, 1> Gl_n = tau_sampling->fit(Gτ_n);
+        Eigen::Tensor<double, 1> Gl_n = tau_sampling->fit(Gtau_n);
 
         REQUIRE(sparseir::tensorIsApprox(Gl_n, Gl, 12 * noise * Gl_magn));
     };
@@ -531,13 +531,13 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
         Eigen::VectorXd Gl_ = basis->s.array() * (rhol.array());
         double Gl_magn = Gl_.norm();
 
-        // Convert Gl_ to a tensor Gℓ
-        Eigen::Tensor<double, 1> Gℓ(Gl_.size());
+        // Convert Gl_ to a tensor Gl
+        Eigen::Tensor<double, 1> Gl(Gl_.size());
         for (Eigen::Index i = 0; i < Gl_.size(); ++i) {
-            Gℓ(i) = Gl_(i);
+            Gl(i) = Gl_(i);
         }
 
-        auto Giw = matsu_sampling->evaluate(Gℓ);
+        auto Giw = matsu_sampling->evaluate(Gl);
 
         double noise = 1e-5;
         double Giw_norm = 0.0;
@@ -556,11 +556,11 @@ TEST_CASE("iω noise with Lambda = 10", "[sampling]")
             Giwn_n(i) = Giw(i) + noise * Giw_norm * distribution(generator);
         }
 
-        Eigen::Tensor<std::complex<double>, 1> Gℓ_n =
+        Eigen::Tensor<std::complex<double>, 1> Gl_n =
             matsu_sampling->fit(Giwn_n);
-        Eigen::Tensor<double, 1> Gℓ_n_real = Gℓ_n.real();
+        Eigen::Tensor<double, 1> Gl_n_real = Gl_n.real();
 
-        REQUIRE(sparseir::tensorIsApprox(Gℓ_n_real, Gℓ,
+        REQUIRE(sparseir::tensorIsApprox(Gl_n_real, Gl,
                                          40 * std::sqrt(1 + positive_only) *
                                              noise * Gl_magn));
     };

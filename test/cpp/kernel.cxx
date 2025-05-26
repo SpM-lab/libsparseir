@@ -57,7 +57,7 @@ TEST_CASE("Kernel Accuracy Tests", "[kernel]")
 
         // Port from Julia:
         // julia> reldiff = @.ifelse(abs(result) < tiny, 1.0, result / result_x)
-        // @test julia> reldiff≈ones(size(reldiff)) atol = 100ϵ rtol = 0
+        // @test julia> reldiff=ones(size(reldiff)) atol = 100*epsilon rtol = 0
         for (int i = 0; i < result.rows(); ++i) {
             for (int j = 0; j < result.cols(); ++j) {
                 double q = std::abs(result(i, j)) < tiny
@@ -167,7 +167,7 @@ TEST_CASE("Kernel Accuracy Tests", "[kernel]")
 
         // Port from Julia:
         // julia> reldiff = @.ifelse(abs(result) < tiny, 1.0, result / result_x)
-        // @test julia> reldiff≈ones(size(reldiff)) atol = 100ϵ rtol = 0
+        // @test julia> reldiff=ones(size(reldiff)) atol = 100*epsilon rtol = 0
         for (int i = 0; i < result.rows(); ++i) {
             for (int j = 0; j < result.cols(); ++j) {
                 double q = std::abs(result(i, j)) < tiny
