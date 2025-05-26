@@ -101,9 +101,6 @@ if(NOT xprec_POPULATED)
     message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
 endif()
 
-# Add XPrec include directory
-include_directories(${xprec_SOURCE_DIR}/include)
-
 # ---------------------------------
 # Building
 
@@ -131,8 +128,10 @@ endif()
 target_include_directories(sparseir PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${XPrec_SOURCE_DIR}/include>
     )
+target_include_directories(sparseir PRIVATE
+    $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
+)
 set_target_properties(sparseir PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
