@@ -39,37 +39,6 @@ if(SPARSEIR_BUILD_FORTRAN)
 endif()
 
 # Eigen3
-# BLAS/LAPACK options
-option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
-option(SPARSEIR_USE_LAPACKE "Enable LAPACK support" OFF)
-
-# BLAS/LAPACK search and configuration
-if(SPARSEIR_USE_BLAS OR SPARSEIR_USE_LAPACKE)
-    # Disable Eigen's BLAS/LAPACK usage for compatibility
-    add_compile_definitions(EIGEN_DONT_USE_BLAS_LAPACK)
-    message(STATUS "BLAS/LAPACK support disabled for compatibility")
-endif()
-
-# macOS-specific configuration
-if(APPLE)
-    # Explicitly add Accelerate Framework
-    find_library(ACCELERATE_FRAMEWORK Accelerate)
-    if(ACCELERATE_FRAMEWORK)
-        list(APPEND BLAS_LIBRARIES ${ACCELERATE_FRAMEWORK})
-        list(APPEND LAPACK_LIBRARIES ${ACCELERATE_FRAMEWORK})
-    endif()
-
-    # Specify LAPACKE header location
-    find_path(LAPACKE_INCLUDE_DIR lapacke.h
-        PATHS /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
-        /usr/local/include
-        /opt/homebrew/include
-    )
-    if(LAPACKE_INCLUDE_DIR)
-        include_directories(${LAPACKE_INCLUDE_DIR})
-    endif()
-endif()
-
 set(EIGEN3_REQUIRED_VERSION "3.4.0")
 find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
 if(NOT Eigen3_FOUND)
@@ -101,8 +70,8 @@ if(NOT xprec_POPULATED)
     message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
 endif()
 
-# Add XPrec include directory
-include_directories(${xprec_SOURCE_DIR}/include)
+# XPrec include directory will be added to specific targets only
+# (removed global include_directories to avoid Fortran compiler warnings)
 
 # ---------------------------------
 # Building
@@ -131,8 +100,10 @@ endif()
 target_include_directories(sparseir PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${XPrec_SOURCE_DIR}/include>
     )
+target_include_directories(sparseir PRIVATE
+    $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
+)
 set_target_properties(sparseir PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -141,20 +112,6 @@ set_target_properties(sparseir PROPERTIES
     )
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
-
-# Add BLAS/LAPACK linking
-if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
-    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-endif()
-
-if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
-    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
-endif()
-
-# macOS-specific configuration
-if(APPLE AND ACCELERATE_FRAMEWORK)
-    target_link_libraries(sparseir PRIVATE ${ACCELERATE_FRAMEWORK})
-endif()
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
@@ -169,7 +126,7 @@ endif()
 # -------------------------------------
 # Testing
 
-option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." OFF)
+option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." ${BUILD_TESTING})
 
 if (SPARSEIR_BUILD_TESTING)
     enable_testing()
