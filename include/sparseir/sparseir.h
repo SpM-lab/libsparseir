@@ -43,7 +43,10 @@ extern "C" {
     spir_##name *spir_##name##_clone(const spir_##name *src);                  \
                                                                                \
     /* Check if the shared_ptr is assigned to a valid object */                \
-    int spir_##name##_is_assigned(const spir_##name *obj);
+    int spir_##name##_is_assigned(const spir_##name *obj);                      \
+                                                                               \
+    /* Get the raw pointer to the shared_ptr (only for debugging) */            \
+    void *_spir_##name##_get_raw_ptr(const spir_##name *obj);
 
 /* Declare opaque types */
 struct _spir_kernel;

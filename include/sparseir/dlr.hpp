@@ -4,6 +4,7 @@
 #include <complex>
 #include <memory>
 #include <vector>
+#include <algorithm>
 
 namespace sparseir {
 
@@ -18,6 +19,9 @@ public:
     MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
         : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
     {
+        if (!weight_func) {
+            throw std::runtime_error("weight_func is nullptr in MatsubaraPoles constructor");
+        }
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
             weights[i] = weight_func(beta, poles(i));
         }
@@ -65,18 +69,22 @@ public:
 
     // For vector of frequencies
     template <typename FreqType>
-    Eigen::MatrixXcd operator()(const std::vector<FreqType> &n) const
+    Eigen::MatrixXcd operator()(const std::vector<FreqType> &freqs) const
     {
-        Eigen::MatrixXcd result(poles.size(), n.size());
-        for (size_t i = 0; i < n.size(); ++i) {
-            result.col(i) = (*this)(MatsubaraFreq<Statistics>(n[i]));
+        Eigen::MatrixXcd result(poles.size(), freqs.size());
+        for (size_t i_freq = 0; i_freq < freqs.size(); ++i_freq) {
+            result.col(i_freq) = (*this)(freqs[i_freq]);
         }
         return result;
     }
 
     Eigen::MatrixXcd operator()(const Eigen::Array<int64_t, Eigen::Dynamic, 1> &n_array) const {
-        // delegate to operator()(const std::vector<FreqType> &n)
-        return (*this)(std::vector<MatsubaraFreq<Statistics>>(n_array.data(), n_array.data() + n_array.size()));
+        std::vector<MatsubaraFreq<Statistics>> freqs;
+        freqs.reserve(n_array.size());
+        for (Eigen::Index i = 0; i < n_array.size(); ++i) {
+            freqs.push_back(MatsubaraFreq<Statistics>(n_array(i)));
+        }
+        return (*this)(freqs);
     }
 };
 
@@ -125,7 +133,6 @@ public:
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
             double x = 2.0 * tau / beta - 1.0;
             double y = poles(i) / wmax;
-            //double xtau = poles(i) * tau;
             double k_tau_omega = kernel.compute(x, y);
             result(i) = - k_tau_omega / (y * weights(i));
         }
@@ -133,11 +140,12 @@ public:
     }
 
     // For vector of tau points
-    Eigen::MatrixXd operator()(const Eigen::VectorXd &tau) const
+    // Return a matrix of size (poles.size(), taus.size())
+    Eigen::MatrixXd operator()(const Eigen::VectorXd &taus) const
     {
-        Eigen::MatrixXd result(poles.size(), tau.size());
-        for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            result.row(i) = (*this)(tau);
+        Eigen::MatrixXd result(poles.size(), taus.size());
+        for (Eigen::Index t = 0; t < taus.size(); ++t) {
+            result.col(t) = (*this)(taus(t));
         }
         return result;
     }

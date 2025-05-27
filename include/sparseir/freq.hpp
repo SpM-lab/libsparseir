@@ -52,6 +52,13 @@ class MatsubaraFreq {
 public:
     int64_t n;
 
+    // Default constructor
+    inline MatsubaraFreq()
+        : n(std::is_same<S, Fermionic>::value ? 1 : 0)
+    {
+        instance_ = std::make_shared<S>();
+    }
+
     // Constructor
     inline MatsubaraFreq(int64_t n) : n(n)
     {
@@ -84,6 +91,9 @@ public:
 
     // Get n
     inline int64_t get_n() const { return n; }
+
+    // Add conversion operator to long long
+    operator long long() const { return static_cast<long long>(n); }
 
     // Add comparison operators
     bool operator<(const MatsubaraFreq &other) const { return n < other.n; }

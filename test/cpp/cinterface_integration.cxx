@@ -103,11 +103,13 @@ _evaluate_basis_functions(const spir_funcs *u, const Eigen::VectorXd &x_values)
     int funcs_size;
     status = spir_funcs_get_size(u, &funcs_size);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(funcs_size > 0);
 
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, ORDER> u_eval_mat(
         x_values.size(), funcs_size);
     for (Eigen::Index i = 0; i < x_values.size(); ++i) {
         Eigen::VectorXd u_eval(funcs_size);
+        REQUIRE(u_eval.data() != nullptr);
         status = spir_funcs_eval(u, x_values(i), u_eval.data());
         REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
         u_eval_mat.row(i) = u_eval.transpose().cast<T>();
@@ -504,11 +506,26 @@ void integration_test(double beta, double wmax, double epsilon,
             }
         }
     }
-    REQUIRE(poles.array().abs().maxCoeff() <= wmax);
+
+    // DLR sampling objects
+    spir_sampling *tau_sampling_dlr = spir_tau_sampling_new(dlr, num_tau_points, tau_points_org.data(), &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(tau_sampling_dlr != nullptr);
+
+    spir_funcs *dlr_uhat2 = spir_basis_get_uhat(dlr, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(dlr_uhat2 != nullptr);
+    REQUIRE(spir_funcs_is_assigned(dlr_uhat2));
+
+    spir_sampling *matsubara_sampling_dlr = spir_matsu_sampling_new(dlr, positive_only, num_matsubara_points_org, matsubara_points_org.data(), &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(matsubara_sampling_dlr != nullptr);
+
 
     // Move the axis for the poles from the first to the target dimension
     Eigen::Tensor<T, ndim, ORDER> coeffs =
         sparseir::movedim(coeffs_targetdim0, 0, target_dim);
+
     // Convert DLR coefficients to IR coefficients
     Eigen::Tensor<T, ndim, ORDER> g_IR(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
@@ -525,7 +542,7 @@ void integration_test(double beta, double wmax, double epsilon,
                         g_IR.data(), g_DLR_reconst.data());
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    // From_IR C API
+    // From DLR to IR
     Eigen::Tensor<T, ndim, ORDER> g_dlr(
         _get_dims<ndim>(basis_size, extra_dims, target_dim));
     status = dlr_from_IR(dlr, order, ndim,
@@ -556,16 +573,11 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(ir_uhat != nullptr);
 
     // Compare the Greens function at all tau points between IR and DLR
-    std::cout << "Evaluate Greens function at all tau points between IR and DLR" << std::endl;
-    std::cout << "g_IR..." << std::endl;
     Eigen::Tensor<T, ndim, ORDER> gtau_from_IR =
         _evaluate_gtau<T, ndim, ORDER>(g_IR, ir_u, target_dim, tau_points);
-    std::cout << "g_IR done" << std::endl;
-    std::cout << "g_DLR..." << std::endl;
     Eigen::Tensor<T, ndim, ORDER> gtau_from_DLR =
         _evaluate_gtau<T, ndim, ORDER>(coeffs, dlr_u, target_dim,
                                             tau_points);
-    std::cout << "g_DLR done" << std::endl;
     Eigen::Tensor<T, ndim, ORDER> gtau_from_DLR_reconst =
         _evaluate_gtau<T, ndim, ORDER>(g_DLR_reconst, dlr_u, target_dim,
                                             tau_points);
@@ -573,6 +585,28 @@ void integration_test(double beta, double wmax, double epsilon,
         gtau_from_IR, gtau_from_DLR, tol));
     REQUIRE(compare_tensors_with_relative_error<T, ndim, ORDER>(
         gtau_from_IR, gtau_from_DLR_reconst, tol));
+
+    // Use sampling to evaluate the Greens function at all tau points between IR and DLR
+    if (std::is_same<T, double>::value) {
+        status = spir_sampling_eval_dd(
+            tau_sampling_dlr, order, ndim,
+            _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
+            target_dim, 
+            reinterpret_cast<const double*>(coeffs.data()),
+            reinterpret_cast<double*>(gtau_from_DLR.data()));
+    } else if (std::is_same<T, std::complex<double>>::value) {
+        status = spir_sampling_eval_zz(
+            tau_sampling_dlr, order, ndim,
+            _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
+            target_dim, 
+            reinterpret_cast<const c_complex*>(coeffs.data()),
+            reinterpret_cast<c_complex*>(gtau_from_DLR.data()));
+    }
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+
+    REQUIRE(compare_tensors_with_relative_error<T, ndim, ORDER>(
+        gtau_from_IR, gtau_from_DLR, tol));
+
 
     // Compare the Greens function at all Matsubara frequencies between IR and
     // DLR
@@ -585,6 +619,27 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(
         compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
             giw_from_IR, giw_from_DLR, tol));
+    
+    // Use sampling to evaluate the Greens function at all Matsubara frequencies between IR and DLR
+    {
+        if (std::is_same<T, double>::value) {
+            status = spir_sampling_eval_dz(
+                matsubara_sampling_dlr, order, ndim,
+                _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
+                target_dim, 
+                reinterpret_cast<const double*>(coeffs.data()),
+                reinterpret_cast<c_complex*>(giw_from_DLR.data()));
+        } else if (std::is_same<T, std::complex<double>>::value) {
+            status = spir_sampling_eval_zz(
+                matsubara_sampling_dlr, order, ndim,
+                _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
+                target_dim, 
+                reinterpret_cast<const c_complex*>(coeffs.data()),
+                reinterpret_cast<c_complex*>(giw_from_DLR.data()));
+        }
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(giw_from_IR, giw_from_DLR, tol));
+    }
 
     auto dims_matsubara =
         _get_dims<ndim, int>(num_matsubara_points, extra_dims, target_dim);

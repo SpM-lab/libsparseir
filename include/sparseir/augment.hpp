@@ -310,6 +310,24 @@ public:
         return result;
     }
 
+    Eigen::MatrixXcd operator()(const Eigen::Vector<int64_t, Eigen::Dynamic>& freqs) const
+    {
+        Eigen::MatrixXcd result(basis_func->size() + augmentations.size(), freqs.size());
+        
+        // Evaluate basis functions
+        Eigen::MatrixXcd basis_result = (*basis_func)(freqs);
+        result.bottomRows(basis_func->size()) = basis_result;
+
+        // Evaluate augmentations
+        for (size_t i = 0; i < augmentations.size(); ++i) {
+            for (Eigen::Index j = 0; j < freqs.size(); ++j) {
+                result(i, j) = (*augmentations[i])(MatsubaraFreq<S>(freqs(j)));
+            }
+        }
+
+        return result;
+    }
+
     size_t size() const { return augmentations.size() + basis_func->size(); }
 };
 

@@ -442,19 +442,33 @@ inline Eigen::MatrixXd eval_matrix(const std::shared_ptr<Basis> &basis,
     return matrix;
 }
 
+// Return a matrix of size (sampling_points.size(), basis_size)
 template <typename S, typename Base>
 inline Eigen::MatrixXcd
 eval_matrix(const std::shared_ptr<Base> &basis,
             const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
-    Eigen::MatrixXcd m(basis->uhat->size(), sampling_points.size());
+    // check if basis->uhat is a valid shared_ptr
+    if (!basis) {
+        throw std::runtime_error("basis is not a valid shared_ptr");
+    }
+    if (!(basis->uhat)) {
+        throw std::runtime_error("uhat is not a valid shared_ptr");
+    }
+    Eigen::Vector<int64_t, Eigen::Dynamic> freqs(sampling_points.size());
+    for (size_t i = 0; i < sampling_points.size(); ++i) {
+        freqs(i) = sampling_points[i].get_n();
+    }
+    auto m = (*(basis->uhat))(freqs);
+    return m.transpose();
+    //Eigen::MatrixXcd m(basis->uhat->size(), sampling_points.size());
     // FIXME: this can be slow. Evaluate uhat[i] for multiple frequencies at
     // once.
-    for (size_t i = 0; i < sampling_points.size(); ++i) {
-        m.col(i) = (*(basis->uhat))(sampling_points[i]);
-    }
-    Eigen::MatrixXcd matrix = m.transpose();
-    return matrix;
+    //for (size_t i = 0; i < sampling_points.size(); ++i) {
+        //m.col(i) = (*(basis->uhat))(sampling_points[i]);
+    //}
+    //Eigen::MatrixXcd matrix = m.transpose();
+    //return matrix;
 }
 
 template <typename S>
