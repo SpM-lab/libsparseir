@@ -1,0 +1,41 @@
+name: Create Tag and Release from Version Header
+on:
+  push:
+    branches: [main, terasaki/introduce-release-note]
+
+jobs:
+  tag-and-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Extract version from header
+      id: version
+      run: |
+        MAJOR=$(grep "#define SPARSEIR_VERSION_MAJOR" include/sparseir/version.h | awk '{print $3}')
+        MINOR=$(grep "#define SPARSEIR_VERSION_MINOR" include/sparseir/version.h | awk '{print $3}')
+        PATCH=$(grep "#define SPARSEIR_VERSION_PATCH" include/sparseir/version.h | awk '{print $3}')
+        VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+
+        # Check if remote tag exists
+        git fetch --tags
+        if git tag -l | grep -q "^$VERSION$"; then
+          echo "Tag $VERSION already exists"
+          echo "should_create=false" >> $GITHUB_OUTPUT
+        else
+          echo "should_create=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create Release
+      if: steps.version.outputs.should_create == 'true'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: Release ${{ steps.version.outputs.version }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
