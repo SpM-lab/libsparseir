@@ -239,10 +239,6 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_p
     if (!impl)
         return nullptr;
 
-    if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
-        return nullptr;
-    }
     if (num_points <= 0) {
         std::cerr << "Error: Number of points must be positive" << std::endl;
         return nullptr;
@@ -265,24 +261,26 @@ spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool po
     if (!impl)
         return nullptr;
 
-    if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
-        return nullptr;
-    }
     if (num_points <= 0) {
         std::cerr << "Error: Number of points must be positive" << std::endl;
         return nullptr;
     }
-
-    auto impl_finite_temp_basis = std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
 
     std::vector<sparseir::MatsubaraFreq<S>> matsubara_points;
     matsubara_points.reserve(num_points);
     for (int i = 0; i < num_points; i++) {
         matsubara_points.emplace_back(points[i]);
     }
-    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
-        std::make_shared<SMPL>(impl_finite_temp_basis, matsubara_points, positive_only)));
+
+    if (is_ir_basis(b)) {
+        auto impl_finite_temp_basis = std::dynamic_pointer_cast<_IRBasis<S>>(impl)->get_impl();
+        return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
+            std::make_shared<SMPL>(impl_finite_temp_basis, matsubara_points, positive_only)));
+    } else {
+        auto impl_finite_temp_basis = std::dynamic_pointer_cast<DLRAdapter<S>>(impl)->get_impl();
+        return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
+            std::make_shared<SMPL>(impl_finite_temp_basis, matsubara_points, positive_only)));
+    }
 }
 
 
@@ -296,12 +294,13 @@ spir_basis *_spir_dlr_new(const spir_basis *b)
 
     auto ptr_finite_temp_basis =
         std::static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
-    auto dlr = std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(*ptr_finite_temp_basis);
 
     auto ptr_dlr = std::make_shared<DLRAdapter<S>>(
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis));
-    return create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
+    auto result = create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
+    std::cout << "DEBUG: result->ptr.get(): " << result->ptr.get() << std::endl;
+    return result;
 }
 
 template <typename S>
