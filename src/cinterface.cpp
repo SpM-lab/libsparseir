@@ -24,10 +24,10 @@ spir_kernel* spir_logistic_kernel_new(double lambda, int* status)
 {
     try {
         auto kernel_ptr = std::make_shared<sparseir::LogisticKernel>(lambda);
-        std::shared_ptr<sparseir::AbstractKernel> abstract_kernel = std::static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
+        std::shared_ptr<sparseir::AbstractKernel> abstract_kernel = _safe_static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
         
         // Check if dynamic_cast works at this point
-        auto check_logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(abstract_kernel);
+        auto check_logistic = _safe_dynamic_pointer_cast<sparseir::LogisticKernel>(abstract_kernel);
         
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_kernel(abstract_kernel);
@@ -47,7 +47,7 @@ spir_kernel* spir_reg_bose_kernel_new(double lambda, int* status)
     DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
     try {
         auto kernel_ptr = std::make_shared<sparseir::RegularizedBoseKernel>(lambda);
-        auto abstract_kernel = std::static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
+        auto abstract_kernel = _safe_static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_kernel(abstract_kernel);
     } catch (const std::exception &e) {
@@ -759,12 +759,12 @@ int spir_basis_get_n_default_taus(const spir_basis *b, int *num_points)
 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
             auto points = ir_basis->default_tau_sampling_points();
             *num_points = points.size();
             return SPIR_COMPUTATION_SUCCESS;
         } else {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
             auto points = ir_basis->default_tau_sampling_points();
             *num_points = points.size();
             return SPIR_COMPUTATION_SUCCESS;
@@ -792,12 +792,12 @@ int spir_basis_get_default_taus(const spir_basis *b, double *points)
 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
             auto tau_points = ir_basis->default_tau_sampling_points();
             std::copy(tau_points.begin(), tau_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;
         } else {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
             auto tau_points = ir_basis->default_tau_sampling_points();
             std::copy(tau_points.begin(), tau_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;
@@ -825,12 +825,12 @@ int spir_basis_get_n_default_matsus(const spir_basis *b, bool positive_only, int
 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
             auto points = ir_basis->default_matsubara_sampling_points(positive_only);
             *num_points = points.size();
             return SPIR_COMPUTATION_SUCCESS;
         } else {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
             auto points = ir_basis->default_matsubara_sampling_points(positive_only);
             *num_points = points.size();
             return SPIR_COMPUTATION_SUCCESS;
@@ -858,12 +858,12 @@ int spir_basis_get_default_matsus(const spir_basis *b, bool positive_only, int64
 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
             auto matsubara_points = ir_basis->default_matsubara_sampling_points(positive_only);
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;
         } else {
-            auto ir_basis = std::static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
             auto matsubara_points = ir_basis->default_matsubara_sampling_points(positive_only);
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;
