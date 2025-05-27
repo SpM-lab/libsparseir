@@ -1,7 +1,7 @@
 name: Create Tag and Release from Version Header
 on:
   push:
-    branches: [main, terasaki/introduce-release-note]
+    branches: [main]
 
 jobs:
   tag-and-release:
