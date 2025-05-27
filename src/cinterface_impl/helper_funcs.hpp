@@ -337,7 +337,6 @@ spir_basis *_spir_dlr_new(const spir_basis *b)
         std::make_shared<sparseir::DiscreteLehmannRepresentation<S>>(
             *ptr_finite_temp_basis));
     auto result = create_basis(std::static_pointer_cast<AbstractFiniteTempBasis>(ptr_dlr));
-    std::cout << "DEBUG: result->ptr.get(): " << result->ptr.get() << std::endl;
     return result;
 }
 
