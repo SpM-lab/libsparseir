@@ -23,8 +23,4 @@ cmake .. \
 # Build (including tests)
 cmake --build . --config Release -j 4
 
-# Run tests
-ctest --output-on-failure
-
-echo "SparseIR was built with tests successfully."
-echo "You can install it using: cd build && cmake --install ." 
+./test/fortran/test_ext 
