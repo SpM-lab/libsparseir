@@ -645,7 +645,6 @@ void integration_test(double beta, double wmax, double epsilon,
 
 TEST_CASE("Integration Test", "[cinterface]") {
     double beta = 1e+4;
-    beta = 10.0;
     double wmax = 2.0;
     double epsilon = 1e-10;
 
