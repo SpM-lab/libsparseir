@@ -58,12 +58,14 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
             spir_kernel_release(kernel);
         }
 
-        std::vector<double> svals(basis_size);
+        std::vector<double> svals(sve_size);
         int svals_status = spir_sve_result_get_svals(sve, svals.data());
         REQUIRE(svals_status == SPIR_COMPUTATION_SUCCESS);
 
         REQUIRE(basis_size <= sve_size);
-        REQUIRE(svals[basis_size - 1] / svals[0] <= epsilon);
+        if (sve_size > basis_size) {
+            REQUIRE(svals[basis_size] / svals[0] <= epsilon);
+        }
 
         // Success case - clean up intermediate objects
         spir_sve_result_release(sve);
