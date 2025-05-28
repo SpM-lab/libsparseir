@@ -29,6 +29,16 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
             return nullptr;
         }
 
+        int sve_size;
+        status_ = spir_sve_result_get_size(sve, &sve_size);
+        if (status_ != SPIR_COMPUTATION_SUCCESS) {
+            *status = status_;
+            spir_sve_result_release(sve);
+            spir_kernel_release(kernel);
+            return nullptr;
+        }
+        REQUIRE(sve_size > 0);
+
         // Create a fermionic finite temperature basis with pre-computed SVE result
         basis = spir_basis_new(
             statistics, beta, omega_max, kernel, sve, &status_);
@@ -38,6 +48,22 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
             spir_kernel_release(kernel);
             return nullptr;
         }
+
+        int basis_size;
+        status_ = spir_basis_get_size(basis, &basis_size);
+        if (status_ != SPIR_COMPUTATION_SUCCESS) {
+            *status = status_;
+            spir_basis_release(basis);
+            spir_sve_result_release(sve);
+            spir_kernel_release(kernel);
+        }
+
+        std::vector<double> svals(basis_size);
+        int svals_status = spir_sve_result_get_svals(sve, svals.data());
+        REQUIRE(svals_status == SPIR_COMPUTATION_SUCCESS);
+
+        REQUIRE(basis_size <= sve_size);
+        REQUIRE(svals[basis_size - 1] / svals[0] <= epsilon);
 
         // Success case - clean up intermediate objects
         spir_sve_result_release(sve);

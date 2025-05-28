@@ -1150,4 +1150,50 @@ void *_spir_basis_get_raw_ptr(const spir_basis *obj)
     return impl.get();
 }
 
+int spir_sve_result_get_size(const spir_sve_result *sve, int *size)
+{
+    if (!sve || !size) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_sve_result(sve);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        *size = impl->s.size();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_sve_result_get_size: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_sve_result_get_size");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_sve_result_get_svals(const spir_sve_result *sve, double *svals)
+{
+    if (!sve || !svals) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_sve_result(sve);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        std::memcpy(svals, impl->s.data(), impl->s.size() * sizeof(double));
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_sve_result_get_svals: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_sve_result_get_svals");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 } // extern "C"

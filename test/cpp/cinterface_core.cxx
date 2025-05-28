@@ -209,6 +209,11 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
+    int basis_size;
+    int size_status = spir_basis_get_size(basis, &basis_size);
+    REQUIRE(size_status == SPIR_COMPUTATION_SUCCESS);
+
+
     int u_status;
     spir_funcs *u = spir_basis_get_u(basis, &u_status);
     REQUIRE(u_status == SPIR_COMPUTATION_SUCCESS);
@@ -220,10 +225,6 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(uhat != nullptr);
 
     // Test basis function evaluation
-    int basis_size;
-    int size_status = spir_basis_get_size(basis, &basis_size);
-    REQUIRE(size_status == SPIR_COMPUTATION_SUCCESS);
-
     double x = 0.5;        // Test point for u basis (imaginary time)
     double y = 0.5 * wmax; // Test point for v basis (real frequency)
     double *out = (double *)malloc(basis_size * sizeof(double));
