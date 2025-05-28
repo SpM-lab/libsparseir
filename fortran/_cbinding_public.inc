@@ -18,6 +18,8 @@
   public :: c_spir_reg_bose_kernel_new
   public :: c_spir_kernel_domain
   public :: c_spir_sve_result_new
+  public :: c_spir_sve_result_get_size
+  public :: c_spir_sve_result_get_svals
   public :: c_spir_funcs_get_size
   public :: c_spir_funcs_eval
   public :: c_spir_funcs_eval_matsu
@@ -26,6 +28,7 @@
   public :: c_spir_basis_new
   public :: c_spir_basis_get_size
   public :: c_spir_basis_get_stats
+  public :: c_spir_basis_get_singular_values
   public :: c_spir_basis_get_u
   public :: c_spir_basis_get_v
   public :: c_spir_basis_get_uhat

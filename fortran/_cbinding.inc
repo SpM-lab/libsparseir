@@ -135,6 +135,22 @@ function c_spir_sve_result_new(k, epsilon, status) &
   type(c_ptr) :: c_spir_sve_result_new
 end function
 
+function c_spir_sve_result_get_size(sve, size) &
+    bind(c, name="spir_sve_result_get_size") result(c_spir_sve_result_get_size)
+  use iso_c_binding
+  type(c_ptr), value :: sve
+  type(c_ptr), value :: size
+  integer(c_int) :: c_spir_sve_result_get_size
+end function
+
+function c_spir_sve_result_get_svals(sve, svals) &
+    bind(c, name="spir_sve_result_get_svals") result(c_spir_sve_result_get_svals)
+  use iso_c_binding
+  type(c_ptr), value :: sve
+  type(c_ptr), value :: svals
+  integer(c_int) :: c_spir_sve_result_get_svals
+end function
+
 function c_spir_funcs_get_size(funcs, size) &
     bind(c, name="spir_funcs_get_size") result(c_spir_funcs_get_size)
   use iso_c_binding
@@ -209,6 +225,14 @@ function c_spir_basis_get_stats(b, statistics) &
   type(c_ptr), value :: b
   type(c_ptr), value :: statistics
   integer(c_int) :: c_spir_basis_get_stats
+end function
+
+function c_spir_basis_get_singular_values(b, svals) &
+    bind(c, name="spir_basis_get_singular_values") result(c_spir_basis_get_singular_values)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  type(c_ptr), value :: svals
+  integer(c_int) :: c_spir_basis_get_singular_values
 end function
 
 function c_spir_basis_get_u(b, status) &
