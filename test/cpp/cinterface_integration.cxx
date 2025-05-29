@@ -271,15 +271,17 @@ spir_kernel* _kernel_new<sparseir::RegularizedBoseKernel>(double lambda)
 
 // Add these template functions before the integration_test function
 template <typename T>
-T generate_random_coeff(double random_value, double pole) {
-    return (2.0 * random_value - 1.0) * std::sqrt(std::abs(pole));
+T generate_random_coeff(double random_value_real, double random_value_imag, double pole) {
+    // Silence unused parameter warning
+    (void)random_value_imag;
+    return (2.0 * random_value_real - 1.0) * std::sqrt(std::abs(pole));
 }
 
 template <>
-std::complex<double> generate_random_coeff<std::complex<double>>(double random_value, double pole) {
+std::complex<double> generate_random_coeff<std::complex<double>>(double random_value_real, double random_value_imag, double pole) {
     return std::complex<double>(
-        (2.0 * random_value - 1.0) * std::sqrt(std::abs(pole)),
-        (2.0 * random_value - 1.0) * std::sqrt(std::abs(pole))
+        (2.0 * random_value_real - 1.0) * std::sqrt(std::abs(pole)),
+        (2.0 * random_value_imag - 1.0) * std::sqrt(std::abs(pole))
     );
 }
 
@@ -502,7 +504,7 @@ void integration_test(double beta, double wmax, double epsilon,
             coeffs_targetdim0.data(), npoles, extra_size);
         for (Eigen::Index i = 0; i < npoles; ++i) {
             for (Eigen::Index j = 0; j < extra_size; ++j) {
-                coeffs_2d(i, j) = generate_random_coeff<T>(dis(gen), poles(i));
+                coeffs_2d(i, j) = generate_random_coeff<T>(dis(gen), dis(gen), poles(i));
             }
         }
     }
