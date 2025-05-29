@@ -37,12 +37,8 @@ MODULE sparseir_ext
       !! singular values
       DOUBLE PRECISION, ALLOCATABLE :: tau(:)
       !! sampling points of imaginary time
-      DOUBLE PRECISION, ALLOCATABLE :: x(:)
-      !! This is used to get tau: tau = 5.0d-1 * beta * (x + 1.d0)
       DOUBLE PRECISION, ALLOCATABLE :: omega(:)
       !! sampling points of real frequency
-      DOUBLE PRECISION, ALLOCATABLE :: y(:)
-      !! This is used to get omega: omega = y * wmax
       INTEGER(8), ALLOCATABLE :: freq_f(:)
       !! integer part of sampling Matsubara freqs (Fermion)
       INTEGER(8), ALLOCATABLE :: freq_b(:)
@@ -129,6 +125,33 @@ contains
       ENDIF
       size = size_c
    END FUNCTION get_basis_size
+
+   FUNCTION basis_get_svals(basis_ptr) result(svals)
+      TYPE(c_ptr), INTENT(IN) :: basis_ptr
+      DOUBLE PRECISION, ALLOCATABLE :: svals(:)
+      INTEGER(c_int), target :: nsvals_c
+      INTEGER(c_int) :: status
+      REAL(c_double), ALLOCATABLE, target :: svals_c(:)
+
+      status = c_spir_basis_get_n_svals(basis_ptr, c_loc(nsvals_c))
+      IF (status /= 0) THEN
+         PRINT*, "Error getting number of singular values"
+         STOP
+      ENDIF
+
+      ALLOCATE(svals_c(nsvals_c))
+
+      status = c_spir_basis_get_svals(basis_ptr, c_loc(svals_c))
+      IF (status /= 0) THEN
+         PRINT*, "Error getting singular values"
+         STOP
+      ENDIF
+
+      ALLOCATE(svals(nsvals_c))
+      svals = svals_c
+
+      DEALLOCATE(svals_c)
+   END FUNCTION basis_get_svals
 
    FUNCTION basis_get_taus(basis_ptr) result(tau)
       TYPE(c_ptr), INTENT(IN) :: basis_ptr
@@ -253,32 +276,24 @@ contains
       if (.not. c_associated(k_ptr)) then
          print*, "Error: Kernel is not assigned"
          stop
-      else
-         print*, "Kernel is assigned"
       end if
 
       sve_ptr = create_sve_result(lambda, eps, k_ptr)
       if (.not. c_associated(sve_ptr)) then
          print*, "Error: SVE result is not assigned"
          stop
-      else
-         print*, "SVE result is assigned"
       end if
 
       basis_f_ptr = create_basis(SPIR_STATISTICS_FERMIONIC, beta, wmax, k_ptr, sve_ptr)
       if (.not. c_associated(basis_f_ptr)) then
-         print*, "Error: Basis is not assigned"
+         print*, "Error: Fermionic basis is not assigned"
          stop
-      else
-         print*, "Basis is assigned"
       end if
 
       basis_b_ptr = create_basis(SPIR_STATISTICS_BOSONIC, beta, wmax, k_ptr, sve_ptr)
       if (.not. c_associated(basis_b_ptr)) then
-         print*, "Error: Basis is not assigned"
+         print*, "Error: Bosonic basis is not assigned"
          stop
-      else
-         print*, "Basis is assigned"
       end if
 
       obj%basis_f_ptr = basis_f_ptr
