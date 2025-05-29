@@ -1,8 +1,13 @@
 ! Extends the SparseIR library with additional functionality
 MODULE sparseir_ext
-   use, intrinsic :: iso_c_binding
-   use sparseir
-   implicit none
+   USE, INTRINSIC :: iso_c_binding
+   USE sparseir
+   IMPLICIT NONE
+
+   INTEGER, PARAMETER :: DP = selected_real_kind(14,200)
+   INTEGER, PARAMETER :: sgl = selected_real_kind(6,30)
+   INTEGER, PARAMETER :: i4b = selected_int_kind(9)
+   INTEGER, PARAMETER :: i8b = selected_int_kind(18)
 
    !-----------------------------------------------------------------------
    TYPE IR
@@ -22,22 +27,22 @@ MODULE sparseir_ext
       !! total number of sampling Matsubara freqs (Bosonic)
       INTEGER :: nomega
       !! total number of sampling points of real frequency
-      DOUBLE PRECISION :: beta
+      REAL(KIND = DP) :: beta
       !! inverse temperature
-      DOUBLE PRECISION :: lambda
+      REAL(KIND = DP) :: lambda
       !! lambda = 10^{nlambda},
       !! which determines maximum sampling point of real frequency
-      DOUBLE PRECISION :: wmax
+      REAL(KIND = DP) :: wmax
       !! maximum real frequency: wmax = lambda / beta
-      DOUBLE PRECISION :: eps
+      REAL(KIND = DP) :: eps
       !! eps = 10^{-ndigit}
-      DOUBLE PRECISION :: eps_svd
+      REAL(KIND = DP) :: eps_svd
       !! This is used in the SVD fitting.
-      DOUBLE PRECISION, ALLOCATABLE :: s(:)
+      REAL(KIND = DP), ALLOCATABLE :: s(:)
       !! singular values
-      DOUBLE PRECISION, ALLOCATABLE :: tau(:)
+      REAL(KIND = DP), ALLOCATABLE :: tau(:)
       !! sampling points of imaginary time
-      DOUBLE PRECISION, ALLOCATABLE :: omega(:)
+      REAL(KIND = DP), ALLOCATABLE :: omega(:)
       !! sampling points of real frequency
       INTEGER(8), ALLOCATABLE :: freq_f(:)
       !! integer part of sampling Matsubara freqs (Fermion)
@@ -47,19 +52,19 @@ MODULE sparseir_ext
       !! if true, take the Matsubara frequencies
       !! only from the positive region
 
-      type(c_ptr) :: basis_f_ptr
+      TYPE(c_ptr) :: basis_f_ptr
       !! pointer to the fermionic basis
-      type(c_ptr) :: basis_b_ptr
+      TYPE(c_ptr) :: basis_b_ptr
       !! pointer to the bosonic basis
-      type(c_ptr) :: sve_ptr
+      TYPE(c_ptr) :: sve_ptr
       !! pointer to the SVE result
-      type(c_ptr) :: k_ptr
+      TYPE(c_ptr) :: k_ptr
       !! pointer to the kernel
-      type(c_ptr) :: tau_smpl_ptr
+      TYPE(c_ptr) :: tau_smpl_ptr
       !! pointer to the tau sampling points
-      type(c_ptr) :: matsu_f_smpl_ptr
+      TYPE(c_ptr) :: matsu_f_smpl_ptr
       !! pointer to the fermionic frequency sampling points
-      type(c_ptr) :: matsu_b_smpl_ptr
+      TYPE(c_ptr) :: matsu_b_smpl_ptr
       !! pointer to the bosonic frequency sampling points
       !-----------------------------------------------------------------------
    END TYPE IR
@@ -67,23 +72,23 @@ MODULE sparseir_ext
 
 contains
    FUNCTION create_logistic_kernel(lambda) result(k_ptr)
-      DOUBLE PRECISION, INTENT(IN) :: lambda
+      REAL(KIND = DP), INTENT(IN) :: lambda
       REAL(c_double), target :: lambda_c
       INTEGER(c_int), target :: status_c
-      type(c_ptr) :: k_ptr
+      TYPE(c_ptr) :: k_ptr
       lambda_c = lambda
       k_ptr = c_spir_logistic_kernel_new(lambda_c, c_loc(status_c))
    end function create_logistic_kernel
 
    FUNCTION create_sve_result(lambda, eps, k_ptr) result(sve_ptr)
-      DOUBLE PRECISION, INTENT(IN) :: lambda
-      DOUBLE PRECISION, INTENT(IN) :: eps
+      REAL(KIND = DP), INTENT(IN) :: lambda
+      REAL(KIND = DP), INTENT(IN) :: eps
 
       REAL(c_double), target :: lambda_c, eps_c
       INTEGER(c_int), target :: status_c
 
-      type(c_ptr), INTENT(IN) :: k_ptr
-      type(c_ptr) :: sve_ptr
+      TYPE(c_ptr), INTENT(IN) :: k_ptr
+      TYPE(c_ptr) :: sve_ptr
 
       lambda_c = lambda
       eps_c = eps
@@ -96,8 +101,8 @@ contains
 
    FUNCTION create_basis(statistics, beta, wmax, k_ptr, sve_ptr) result(basis_ptr)
       INTEGER, INTENT(IN) :: statistics
-      DOUBLE PRECISION, INTENT(IN) :: beta
-      DOUBLE PRECISION, INTENT(IN) :: wmax
+      REAL(KIND = DP), INTENT(IN) :: beta
+      REAL(KIND = DP), INTENT(IN) :: wmax
       TYPE(c_ptr), INTENT(IN) :: k_ptr, sve_ptr
 
       INTEGER(c_int), target :: status_c
@@ -130,7 +135,7 @@ contains
 
    FUNCTION basis_get_svals(basis_ptr) result(svals)
       TYPE(c_ptr), INTENT(IN) :: basis_ptr
-      DOUBLE PRECISION, ALLOCATABLE :: svals(:)
+      REAL(KIND = DP), ALLOCATABLE :: svals(:)
       INTEGER(c_int), target :: nsvals_c
       INTEGER(c_int) :: status
       REAL(c_double), ALLOCATABLE, target :: svals_c(:)
@@ -155,7 +160,7 @@ contains
 
    SUBROUTINE create_tau_smpl(basis_ptr, tau, tau_smpl_ptr)
       TYPE(c_ptr), INTENT(IN) :: basis_ptr
-      DOUBLE PRECISION, ALLOCATABLE, INTENT(OUT) :: tau(:)
+      REAL(KIND = DP), ALLOCATABLE, INTENT(OUT) :: tau(:)
       TYPE(c_ptr), INTENT(OUT) :: tau_smpl_ptr
 
       INTEGER(c_int), target :: ntau_c
@@ -217,7 +222,7 @@ contains
 
    FUNCTION basis_get_ws(basis_ptr) result(ws)
       TYPE(c_ptr), INTENT(IN) :: basis_ptr
-      DOUBLE PRECISION, ALLOCATABLE :: ws(:)
+      REAL(KIND = DP), ALLOCATABLE :: ws(:)
       INTEGER(c_int), target :: nomega_c
       INTEGER(c_int) :: status
       REAL(c_double), ALLOCATABLE, target :: ws_c(:)
@@ -251,39 +256,39 @@ contains
       !
       TYPE(IR), INTENT(INOUT) :: obj
       !! contains all the IR-basis objects
-      DOUBLE PRECISION, INTENT(IN) :: beta
+      REAL(KIND = DP), INTENT(IN) :: beta
       !! inverse temperature
-      DOUBLE PRECISION, INTENT(IN) :: lambda
+      REAL(KIND = DP), INTENT(IN) :: lambda
       !! lambda = 10^{nlambda}
-      DOUBLE PRECISION, INTENT(IN) :: eps
+      REAL(KIND = DP), INTENT(IN) :: eps
       !! cutoff for the singular value expansion
       LOGICAL, INTENT(IN) :: positive_only
       !! if true, take the Matsubara frequencies
       !! only from the positive region
 
-      DOUBLE PRECISION :: wmax
+      REAL(KIND = DP) :: wmax
 
-      type(c_ptr) :: sve_ptr, basis_f_ptr, basis_b_ptr, k_ptr
+      TYPE(c_ptr) :: sve_ptr, basis_f_ptr, basis_b_ptr, k_ptr
 
       wmax = lambda / beta
 
       k_ptr = create_logistic_kernel(lambda)
-      if (.not. c_associated(k_ptr)) then
+      if (.not. C_ASSOCIATED(k_ptr)) then
          CALL errore('init_ir', 'Kernel is not assigned', 1)
       end if
 
       sve_ptr = create_sve_result(lambda, eps, k_ptr)
-      if (.not. c_associated(sve_ptr)) then
+      if (.not. C_ASSOCIATED(sve_ptr)) then
          CALL errore('init_ir', 'SVE result is not assigned', 1)
       end if
 
       basis_f_ptr = create_basis(SPIR_STATISTICS_FERMIONIC, beta, wmax, k_ptr, sve_ptr)
-      if (.not. c_associated(basis_f_ptr)) then
+      if (.not. C_ASSOCIATED(basis_f_ptr)) then
          CALL errore('init_ir', 'Fermionic basis is not assigned', 1)
       end if
 
       basis_b_ptr = create_basis(SPIR_STATISTICS_BOSONIC, beta, wmax, k_ptr, sve_ptr)
-      if (.not. c_associated(basis_b_ptr)) then
+      if (.not. C_ASSOCIATED(basis_b_ptr)) then
          CALL errore('init_ir', 'Bosonic basis is not assigned', 1)
       end if
 
@@ -333,26 +338,26 @@ contains
       IF (ierr /= 0) CALL errore('finalize_ir', 'Error deallocating IR%freq_b', 1)
       !-----------------------------------------------------------------------
 
-      if (c_associated(obj%basis_f_ptr)) then
-         call c_spir_basis_release(obj%basis_f_ptr)
+      if (C_ASSOCIATED(obj%basis_f_ptr)) then
+         CALL c_spir_basis_release(obj%basis_f_ptr)
       end if
-      if (c_associated(obj%basis_b_ptr)) then
-         call c_spir_basis_release(obj%basis_b_ptr)
+      if (C_ASSOCIATED(obj%basis_b_ptr)) then
+         CALL c_spir_basis_release(obj%basis_b_ptr)
       end if
-      if (c_associated(obj%sve_ptr)) then
-         call c_spir_sve_result_release(obj%sve_ptr)
+      if (C_ASSOCIATED(obj%sve_ptr)) then
+         CALL c_spir_sve_result_release(obj%sve_ptr)
       end if
-      if (c_associated(obj%k_ptr)) then
-         call c_spir_kernel_release(obj%k_ptr)
+      if (C_ASSOCIATED(obj%k_ptr)) then
+         CALL c_spir_kernel_release(obj%k_ptr)
       end if
-      if (c_associated(obj%tau_smpl_ptr)) then
-         call c_spir_sampling_release(obj%tau_smpl_ptr)
+      if (C_ASSOCIATED(obj%tau_smpl_ptr)) then
+         CALL c_spir_sampling_release(obj%tau_smpl_ptr)
       end if
-      if (c_associated(obj%matsu_f_smpl_ptr)) then
-         call c_spir_sampling_release(obj%matsu_f_smpl_ptr)
+      if (C_ASSOCIATED(obj%matsu_f_smpl_ptr)) then
+         CALL c_spir_sampling_release(obj%matsu_f_smpl_ptr)
       end if
-      if (c_associated(obj%matsu_b_smpl_ptr)) then
-         call c_spir_sampling_release(obj%matsu_b_smpl_ptr)
+      if (C_ASSOCIATED(obj%matsu_b_smpl_ptr)) then
+         CALL c_spir_sampling_release(obj%matsu_b_smpl_ptr)
       end if
    END SUBROUTINE finalize_ir
 
