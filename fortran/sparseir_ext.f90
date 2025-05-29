@@ -157,22 +157,26 @@ contains
       DEALLOCATE(tau_c)
    END FUNCTION basis_get_taus
 
-   FUNCTION basis_get_matsus(basis_ptr) result(matsus)
+   FUNCTION basis_get_matsus(basis_ptr, positive_only) result(matsus)
       TYPE(c_ptr), INTENT(IN) :: basis_ptr
+      LOGICAL, INTENT(IN) :: positive_only
       INTEGER(8), ALLOCATABLE :: matsus(:)
       INTEGER(c_int), target :: nfreq_f_c
       INTEGER(c_int) :: status
-      INTEGER(c_int64_t), ALLOCATABLE, target :: matsus_c(:) 
+      INTEGER(c_int64_t), ALLOCATABLE, target :: matsus_c(:)
+      INTEGER(c_int) :: positive_only_c
 
-      status = c_spir_basis_get_n_default_matsus(basis_ptr, 0, c_loc(nfreq_f_c))
+      positive_only_c = MERGE(1, 0, positive_only)
+
+      status = c_spir_basis_get_n_default_matsus(basis_ptr, positive_only_c, c_loc(nfreq_f_c))
       IF (status /= 0) THEN
          PRINT*, "Error getting number of fermionic frequencies"
-         STOP 
+         STOP
       ENDIF
 
       ALLOCATE(matsus_c(nfreq_f_c))
 
-      status = c_spir_basis_get_default_matsus(basis_ptr, 0, c_loc(matsus_c))
+      status = c_spir_basis_get_default_matsus(basis_ptr, positive_only_c, c_loc(matsus_c))
       IF (status /= 0) THEN
          PRINT*, "Error getting fermionic frequencies"
          STOP
@@ -184,26 +188,12 @@ contains
       DEALLOCATE(matsus_c)
    END FUNCTION basis_get_matsus
 
-   FUNCTION basis_nfreq_b(basis_ptr) result(nfreq_b)
-      TYPE(c_ptr), INTENT(IN) :: basis_ptr
-      INTEGER(c_int) :: nfreq_b
-      INTEGER(c_int), target :: nfreq_b_c
-      INTEGER(c_int) :: status
-
-      status = c_spir_basis_get_n_default_matsus(basis_ptr, 0, c_loc(nfreq_b_c))
-      IF (status /= 0) THEN
-         PRINT*, "Error getting number of bosonic frequencies"
-         STOP
-      ENDIF
-      nfreq_b = nfreq_b_c
-   END FUNCTION basis_nfreq_b
-
    FUNCTION basis_get_ws(basis_ptr) result(ws)
       TYPE(c_ptr), INTENT(IN) :: basis_ptr
       DOUBLE PRECISION, ALLOCATABLE :: ws(:)
       INTEGER(c_int), target :: nomega_c
       INTEGER(c_int) :: status
-      REAL(c_double), ALLOCATABLE, target :: ws_c(:) 
+      REAL(c_double), ALLOCATABLE, target :: ws_c(:)
 
       status = c_spir_basis_get_n_default_ws(basis_ptr, c_loc(nomega_c))
       IF (status /= 0) THEN
@@ -299,8 +289,8 @@ contains
       obj%size = get_basis_size(basis_f_ptr)
       obj%tau = basis_get_taus(basis_f_ptr)
       obj%ntau = size(obj%tau)
-      obj%freq_f = basis_get_matsus(basis_f_ptr)
-      obj%freq_b = basis_get_matsus(basis_b_ptr)
+      obj%freq_f = basis_get_matsus(basis_f_ptr, positive_only)
+      obj%freq_b = basis_get_matsus(basis_b_ptr, positive_only)
       obj%nfreq_f = size(obj%freq_f)
       obj%nfreq_b = size(obj%freq_b)
       obj%omega = basis_get_ws(basis_f_ptr)
