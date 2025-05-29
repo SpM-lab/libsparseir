@@ -219,6 +219,14 @@ function c_spir_basis_get_size(b, size) &
   integer(c_int) :: c_spir_basis_get_size
 end function
 
+function c_spir_basis_get_svals(b, svals) &
+    bind(c, name="spir_basis_get_svals") result(c_spir_basis_get_svals)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  type(c_ptr), value :: svals
+  integer(c_int) :: c_spir_basis_get_svals
+end function
+
 function c_spir_basis_get_stats(b, statistics) &
     bind(c, name="spir_basis_get_stats") result(c_spir_basis_get_stats)
   use iso_c_binding

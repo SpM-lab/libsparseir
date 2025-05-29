@@ -133,7 +133,7 @@ contains
       INTEGER(c_int) :: status
       REAL(c_double), ALLOCATABLE, target :: svals_c(:)
 
-      status = c_spir_basis_get_n_svals(basis_ptr, c_loc(nsvals_c))
+      status = c_spir_basis_get_size(basis_ptr, c_loc(nsvals_c))
       IF (status /= 0) THEN
          PRINT*, "Error getting number of singular values"
          STOP
@@ -303,6 +303,7 @@ contains
 
       obj%size = get_basis_size(basis_f_ptr)
       obj%tau = basis_get_taus(basis_f_ptr)
+      obj%s = basis_get_svals(basis_f_ptr)
       obj%ntau = size(obj%tau)
       obj%freq_f = basis_get_matsus(basis_f_ptr, positive_only)
       obj%freq_b = basis_get_matsus(basis_b_ptr, positive_only)

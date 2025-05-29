@@ -365,6 +365,25 @@ int spir_basis_get_size(const spir_basis *b, int *size);
 
 
 /**
+ * @brief Gets the singular values of a finite temperature basis.
+ *
+ * This function returns the singular values of the specified finite temperature
+ * basis object. The singular values are the square roots of the eigenvalues of
+ * the covariance matrix of the basis functions.
+ *
+ * @param sve Pointer to the finite temperature basis object
+ * @param svals Pointer to store the singular values
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The singular values are ordered in descending order
+ * @note The number of singular values is equal to the basis size
+ * @see spir_basis_get_size
+ */
+int spir_basis_get_svals(const spir_basis *b, double *svals);
+
+/**
  * @brief Gets the statistics type (Fermionic or Bosonic) of a finite
  * temperature basis.
  *

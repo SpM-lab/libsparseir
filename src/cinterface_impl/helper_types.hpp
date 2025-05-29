@@ -182,6 +182,10 @@ public:
         }
     }
 
+    virtual Eigen::VectorXd s() const {
+        return impl->s;
+    }
+
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const override
     {
         std::shared_ptr<sparseir::IRTauFuncsType<S>> u_impl = impl->u;
