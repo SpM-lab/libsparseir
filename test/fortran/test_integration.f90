@@ -17,18 +17,6 @@ program test_integration
    integer(c_int), parameter :: positive_only = 0
    integer(c_int), parameter :: order = SPIR_ORDER_COLUMN_MAJOR
 
-   !integer(c_int) :: positive_only = 0
-   !integer(c_int) :: order = SPIR_ORDER_COLUMN_MAJOR
-
-   !type(c_ptr) :: k_ptr, k_copy_ptr
-   !type(c_ptr) :: sve_ptr
-   !type(c_ptr) :: basis_ptr, dlr_ptr
-   !type(c_ptr) :: tau_sampling_ptr, matsu_sampling_ptr
-   !integer(c_int), target :: basis_size
-   !real(c_double), allocatable, target :: taus(:)
-   !integer(c_int64_t), allocatable, target :: matsus(:) ! Use int64_t for Matsubara indices
-   !real(c_double), allocatable, target :: poles(:)
-
    ! Initialize random seed with a fixed value
    call random_seed(size=status)
    if (status > 0) then
@@ -45,17 +33,18 @@ program test_integration
 contains
 
    subroutine test_case(statistics, case_name)
-      integer(c_int32_t), intent(in) :: statistics
+      integer(c_int), intent(in) :: statistics
       character(len=*), intent(in) :: case_name
 
       type(c_ptr) :: k_ptr, k_copy_ptr
       type(c_ptr) :: sve_ptr
       type(c_ptr) :: basis_ptr, dlr_ptr
       type(c_ptr) :: tau_sampling_ptr, matsu_sampling_ptr
-      integer(c_int), target :: basis_size
+      integer(c_int), target :: basis_size, sve_size
       real(c_double), allocatable, target :: taus(:)
       integer(c_int64_t), allocatable, target :: matsus(:) ! Use int64_t for Matsubara indices
       real(c_double), allocatable, target :: poles(:)
+      real(c_double), allocatable, target :: svals(:)
 
       print *, "Testing ", case_name, " case"
 
@@ -91,6 +80,25 @@ contains
          print *, "Error: SVE result is not assigned"
          stop
       end if
+
+      ! Get the size of the SVE result
+      print *, "Getting SVE result size"
+      status = c_spir_sve_result_get_size(sve_ptr, c_loc(sve_size))
+      if (status /= 0) then
+         print *, "Error getting SVE result size"
+         stop
+      end if
+
+      ! Get the singular values of the SVE result
+      ! Note: sve_size can be larger than the basis size.
+      print *, "Getting SVE result singular values"
+      allocate(svals(sve_size))
+      status = c_spir_sve_result_get_svals(sve_ptr, c_loc(svals))
+      if (status /= 0) then
+         print *, "Error getting SVE result singular values"
+         stop
+      end if
+      print *, "SVE result singular values =", svals
 
       ! Create a finite temperature basis
       print *, "Creating finite temperature basis"

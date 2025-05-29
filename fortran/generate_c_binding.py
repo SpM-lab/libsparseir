@@ -48,6 +48,11 @@ def generate_fortran_interface(cursor, types):
         return "", ""
 
     func_name = cursor.spelling
+    # Skip functions that start with underscore
+    # as these functions are not part of the public API
+    if func_name.startswith('_'):
+        return "", ""
+
     fortran_func_name = f"c_{func_name}"
     result_type = map_c_type_to_fortran(cursor.result_type)
 

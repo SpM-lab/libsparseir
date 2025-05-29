@@ -476,7 +476,7 @@ class TauSampling : public AbstractSampling {
 private:
     Eigen::VectorXd sampling_points_;
     Eigen::MatrixXd matrix_;
-    Eigen::JacobiSVD<Eigen::MatrixXd> matrix_svd_;
+    mutable std::shared_ptr<Eigen::JacobiSVD<Eigen::MatrixXd>> matrix_svd_;
 
 public:
     // Implement the pure virtual method from AbstractSampling
@@ -542,7 +542,7 @@ public:
     }
 
     template <typename Basis>
-    TauSampling(const std::shared_ptr<Basis> &basis, const Eigen::VectorXd& sampling_points, bool factorize = true) : sampling_points_(sampling_points)
+    TauSampling(const std::shared_ptr<Basis> &basis, const Eigen::VectorXd& sampling_points) : sampling_points_(sampling_points)
     {
         // Ensure matrix dimensions are correct
         if (sampling_points.size() == 0) {
@@ -562,28 +562,22 @@ public:
                                      std::to_string(sampling_points.size()) +
                                      "x" + std::to_string(basis->size()));
         }
-
-        // Initialize SVD
-        if (factorize) {
-            matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXd>(
-                matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-        }
     }
 
     template <typename Basis>
-    TauSampling(const std::shared_ptr<Basis> &basis, bool factorize = true)
+    TauSampling(const std::shared_ptr<Basis> &basis)
     {
         // Get default sampling points from basis
         sampling_points_ = basis->default_tau_sampling_points();
 
-        *this = TauSampling(basis, sampling_points_, factorize);
+        *this = TauSampling(basis, sampling_points_);
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
     template <typename Basis, typename = typename std::enable_if<
                                   !is_shared_ptr<Basis>::value>::type>
-    TauSampling(const Basis &basis, bool factorize = true)
-        : TauSampling(std::make_shared<FiniteTempBasis<S>>(basis), factorize)
+    TauSampling(const Basis &basis)
+        : TauSampling(std::make_shared<FiniteTempBasis<S>>(basis))
     {
     }
 
@@ -637,9 +631,13 @@ public:
     const Eigen::VectorXd &sampling_points() const { return sampling_points_; }
 
     const Eigen::VectorXd &tau() const { return sampling_points_; }
-    Eigen::JacobiSVD<Eigen::MatrixXd> get_matrix_svd() const
+    const Eigen::JacobiSVD<Eigen::MatrixXd>& get_matrix_svd() const
     {
-        return matrix_svd_;
+        if (!matrix_svd_) {
+            matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXd>>(
+                matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+        }
+        return *matrix_svd_;
     }
 };
 
@@ -684,7 +682,7 @@ class MatsubaraSampling : public AbstractSampling {
 private:
     std::vector<MatsubaraFreq<S>> sampling_points_;
     Eigen::MatrixXcd matrix_;
-    Eigen::JacobiSVD<Eigen::MatrixXcd> matrix_svd_;
+    mutable std::shared_ptr<Eigen::JacobiSVD<Eigen::MatrixXcd>> matrix_svd_;
     bool positive_only_;
     bool has_zero_;
 
@@ -746,7 +744,7 @@ public:
     template <typename Basis>
     MatsubaraSampling(const std::shared_ptr<Basis> &basis,
                       const std::vector<MatsubaraFreq<S>> &sampling_points,
-                      bool positive_only = false, bool factorize = true)
+                      bool positive_only = false)
         : positive_only_(positive_only), has_zero_(false)
     {
         sampling_points_ = sampling_points;
@@ -771,20 +769,11 @@ public:
                                      "x" + std::to_string(basis->size()));
         }
         has_zero_ = sampling_points_[0].n == 0;
-        // Initialize SVD
-        if (factorize) {
-            if (positive_only_) {
-                matrix_svd_ = make_split_svd(matrix_, has_zero_);
-            } else {
-                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-            }
-        }
     }
 
     template <typename Basis>
     MatsubaraSampling(const std::shared_ptr<Basis> &basis,
-                      bool positive_only = false, bool factorize = true)
+                      bool positive_only = false)
         : positive_only_(positive_only), has_zero_(false)
     {
         // Get default sampling points from basis
@@ -812,24 +801,13 @@ public:
                                      "x" + std::to_string(basis->size()));
         }
         has_zero_ = sampling_points_[0].n == 0;
-        // Initialize SVD
-        if (factorize) {
-            if (positive_only_) {
-                matrix_svd_ = make_split_svd(matrix_, has_zero_);
-            } else {
-                matrix_svd_ = Eigen::JacobiSVD<Eigen::MatrixXcd>(
-                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
-            }
-        }
     }
 
     // Add constructor that takes a direct reference to FiniteTempBasis<S>
     template <typename Basis, typename = typename std::enable_if<
                                   !is_shared_ptr<Basis>::value>::type>
-    MatsubaraSampling(const Basis &basis, bool positive_only = false,
-                      bool factorize = true)
-        : MatsubaraSampling(std::make_shared<Basis>(basis), positive_only,
-                            factorize)
+    MatsubaraSampling(const Basis &basis, bool positive_only = false)
+        : MatsubaraSampling(std::make_shared<Basis>(basis), positive_only)
     {
     }
 
@@ -837,9 +815,9 @@ public:
                                   !is_shared_ptr<Basis>::value>::type>
     MatsubaraSampling(const Basis &basis,
                       const std::vector<MatsubaraFreq<S>> &sampling_points,
-                      bool positive_only = false, bool factorize = true)
+                      bool positive_only = false)
         : MatsubaraSampling(std::make_shared<Basis>(basis), sampling_points,
-                            positive_only, factorize)
+                            positive_only)
     {
     }
 
@@ -899,9 +877,18 @@ public:
         return sampling_points_;
     }
 
-    Eigen::JacobiSVD<Eigen::MatrixXcd> get_matrix_svd() const
+    const Eigen::JacobiSVD<Eigen::MatrixXcd>& get_matrix_svd() const
     {
-        return matrix_svd_;
+        if (!matrix_svd_) {
+            if (positive_only_) {
+                matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXcd>>(
+                    make_split_svd(matrix_, has_zero_));
+            } else {
+                matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXcd>>(
+                    matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
+            }
+        }
+        return *matrix_svd_;
     }
 };
 
