@@ -941,27 +941,6 @@ contains
          CALL unflatten_zz(res_c, res)
       END BLOCK
 
-      IF (PRESENT(positive_only) .AND. positive_only) then
-         select rank(res)
-         rank(1)
-            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
-         rank(2)
-            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
-         rank(3)
-            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
-         rank(4)
-            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
-         rank(5)
-            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
-         rank(6)
-            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
-         rank(7)
-            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
-         rank default
-            print *, "Error: Unsupported rank", rank(res)
-            stop
-         end select
-      END IF
    END SUBROUTINE fit_matsubara_zz
 
    SUBROUTINE fit_matsubara_f_zz(obj, TARGET_dim, arr, res)
