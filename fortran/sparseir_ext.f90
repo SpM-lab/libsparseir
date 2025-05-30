@@ -902,11 +902,12 @@ contains
       DEALLOCATE(arr_c, res_c)
    END SUBROUTINE fit_tau_dd
 
-   SUBROUTINE fit_matsubara_zz(smpl_ptr, TARGET_dim, arr, res)
+   SUBROUTINE fit_matsubara_zz(smpl_ptr, TARGET_dim, arr, res, positive_only)
       TYPE(c_ptr), INTENT(IN) :: smpl_ptr
       INTEGER, INTENT(IN) :: TARGET_dim
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+      LOGICAL, INTENT(IN), OPTIONAL :: positive_only
 
       INTEGER(c_int) :: ndim_c, TARGET_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
@@ -939,6 +940,28 @@ contains
 
          CALL unflatten_zz(res_c, res)
       END BLOCK
+
+      IF (PRESENT(positive_only) .AND. positive_only) then
+         select rank(res)
+         rank(1)
+            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
+         rank(2)
+            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
+         rank(3)
+            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
+         rank(4)
+            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
+         rank(5)
+            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
+         rank(6)
+            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
+         rank(7)
+            res = CMPLX(REAL(res, KIND=DP), 0.0_DP, KIND=DP)
+         rank default
+            print *, "Error: Unsupported rank", rank(res)
+            stop
+         end select
+      END IF
    END SUBROUTINE fit_matsubara_zz
 
    SUBROUTINE fit_matsubara_f_zz(obj, TARGET_dim, arr, res)
@@ -947,15 +970,7 @@ contains
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      COMPLEX(KIND = DP), ALLOCATABLE :: temp(:)
-
-      CALL fit_matsubara_zz(obj%matsu_f_smpl_ptr, TARGET_dim, arr, res)
-      IF (obj%positive_only) then
-         CALL flatten_zz(res, temp)
-         temp = CMPLX(REAL(temp, KIND=DP), 0.0_DP, KIND=DP)
-         CALL unflatten_zz(temp, res)
-         DEALLOCATE(temp)
-      END IF
+      CALL fit_matsubara_zz(obj%matsu_f_smpl_ptr, TARGET_dim, arr, res, obj%positive_only)
    END SUBROUTINE fit_matsubara_f_zz
 
    SUBROUTINE fit_matsubara_b_zz(obj, TARGET_dim, arr, res)
@@ -964,15 +979,7 @@ contains
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      COMPLEX(KIND = DP), ALLOCATABLE :: temp(:)
-
-      CALL fit_matsubara_zz(obj%matsu_b_smpl_ptr, TARGET_dim, arr, res)
-      IF (obj%positive_only) then
-         CALL flatten_zz(res, temp)
-         temp = CMPLX(REAL(temp, KIND=DP), 0.0_DP, KIND=DP)
-         CALL unflatten_zz(temp, res)
-         DEALLOCATE(temp)
-      END IF
+      CALL fit_matsubara_zz(obj%matsu_b_smpl_ptr, TARGET_dim, arr, res, obj%positive_only)
    END SUBROUTINE fit_matsubara_b_zz
 
 END MODULE sparseir_ext
