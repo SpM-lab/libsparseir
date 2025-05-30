@@ -564,6 +564,26 @@ contains
       end select
    end subroutine unflatten_dz
 
+   function check_output_dims(target_dim, input_dims, output_dims) result(is_valid)
+      INTEGER, INTENT(IN) :: target_dim
+      INTEGER(c_int), INTENT(IN) :: input_dims(:)
+      INTEGER(c_int), INTENT(IN) :: output_dims(:)
+      LOGICAL :: is_valid
+
+      INTEGER :: i
+
+      do i = 1, size(input_dims)
+         if (i == target_dim) then
+            continue
+         end if
+         if (input_dims(i) /= output_dims(i)) then
+            is_valid = .false.
+            return
+         end if
+      end do
+      is_valid = .true.
+   end function check_output_dims
+
    SUBROUTINE evaluate_tau_zz(obj, target_dim, arr, res)
       TYPE(IR), INTENT(IN) :: obj
       INTEGER, INTENT(IN) :: target_dim
@@ -571,24 +591,28 @@ contains
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
       INTEGER(c_int) :: ndim_c, target_dim_c
-      INTEGER(c_int), allocatable, target :: input_dims(:), output_dims(:)
+      INTEGER(c_int), allocatable, target :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
-      input_dims = shape(arr)
-      output_dims = shape(res)
-      ndim_c = size(input_dims)
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
 
-      ! check target_dim is in input_dims
+      ! check target_dim is in input_dims_c
       if (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('evaluate_tau_zz', 'Target dimension is out of range', 1)
       end if
 
-      if (input_dims(target_dim) /= obj%size) then
+      if (input_dims_c(target_dim) /= obj%size) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the basis size', 1)
       end if
 
-      if (output_dims(target_dim) /= size(obj%tau)) then
+      if (output_dims_c(target_dim) /= size(obj%tau)) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the number of tau sampling points', 1)
+      end if
+
+      if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
+         CALL errore('evaluate_tau_zz', 'Output dimensions are not the same as the input dimensions except for the target dimension', 1)
       end if
 
       target_dim_c = target_dim - 1
@@ -598,7 +622,7 @@ contains
             call flatten_zd(arr, arr_c)
 
             status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-               ndim_c, c_loc(input_dims), target_dim_c, c_loc(arr_c), c_loc(res_c))
+               ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
             if (status_c /= 0) then
                CALL errore('evaluate_tau_zz', 'Error evaluating on tau sampling points', status_c)
@@ -612,7 +636,7 @@ contains
             call flatten_zz(arr, arr_c)
 
             status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-               ndim_c, c_loc(input_dims), target_dim_c, c_loc(arr_c), c_loc(res_c))
+               ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
             if (status_c /= 0) then
                CALL errore('evaluate_tau_zz', 'Error evaluating on tau sampling points', status_c)
@@ -631,32 +655,37 @@ contains
       REAL(KIND = DP), INTENT(OUT) :: res(..)
 
       INTEGER(c_int) :: ndim_c, target_dim_c
-      INTEGER(c_int), allocatable, target :: input_dims(:), output_dims(:)
+      INTEGER(c_int), allocatable, target :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
       REAL(c_double), allocatable, target :: arr_c(:), res_c(:)
 
-      input_dims = shape(arr)
-      ndim_c = size(input_dims)
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
 
-      ! check target_dim is in output_dims
+      ! check target_dim is in output_dims_c
       if (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('evaluate_tau_dd', 'Target dimension is out of range', 1)
       end if
 
-      if (input_dims(target_dim) /= obj%size) then
+      if (input_dims_c(target_dim) /= obj%size) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the basis size', 1)
       end if
 
-      if (output_dims(target_dim) /= size(obj%tau)) then
+      if (output_dims_c(target_dim) /= size(obj%tau)) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the number of tau sampling points', 1)
+      end if
+
+      if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
+         CALL errore('evaluate_tau_zz', 'Output dimensions are not the same as the input dimensions except for the target dimension', 1)
       end if
 
       call flatten_dd(arr, arr_c)
 
       target_dim_c = target_dim - 1
       status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-         ndim_c, c_loc(input_dims), target_dim_c, c_loc(arr_c), c_loc(res_c))
+         ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
       if (status_c /= 0) then
          CALL errore('evaluate_tau_dd', 'Error evaluating on tau sampling points', status_c)
