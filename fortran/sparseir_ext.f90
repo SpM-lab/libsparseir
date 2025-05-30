@@ -70,6 +70,31 @@ MODULE sparseir_ext
    END TYPE IR
    !-----------------------------------------------------------------------
 
+   INTERFACE evaluate_tau
+       MODULE PROCEDURE evaluate_tau_zz, evaluate_tau_dd
+   END INTERFACE evaluate_tau
+
+   !
+   !INTERFACE evaluate_matsubara_f
+   !MODULE PROCEDURE evaluate_matsubara_f_zz, evaluate_matsubara_f_dz
+   !END INTERFACE evaluate_matsubara_f
+   !!
+   !INTERFACE evaluate_matsubara_b
+   !MODULE PROCEDURE evaluate_matsubara_b_zz, evaluate_matsubara_b_dz
+   !END INTERFACE evaluate_matsubara_b
+   !!
+   !INTERFACE fit_tau
+   !MODULE PROCEDURE fit_tau_zz, fit_tau_dd, fit_tau_dz, fit_tau_zd
+   !END INTERFACE fit_tau
+   !!
+   !INTERFACE fit_matsubara_f
+   !MODULE PROCEDURE fit_matsubara_f_zz, fit_matsubara_f_zd
+   !END INTERFACE fit_matsubara_f
+   !!
+   !INTERFACE fit_matsubara_b
+   !MODULE PROCEDURE fit_matsubara_b_zz, fit_matsubara_b_zd
+   !END INTERFACE fit_matsubara_b
+
 contains
    FUNCTION create_logistic_kernel(lambda) result(k_ptr)
       REAL(KIND = DP), INTENT(IN) :: lambda
@@ -190,34 +215,37 @@ contains
       DEALLOCATE(tau_c)
    END SUBROUTINE create_tau_smpl
 
-   FUNCTION basis_get_matsus(basis_ptr, positive_only) result(matsus)
+   SUBROUTINE create_matsu_smpl(basis_ptr, positive_only, matsus, matsu_smpl_ptr)
       TYPE(c_ptr), INTENT(IN) :: basis_ptr
       LOGICAL, INTENT(IN) :: positive_only
-      INTEGER(8), ALLOCATABLE :: matsus(:)
-      INTEGER(c_int), target :: nfreq_f_c
-      INTEGER(c_int) :: status
+      INTEGER(8), ALLOCATABLE, INTENT(OUT) :: matsus(:)
+      TYPE(c_ptr), INTENT(OUT) :: matsu_smpl_ptr
+
+      INTEGER(c_int), target :: nfreq_c
+      INTEGER(c_int), target :: status_c
       INTEGER(c_int64_t), ALLOCATABLE, target :: matsus_c(:)
       INTEGER(c_int) :: positive_only_c
 
       positive_only_c = MERGE(1, 0, positive_only)
 
-      status = c_spir_basis_get_n_default_matsus(basis_ptr, positive_only_c, c_loc(nfreq_f_c))
-      IF (status /= 0) THEN
-         CALL errore('basis_get_matsus', 'Error getting number of fermionic frequencies', status)
+      status_c = c_spir_basis_get_n_default_matsus(basis_ptr, positive_only_c, c_loc(nfreq_c))
+      IF (status_c /= 0) THEN
+         CALL errore('create_matsu_smpl', 'Error getting number of fermionic frequencies', status_c)
       ENDIF
 
-      ALLOCATE(matsus_c(nfreq_f_c))
+      ALLOCATE(matsus_c(nfreq_c))
 
-      status = c_spir_basis_get_default_matsus(basis_ptr, positive_only_c, c_loc(matsus_c))
-      IF (status /= 0) THEN
-         CALL errore('basis_get_matsus', 'Error getting fermionic frequencies', status)
+      status_c = c_spir_basis_get_default_matsus(basis_ptr, positive_only_c, c_loc(matsus_c))
+      IF (status_c /= 0) THEN
+         CALL errore('create_matsu_smpl', 'Error getting frequencies', status_c)
       ENDIF
 
-      ALLOCATE(matsus(nfreq_f_c))
+      if (ALLOCATED(matsus)) DEALLOCATE(matsus)
+      ALLOCATE(matsus(nfreq_c))
       matsus = matsus_c
 
       DEALLOCATE(matsus_c)
-   END FUNCTION basis_get_matsus
+   END SUBROUTINE create_matsu_smpl
 
 
    FUNCTION basis_get_ws(basis_ptr) result(ws)
@@ -303,9 +331,8 @@ contains
 
       obj%s = basis_get_svals(basis_f_ptr)
       obj%ntau = size(obj%tau)
-      ! TODO: basis_get_matsus -> create_matsu_smpl
-      obj%freq_f = basis_get_matsus(basis_f_ptr, positive_only)
-      obj%freq_b = basis_get_matsus(basis_b_ptr, positive_only)
+      call create_matsu_smpl(basis_f_ptr, positive_only, obj%freq_f, obj%matsu_f_smpl_ptr)
+      call create_matsu_smpl(basis_b_ptr, positive_only, obj%freq_b, obj%matsu_b_smpl_ptr)
       obj%nfreq_f = size(obj%freq_f)
       obj%nfreq_b = size(obj%freq_b)
       obj%omega = basis_get_ws(basis_f_ptr)
@@ -380,5 +407,263 @@ contains
       STOP
       !-----------------------------------------------------------------------
    END SUBROUTINE errore
+
+
+   subroutine flatten_dd(x, flat)
+      REAL(KIND = DP), INTENT(IN) :: x(..) ! Arbitrary rank
+      REAL(KIND = DP), ALLOCATABLE, INTENT(OUT) :: flat(:) ! 1D array
+
+      if (allocated(flat)) deallocate(flat)
+
+      select rank(x)
+       rank(1)
+         flat = x
+       rank(2)
+         flat = reshape(x, [size(x)])
+       rank(3)
+         flat = reshape(x, [size(x)])
+       rank(4)
+         flat = reshape(x, [size(x)])
+       rank(5)
+         flat = reshape(x, [size(x)])
+       rank(6)
+         flat = reshape(x, [size(x)])
+       rank(7)
+       rank default
+         print *, "Error: Unsupported rank", rank(x)
+         stop
+      end select
+   end subroutine
+
+   subroutine flatten_zz(x, flat)
+      COMPLEX(KIND = DP), INTENT(IN) :: x(..) ! Arbitrary rank
+      COMPLEX(KIND = DP), ALLOCATABLE, INTENT(OUT) :: flat(:) ! 1D array
+
+      if (allocated(flat)) deallocate(flat)
+
+      select rank(x)
+       rank(1)
+         flat = x
+       rank(2)
+         flat = reshape(x, [size(x)])
+       rank(3)
+         flat = reshape(x, [size(x)])
+       rank(4)
+         flat = reshape(x, [size(x)])
+       rank(5)
+         flat = reshape(x, [size(x)])
+       rank(6)
+         flat = reshape(x, [size(x)])
+       rank(7)
+         flat = reshape(x, [size(x)])
+       rank default
+         print *, "Error: Unsupported rank", rank(x)
+         stop
+      end select
+   end subroutine
+
+   subroutine flatten_zd(x, flat)
+      COMPLEX(KIND = DP), INTENT(IN) :: x(..) ! Arbitrary rank
+      REAL(KIND = DP), ALLOCATABLE, INTENT(OUT) :: flat(:) ! 1D array
+
+      if (allocated(flat)) deallocate(flat)
+
+      select rank(x)
+       rank(1)
+         flat = real(x, kind=DP)
+       rank(2)
+         flat = reshape(real(x, kind=DP), [size(x)])
+       rank(3)
+         flat = reshape(real(x, kind=DP), [size(x)])
+       rank(4)
+         flat = reshape(real(x, kind=DP), [size(x)])
+       rank(5)
+         flat = reshape(real(x, kind=DP), [size(x)])
+       rank(6)
+         flat = reshape(real(x, kind=DP), [size(x)])
+       rank(7)
+         flat = reshape(real(x, kind=DP), [size(x)])
+       rank default
+         print *, "Error: Unsupported rank", rank(x)
+         stop
+      end select
+   end subroutine
+
+   subroutine unflatten_zz(flat, x)
+      COMPLEX(KIND = DP), INTENT(IN) :: flat(:) ! 1D array
+      COMPLEX(KIND = DP), INTENT(OUT) :: x(..) ! Arbitrary rank
+
+      select rank(x)
+       rank(1)
+         x = flat
+       rank(2)
+         x = reshape(flat, shape(x))
+       rank(3)
+         x = reshape(flat, shape(x))
+       rank(4)
+         x = reshape(flat, shape(x))
+       rank(5)
+         x = reshape(flat, shape(x))
+       rank(6)
+         x = reshape(flat, shape(x))
+       rank(7)
+         x = reshape(flat, shape(x))
+       rank default
+         print *, "Error: Unsupported rank", rank(x)
+         stop
+      end select
+   end subroutine unflatten_zz
+
+   subroutine unflatten_dd(flat, x)
+      REAL(KIND = DP), INTENT(IN) :: flat(:) ! 1D array
+      REAL(KIND = DP), INTENT(OUT) :: x(..) ! Arbitrary rank
+
+      select rank(x)
+       rank(1)
+         x = flat
+       rank(2)
+         x = reshape(flat, shape(x))
+       rank(3)
+         x = reshape(flat, shape(x))
+       rank(4)
+         x = reshape(flat, shape(x))
+       rank(5)
+         x = reshape(flat, shape(x))
+       rank(6)
+         x = reshape(flat, shape(x))
+       rank(7)
+         x = reshape(flat, shape(x))
+       rank default
+         print *, "Error: Unsupported rank", rank(x)
+         stop
+      end select
+   end subroutine unflatten_dd
+
+   subroutine unflatten_dz(flat, x)
+      REAL(KIND = DP), INTENT(IN) :: flat(:) ! 1D array
+      COMPLEX(KIND = DP), INTENT(OUT) :: x(..) ! Arbitrary rank
+
+      select rank(x)
+       rank(1)
+         x = cmplx(flat, 0.0_DP, kind=DP)
+       rank(2)
+         x = reshape(cmplx(flat, 0.0_DP, kind=DP), shape(x))
+       rank(3)
+         x = reshape(cmplx(flat, 0.0_DP, kind=DP), shape(x))
+       rank(4)
+         x = reshape(cmplx(flat, 0.0_DP, kind=DP), shape(x))
+       rank(5)
+         x = reshape(cmplx(flat, 0.0_DP, kind=DP), shape(x))
+       rank(6)
+         x = reshape(cmplx(flat, 0.0_DP, kind=DP), shape(x))
+       rank(7)
+         x = reshape(cmplx(flat, 0.0_DP, kind=DP), shape(x))
+       rank default
+         print *, "Error: Unsupported rank", rank(x)
+         stop
+      end select
+   end subroutine unflatten_dz
+
+   SUBROUTINE evaluate_tau_zz(obj, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: target_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, target_dim_c
+      INTEGER(c_int), allocatable, target :: input_dims(:), output_dims(:)
+      INTEGER(c_int) :: status_c
+
+      input_dims = shape(arr)
+      output_dims = shape(res)
+      ndim_c = size(input_dims)
+
+      ! check target_dim is in input_dims
+      if (target_dim <= 0 .or. target_dim > ndim_c) then
+         CALL errore('evaluate_tau_zz', 'Target dimension is out of range', 1)
+      end if
+
+      if (input_dims(target_dim) /= obj%size) then
+         CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the basis size', 1)
+      end if
+
+      if (output_dims(target_dim) /= size(obj%tau)) then
+         CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the number of tau sampling points', 1)
+      end if
+
+      target_dim_c = target_dim - 1
+      IF (obj%positive_only) THEN
+         BLOCK
+            REAL(c_double), allocatable, target :: arr_c(:), res_c(:)
+            call flatten_zd(arr, arr_c)
+
+            status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+               ndim_c, c_loc(input_dims), target_dim_c, c_loc(arr_c), c_loc(res_c))
+
+            if (status_c /= 0) then
+               CALL errore('evaluate_tau_zz', 'Error evaluating on tau sampling points', status_c)
+            end if
+
+            call unflatten_dz(res_c, res)
+         END BLOCK
+      ELSE
+         BLOCK
+            COMPLEX(c_double), allocatable, target :: arr_c(:), res_c(:)
+            call flatten_zz(arr, arr_c)
+
+            status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+               ndim_c, c_loc(input_dims), target_dim_c, c_loc(arr_c), c_loc(res_c))
+
+            if (status_c /= 0) then
+               CALL errore('evaluate_tau_zz', 'Error evaluating on tau sampling points', status_c)
+            end if
+
+            call unflatten_zz(res_c, res)
+         END BLOCK
+      END IF
+   END SUBROUTINE evaluate_tau_zz
+
+
+   SUBROUTINE evaluate_tau_dd(obj, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: target_dim
+      REAL(KIND = DP), INTENT(IN) :: arr(..)
+      REAL(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, target_dim_c
+      INTEGER(c_int), allocatable, target :: input_dims(:), output_dims(:)
+      INTEGER(c_int) :: status_c
+
+      REAL(c_double), allocatable, target :: arr_c(:), res_c(:)
+
+      input_dims = shape(arr)
+      ndim_c = size(input_dims)
+
+      ! check target_dim is in output_dims
+      if (target_dim <= 0 .or. target_dim > ndim_c) then
+         CALL errore('evaluate_tau_dd', 'Target dimension is out of range', 1)
+      end if
+
+      if (input_dims(target_dim) /= obj%size) then
+         CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the basis size', 1)
+      end if
+
+      if (output_dims(target_dim) /= size(obj%tau)) then
+         CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the number of tau sampling points', 1)
+      end if
+
+      call flatten_dd(arr, arr_c)
+
+      target_dim_c = target_dim - 1
+      status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+         ndim_c, c_loc(input_dims), target_dim_c, c_loc(arr_c), c_loc(res_c))
+
+      if (status_c /= 0) then
+         CALL errore('evaluate_tau_dd', 'Error evaluating on tau sampling points', status_c)
+      end if
+
+      call unflatten_dd(res_c, res)
+      deallocate(arr_c, res_c)
+   END SUBROUTINE evaluate_tau_dd
 
 END MODULE sparseir_ext
