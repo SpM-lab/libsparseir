@@ -74,15 +74,19 @@ MODULE sparseir_ext
        MODULE PROCEDURE evaluate_tau_zz, evaluate_tau_dd
    END INTERFACE evaluate_tau
 
+   INTERFACE evaluate_matsubara
+       MODULE PROCEDURE evaluate_matsubara_zz, evaluate_matsubara_dz
+   END INTERFACE evaluate_matsubara
+
+   INTERFACE evaluate_matsubara_f
+       MODULE PROCEDURE evaluate_matsubara_f_zz, evaluate_matsubara_f_dz
+   END INTERFACE evaluate_matsubara_f
+
+   INTERFACE evaluate_matsubara_b
+       MODULE PROCEDURE evaluate_matsubara_b_zz, evaluate_matsubara_b_dz
+   END INTERFACE evaluate_matsubara_b
+
    !
-   !INTERFACE evaluate_matsubara_f
-   !MODULE PROCEDURE evaluate_matsubara_f_zz, evaluate_matsubara_f_dz
-   !END INTERFACE evaluate_matsubara_f
-   !!
-   !INTERFACE evaluate_matsubara_b
-   !MODULE PROCEDURE evaluate_matsubara_b_zz, evaluate_matsubara_b_dz
-   !END INTERFACE evaluate_matsubara_b
-   !!
    !INTERFACE fit_tau
    !MODULE PROCEDURE fit_tau_zz, fit_tau_dd, fit_tau_dz, fit_tau_zd
    !END INTERFACE fit_tau
@@ -694,5 +698,119 @@ contains
       call unflatten_dd(res_c, res)
       deallocate(arr_c, res_c)
    END SUBROUTINE evaluate_tau_dd
+
+   SUBROUTINE evaluate_matsubara_zz(smpl_ptr, target_dim, arr, res)
+      TYPE(c_ptr), INTENT(IN) :: smpl_ptr
+      INTEGER, INTENT(IN) :: target_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, target_dim_c
+      INTEGER(c_int), allocatable, target :: input_dims_c(:), output_dims_c(:)
+      INTEGER(c_int) :: status_c
+
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
+
+      ! check target_dim is in input_dims_c
+      if (target_dim <= 0 .or. target_dim > ndim_c) then
+         CALL errore('evaluate_matsubara_zz', 'Target dimension is out of range', 1)
+      end if
+
+      if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
+         CALL errore('evaluate_matsubara_zz', 'Output dimensions are not the same as the input dimensions except for the target dimension', 1)
+      end if
+
+      target_dim_c = target_dim - 1
+      BLOCK
+         COMPLEX(c_double), allocatable, target :: arr_c(:), res_c(:)
+         call flatten_zz(arr, arr_c)
+
+         status_c = c_spir_sampling_eval_zz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+
+         if (status_c /= 0) then
+            CALL errore('evaluate_matsubara_zz', 'Error evaluating on Matsubara frequencies', status_c)
+         end if
+
+         call unflatten_zz(res_c, res)
+      END BLOCK
+   END SUBROUTINE evaluate_matsubara_zz
+
+   SUBROUTINE evaluate_matsubara_dz(smpl_ptr, target_dim, arr, res)
+      TYPE(c_ptr), INTENT(IN) :: smpl_ptr
+      INTEGER, INTENT(IN) :: target_dim
+      REAL(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, target_dim_c
+      INTEGER(c_int), allocatable, target :: input_dims_c(:), output_dims_c(:)
+      INTEGER(c_int) :: status_c
+
+      REAL(c_double), allocatable, target :: arr_c(:), res_c(:)
+
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
+
+      ! check target_dim is in output_dims_c
+      if (target_dim <= 0 .or. target_dim > ndim_c) then
+         CALL errore('evaluate_matsubara_dz', 'Target dimension is out of range', 1)
+      end if
+
+      if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
+         CALL errore('evaluate_matsubara_dz', 'Output dimensions are not the same as the input dimensions except for the target dimension', 1)
+      end if
+
+      call flatten_dd(arr, arr_c)
+
+      target_dim_c = target_dim - 1
+      status_c = c_spir_sampling_eval_dz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+         ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+
+      if (status_c /= 0) then
+         CALL errore('evaluate_matsubara_dz', 'Error evaluating on Matsubara frequencies', status_c)
+      end if
+
+      call unflatten_dz(res_c, res)
+      deallocate(arr_c, res_c)
+   END SUBROUTINE evaluate_matsubara_dz
+
+   SUBROUTINE evaluate_matsubara_f_zz(obj, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: target_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      call evaluate_matsubara_zz(obj%matsu_f_smpl_ptr, target_dim, arr, res)
+   END SUBROUTINE evaluate_matsubara_f_zz
+
+   SUBROUTINE evaluate_matsubara_f_dz(obj, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: target_dim
+      REAL(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      call evaluate_matsubara_dz(obj%matsu_f_smpl_ptr, target_dim, arr, res)
+   END SUBROUTINE evaluate_matsubara_f_dz
+
+   SUBROUTINE evaluate_matsubara_b_zz(obj, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: target_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      call evaluate_matsubara_zz(obj%matsu_b_smpl_ptr, target_dim, arr, res)
+   END SUBROUTINE evaluate_matsubara_b_zz
+
+   SUBROUTINE evaluate_matsubara_b_dz(obj, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: target_dim
+      REAL(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      call evaluate_matsubara_dz(obj%matsu_b_smpl_ptr, target_dim, arr, res)
+   END SUBROUTINE evaluate_matsubara_b_dz
 
 END MODULE sparseir_ext
