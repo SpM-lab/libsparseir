@@ -27,6 +27,8 @@ MODULE sparseir_ext
       !! total number of sampling Matsubara freqs (Bosonic)
       INTEGER :: nomega
       !! total number of sampling points of real frequency
+      INTEGER :: npoles
+      !! total number of DLR poles
       REAL(KIND = DP) :: beta
       !! inverse temperature
       REAL(KIND = DP) :: lambda
@@ -66,6 +68,10 @@ MODULE sparseir_ext
       !! pointer to the fermionic frequency sampling points
       TYPE(c_ptr) :: matsu_b_smpl_ptr
       !! pointer to the bosonic frequency sampling points
+      TYPE(c_ptr) :: dlr_f_ptr
+      !! pointer to the fermionic DLR
+      TYPE(c_ptr) :: dlr_b_ptr
+      !! pointer to the bosonic DLR
       !-----------------------------------------------------------------------
    END TYPE IR
    !-----------------------------------------------------------------------
@@ -102,14 +108,13 @@ MODULE sparseir_ext
       MODULE PROCEDURE fit_matsubara_b_zz
    END INTERFACE fit_matsubara_b
 
-   !
-   !INTERFACE fit_matsubara_f
-   !MODULE PROCEDURE fit_matsubara_f_zz, fit_matsubara_f_zd
-   !END INTERFACE fit_matsubara_f
-   !!
-   !INTERFACE fit_matsubara_b
-   !MODULE PROCEDURE fit_matsubara_b_zz, fit_matsubara_b_zd
-   !END INTERFACE fit_matsubara_b
+   INTERFACE ir2dlr
+      MODULE PROCEDURE ir2dlr_zz, ir2dlr_dd
+   END INTERFACE ir2dlr
+
+   INTERFACE dlr2ir
+      MODULE PROCEDURE dlr2ir_zz, dlr2ir_dd
+   END INTERFACE dlr2ir
 
 contains
    FUNCTION create_logistic_kernel(lambda) result(k_ptr)
@@ -260,6 +265,12 @@ contains
       ALLOCATE(matsus(nfreq_c))
       matsus = matsus_c
 
+      ! Create sampling object
+      matsu_smpl_ptr = c_spir_matsu_sampling_new(basis_ptr, positive_only_c, nfreq_c, c_loc(matsus_c), c_loc(status_c))
+      IF (status_c /= 0) THEN
+         CALL errore('create_matsu_smpl', 'Error creating sampling object', status_c)
+      ENDIF
+
       DEALLOCATE(matsus_c)
    END SUBROUTINE create_matsu_smpl
 
@@ -310,8 +321,9 @@ contains
       !! only from the positive region
 
       REAL(KIND = DP) :: wmax
+      INTEGER(c_int), TARGET :: status_c, npoles_c
 
-      TYPE(c_ptr) :: sve_ptr, basis_f_ptr, basis_b_ptr, k_ptr
+      TYPE(c_ptr) :: sve_ptr, basis_f_ptr, basis_b_ptr, k_ptr, dlr_f_ptr, dlr_b_ptr
 
       wmax = lambda / beta
 
@@ -335,10 +347,30 @@ contains
          CALL errore('init_ir', 'Bosonic basis is not assigned', 1)
       END IF
 
+      ! Create DLR objects
+      dlr_f_ptr = c_spir_dlr_new(basis_f_ptr, c_loc(status_c))
+      IF (status_c /= 0 .or. .not. C_ASSOCIATED(dlr_f_ptr)) then
+         CALL errore('init_ir', 'Error creating fermionic DLR', status_c)
+      END IF
+
+      dlr_b_ptr = c_spir_dlr_new(basis_b_ptr, c_loc(status_c))
+      IF (status_c /= 0 .or. .not. C_ASSOCIATED(dlr_b_ptr)) then
+         CALL errore('init_ir', 'Error creating bosonic DLR', status_c)
+      END IF
+
+      ! Get number of poles
+      status_c = c_spir_dlr_get_npoles(dlr_f_ptr, c_loc(npoles_c))
+      IF (status_c /= 0) then
+         CALL errore('init_ir', 'Error getting number of poles', status_c)
+      END IF
+
       obj%basis_f_ptr = basis_f_ptr
       obj%basis_b_ptr = basis_b_ptr
       obj%sve_ptr = sve_ptr
       obj%k_ptr = k_ptr
+      obj%dlr_f_ptr = dlr_f_ptr
+      obj%dlr_b_ptr = dlr_b_ptr
+      obj%npoles = npoles_c
 
       obj%size = get_basis_size(basis_f_ptr)
 
@@ -400,6 +432,12 @@ contains
       END IF
       IF (C_ASSOCIATED(obj%matsu_b_smpl_ptr)) then
          CALL c_spir_sampling_release(obj%matsu_b_smpl_ptr)
+      END IF
+      IF (C_ASSOCIATED(obj%dlr_f_ptr)) then
+         CALL c_spir_basis_release(obj%dlr_f_ptr)
+      END IF
+      IF (C_ASSOCIATED(obj%dlr_b_ptr)) then
+         CALL c_spir_basis_release(obj%dlr_b_ptr)
       END IF
    END SUBROUTINE finalize_ir
 
@@ -636,6 +674,8 @@ contains
             REAL(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
             CALL flatten_zd(arr, arr_c)
 
+            ALLOCATE(res_c(PRODUCT(output_dims_c)))
+
             status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
                ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
 
@@ -644,11 +684,14 @@ contains
             END IF
 
             CALL unflatten_dz(res_c, res)
+            DEALLOCATE(arr_c, res_c)
          END BLOCK
       ELSE
          BLOCK
             COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
             CALL flatten_zz(arr, arr_c)
+
+            ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
             status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
                ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
@@ -658,6 +701,7 @@ contains
             END IF
 
             CALL unflatten_zz(res_c, res)
+            DEALLOCATE(arr_c, res_c)
          END BLOCK
       END IF
    END SUBROUTINE evaluate_tau_zz
@@ -733,10 +777,13 @@ contains
          CALL errore('evaluate_matsubara_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
+
       TARGET_dim_c = TARGET_dim - 1
       BLOCK
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
+
+         ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
          status_c = c_spir_sampling_eval_zz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
             ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
@@ -746,6 +793,7 @@ contains
          END IF
 
          CALL unflatten_zz(res_c, res)
+         DEALLOCATE(arr_c, res_c)
       END BLOCK
    END SUBROUTINE evaluate_matsubara_zz
 
@@ -773,6 +821,8 @@ contains
       IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
          CALL errore('evaluate_matsubara_dz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
+
+      ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
       CALL flatten_dd(arr, arr_c)
 
@@ -852,6 +902,8 @@ contains
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
 
+         ALLOCATE(res_c(PRODUCT(output_dims_c)))
+
          status_c = c_spir_sampling_fit_zz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
             ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
 
@@ -860,6 +912,7 @@ contains
          END IF
 
          CALL unflatten_zz(res_c, res)
+         DEALLOCATE(arr_c, res_c)
       END BLOCK
    END SUBROUTINE fit_tau_zz
 
@@ -931,6 +984,8 @@ contains
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
 
+         ALLOCATE(res_c(PRODUCT(output_dims_c)))
+
          status_c = c_spir_sampling_fit_zz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
             ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
 
@@ -939,6 +994,7 @@ contains
          END IF
 
          CALL unflatten_zz(res_c, res)
+         DEALLOCATE(arr_c, res_c)
       END BLOCK
 
    END SUBROUTINE fit_matsubara_zz
@@ -960,5 +1016,184 @@ contains
 
       CALL fit_matsubara_zz(obj%matsu_b_smpl_ptr, TARGET_dim, arr, res, obj%positive_only)
    END SUBROUTINE fit_matsubara_b_zz
+
+   SUBROUTINE ir2dlr_zz(obj, TARGET_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: TARGET_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
+      INTEGER(c_int) :: status_c
+
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
+
+      ! check TARGET_dim is in input_dims_c
+      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+         CALL errore('ir2dlr_zz', 'Target dimension is out of range', 1)
+      END IF
+
+      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+         CALL errore('ir2dlr_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+      END IF
+
+      TARGET_dim_c = TARGET_dim - 1
+      BLOCK
+         COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
+         CALL flatten_zz(arr, arr_c)
+
+         status_c = c_spir_ir2dlr_zz(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+
+         IF (status_c /= 0) then
+            CALL errore('ir2dlr_zz', 'Error converting IR to DLR', status_c)
+         END IF
+
+         CALL unflatten_zz(res_c, res)
+      END BLOCK
+   END SUBROUTINE ir2dlr_zz
+
+   SUBROUTINE ir2dlr_dd(obj, TARGET_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: TARGET_dim
+      REAL(KIND = DP), INTENT(IN) :: arr(..)
+      REAL(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
+      INTEGER(c_int) :: status_c
+
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
+
+      ! check TARGET_dim is in input_dims_c
+      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+         CALL errore('ir2dlr_dd', 'Target dimension is out of range', 1)
+      END IF
+
+      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+         CALL errore('ir2dlr_dd', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+      END IF
+
+      TARGET_dim_c = TARGET_dim - 1
+      BLOCK
+         REAL(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
+         CALL flatten_dd(arr, arr_c)
+
+         status_c = c_spir_ir2dlr_dd(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+
+         IF (status_c /= 0) then
+            CALL errore('ir2dlr_dd', 'Error converting IR to DLR', status_c)
+         END IF
+
+         CALL unflatten_dd(res_c, res)
+      END BLOCK
+   END SUBROUTINE ir2dlr_dd
+
+   SUBROUTINE dlr2ir_zz(obj, TARGET_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: TARGET_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
+      INTEGER(c_int) :: status_c
+
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
+
+      ! check TARGET_dim is in input_dims_c
+      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+         CALL errore('dlr2ir_zz', 'Target dimension is out of range', 1)
+      END IF
+
+      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+         CALL errore('dlr2ir_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+      END IF
+
+      IF (size(arr, TARGET_dim) /= obj%npoles) then
+         CALL errore('dlr2ir_zz', 'Input dimension is not the same as the number of poles', 1)
+      END IF
+
+      IF (size(res, TARGET_dim) /= obj%size) then
+         CALL errore('dlr2ir_zz', 'Output dimension is not the same as the size of the IR', 1)
+      END IF
+
+      TARGET_dim_c = TARGET_dim - 1
+      BLOCK
+         COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
+         CALL flatten_zz(arr, arr_c)
+
+         ALLOCATE(res_c(PRODUCT(output_dims_c)))
+
+         status_c = c_spir_dlr2ir_zz(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+
+         IF (status_c /= 0) then
+            CALL errore('dlr2ir_zz', 'Error converting DLR to IR', status_c)
+         END IF
+
+         CALL unflatten_zz(res_c, res)
+         DEALLOCATE(arr_c, res_c)
+      END BLOCK
+   END SUBROUTINE dlr2ir_zz
+
+   SUBROUTINE dlr2ir_dd(obj, TARGET_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: TARGET_dim
+      REAL(KIND = DP), INTENT(IN) :: arr(..)
+      REAL(KIND = DP), INTENT(OUT) :: res(..)
+
+      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
+      INTEGER(c_int) :: status_c
+
+      input_dims_c = shape(arr)
+      output_dims_c = shape(res)
+      ndim_c = size(input_dims_c)
+
+      ! check TARGET_dim is in input_dims_c
+      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+         CALL errore('dlr2ir_dd', 'Target dimension is out of range', 1)
+      END IF
+
+      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+         CALL errore('dlr2ir_dd', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+      END IF
+
+      IF (size(arr, TARGET_dim) /= obj%npoles) then
+         CALL errore('dlr2ir_dd', 'Input dimension is not the same as the number of poles', 1)
+      END IF
+
+      IF (size(res, TARGET_dim) /= obj%size) then
+         CALL errore('dlr2ir_dd', 'Output dimension is not the same as the size of the IR', 1)
+      END IF
+
+      TARGET_dim_c = TARGET_dim - 1
+      BLOCK
+         REAL(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
+         CALL flatten_dd(arr, arr_c)
+
+         ALLOCATE(res_c(PRODUCT(output_dims_c)))
+
+         status_c = c_spir_dlr2ir_dd(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+
+         IF (status_c /= 0) then
+            CALL errore('dlr2ir_dd', 'Error converting DLR to IR', status_c)
+         END IF
+
+         CALL unflatten_dd(res_c, res)
+
+         DEALLOCATE(arr_c, res_c)
+      END BLOCK
+   END SUBROUTINE dlr2ir_dd
 
 END MODULE sparseir_ext

@@ -19,10 +19,13 @@ contains
       type(IR), intent(inout) :: obj
       character(len=*), intent(in) :: case_name
 
-      real(DP), allocatable :: coeffs(:,:), g_ir(:,:)
-      complex(DP), allocatable :: giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
+      real(DP), allocatable :: coeffs(:,:)
+      complex(DP), allocatable :: g_ir(:,:), g_dlr(:,:), giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
       integer :: i, j
       real(DP) :: r
+
+   integer, parameter :: target_dim = 1
+   integer, parameter :: extra_dim_size = 1
 
       print *, "Testing ", case_name, " case"
 
@@ -30,44 +33,48 @@ contains
       call init_ir(obj, beta, lambda, epsilon, positive_only)
 
       ! Allocate arrays
-      allocate(coeffs(obj%size, 1))
-      allocate(g_ir(obj%size, 1))
-      allocate(g_ir2_z(obj%size, 1))
-      allocate(gtau_z(obj%ntau, 1))
-      allocate(giw(obj%nfreq_f, 1))
-      allocate(giw_reconst(obj%nfreq_f, 1))
+      allocate(coeffs(obj%npoles, extra_dim_size))
+      allocate(g_ir(obj%size, extra_dim_size))
+      allocate(g_dlr(obj%npoles, extra_dim_size))
+      allocate(g_ir2_z(obj%size, extra_dim_size))
+      allocate(gtau_z(obj%ntau, extra_dim_size))
+      allocate(giw(obj%nfreq_f, extra_dim_size))
+      allocate(giw_reconst(obj%nfreq_f, extra_dim_size))
 
       ! Generate random coefficients
-      do i = 1, obj%size
-         do j = 1, 1
+      do i = 1, obj%npoles
+         do j = 1, extra_dim_size
             call random_number(r)
             coeffs(i,j) = (2.0_DP * r - 1.0_DP) * sqrt(abs(obj%s(i)))
          end do
       end do
 
       ! Convert DLR coefficients to IR coefficients
-      g_ir = coeffs
+      g_dlr = cmplx(coeffs, 0.0_DP, kind=DP)
+      call dlr2ir(obj, target_dim, g_dlr, g_ir)
 
       ! Evaluate Green's function at Matsubara frequencies from IR
-      call evaluate_matsubara_f_zz(obj, 1, g_ir, giw)
+      write(*, *) "Evaluating Green's function at Matsubara frequencies from DLR"
+      call evaluate_matsubara_f_zz(obj, target_dim, g_dlr, giw)
+      write(*, *) "Evaluated Green's function at Matsubara frequencies from DLR"
 
       ! Convert Matsubara frequencies back to IR
-      call fit_matsubara_f_zz(obj, 1, giw, g_ir2_z)
+      call fit_matsubara_f_zz(obj, target_dim, giw, g_ir2_z)
 
       ! Compare IR coefficients (using real part of g_ir2_z)
-      if (.not. compare_with_relative_error_d(g_ir, real(g_ir2_z), 10.0_DP * epsilon)) then
+      if (.not. compare_with_relative_error_d(coeffs, real(g_ir2_z), 10.0_DP * epsilon)) then
          print *, "Error: IR coefficients do not match after transformation cycle"
          stop
       end if
 
       ! Evaluate Green's function at tau points
-      call evaluate_tau_zz(obj, 1, g_ir2_z, gtau_z)
+      call evaluate_tau_zz(obj, target_dim, g_ir2_z, gtau_z)
 
       ! Convert tau points back to IR
-      call fit_tau_zz(obj%tau_smpl_ptr, 1, gtau_z, g_ir2_z)
+      call fit_tau_zz(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
 
       ! Evaluate Green's function at Matsubara frequencies again
-      call evaluate_matsubara_f_zz(obj, 1, g_ir2_z, giw_reconst)
+      call evaluate_matsubara_f_zz(obj, target_dim, g_ir2_z, giw_reconst)
 
       ! Compare the original and reconstructed Matsubara frequencies
       if (.not. compare_with_relative_error_z(giw, giw_reconst, 10.0_DP * epsilon)) then
@@ -78,6 +85,7 @@ contains
       ! Deallocate arrays
       deallocate(coeffs)
       deallocate(g_ir)
+      deallocate(g_dlr)
       deallocate(g_ir2_z)
       deallocate(gtau_z)
       deallocate(giw)
