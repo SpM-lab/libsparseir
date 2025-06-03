@@ -2,50 +2,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <iostream>
-
-
-// Safe dynamic cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_dynamic_cast(const std::shared_ptr<U>& ptr) {
-    auto result = std::dynamic_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to dynamic cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
-
-// Safe static cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_static_cast(const std::shared_ptr<U>& ptr) {
-    auto result = std::static_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to static cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
-
-// Safe dynamic pointer cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_dynamic_pointer_cast(const std::shared_ptr<U>& ptr) {
-    if (!ptr) {
-        throw std::runtime_error("Failed to dynamic pointer cast: input pointer is null");
-    }
-    auto result = std::dynamic_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to dynamic pointer cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
-
-// Safe static pointer cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_static_pointer_cast(const std::shared_ptr<U>& ptr) {
-    auto result = std::static_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to static pointer cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
+#include "_util.hpp"
 
 inline bool is_dlr_basis(const spir_basis *b) {
     return std::dynamic_pointer_cast<DLRAdapter<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
@@ -268,7 +225,7 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_p
         return nullptr;
 
     if (num_points <= 0) {
-        std::cerr << "Error: Number of points must be positive" << std::endl;
+        DEBUG_LOG("Error: Number of points must be positive");
         return nullptr;
     }
 
@@ -296,7 +253,7 @@ spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool po
         return nullptr;
 
     if (num_points <= 0) {
-        std::cerr << "Error: Number of points must be positive" << std::endl;
+        DEBUG_LOG("Error: Number of points must be positive");
         return nullptr;
     }
 
@@ -327,7 +284,7 @@ spir_basis *_spir_dlr_new(const spir_basis *b)
     }
 
     if(!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return nullptr;
     }
 
@@ -349,7 +306,7 @@ spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
         return nullptr;
     
     if(!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return nullptr;
     }
 
@@ -386,7 +343,7 @@ int _spir_basis_get_u(const spir_basis *b,
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        DEBUG_LOG("Error: " << e.what());
         return SPIR_GET_IMPL_FAILED;
     }
 }
@@ -401,7 +358,7 @@ int _spir_get_v(const spir_basis *b,
             return SPIR_GET_IMPL_FAILED;
         }
         if (!is_ir_basis(b)) {
-            std::cerr << "Error: The basis is not an IR basis" << std::endl;
+            DEBUG_LOG("Error: The basis is not an IR basis");
             return SPIR_NOT_SUPPORTED;
         }
         *v = _create_omega_funcs(impl->get_v());

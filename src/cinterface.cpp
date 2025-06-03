@@ -7,7 +7,7 @@
 #include <iostream>
 
 // Debug macro
-#ifdef DEBUG_CINTERFACE
+#ifdef DEBUG_SPIR
 #define DEBUG_LOG(msg) std::cerr << "[DEBUG] " << msg << std::endl
 #else
 #define DEBUG_LOG(msg)
@@ -193,7 +193,7 @@ spir_basis* spir_basis_new(
 spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const double *points, int* status)
 {
     if (!b || !points || num_points <= 0) {
-        std::cerr << "Error in spir_tau_sampling_new: b, points, or num_points is null" << std::endl;
+        DEBUG_LOG("Error in spir_tau_sampling_new: b, points, or num_points is null");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -233,7 +233,7 @@ spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, 
     if (positive_only) {
         for (int i = 0; i < num_points; i++) {
             if (points[i] < 0) {
-                std::cerr << "Error: Frequency must not be negative if positive_only is true" << std::endl;
+                DEBUG_LOG("Error: Frequency must not be negative if positive_only is true");
                 *status = SPIR_INVALID_ARGUMENT;
                 return nullptr;
             }
@@ -274,7 +274,7 @@ spir_basis* spir_dlr_new(const spir_basis *b, int* status)
     }
 
     if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -303,7 +303,7 @@ spir_basis* spir_dlr_new_with_poles(const spir_basis *b,
         return nullptr;
 
     if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -385,7 +385,7 @@ int spir_dlr2ir_dd(const spir_basis *dlr, int order, int ndim,
         return SPIR_GET_IMPL_FAILED;
     
     if (!is_dlr_basis(dlr)) {
-        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -407,7 +407,7 @@ int spir_dlr2ir_zz(const spir_basis *dlr, int order, int ndim,
         return SPIR_GET_IMPL_FAILED;
 
     if (!is_dlr_basis(dlr)) {
-        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -432,7 +432,7 @@ int spir_ir2dlr_dd(const spir_basis *dlr, int order,
         return SPIR_GET_IMPL_FAILED;
     
     if (!is_dlr_basis(dlr)) {
-        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -454,7 +454,7 @@ int spir_ir2dlr_zz(const spir_basis *dlr, int order,
         return SPIR_GET_IMPL_FAILED;
     
     if (!is_dlr_basis(dlr)) {
-        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -482,7 +482,7 @@ int spir_dlr_get_npoles(const spir_basis *dlr, int *num_poles)
     }
 
     if (!is_dlr_basis(dlr)) {
-        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -506,7 +506,7 @@ int spir_dlr_get_poles(const spir_basis *dlr, double *poles)
     }
 
     if (!is_dlr_basis(dlr)) {
-        std::cerr << "Error: The basis is not a DLR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -786,7 +786,7 @@ int spir_basis_get_default_taus(const spir_basis *b, double *points)
     }
 
     if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -819,7 +819,7 @@ int spir_basis_get_n_default_matsus(const spir_basis *b, bool positive_only, int
     }
 
     if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -852,7 +852,7 @@ int spir_basis_get_default_matsus(const spir_basis *b, bool positive_only, int64
     }
 
     if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -894,7 +894,7 @@ int spir_basis_get_stats(const spir_basis *b,
 int spir_funcs_eval(const spir_funcs *funcs, double x, double *out)
 {
     if (!out) {
-        std::cerr << "Error in spir_funcs_eval: out is null" << std::endl;
+        DEBUG_LOG("Error in spir_funcs_eval: out is null");
         return SPIR_INVALID_ARGUMENT;
     }
     auto impl = get_impl_funcs(funcs);
@@ -902,7 +902,7 @@ int spir_funcs_eval(const spir_funcs *funcs, double x, double *out)
         return SPIR_GET_IMPL_FAILED;
     }
     if (!impl->is_continuous_funcs()) {
-        std::cerr << "Error: the function is not defined for continuous variables" << std::endl;
+        DEBUG_LOG("Error: the function is not defined for continuous variables");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -989,7 +989,7 @@ int spir_funcs_batch_eval_matsu(const spir_funcs *uiw,
         return SPIR_GET_IMPL_FAILED;
     }
     if (impl->is_continuous_funcs()) {
-        std::cerr << "Error: the function is not defined for Matsubara frequencies" << std::endl;
+        DEBUG_LOG("Error: the function is not defined for Matsubara frequencies");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1052,6 +1052,45 @@ int spir_funcs_get_size(const spir_funcs *funcs, int *size)
     }
 }
 
+spir_funcs *spir_funcs_get_slice(const spir_funcs *funcs, int nslice, int *indices, int *status)
+{
+    try {
+        // Get the implementation
+        auto impl = get_impl_funcs(funcs);
+        if (!impl) {
+            *status = SPIR_GET_IMPL_FAILED;
+            return nullptr;
+        }
+
+        // Convert indices to vector<size_t>
+        std::vector<size_t> indices_vec(indices, indices + nslice);
+
+        // Check for duplicates and out of range
+        try {
+            check_indices(indices_vec, impl->size());
+        } catch (const std::runtime_error& e) {
+            DEBUG_LOG("Error: " << e.what());
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+
+        // Get the slice
+        auto sliced_impl = impl->slice(indices_vec);
+        if (!sliced_impl) {
+            *status = SPIR_INTERNAL_ERROR;
+            return nullptr;
+        }
+
+        // Create new funcs object
+        *status = SPIR_COMPUTATION_SUCCESS;
+        return create_funcs(sliced_impl);
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_get_slice: " << e.what());
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
+
 int spir_basis_get_n_default_ws(const spir_basis *b,
                                                        int *num_points)
 {
@@ -1065,7 +1104,7 @@ int spir_basis_get_n_default_ws(const spir_basis *b,
     }
 
     if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1108,7 +1147,7 @@ int spir_basis_get_default_ws(const spir_basis *b,
     }
 
     if (!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return SPIR_INVALID_ARGUMENT;
     }
 

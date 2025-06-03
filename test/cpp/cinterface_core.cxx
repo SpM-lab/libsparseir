@@ -213,7 +213,6 @@ void test_finite_temp_basis_basis_functions()
     int size_status = spir_basis_get_size(basis, &basis_size);
     REQUIRE(size_status == SPIR_COMPUTATION_SUCCESS);
 
-
     int u_status;
     spir_funcs *u = spir_basis_get_u(basis, &u_status);
     REQUIRE(u_status == SPIR_COMPUTATION_SUCCESS);
@@ -224,18 +223,32 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(uhat_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(uhat != nullptr);
 
+
     // Test basis function evaluation
     double x = 0.5;        // Test point for u basis (imaginary time)
     double y = 0.5 * wmax; // Test point for v basis (real frequency)
-    double *out = (double *)malloc(basis_size * sizeof(double));
-    int eval_status = spir_funcs_eval(u, x, out);
+    std::vector<double> out_vec(basis_size);
+    int eval_status = spir_funcs_eval(u, x, out_vec.data());
     REQUIRE(eval_status == SPIR_COMPUTATION_SUCCESS);
+
+    std::vector<int> slice_u{1, 2};
+    int slice_u_status;
+    std::cout << "basis_size: " << basis_size << std::endl;
+    spir_funcs *u_slice = spir_funcs_get_slice(u, slice_u.size(), slice_u.data(), &slice_u_status);
+    REQUIRE(slice_u_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(u_slice != nullptr);
+    std::vector<double> out_vec_slice(slice_u.size());
+    int eval_status_slice = spir_funcs_eval(u_slice, x, out_vec_slice.data());
+    REQUIRE(eval_status_slice == SPIR_COMPUTATION_SUCCESS);
+    for (int i = 0; i < slice_u.size(); ++i) {
+        REQUIRE(out_vec_slice[i] == Approx(out_vec[slice_u[i]]));
+    }
 
     // Compare with C++ implementation for u basis
     sparseir::FiniteTempBasis<S> cpp_basis(beta, wmax, epsilon);
     Eigen::VectorXd cpp_result = (*cpp_basis.u)(x);
     for (int i = 0; i < basis_size; ++i) {
-        REQUIRE(out[i] == Approx(cpp_result(i)));
+        REQUIRE(out_vec[i] == Approx(cpp_result(i)));
     }
 
     // Test v basis functions
@@ -245,19 +258,19 @@ void test_finite_temp_basis_basis_functions()
     REQUIRE(v != nullptr);
 
     // Test v basis function evaluation
-    eval_status = spir_funcs_eval(v, y, out);
+    eval_status = spir_funcs_eval(v, y, out_vec.data());
     REQUIRE(eval_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for v basis
     cpp_result = (*cpp_basis.v)(y);
     for (int i = 0; i < basis_size; ++i) {
-        REQUIRE(out[i] == Approx(cpp_result(i)));
+        REQUIRE(out_vec.data()[i] == Approx(cpp_result(i)));
     }
 
     // Test batch evaluation at multiple points
     const int num_points = 5;
-    double *xs = (double *)malloc(num_points * sizeof(double));
-    double *batch_out = (double *)malloc(num_points * basis_size * sizeof(double));
+    std::vector<double> xs(num_points);
+    std::vector<double> batch_out_vec(num_points * basis_size);
 
     // Generate test points
     for (int i = 0; i < num_points; ++i) {
@@ -265,62 +278,60 @@ void test_finite_temp_basis_basis_functions()
     }
 
     // Test row-major order for u basis
-    int batch_status = spir_funcs_batch_eval(u, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
+    int batch_status = spir_funcs_batch_eval(u, SPIR_ORDER_ROW_MAJOR, num_points, xs.data(), batch_out_vec.data());
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for multiple points
-    Eigen::VectorXd cpp_xs = Eigen::Map<Eigen::VectorXd>(xs, num_points);
+    Eigen::VectorXd cpp_xs = Eigen::Map<Eigen::VectorXd>(xs.data(), num_points);
     Eigen::MatrixXd cpp_batch_result = (*cpp_basis.u)(cpp_xs);
 
     for (int i = 0; i < num_points; ++i) {
         for (int j = 0; j < basis_size; ++j) {
-            REQUIRE(batch_out[i * basis_size + j] == Approx(cpp_batch_result(j, i)));
+            REQUIRE(batch_out_vec[i * basis_size + j] == Approx(cpp_batch_result(j, i)));
         }
     }
 
     // Test column-major order for u basis
-    batch_status = spir_funcs_batch_eval(u, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
+    batch_status = spir_funcs_batch_eval(u, SPIR_ORDER_COLUMN_MAJOR, num_points, xs.data(), batch_out_vec.data());
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for column-major order
     for (int i = 0; i < num_points; ++i) {
         for (int j = 0; j < basis_size; ++j) {
-            REQUIRE(batch_out[j * num_points + i] == Approx(cpp_batch_result(j, i)));
+            REQUIRE(batch_out_vec[j * num_points + i] == Approx(cpp_batch_result(j, i)));
         }
     }
 
     // Test row-major order for v basis
-    batch_status = spir_funcs_batch_eval(v, SPIR_ORDER_ROW_MAJOR, num_points, xs, batch_out);
+    batch_status = spir_funcs_batch_eval(v, SPIR_ORDER_ROW_MAJOR, num_points, xs.data(), batch_out_vec.data());
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for v basis
     cpp_batch_result = (*cpp_basis.v)(cpp_xs);
     for (int i = 0; i < num_points; ++i) {
         for (int j = 0; j < basis_size; ++j) {
-            REQUIRE(batch_out[i * basis_size + j] == Approx(cpp_batch_result(j, i)));
+            REQUIRE(batch_out_vec[i * basis_size + j] == Approx(cpp_batch_result(j, i)));
         }
     }
 
     // Test column-major order for v basis
-    batch_status = spir_funcs_batch_eval(v, SPIR_ORDER_COLUMN_MAJOR, num_points, xs, batch_out);
+    batch_status = spir_funcs_batch_eval(v, SPIR_ORDER_COLUMN_MAJOR, num_points, xs.data(), batch_out_vec.data());
     REQUIRE(batch_status == SPIR_COMPUTATION_SUCCESS);
 
     // Compare with C++ implementation for column-major order
     for (int i = 0; i < num_points; ++i) {
         for (int j = 0; j < basis_size; ++j) {
-            REQUIRE(batch_out[j * num_points + i] == Approx(cpp_batch_result(j, i)));
+            REQUIRE(batch_out_vec[j * num_points + i] == Approx(cpp_batch_result(j, i)));
         }
     }
 
-    free(xs);
-    free(batch_out);
-    free(out);
     spir_funcs_release(u);
     spir_funcs_release(v);
     spir_funcs_release(uhat);
+    spir_funcs_release(u_slice);
 
     // Test error cases
-    eval_status = spir_funcs_eval(nullptr, x, out);
+    eval_status = spir_funcs_eval(nullptr, x, out_vec.data());
     REQUIRE(eval_status != SPIR_COMPUTATION_SUCCESS);
 
     eval_status = spir_funcs_eval(u, x, nullptr);

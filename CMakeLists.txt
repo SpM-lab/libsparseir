@@ -105,7 +105,11 @@ endif()
 # Building
 
 # Enable debug logging
-#add_definitions(-DDEBUG_CINTERFACE)
+option(SPARSEIR_DEBUG "Enable debug logging output" OFF)
+if(SPARSEIR_DEBUG)
+    add_definitions(-DDEBUG_SPIR)
+    message(STATUS "Debug logging enabled")
+endif()
 
 # Set the default component name for installations
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)

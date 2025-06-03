@@ -101,6 +101,16 @@ cmake --build .
 cmake --install .
 ```
 
+### Debug Build
+
+To enable debug logging output, use the `SPARSEIR_DEBUG` CMake option:
+
+```bash
+cmake .. -DSPARSEIR_DEBUG=ON
+```
+
+This will enable detailed debug logging for various operations in the library, which can be helpful for troubleshooting and development.
+
 ### Quick Test Build
 
 For a quick test build with all options enabled:

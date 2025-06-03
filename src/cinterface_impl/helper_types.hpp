@@ -1,4 +1,5 @@
 #include "sparseir/sparseir.hpp"
+#include "_util.hpp"
 #include <memory>
 
 class _AbstractFuncs {
@@ -6,6 +7,7 @@ public:
     virtual ~_AbstractFuncs() = default;
     virtual int size() const = 0;
     virtual bool is_continuous_funcs() const = 0;
+    virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t> &indices) const = 0;
 };
 
 class AbstractMatsubaraFunctions : public _AbstractFuncs {
@@ -31,6 +33,11 @@ public:
     }
 
     virtual int size() const override { return impl->size(); }
+
+    virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t> &indices) const override
+    {
+        return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<MatsubaraBasisFunctions<InternalType>>(impl->slice(indices)));
+    }
 };
 
 // Abstract class for functions of a single variable (in the imaginary time
@@ -67,6 +74,11 @@ public:
     virtual std::pair<double, double> get_domain() const override
     {
         return std::make_pair(impl->xmin(), impl->xmax());
+    }
+
+    virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t> &indices) const override
+    {
+        return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<PiecewiseLegendrePolyFunctions>(impl->slice(indices)));
     }
 };
 
@@ -107,6 +119,20 @@ public:
     {
         return impl->get_domain();
     }
+
+    virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t>& indices) const override {
+        // First get the sliced implementation
+        auto sliced_impl = impl->slice(indices);
+        
+        // Convert the sliced implementation to the correct type
+        auto converted_impl = _safe_dynamic_pointer_cast<ImplType>(sliced_impl);
+        if (!converted_impl) {
+            throw std::runtime_error("Failed to convert sliced implementation to correct type");
+        }
+        
+        // Create new adapter with the converted implementation
+        return std::make_shared<OmegaFunctionsAdaptor<ImplType>>(converted_impl);
+    }
 };
 
 
@@ -140,6 +166,11 @@ public:
     virtual std::pair<double, double> get_domain() const override
     {
         return std::make_pair(-beta, beta);
+    }
+
+    virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t> &indices) const override
+    {
+        return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<TauFunctionsAdaptor<ImplType>>(impl->slice(indices), beta));
     }
 };
 
