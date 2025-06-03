@@ -4,8 +4,32 @@ program test_ext
    use sparseir_ext
    implicit none
 
+   integer, parameter :: DP = selected_real_kind(14,200)
+
    call test_positive_only_false()
 contains
+
+   subroutine test_positive_only_true()
+      type(IR) :: irobj
+      real(DP), parameter :: beta = 10.0_DP
+      real(DP), parameter :: omega_max = 2.0_DP
+      real(DP), parameter :: epsilon = 1.0e-10_DP
+      real(DP), parameter :: lambda = beta * omega_max
+      logical, parameter :: positive_only = .true.
+
+      call init_ir(irobj, beta, lambda, epsilon, positive_only)
+
+      ! Test Fermionic case
+      call test_case_target_dim_1(irobj, SPIR_STATISTICS_FERMIONIC, "Fermionic, target_dim=1, positive_only=false")
+      call test_case_target_dim_2(irobj, SPIR_STATISTICS_FERMIONIC, "Fermionic, target_dim=2, positive_only=false")
+
+      ! Test Bosonic case
+      call test_case_target_dim_1(irobj, SPIR_STATISTICS_BOSONIC, "Bosonic, target_dim=1, positive_only=false")
+      call test_case_target_dim_2(irobj, SPIR_STATISTICS_BOSONIC, "Bosonic, target_dim=2, positive_only=false")
+
+      ! Finalize IR object
+      call finalize_ir(irobj)
+   end subroutine test_positive_only_true
 
    subroutine test_positive_only_false()
       type(IR) :: irobj
@@ -37,20 +61,24 @@ contains
       real(DP), allocatable :: coeffs(:,:)
       complex(DP), allocatable :: g_ir(:,:), g_dlr(:,:), giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
       integer :: i, j
-      real(DP) :: r
+      real(DP) :: r, r_imag
       integer :: nfreq
+      logical :: positive_only
 
       integer, parameter :: target_dim = 1
       integer, parameter :: extra_dim_size = 2
 
       print *, "Testing ", case_name
 
+      positive_only = obj%positive_only
+
       if (statistics == SPIR_STATISTICS_FERMIONIC) then
          nfreq = obj%nfreq_f
       else if (statistics == SPIR_STATISTICS_BOSONIC) then
          nfreq = obj%nfreq_b
       else
-         call errore('test_case_target_dim_1', 'Invalid statistics', 1)
+         print *, "Error: Invalid statistics"
+         stop
       end if
 
       ! Allocate arrays
@@ -67,7 +95,12 @@ contains
       do i = 1, obj%npoles
          do j = 1, extra_dim_size
             call random_number(r)
-            coeffs(i,j) = (2.0_DP * r - 1.0_DP) * sqrt(abs(obj%s(i)))
+            call random_number(r_imag)
+            if (positive_only) then
+               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, 0.0_DP) * sqrt(abs(obj%s(i)))
+            else
+               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, r_imag) * sqrt(abs(obj%s(i)))
+            end if
          end do
       end do
 
@@ -76,10 +109,10 @@ contains
       call dlr2ir(obj, target_dim, g_dlr, g_ir)
 
       ! Evaluate Green's function at Matsubara frequencies from IR
-      call evaluate_matsubara_zz(obj, statistics, target_dim, g_dlr, giw)
+      call evaluate_matsubara(obj, statistics, target_dim, g_dlr, giw)
 
       ! Convert Matsubara frequencies back to IR
-      call fit_matsubara_zz(obj, statistics, target_dim, giw, g_ir2_z)
+      call fit_matsubara(obj, statistics, target_dim, giw, g_ir2_z)
 
       ! Compare IR coefficients (using real part of g_ir2_z)
       if (.not. compare_with_relative_error_d(coeffs, real(g_ir2_z), 10.0_DP * obj%eps)) then
@@ -88,13 +121,13 @@ contains
       end if
 
       ! Evaluate Green's function at tau points
-      call evaluate_tau_zz(obj, target_dim, g_ir2_z, gtau_z)
+      call evaluate_tau(obj, target_dim, g_ir2_z, gtau_z)
 
       ! Convert tau points back to IR
-      call fit_tau_zz(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
+      call fit_tau(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
 
       ! Evaluate Green's function at Matsubara frequencies again
-      call evaluate_matsubara_zz(obj, statistics, target_dim, g_ir2_z, giw_reconst)
+      call evaluate_matsubara(obj, statistics, target_dim, g_ir2_z, giw_reconst)
 
       ! Compare the original and reconstructed Matsubara frequencies
       if (.not. compare_with_relative_error_z(giw, giw_reconst, 10.0_DP * obj%eps)) then
@@ -121,20 +154,24 @@ contains
       real(DP), allocatable :: coeffs(:,:)
       complex(DP), allocatable :: g_ir(:,:), g_dlr(:,:), giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
       integer :: i, j
-      real(DP) :: r
+      real(DP) :: r, r_imag
       integer :: nfreq
+      logical :: positive_only
 
       integer, parameter :: target_dim = 2
       integer, parameter :: extra_dim_size = 2
 
       print *, "Testing ", case_name
 
+      positive_only = obj%positive_only
+
       if (statistics == SPIR_STATISTICS_FERMIONIC) then
          nfreq = obj%nfreq_f
       else if (statistics == SPIR_STATISTICS_BOSONIC) then
          nfreq = obj%nfreq_b
       else
-         call errore('test_case_target_dim_2', 'Invalid statistics', 1)
+         print *, "Error: Invalid statistics"
+         stop
       end if
 
       ! Allocate arrays with correct dimension order for target_dim=2
@@ -151,7 +188,12 @@ contains
       do j = 1, obj%npoles
          do i = 1, extra_dim_size
             call random_number(r)
-            coeffs(i,j) = (2.0_DP * r - 1.0_DP) * sqrt(abs(obj%s(j)))
+            call random_number(r_imag)
+            if (positive_only) then
+               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, 0.0_DP) * sqrt(abs(obj%s(j)))
+            else
+               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, r_imag) * sqrt(abs(obj%s(j)))
+            end if
          end do
       end do
 
@@ -160,10 +202,10 @@ contains
       call dlr2ir(obj, target_dim, g_dlr, g_ir)
 
       ! Evaluate Green's function at Matsubara frequencies from IR
-      call evaluate_matsubara_zz(obj, statistics, target_dim, g_dlr, giw)
+      call evaluate_matsubara(obj, statistics, target_dim, g_dlr, giw)
 
       ! Convert Matsubara frequencies back to IR
-      call fit_matsubara_zz(obj, statistics, target_dim, giw, g_ir2_z)
+      call fit_matsubara(obj, statistics, target_dim, giw, g_ir2_z)
 
       ! Compare IR coefficients (using real part of g_ir2_z)
       if (.not. compare_with_relative_error_d(coeffs, real(g_ir2_z), 10.0_DP * obj%eps)) then
@@ -172,13 +214,13 @@ contains
       end if
 
       ! Evaluate Green's function at tau points
-      call evaluate_tau_zz(obj, target_dim, g_ir2_z, gtau_z)
+      call evaluate_tau(obj, target_dim, g_ir2_z, gtau_z)
 
       ! Convert tau points back to IR
-      call fit_tau_zz(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
+      call fit_tau(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
 
       ! Evaluate Green's function at Matsubara frequencies again
-      call evaluate_matsubara_zz(obj, statistics, target_dim, g_ir2_z, giw_reconst)
+      call evaluate_matsubara(obj, statistics, target_dim, g_ir2_z, giw_reconst)
 
       ! Compare the original and reconstructed Matsubara frequencies
       if (.not. compare_with_relative_error_z(giw, giw_reconst, 10.0_DP * obj%eps)) then
