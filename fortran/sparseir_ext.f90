@@ -38,8 +38,6 @@ MODULE sparseir_ext
       !! maximum real frequency: wmax = lambda / beta
       REAL(KIND = DP) :: eps
       !! eps = 10^{-ndigit}
-      REAL(KIND = DP) :: eps_svd
-      !! This is used in the SVD fitting.
       REAL(KIND = DP), ALLOCATABLE :: s(:)
       !! singular values
       REAL(KIND = DP), ALLOCATABLE :: tau(:)
@@ -84,14 +82,6 @@ MODULE sparseir_ext
       MODULE PROCEDURE evaluate_matsubara_zz, evaluate_matsubara_dz
    END INTERFACE evaluate_matsubara
 
-   INTERFACE evaluate_matsubara_f
-      MODULE PROCEDURE evaluate_matsubara_f_zz, evaluate_matsubara_f_dz
-   END INTERFACE evaluate_matsubara_f
-
-   INTERFACE evaluate_matsubara_b
-      MODULE PROCEDURE evaluate_matsubara_b_zz, evaluate_matsubara_b_dz
-   END INTERFACE evaluate_matsubara_b
-
    INTERFACE fit_tau
       MODULE PROCEDURE fit_tau_zz, fit_tau_dd
    END INTERFACE fit_tau
@@ -99,14 +89,6 @@ MODULE sparseir_ext
    INTERFACE fit_matsubara
       MODULE PROCEDURE fit_matsubara_zz
    END INTERFACE fit_matsubara
-
-   INTERFACE fit_matsubara_f
-      MODULE PROCEDURE fit_matsubara_f_zz
-   END INTERFACE fit_matsubara_f
-
-   INTERFACE fit_matsubara_b
-      MODULE PROCEDURE fit_matsubara_b_zz
-   END INTERFACE fit_matsubara_b
 
    INTERFACE ir2dlr
       MODULE PROCEDURE ir2dlr_zz, ir2dlr_dd
@@ -384,6 +366,7 @@ contains
       obj%nfreq_b = size(obj%freq_b)
       obj%omega = basis_get_ws(basis_f_ptr)
       obj%nomega = size(obj%omega)
+      obj%eps = eps
 
    END SUBROUTINE
 
@@ -617,19 +600,25 @@ contains
       END select
    END subroutine unflatten_dz
 
-   function check_output_dims(TARGET_dim, input_dims, output_dims) result(is_valid)
-      INTEGER, INTENT(IN) :: TARGET_dim
+   function check_output_dims(target_dim, input_dims, output_dims) result(is_valid)
+      INTEGER, INTENT(IN) :: target_dim
       INTEGER(c_int), INTENT(IN) :: input_dims(:)
       INTEGER(c_int), INTENT(IN) :: output_dims(:)
       LOGICAL :: is_valid
 
       INTEGER :: i
 
+      if (size(input_dims) /= size(output_dims)) then
+         write(*, *) "input_dims and output_dims have different sizes"
+         stop  
+      end if
+
       do i = 1, size(input_dims)
-         IF (i == TARGET_dim) then
-            continue
+         IF (i == target_dim) then
+            cycle
          END IF
          IF (input_dims(i) /= output_dims(i)) then
+            print *, "input_dims(", i, ")", input_dims(i), "output_dims(", i, ")", output_dims(i)
             is_valid = .false.
             return
          END IF
@@ -637,13 +626,13 @@ contains
       is_valid = .true.
    END function check_output_dims
 
-   SUBROUTINE evaluate_tau_zz(obj, TARGET_dim, arr, res)
+   SUBROUTINE evaluate_tau_zz(obj, target_dim, arr, res)
       TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -651,24 +640,24 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('evaluate_tau_zz', 'Target dimension is out of range', 1)
       END IF
 
-      IF (input_dims_c(TARGET_dim) /= obj%size) then
+      IF (input_dims_c(target_dim) /= obj%size) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the basis size', 1)
       END IF
 
-      IF (output_dims_c(TARGET_dim) /= size(obj%tau)) then
+      IF (output_dims_c(target_dim) /= size(obj%tau)) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the number of tau sampling points', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('evaluate_tau_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       IF (obj%positive_only) THEN
          BLOCK
             REAL(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
@@ -677,7 +666,7 @@ contains
             ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
             status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-               ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+               ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
             IF (status_c /= 0) then
                CALL errore('evaluate_tau_zz', 'Error evaluating on tau sampling points', status_c)
@@ -694,7 +683,7 @@ contains
             ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
             status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-               ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+               ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
             IF (status_c /= 0) then
                CALL errore('evaluate_tau_zz', 'Error evaluating on tau sampling points', status_c)
@@ -707,13 +696,13 @@ contains
    END SUBROUTINE evaluate_tau_zz
 
 
-   SUBROUTINE evaluate_tau_dd(obj, TARGET_dim, arr, res)
+   SUBROUTINE evaluate_tau_dd(obj, target_dim, arr, res)
       TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       REAL(KIND = DP), INTENT(IN) :: arr(..)
       REAL(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -723,28 +712,28 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in output_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in output_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('evaluate_tau_dd', 'Target dimension is out of range', 1)
       END IF
 
-      IF (input_dims_c(TARGET_dim) /= obj%size) then
+      IF (input_dims_c(target_dim) /= obj%size) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the basis size', 1)
       END IF
 
-      IF (output_dims_c(TARGET_dim) /= size(obj%tau)) then
+      IF (output_dims_c(target_dim) /= size(obj%tau)) then
          CALL errore('evaluate_tau_zz', 'Target dimension is not the same as the number of tau sampling points', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('evaluate_tau_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
       CALL flatten_dd(arr, arr_c)
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-         ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+         ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
       IF (status_c /= 0) then
          CALL errore('evaluate_tau_dd', 'Error evaluating on tau sampling points', status_c)
@@ -754,13 +743,13 @@ contains
       DEALLOCATE(arr_c, res_c)
    END SUBROUTINE evaluate_tau_dd
 
-   SUBROUTINE evaluate_matsubara_zz(smpl_ptr, TARGET_dim, arr, res)
+   SUBROUTINE evaluate_matsubara_zz_internal(smpl_ptr, target_dim, arr, res)
       TYPE(c_ptr), INTENT(IN) :: smpl_ptr
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -768,17 +757,17 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
-         CALL errore('evaluate_matsubara_zz', 'Target dimension is out of range', 1)
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
+         CALL errore('evaluate_matsubara_zz_internal', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
-         CALL errore('evaluate_matsubara_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
+         CALL errore('evaluate_matsubara_zz_internal', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       BLOCK
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
@@ -786,24 +775,24 @@ contains
          ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
          status_c = c_spir_sampling_eval_zz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
          IF (status_c /= 0) then
-            CALL errore('evaluate_matsubara_zz', 'Error evaluating on Matsubara frequencies', status_c)
+            CALL errore('evaluate_matsubara_zz_internal', 'Error evaluating on Matsubara frequencies', status_c)
          END IF
 
          CALL unflatten_zz(res_c, res)
          DEALLOCATE(arr_c, res_c)
       END BLOCK
-   END SUBROUTINE evaluate_matsubara_zz
+   END SUBROUTINE evaluate_matsubara_zz_internal
 
-   SUBROUTINE evaluate_matsubara_dz(smpl_ptr, TARGET_dim, arr, res)
+   SUBROUTINE evaluate_matsubara_dz_internal(smpl_ptr, target_dim, arr, res)
       TYPE(c_ptr), INTENT(IN) :: smpl_ptr
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       REAL(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -813,74 +802,71 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in output_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
-         CALL errore('evaluate_matsubara_dz', 'Target dimension is out of range', 1)
+      ! check target_dim is in output_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
+         CALL errore('evaluate_matsubara_dz_internal', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
-         CALL errore('evaluate_matsubara_dz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
+         CALL errore('evaluate_matsubara_dz_internal', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
       ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
       CALL flatten_dd(arr, arr_c)
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       status_c = c_spir_sampling_eval_dz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-         ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+         ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
       IF (status_c /= 0) then
-         CALL errore('evaluate_matsubara_dz', 'Error evaluating on Matsubara frequencies', status_c)
+         CALL errore('evaluate_matsubara_dz_internal', 'Error evaluating on Matsubara frequencies', status_c)
       END IF
 
       CALL unflatten_dz(res_c, res)
       DEALLOCATE(arr_c, res_c)
+   END SUBROUTINE evaluate_matsubara_dz_internal
+
+   SUBROUTINE evaluate_matsubara_zz(obj, statistics, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: statistics
+      INTEGER, INTENT(IN) :: target_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      IF (statistics == SPIR_STATISTICS_FERMIONIC) then
+         CALL evaluate_matsubara_zz_internal(obj%matsu_f_smpl_ptr, target_dim, arr, res)
+      ELSE IF (statistics == SPIR_STATISTICS_BOSONIC) then
+         CALL evaluate_matsubara_zz_internal(obj%matsu_b_smpl_ptr, target_dim, arr, res)
+      ELSE
+         CALL errore('evaluate_matsubara_zz', 'Invalid statistics', 1)
+      END IF
+   END SUBROUTINE evaluate_matsubara_zz
+
+
+   SUBROUTINE evaluate_matsubara_dz(obj, statistics, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: statistics
+      INTEGER, INTENT(IN) :: target_dim
+      REAL(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      IF (statistics == SPIR_STATISTICS_FERMIONIC) then
+         CALL evaluate_matsubara_dz_internal(obj%matsu_f_smpl_ptr, target_dim, arr, res)
+      ELSE IF (statistics == SPIR_STATISTICS_BOSONIC) then
+         CALL evaluate_matsubara_dz_internal(obj%matsu_b_smpl_ptr, target_dim, arr, res)
+      ELSE
+         CALL errore('evaluate_matsubara_dz', 'Invalid statistics', 1)
+      END IF
    END SUBROUTINE evaluate_matsubara_dz
 
-   SUBROUTINE evaluate_matsubara_f_zz(obj, TARGET_dim, arr, res)
-      TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
-      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
-      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
-
-      CALL evaluate_matsubara_zz(obj%matsu_f_smpl_ptr, TARGET_dim, arr, res)
-   END SUBROUTINE evaluate_matsubara_f_zz
-
-   SUBROUTINE evaluate_matsubara_f_dz(obj, TARGET_dim, arr, res)
-      TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
-      REAL(KIND = DP), INTENT(IN) :: arr(..)
-      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
-
-      CALL evaluate_matsubara_dz(obj%matsu_f_smpl_ptr, TARGET_dim, arr, res)
-   END SUBROUTINE evaluate_matsubara_f_dz
-
-   SUBROUTINE evaluate_matsubara_b_zz(obj, TARGET_dim, arr, res)
-      TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
-      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
-      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
-
-      CALL evaluate_matsubara_zz(obj%matsu_b_smpl_ptr, TARGET_dim, arr, res)
-   END SUBROUTINE evaluate_matsubara_b_zz
-
-   SUBROUTINE evaluate_matsubara_b_dz(obj, TARGET_dim, arr, res)
-      TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
-      REAL(KIND = DP), INTENT(IN) :: arr(..)
-      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
-
-      CALL evaluate_matsubara_dz(obj%matsu_b_smpl_ptr, TARGET_dim, arr, res)
-   END SUBROUTINE evaluate_matsubara_b_dz
-
-   SUBROUTINE fit_tau_zz(smpl_ptr, TARGET_dim, arr, res)
+   SUBROUTINE fit_tau_zz(smpl_ptr, target_dim, arr, res)
       TYPE(c_ptr), INTENT(IN) :: smpl_ptr
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -888,16 +874,16 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('fit_tau_zz', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('fit_tau_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       BLOCK
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
@@ -905,7 +891,7 @@ contains
          ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
          status_c = c_spir_sampling_fit_zz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
          IF (status_c /= 0) then
             CALL errore('fit_tau_zz', 'Error fitting on tau sampling points', status_c)
@@ -916,13 +902,13 @@ contains
       END BLOCK
    END SUBROUTINE fit_tau_zz
 
-   SUBROUTINE fit_tau_dd(smpl_ptr, TARGET_dim, arr, res)
+   SUBROUTINE fit_tau_dd(smpl_ptr, target_dim, arr, res)
       TYPE(c_ptr), INTENT(IN) :: smpl_ptr
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       REAL(KIND = DP), INTENT(IN) :: arr(..)
       REAL(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -932,20 +918,20 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in output_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in output_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('fit_tau_dd', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('fit_tau_dd', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
       CALL flatten_dd(arr, arr_c)
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       status_c = c_spir_sampling_fit_dd(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-         ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+         ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
       IF (status_c /= 0) then
          CALL errore('fit_tau_dd', 'Error fitting on tau sampling points', status_c)
@@ -955,14 +941,14 @@ contains
       DEALLOCATE(arr_c, res_c)
    END SUBROUTINE fit_tau_dd
 
-   SUBROUTINE fit_matsubara_zz(smpl_ptr, TARGET_dim, arr, res, positive_only)
+   SUBROUTINE fit_matsubara_zz_internal(smpl_ptr, target_dim, arr, res, positive_only)
       TYPE(c_ptr), INTENT(IN) :: smpl_ptr
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
       LOGICAL, INTENT(IN), OPTIONAL :: positive_only
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -970,16 +956,16 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
-         CALL errore('fit_matsubara_zz', 'Target dimension is out of range', 1)
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
+         CALL errore('fit_matsubara_zz_internal', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
-         CALL errore('fit_matsubara_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
+         CALL errore('fit_matsubara_zz_internal', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       BLOCK
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
@@ -987,43 +973,42 @@ contains
          ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
          status_c = c_spir_sampling_fit_zz(smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
          IF (status_c /= 0) then
-            CALL errore('fit_matsubara_zz', 'Error fitting on Matsubara frequencies', status_c)
+            CALL errore('fit_matsubara_zz_internal', 'Error fitting on Matsubara frequencies', status_c)
          END IF
 
          CALL unflatten_zz(res_c, res)
          DEALLOCATE(arr_c, res_c)
       END BLOCK
 
+   END SUBROUTINE fit_matsubara_zz_internal
+
+   SUBROUTINE fit_matsubara_zz(obj, statistics, target_dim, arr, res)
+      TYPE(IR), INTENT(IN) :: obj
+      INTEGER, INTENT(IN) :: statistics
+      INTEGER, INTENT(IN) :: target_dim
+      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
+      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
+
+      IF (statistics == SPIR_STATISTICS_FERMIONIC) then
+         CALL fit_matsubara_zz_internal(obj%matsu_f_smpl_ptr, target_dim, arr, res, obj%positive_only)
+      ELSE IF (statistics == SPIR_STATISTICS_BOSONIC) then
+         CALL fit_matsubara_zz_internal(obj%matsu_b_smpl_ptr, target_dim, arr, res, obj%positive_only)
+      ELSE
+         CALL errore('fit_matsubara_zz', 'Invalid statistics', 1)
+      END IF
    END SUBROUTINE fit_matsubara_zz
 
-   SUBROUTINE fit_matsubara_f_zz(obj, TARGET_dim, arr, res)
+
+   SUBROUTINE ir2dlr_zz(obj, target_dim, arr, res)
       TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      CALL fit_matsubara_zz(obj%matsu_f_smpl_ptr, TARGET_dim, arr, res, obj%positive_only)
-   END SUBROUTINE fit_matsubara_f_zz
-
-   SUBROUTINE fit_matsubara_b_zz(obj, TARGET_dim, arr, res)
-      TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
-      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
-      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
-
-      CALL fit_matsubara_zz(obj%matsu_b_smpl_ptr, TARGET_dim, arr, res, obj%positive_only)
-   END SUBROUTINE fit_matsubara_b_zz
-
-   SUBROUTINE ir2dlr_zz(obj, TARGET_dim, arr, res)
-      TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
-      COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
-      COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
-
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -1031,22 +1016,22 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('ir2dlr_zz', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('ir2dlr_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       BLOCK
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
 
          status_c = c_spir_ir2dlr_zz(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
          IF (status_c /= 0) then
             CALL errore('ir2dlr_zz', 'Error converting IR to DLR', status_c)
@@ -1056,13 +1041,13 @@ contains
       END BLOCK
    END SUBROUTINE ir2dlr_zz
 
-   SUBROUTINE ir2dlr_dd(obj, TARGET_dim, arr, res)
+   SUBROUTINE ir2dlr_dd(obj, target_dim, arr, res)
       TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       REAL(KIND = DP), INTENT(IN) :: arr(..)
       REAL(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -1070,22 +1055,22 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('ir2dlr_dd', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('ir2dlr_dd', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       BLOCK
          REAL(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_dd(arr, arr_c)
 
          status_c = c_spir_ir2dlr_dd(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
          IF (status_c /= 0) then
             CALL errore('ir2dlr_dd', 'Error converting IR to DLR', status_c)
@@ -1095,13 +1080,13 @@ contains
       END BLOCK
    END SUBROUTINE ir2dlr_dd
 
-   SUBROUTINE dlr2ir_zz(obj, TARGET_dim, arr, res)
+   SUBROUTINE dlr2ir_zz(obj, target_dim, arr, res)
       TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       COMPLEX(KIND = DP), INTENT(IN) :: arr(..)
       COMPLEX(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -1109,24 +1094,24 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('dlr2ir_zz', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('dlr2ir_zz', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
-      IF (size(arr, TARGET_dim) /= obj%npoles) then
+      IF (size(arr, target_dim) /= obj%npoles) then
          CALL errore('dlr2ir_zz', 'Input dimension is not the same as the number of poles', 1)
       END IF
 
-      IF (size(res, TARGET_dim) /= obj%size) then
+      IF (size(res, target_dim) /= obj%size) then
          CALL errore('dlr2ir_zz', 'Output dimension is not the same as the size of the IR', 1)
       END IF
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       BLOCK
          COMPLEX(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_zz(arr, arr_c)
@@ -1134,7 +1119,7 @@ contains
          ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
          status_c = c_spir_dlr2ir_zz(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
          IF (status_c /= 0) then
             CALL errore('dlr2ir_zz', 'Error converting DLR to IR', status_c)
@@ -1145,13 +1130,13 @@ contains
       END BLOCK
    END SUBROUTINE dlr2ir_zz
 
-   SUBROUTINE dlr2ir_dd(obj, TARGET_dim, arr, res)
+   SUBROUTINE dlr2ir_dd(obj, target_dim, arr, res)
       TYPE(IR), INTENT(IN) :: obj
-      INTEGER, INTENT(IN) :: TARGET_dim
+      INTEGER, INTENT(IN) :: target_dim
       REAL(KIND = DP), INTENT(IN) :: arr(..)
       REAL(KIND = DP), INTENT(OUT) :: res(..)
 
-      INTEGER(c_int) :: ndim_c, TARGET_dim_c
+      INTEGER(c_int) :: ndim_c, target_dim_c
       INTEGER(c_int), allocatable, TARGET :: input_dims_c(:), output_dims_c(:)
       INTEGER(c_int) :: status_c
 
@@ -1159,24 +1144,24 @@ contains
       output_dims_c = shape(res)
       ndim_c = size(input_dims_c)
 
-      ! check TARGET_dim is in input_dims_c
-      IF (TARGET_dim <= 0 .or. TARGET_dim > ndim_c) then
+      ! check target_dim is in input_dims_c
+      IF (target_dim <= 0 .or. target_dim > ndim_c) then
          CALL errore('dlr2ir_dd', 'Target dimension is out of range', 1)
       END IF
 
-      IF (.not. check_output_dims(TARGET_dim, input_dims_c, output_dims_c)) then
+      IF (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
          CALL errore('dlr2ir_dd', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       END IF
 
-      IF (size(arr, TARGET_dim) /= obj%npoles) then
+      IF (size(arr, target_dim) /= obj%npoles) then
          CALL errore('dlr2ir_dd', 'Input dimension is not the same as the number of poles', 1)
       END IF
 
-      IF (size(res, TARGET_dim) /= obj%size) then
+      IF (size(res, target_dim) /= obj%size) then
          CALL errore('dlr2ir_dd', 'Output dimension is not the same as the size of the IR', 1)
       END IF
 
-      TARGET_dim_c = TARGET_dim - 1
+      target_dim_c = target_dim - 1
       BLOCK
          REAL(c_double), allocatable, TARGET :: arr_c(:), res_c(:)
          CALL flatten_dd(arr, arr_c)
@@ -1184,7 +1169,7 @@ contains
          ALLOCATE(res_c(PRODUCT(output_dims_c)))
 
          status_c = c_spir_dlr2ir_dd(obj%dlr_f_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-            ndim_c, c_loc(input_dims_c), TARGET_dim_c, c_loc(arr_c), c_loc(res_c))
+            ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 
          IF (status_c /= 0) then
             CALL errore('dlr2ir_dd', 'Error converting DLR to IR', status_c)
