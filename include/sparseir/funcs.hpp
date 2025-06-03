@@ -8,8 +8,24 @@
 #include <utility>
 #include <memory> // for std::shared_ptr
 #include <vector>
+#include <set>
 
 namespace sparseir {
+
+// Helper function to check indices for duplicates and out of range
+template<typename T>
+void check_indices(const std::vector<T>& indices, size_t max_size) {
+    std::set<T> unique_indices(indices.begin(), indices.end());
+    if (unique_indices.size() != indices.size()) {
+        throw std::runtime_error("Duplicate indices are not allowed");
+    }
+    for (T idx : indices) {
+        if (static_cast<size_t>(idx) >= max_size) {
+            throw std::runtime_error("Index out of range");
+        }
+    }
+}
+
 
 // Abstract class for periodic functions with fermionic/bosonic statistics
 template <typename S>
@@ -141,6 +157,16 @@ public:
         return PeriodicFunctions<S, ImplType>(impl->slice(i), beta);
     }
 
+    // Slice method to extract multiple functions by indices
+    std::shared_ptr<PeriodicFunctions<S, ImplType>> slice(const std::vector<size_t>& indices) const {
+        // Check for duplicate indices and out of range indices
+        check_indices(indices, impl->size());
+        
+        // Create new PeriodicFunctions with selected functions
+        auto new_impl = impl->slice(indices);
+        return std::make_shared<PeriodicFunctions<S, ImplType>>(new_impl, beta);
+    }
 };
+
 
 } // namespace sparseir

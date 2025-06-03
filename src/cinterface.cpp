@@ -1052,6 +1052,43 @@ int spir_funcs_get_size(const spir_funcs *funcs, int *size)
     }
 }
 
+spir_funcs *spir_funcs_get_slice(const spir_funcs *funcs, int nslice, int *indices, int *status)
+{
+    try {
+        // Get the implementation
+        auto impl = get_impl_funcs(funcs);
+        if (!impl) {
+            *status = SPIR_GET_IMPL_FAILED;
+            return nullptr;
+        }
+
+        // Convert indices to vector<size_t>
+        std::vector<size_t> indices_vec(indices, indices + nslice);
+
+        // Check for duplicates and out of range
+        try {
+            check_indices(indices_vec, impl->size());
+        } catch (const std::runtime_error& e) {
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+
+        // Get the slice
+        auto sliced_impl = impl->slice(indices_vec);
+        if (!sliced_impl) {
+            *status = SPIR_INTERNAL_ERROR;
+            return nullptr;
+        }
+
+        // Create new funcs object
+        return create_funcs(sliced_impl);
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_get_slice: " << e.what());
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
+
 int spir_basis_get_n_default_ws(const spir_basis *b,
                                                        int *num_points)
 {

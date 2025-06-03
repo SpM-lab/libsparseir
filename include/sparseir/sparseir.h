@@ -219,6 +219,23 @@ int spir_sve_result_get_svals(const spir_sve_result *sve, double *svals);
 int spir_funcs_get_size(const spir_funcs *funcs, int *size);
 
 /**
+ * @brief Creates a new function object containing a subset of functions from the input.
+ * 
+ * This function creates a new function object that contains only the functions specified
+ * by the indices array. The indices must be valid (within range and no duplicates).
+ * 
+ * @param funcs Pointer to the source function object
+ * @param nslice Number of functions to select (length of indices array)
+ * @param indices Array of indices specifying which functions to include in the slice
+ * @param status Pointer to store the status code (0 for success, non-zero for error)
+ * @return Pointer to the new function object containing the selected functions, or NULL on error
+ * 
+ * @note The caller is responsible for freeing the returned object using spir_funcs_free
+ * @note If status is non-zero, the returned pointer will be NULL
+ */
+spir_funcs *spir_funcs_get_slice(const spir_funcs *funcs, int nslice, int *indices, int *status);
+
+/**
  * @brief Evaluates functions at a single point in the imaginary-time domain or
  * the real frequency domain.
  *

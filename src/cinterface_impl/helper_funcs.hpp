@@ -2,50 +2,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <iostream>
-
-
-// Safe dynamic cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_dynamic_cast(const std::shared_ptr<U>& ptr) {
-    auto result = std::dynamic_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to dynamic cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
-
-// Safe static cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_static_cast(const std::shared_ptr<U>& ptr) {
-    auto result = std::static_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to static cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
-
-// Safe dynamic pointer cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_dynamic_pointer_cast(const std::shared_ptr<U>& ptr) {
-    if (!ptr) {
-        throw std::runtime_error("Failed to dynamic pointer cast: input pointer is null");
-    }
-    auto result = std::dynamic_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to dynamic pointer cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
-
-// Safe static pointer cast
-template <typename T, typename U>
-std::shared_ptr<T> _safe_static_pointer_cast(const std::shared_ptr<U>& ptr) {
-    auto result = std::static_pointer_cast<T>(ptr);
-    if (!result) {
-        throw std::runtime_error("Failed to static pointer cast, something went wrong! Report this issue to the developers.");
-    }
-    return result;
-}
+#include "_util.hpp"
 
 inline bool is_dlr_basis(const spir_basis *b) {
     return std::dynamic_pointer_cast<DLRAdapter<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||

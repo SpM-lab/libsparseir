@@ -6,6 +6,8 @@
 #include <vector>
 #include <algorithm>
 
+#include "sparseir/funcs.hpp"
+
 namespace sparseir {
 
 template <typename Statistics>
@@ -15,9 +17,10 @@ public:
     Eigen::VectorXd poles;
     double wmax;
     std::vector<double> weights;
+    std::function<double(double, double)> weight_func;
 
     MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
-        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0), weight_func(weight_func)
     {
         if (!weight_func) {
             throw std::runtime_error("weight_func is nullptr in MatsubaraPoles constructor");
@@ -85,6 +88,25 @@ public:
             freqs.push_back(MatsubaraFreq<Statistics>(n_array(i)));
         }
         return (*this)(freqs);
+    }
+
+    // Slice method to extract multiple functions by indices
+    std::shared_ptr<MatsubaraPoles> slice(const std::vector<size_t>& indices) const {
+        // Check for duplicate indices and out of range indices
+        check_indices(indices, poles.size());
+        
+        // Prepare data for the new MatsubaraPoles
+        Eigen::VectorXd new_poles(indices.size());
+        std::vector<double> new_weights(indices.size());
+        
+        // Copy selected poles and weights
+        for (size_t i = 0; i < indices.size(); ++i) {
+            new_poles(i) = poles(indices[i]);
+            new_weights[i] = weights[indices[i]];
+        }
+        
+        // Create new MatsubaraPoles with selected poles and the same weight_func
+        return std::make_shared<MatsubaraPoles>(beta, new_poles, wmax, weight_func);
     }
 };
 
@@ -154,6 +176,25 @@ public:
 
     DLRBasisFunctions slice(size_t i) const {
         return DLRBasisFunctions(beta, poles.segment(i, 1), wmax, weights.segment(i, 1));
+    }
+
+    // Slice method to extract multiple functions by indices
+    std::shared_ptr<DLRBasisFunctions> slice(const std::vector<size_t>& indices) const {
+        // Check for duplicate indices and out of range indices
+        check_indices(indices, poles.size());
+        
+        // Prepare data for the new DLRBasisFunctions
+        Eigen::VectorXd new_poles(indices.size());
+        Eigen::VectorXd new_weights(indices.size());
+        
+        // Copy selected poles and weights
+        for (size_t i = 0; i < indices.size(); ++i) {
+            new_poles(i) = poles(indices[i]);
+            new_weights(i) = weights(indices[i]);
+        }
+        
+        // Create new DLRBasisFunctions with selected poles
+        return std::make_shared<DLRBasisFunctions>(beta, new_poles, wmax, new_weights);
     }
 };
 

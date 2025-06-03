@@ -9,11 +9,13 @@
 #include <numeric>
 #include <stdexcept>
 #include <vector>
+#include <set>
 // Eigen headers
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
 #include "sparseir/freq.hpp"
+#include "sparseir/funcs.hpp"
 #include "sparseir/root.hpp"
 #include "sparseir/specfuncs.hpp"
 #include "sparseir/utils.hpp"
@@ -316,6 +318,22 @@ public:
         return PiecewiseLegendrePolyVector(
             std::vector<PiecewiseLegendrePoly>{polyvec[i]}
         );
+    }
+
+    // Slice method to extract multiple functions by indices
+    std::shared_ptr<PiecewiseLegendrePolyVector> slice(const std::vector<size_t>& indices) const {
+        std::vector<PiecewiseLegendrePoly> new_polyvec;
+        new_polyvec.reserve(indices.size());
+        
+        // Check for duplicate indices and out of range indices
+        check_indices(indices, polyvec.size());
+        
+        // Create new vector with selected functions
+        for (size_t idx : indices) {
+            new_polyvec.push_back(polyvec[idx]);
+        }
+        
+        return std::make_shared<PiecewiseLegendrePolyVector>(new_polyvec);
     }
 
     // Functions to mimic Julia's property accessors
@@ -788,6 +806,22 @@ public:
             }
         }
         return result;
+    }
+
+    // Slice method to extract multiple functions by indices
+    std::shared_ptr<PiecewiseLegendreFTVector> slice(const std::vector<size_t>& indices) const {
+        std::vector<PiecewiseLegendreFT<S>> new_polyvec;
+        new_polyvec.reserve(indices.size());
+        
+        // Check for duplicate indices and out of range indices
+        check_indices(indices, polyvec.size());
+        
+        // Create new vector with selected functions
+        for (size_t idx : indices) {
+            new_polyvec.push_back(polyvec[idx]);
+        }
+        
+        return std::make_shared<PiecewiseLegendreFTVector>(new_polyvec);
     }
 };
 } // namespace sparseir
