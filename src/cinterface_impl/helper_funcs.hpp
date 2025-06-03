@@ -225,7 +225,7 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_p
         return nullptr;
 
     if (num_points <= 0) {
-        std::cerr << "Error: Number of points must be positive" << std::endl;
+        DEBUG_LOG("Error: Number of points must be positive");
         return nullptr;
     }
 
@@ -253,7 +253,7 @@ spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool po
         return nullptr;
 
     if (num_points <= 0) {
-        std::cerr << "Error: Number of points must be positive" << std::endl;
+        DEBUG_LOG("Error: Number of points must be positive");
         return nullptr;
     }
 
@@ -284,7 +284,7 @@ spir_basis *_spir_dlr_new(const spir_basis *b)
     }
 
     if(!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return nullptr;
     }
 
@@ -306,7 +306,7 @@ spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
         return nullptr;
     
     if(!is_ir_basis(b)) {
-        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        DEBUG_LOG("Error: The basis is not an IR basis");
         return nullptr;
     }
 
@@ -343,7 +343,7 @@ int _spir_basis_get_u(const spir_basis *b,
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        DEBUG_LOG("Error: " << e.what());
         return SPIR_GET_IMPL_FAILED;
     }
 }
@@ -358,7 +358,7 @@ int _spir_get_v(const spir_basis *b,
             return SPIR_GET_IMPL_FAILED;
         }
         if (!is_ir_basis(b)) {
-            std::cerr << "Error: The basis is not an IR basis" << std::endl;
+            DEBUG_LOG("Error: The basis is not an IR basis");
             return SPIR_NOT_SUPPORTED;
         }
         *v = _create_omega_funcs(impl->get_v());
