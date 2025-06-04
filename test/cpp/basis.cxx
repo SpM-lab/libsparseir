@@ -755,6 +755,25 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         */
     }
 
+    SECTION("U_l(beta) > 0")
+    {
+        double betas[] = {1.0, 10.0, 100.0};
+        double omega_max = 10.0;
+        double epsilon = 1e-10;
+        for (double beta : betas) {
+            auto kernel = sparseir::LogisticKernel(beta * omega_max);
+            auto sve_result = SVECache::get_sve_result(kernel, 1e-15);
+
+            auto basis = make_shared<sparseir::FiniteTempBasis<sparseir::Bosonic>>(
+                beta, omega_max, 1e-15, kernel, sve_result);
+    
+            auto ulx_tau0 = (*basis->u)(beta);
+            for (int l = 0; l < basis->size(); ++l) {
+                REQUIRE(ulx_tau0[l] > 0.0);
+            }
+        }
+    }
+
     SECTION("LogisticKernel reconstruction, epsilon = 1e-10")
     {
         double beta = 10.0;
