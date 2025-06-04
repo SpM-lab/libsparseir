@@ -6,7 +6,7 @@ module sparseir_ext
    private
 
    public :: IR, evaluate_tau, evaluate_matsubara, fit_tau, fit_matsubara, ir2dlr, dlr2ir
-   public :: init_ir, finalize_ir
+   public :: init_ir, finalize_ir, eval_u_tau
 
    integer, parameter :: dp = KIND(1.0D0)
 
@@ -1181,5 +1181,32 @@ contains
          deallocate(arr_c, res_c)
       end block
    end subroutine dlr2ir_dd_impl
+
+   function eval_u_tau(obj, tau) result(res)
+      type(IR), intent(in) :: obj
+      double precision, intent(in) :: tau
+
+      double precision, allocatable :: res(:)
+      real(c_double), allocatable, target :: res_c(:)
+      integer(c_int), target :: status_c
+
+      type(c_ptr) :: u_tau_ptr
+
+      u_tau_ptr = c_spir_basis_get_u(obj%basis_f_ptr, c_loc(status_c))
+      if (.not. c_associated(u_tau_ptr)) then
+         call errore('eval_u_tau', 'Error getting u_tau pointer', status_c)
+      end if
+
+      allocate(res_c(obj%size))
+      status_c = c_spir_funcs_eval(u_tau_ptr, tau, c_loc(res_c))
+      if (status_c /= 0) then
+         call errore('eval_u_tau', 'Error evaluating u_tau', status_c)
+      end if
+
+      res = real(res_c, KIND=DP)
+
+      deallocate(res_c)
+      call c_spir_funcs_release(u_tau_ptr)
+   end function eval_u_tau
 
 end module sparseir_ext

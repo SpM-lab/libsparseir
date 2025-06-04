@@ -64,9 +64,12 @@ contains
       double precision :: r, r_imag
       integer :: nfreq
       logical :: positive_only
+      complex(kind=dp), allocatable :: imag_tmp(:)
 
       integer, parameter :: target_dim = 1
       integer, parameter :: extra_dim_size = 2
+
+      double precision, allocatable :: u_tau(:)
 
       print *, "Testing ", case_name
 
@@ -122,6 +125,23 @@ contains
 
       ! Evaluate Green's function at tau points
       call evaluate_tau(obj, target_dim, g_ir2_z, gtau_z)
+
+      ! Check tau evaluation
+      allocate(u_tau(obj%size))
+      u_tau = eval_u_tau(obj, obj%tau(1))
+      allocate(imag_tmp(extra_dim_size))
+      imag_tmp = 0.0_DP
+      do i = 1, obj%size
+         do j = 1, extra_dim_size
+            imag_tmp(j) = imag_tmp(j) + u_tau(i) * g_ir2_z(i, j)
+         end do
+      end do
+      if (abs(imag_tmp(1) - gtau_z(1, 1)) / max(abs(imag_tmp(1)), abs(gtau_z(1, 1))) > 10.0_DP * obj%eps) then
+         print *, "Error: Tau evaluation does not match direct calculation"
+         stop
+      end if
+      deallocate(u_tau)
+      deallocate(imag_tmp)
 
       ! Convert tau points back to IR
       call fit_tau(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
