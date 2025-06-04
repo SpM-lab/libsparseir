@@ -727,7 +727,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('evaluate_tau_zz_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('evaluate_tau_zz_impl', &
+            'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       call flatten_dd(arr, arr_c)
@@ -764,7 +765,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('evaluate_matsubara_zz_internal', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('evaluate_matsubara_zz_internal', &
+            'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
 
@@ -809,7 +811,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('evaluate_matsubara_dz_internal', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('evaluate_matsubara_dz_internal', &
+            'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       allocate(res_c(product(output_dims_c)))
@@ -881,7 +884,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('fit_tau_zz_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('fit_tau_zz_impl', &
+            'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       target_dim_c = target_dim - 1
@@ -925,7 +929,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('fit_tau_dd_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('fit_tau_dd_impl', &
+            'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       call flatten_dd(arr, arr_c)
@@ -963,7 +968,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('fit_matsubara_zz_internal', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('fit_matsubara_zz_internal', &
+            'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       target_dim_c = target_dim - 1
@@ -1023,7 +1029,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('ir2dlr_zz_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('ir2dlr_zz_impl', &
+            'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       target_dim_c = target_dim - 1
@@ -1062,7 +1069,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('ir2dlr_dd_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('ir2dlr_dd_impl', &
+             'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       target_dim_c = target_dim - 1
@@ -1101,7 +1109,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('dlr2ir_zz_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('dlr2ir_zz_impl', &
+         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       if (size(arr, target_dim) /= obj%npoles) then
@@ -1151,7 +1160,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('dlr2ir_dd_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('dlr2ir_dd_impl', &
+             'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       if (size(arr, target_dim) /= obj%npoles) then

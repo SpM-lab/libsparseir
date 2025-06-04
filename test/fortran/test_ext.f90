@@ -136,7 +136,8 @@ contains
             imag_tmp(j) = imag_tmp(j) + u_tau(i) * g_ir2_z(i, j)
          end do
       end do
-      if (abs(imag_tmp(1) - gtau_z(1, 1)) / max(abs(imag_tmp(1)), abs(gtau_z(1, 1))) > 10.0_DP * obj%eps) then
+      if (abs(imag_tmp(1) - gtau_z(1, 1)) / max(abs(imag_tmp(1)), abs(gtau_z(1, 1))) & 
+         > 10.0_DP * obj%eps) then
          print *, "Error: Tau evaluation does not match direct calculation"
          stop
       end if
