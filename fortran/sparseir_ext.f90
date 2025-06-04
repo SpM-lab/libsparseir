@@ -655,7 +655,8 @@ contains
       end if
 
       if (.not. check_output_dims(target_dim, input_dims_c, output_dims_c)) then
-         call errore('evaluate_tau_zz_impl', 'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
+         call errore('evaluate_tau_zz_impl', &
+          'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
       end if
 
       target_dim_c = target_dim - 1
