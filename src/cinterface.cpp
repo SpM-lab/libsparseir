@@ -1235,4 +1235,46 @@ int spir_sve_result_get_svals(const spir_sve_result *sve, double *svals)
     }
 }
 
+int spir_basis_get_svals(const spir_basis *b, double *svals)
+{
+    if (!b || !svals) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        std::cerr << "Error: The basis is not an IR basis" << std::endl;
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto basis = _safe_dynamic_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            if (!basis) {
+                return SPIR_INTERNAL_ERROR;
+            }
+            auto s = basis->s();
+            std::memcpy(svals, s.data(), s.size() * sizeof(double));
+        } else {
+            auto basis = _safe_dynamic_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            if (!basis) {
+                return SPIR_INTERNAL_ERROR;
+            }
+            auto s = basis->s();
+            std::memcpy(svals, s.data(), s.size() * sizeof(double));
+        }
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_basis_get_svals: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_basis_get_svals");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 } // extern "C"

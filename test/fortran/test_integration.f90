@@ -240,23 +240,24 @@ contains
       real(c_double), target :: tol
       integer(c_int), parameter :: order = SPIR_ORDER_COLUMN_MAJOR
       integer(c_int), parameter :: ndim = 2
+      integer(c_int), parameter :: extra_size = 2
 
       ! Set tolerance
       tol = 10.0_c_double * epsilon
 
       ! Allocate arrays
-      allocate(coeffs(npoles, 1))
-      allocate(g_ir(basis_size, 1))
-      allocate(g_ir2_z(basis_size, 1))
-      allocate(gtau_z(ntaus, 1))
-      allocate(giw(nmatsus, 1))
-      allocate(giw_reconst(nmatsus, 1))
+      allocate(coeffs(npoles, extra_size))
+      allocate(g_ir(basis_size, extra_size))
+      allocate(g_ir2_z(basis_size, extra_size))
+      allocate(gtau_z(ntaus, extra_size))
+      allocate(giw(nmatsus, extra_size))
+      allocate(giw_reconst(nmatsus, extra_size))
 
       ! Generate random coefficients
-      call generate_random_coeffs(coeffs, poles, npoles, 1)
+      call generate_random_coeffs(coeffs, poles, npoles, extra_size)
 
       ! Convert DLR coefficients to IR coefficients
-      input_dims = [npoles, 1]
+      input_dims = [npoles, extra_size]
       status = c_spir_dlr2ir_dd(dlr_ptr, order, ndim, c_loc(input_dims), target_dim, &
          c_loc(coeffs), c_loc(g_ir))
       if (status /= 0) then
@@ -265,7 +266,7 @@ contains
       end if
 
       ! Evaluate Green's function at Matsubara frequencies from IR
-      input_dims = [basis_size, 1]
+      input_dims = [basis_size, extra_size]
       status = c_spir_sampling_eval_dz(matsu_sampling_ptr, order, ndim, &
          c_loc(input_dims), target_dim, &
          c_loc(g_ir), c_loc(giw))
@@ -275,7 +276,7 @@ contains
       end if
 
       ! Convert Matsubara frequencies back to IR
-      input_dims = [nmatsus, 1]
+      input_dims = [nmatsus, extra_size]
       status = c_spir_sampling_fit_zz(matsu_sampling_ptr, order, ndim, c_loc(input_dims), target_dim, &
          c_loc(giw), c_loc(g_ir2_z))
       if (status /= 0) then
@@ -290,7 +291,7 @@ contains
       end if
 
       ! Evaluate Green's function at tau points
-      input_dims = [basis_size, 1]
+      input_dims = [basis_size, extra_size]
       status = c_spir_sampling_eval_zz(tau_sampling_ptr, order, ndim, c_loc(input_dims), target_dim, &
          c_loc(g_ir2_z), c_loc(gtau_z))
       if (status /= 0) then
@@ -299,7 +300,7 @@ contains
       end if
 
       ! Convert tau points back to IR
-      input_dims = [ntaus, 1]
+      input_dims = [ntaus, extra_size]
       status = c_spir_sampling_fit_zz(tau_sampling_ptr, order, ndim, c_loc(input_dims), target_dim, &
          c_loc(gtau_z), c_loc(g_ir2_z))
       if (status /= 0) then
@@ -308,7 +309,7 @@ contains
       end if
 
       ! Evaluate Green's function at Matsubara frequencies again
-      input_dims = [basis_size, 1]
+      input_dims = [basis_size, extra_size]
       status = c_spir_sampling_eval_zz(matsu_sampling_ptr, order, ndim, c_loc(input_dims), target_dim, &
          c_loc(g_ir2_z), c_loc(giw_reconst))
       if (status /= 0) then

@@ -27,6 +27,7 @@
   public :: c_spir_funcs_batch_eval_matsu
   public :: c_spir_basis_new
   public :: c_spir_basis_get_size
+  public :: c_spir_basis_get_svals
   public :: c_spir_basis_get_stats
   public :: c_spir_basis_get_singular_values
   public :: c_spir_basis_get_u
