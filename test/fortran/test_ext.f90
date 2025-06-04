@@ -4,17 +4,17 @@ program test_ext
    use sparseir_ext
    implicit none
 
-   integer, parameter :: DP = selected_real_kind(14,200)
+   integer, parameter :: dp = KIND(1.0D0)
 
    call test_positive_only_false()
 contains
 
    subroutine test_positive_only_true()
       type(IR) :: irobj
-      real(DP), parameter :: beta = 10.0_DP
-      real(DP), parameter :: omega_max = 2.0_DP
-      real(DP), parameter :: epsilon = 1.0e-10_DP
-      real(DP), parameter :: lambda = beta * omega_max
+      double precision, parameter :: beta = 10.0_DP
+      double precision, parameter :: omega_max = 2.0_DP
+      double precision, parameter :: epsilon = 1.0e-10_DP
+      double precision, parameter :: lambda = beta * omega_max
       logical, parameter :: positive_only = .true.
 
       call init_ir(irobj, beta, lambda, epsilon, positive_only)
@@ -33,10 +33,10 @@ contains
 
    subroutine test_positive_only_false()
       type(IR) :: irobj
-      real(DP), parameter :: beta = 10.0_DP
-      real(DP), parameter :: omega_max = 2.0_DP
-      real(DP), parameter :: epsilon = 1.0e-10_DP
-      real(DP), parameter :: lambda = beta * omega_max
+      double precision, parameter :: beta = 10.0_DP
+      double precision, parameter :: omega_max = 2.0_DP
+      double precision, parameter :: epsilon = 1.0e-10_DP
+      double precision, parameter :: lambda = beta * omega_max
       logical, parameter :: positive_only = .false.
 
       call init_ir(irobj, beta, lambda, epsilon, positive_only)
@@ -58,10 +58,10 @@ contains
       integer, intent(in) :: statistics
       character(len=*), intent(in) :: case_name
 
-      real(DP), allocatable :: coeffs(:,:)
-      complex(DP), allocatable :: g_ir(:,:), g_dlr(:,:), giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
+      double precision, allocatable :: coeffs(:,:)
+      complex(kind=dp), allocatable :: g_ir(:,:), g_dlr(:,:), giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
       integer :: i, j
-      real(DP) :: r, r_imag
+      double precision :: r, r_imag
       integer :: nfreq
       logical :: positive_only
 
@@ -151,10 +151,10 @@ contains
       integer, intent(in) :: statistics
       character(len=*), intent(in) :: case_name
 
-      real(DP), allocatable :: coeffs(:,:)
-      complex(DP), allocatable :: g_ir(:,:), g_dlr(:,:), giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
+      double precision, allocatable :: coeffs(:,:)
+      complex(kind=dp), allocatable :: g_ir(:,:), g_dlr(:,:), giw(:,:), giw_reconst(:,:), g_ir2_z(:,:), gtau_z(:,:)
       integer :: i, j
-      real(DP) :: r, r_imag
+      double precision :: r, r_imag
       integer :: nfreq
       logical :: positive_only
 
@@ -239,10 +239,10 @@ contains
    end subroutine test_case_target_dim_2
 
    function compare_with_relative_error_d(a, b, tol) result(is_close)
-      real(DP), intent(in) :: a(:,:), b(:,:)
-      real(DP), intent(in) :: tol
+      double precision, intent(in) :: a(:,:), b(:,:)
+      double precision, intent(in) :: tol
       logical :: is_close
-      real(DP) :: max_diff, max_ref
+      double precision :: max_diff, max_ref
       integer :: i, j
 
       max_diff = 0.0_DP
@@ -266,10 +266,10 @@ contains
    end function compare_with_relative_error_d
 
    function compare_with_relative_error_z(a, b, tol) result(is_close)
-      complex(DP), intent(in) :: a(:,:), b(:,:)
-      real(DP), intent(in) :: tol
+      complex(kind=dp), intent(in) :: a(:,:), b(:,:)
+      double precision, intent(in) :: tol
       logical :: is_close
-      real(DP) :: max_diff, max_ref
+      double precision :: max_diff, max_ref
       integer :: i, j
 
       max_diff = 0.0_DP
