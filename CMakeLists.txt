@@ -9,6 +9,8 @@ set(CMAKE_CXX_STANDARD 11)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+include(FetchContent)
+
 # extract version information from header file
 if (NOT SPARSEIR_VERSION)
     include("VersionFromHeader")
@@ -74,7 +76,6 @@ set(EIGEN3_REQUIRED_VERSION "3.4.0")
 find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
 if(NOT Eigen3_FOUND)
     message(STATUS "Eigen3 not found in system, fetching from GitHub...")
-    include(FetchContent)
     FetchContent_Declare(Eigen3
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
         GIT_TAG ${EIGEN3_REQUIRED_VERSION}
@@ -88,18 +89,28 @@ endif()
 find_package(Threads REQUIRED)
 
 # libxprec - built only as a static dependency, not for installation
-include(FetchContent)
-FetchContent_Declare(XPrec
-    GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
-    GIT_TAG mainline
-)
-
-# Extract the content but don't process it through add_subdirectory
-FetchContent_GetProperties(XPrec)
-if(NOT xprec_POPULATED)
-    FetchContent_Populate(XPrec)
-    message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
+# Require XPrec version 0.7.0 or higher (e.g., 0.7.1 is also acceptable)
+set(XPREC_REQUIRED_VERSION "0.7.0")
+find_package(XPrec ${XPREC_REQUIRED_VERSION} QUIET)
+if(NOT XPrec_FOUND)
+    message(STATUS "XPrec not found in system, fetching from GitHub...")
+    include(FetchContent)
+    FetchContent_Declare(XPrec
+        GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
+        GIT_TAG v${XPREC_REQUIRED_VERSION}
+    )
+    # Extract the content but don't process it through add_subdirectory
+    FetchContent_GetProperties(XPrec)
+    if(NOT xprec_POPULATED)
+        FetchContent_Populate(XPrec)
+        message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
+    endif()
+else()
+    message(STATUS "XPrec found in system: ${XPrec_VERSION}")
+    message(STATUS "XPrec_DIR = ${XPrec_DIR}")
+    message(STATUS "XPrec_INCLUDE_DIRS = ${XPrec_INCLUDE_DIRS}")
 endif()
+
 
 # ---------------------------------
 # Building
@@ -133,9 +144,15 @@ target_include_directories(sparseir PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
     )
-target_include_directories(sparseir PRIVATE
-    $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
-)
+if(XPrec_FOUND)
+    target_link_libraries(sparseir PRIVATE XPrec::xprec)
+    target_include_directories(sparseir PRIVATE ${XPrec_INCLUDE_DIRS})
+else()
+    target_include_directories(sparseir PRIVATE
+        $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${xprec_SOURCE_DIR}>
+    )
+endif()
 set_target_properties(sparseir PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
