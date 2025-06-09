@@ -1277,4 +1277,73 @@ int spir_basis_get_svals(const spir_basis *b, double *svals)
     }
 }
 
+int spir_funcs_get_n_roots(const spir_funcs *funcs, int *n_roots)
+{
+    if (!funcs || !n_roots) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_funcs(funcs);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (!impl->is_continuous_funcs()) {
+            return SPIR_NOT_SUPPORTED;
+        }
+
+        auto continuous_impl = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl);
+        if (!continuous_impl) {
+            return SPIR_INTERNAL_ERROR;
+        }
+
+        *n_roots = continuous_impl->nroots();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_get_n_roots: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_funcs_get_n_roots");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_funcs_get_roots(const spir_funcs *funcs, double *roots)
+{
+    if (!funcs || !roots) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_funcs(funcs);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (!impl->is_continuous_funcs()) {
+            return SPIR_NOT_SUPPORTED;
+        }
+
+        auto continuous_impl = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl);
+        if (!continuous_impl) {
+            return SPIR_INTERNAL_ERROR;
+        }
+
+        // Get the roots from the implementation
+        Eigen::VectorXd roots_vec = continuous_impl->roots();
+        
+        // Copy the roots to the output array
+        std::memcpy(roots, roots_vec.data(), roots_vec.size() * sizeof(double));
+
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_get_roots: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_funcs_get_roots");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 } // extern "C"

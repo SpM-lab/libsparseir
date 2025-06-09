@@ -251,11 +251,38 @@ void test_finite_temp_basis_basis_functions()
         REQUIRE(out_vec[i] == Approx(cpp_result(i)));
     }
 
+    // Test roots
+    int nroots;
+    int nroots_status = spir_funcs_get_n_roots(u, &nroots);
+    REQUIRE(nroots_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(nroots == cpp_basis.u->nroots());
+    std::vector<double> roots(nroots);
+    int roots_status = spir_funcs_get_roots(u, roots.data());
+    REQUIRE(roots_status == SPIR_COMPUTATION_SUCCESS);
+    Eigen::VectorXd cpp_roots = cpp_basis.u->roots();
+    for (int i = 0; i < nroots; ++i) {
+        REQUIRE(roots[i] == cpp_roots(i));
+    }
+    int npositive_roots = std::count_if(cpp_roots.data(), cpp_roots.data() + nroots, [](double x) { return x > 0; });
+    REQUIRE(npositive_roots == nroots/2);
+
     // Test v basis functions
     int v_status;
     spir_funcs *v = spir_basis_get_v(basis, &v_status);
     REQUIRE(v_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(v != nullptr);
+
+    // Test roots
+    nroots_status = spir_funcs_get_n_roots(v, &nroots);
+    REQUIRE(nroots_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(nroots == cpp_basis.v->nroots());
+    roots.resize(nroots);
+    roots_status = spir_funcs_get_roots(v, roots.data());
+    REQUIRE(roots_status == SPIR_COMPUTATION_SUCCESS);
+    cpp_roots = cpp_basis.v->roots();
+    for (int i = 0; i < nroots; ++i) {
+        REQUIRE(roots[i] == cpp_roots(i));
+    }
 
     // Test v basis function evaluation
     eval_status = spir_funcs_eval(v, y, out_vec.data());
