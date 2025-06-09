@@ -329,6 +329,33 @@ int spir_funcs_batch_eval_matsu(const spir_funcs *funcs,
                                       int64_t *matsubara_freq_indices,
                                       c_complex *out);
 
+/**
+ * @brief Gets the number of roots of a funcs object.
+ * 
+ * This function returns the number of roots of the specified funcs object.
+ * This function is only available for continuous functions.
+ * 
+ * @param funcs Pointer to the funcs object
+ * @param n_roots Pointer to store the number of roots
+ * @return An integer status code:
+ */
+int spir_funcs_get_n_roots(const spir_funcs *funcs, int *n_roots);
+
+
+/**
+ * @brief Gets the roots of a funcs object.
+ * 
+ * This function returns the roots of the specified funcs object in the non-ascending order.
+ * If the size of the funcs object is greater than 1, the roots for all the functions are returned.
+ * This function is only available for continuous functions.
+ * 
+ * @param funcs Pointer to the funcs object
+ * @param n_roots Pointer to store the number of roots
+ * @param roots Pointer to store the roots
+ * @return An integer status code:
+ */
+int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
+
 
 /**
  * @brief Creates a new finite temperature IR basis using a

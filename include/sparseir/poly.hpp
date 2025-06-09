@@ -356,6 +356,34 @@ public:
         return polyvec.empty() ? Eigen::VectorXd() : polyvec[0].norms;
     }
 
+    // Returns the number of roots of the functions
+    int nroots() const {
+        return roots().size();
+    }
+
+    Eigen::VectorXd roots() const {
+        if (polyvec.empty()) {
+            return Eigen::VectorXd();
+        }
+        
+        // Collect all roots from all functions
+        std::set<double> all_roots;
+        for (const auto& poly : polyvec) {
+            Eigen::VectorXd poly_roots = poly.roots();
+            for (int i = 0; i < poly_roots.size(); ++i) {
+                all_roots.insert(poly_roots[i]);
+            }
+        }
+        
+        // Convert to vector and sort in non-ascending order
+        Eigen::VectorXd result(all_roots.size());
+        int i = 0;
+        for (auto it = all_roots.rbegin(); it != all_roots.rend(); ++it) {
+            result[i++] = *it;
+        }
+        return result;
+    }
+
     std::vector<int> get_symm() const
     {
         std::vector<int> symms(polyvec.size());

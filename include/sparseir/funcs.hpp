@@ -31,11 +31,13 @@ void check_indices(const std::vector<T>& indices, size_t max_size) {
 template <typename S>
 class AbstractTauFunctions {
 public:
-    virtual ~AbstractTauFunctions() {}
+    virtual ~AbstractTauFunctions() = default;
     virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const = 0;
     virtual Eigen::VectorXd operator()(double x) const = 0;
     virtual double get_beta() const = 0;
     virtual size_t size() const = 0;
+    virtual int nroots() const = 0;
+    virtual Eigen::VectorXd roots() const = 0;
 };
 
 
@@ -151,6 +153,38 @@ public:
 
     virtual double get_beta() const override {
         return beta;
+    }
+
+    virtual int nroots() const override {
+        return roots().size();
+    }
+
+    virtual Eigen::VectorXd roots() const override {
+        if (!impl || impl->size() == 0) {
+            return Eigen::VectorXd();
+        }
+
+        // Collect all roots from all functions
+        auto roots_ = impl->roots();
+        if (roots_.size() == 0) {
+            return Eigen::VectorXd();
+        }
+
+        std::set<double> all_roots;
+        for (int i = 0; i < roots_.size(); ++i) {
+            all_roots.insert(roots_[i]);
+            if (roots_[i] >= 0 && roots_[i] <= beta) {
+                all_roots.insert(roots_[i] - beta);
+            }
+        }
+
+        // Convert to vector and sort in non-ascending order
+        Eigen::VectorXd result(all_roots.size());
+        int i = 0;
+        for (auto it = all_roots.rbegin(); it != all_roots.rend(); ++it) {
+            result[i++] = *it;
+        }
+        return result;
     }
 
     PeriodicFunctions<S, ImplType> operator[](size_t i) const {

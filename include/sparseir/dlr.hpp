@@ -196,6 +196,14 @@ public:
         // Create new DLRBasisFunctions with selected poles
         return std::make_shared<DLRBasisFunctions>(beta, new_poles, wmax, new_weights);
     }
+
+    int nroots() const {
+        return 0;
+    }
+
+    Eigen::VectorXd roots() const {
+        return Eigen::VectorXd();
+    }
 };
 
 

@@ -50,6 +50,12 @@ public:
     virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const = 0;
     virtual std::pair<double, double> get_domain() const = 0;
     virtual bool is_continuous_funcs() const override { return true; }
+    
+    // Returns the number of roots of the functions
+    virtual int nroots() const = 0;
+    
+    // Returns the roots of the functions in non-ascending order
+    virtual Eigen::VectorXd roots() const = 0;
 };
 
 class PiecewiseLegendrePolyFunctions : public AbstractContinuousFunctions {
@@ -79,6 +85,14 @@ public:
     virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t> &indices) const override
     {
         return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<PiecewiseLegendrePolyFunctions>(impl->slice(indices)));
+    }
+
+    virtual int nroots() const override {
+        return impl->nroots();
+    }
+
+    virtual Eigen::VectorXd roots() const override {
+        return impl->roots();
     }
 };
 
@@ -133,6 +147,14 @@ public:
         // Create new adapter with the converted implementation
         return std::make_shared<OmegaFunctionsAdaptor<ImplType>>(converted_impl);
     }
+
+    virtual int nroots() const override {
+        return impl->nroots();
+    }
+
+    virtual Eigen::VectorXd roots() const override {
+        return impl->roots();
+    }
 };
 
 
@@ -171,6 +193,14 @@ public:
     virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t> &indices) const override
     {
         return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<TauFunctionsAdaptor<ImplType>>(impl->slice(indices), beta));
+    }
+
+    virtual int nroots() const override {
+        return impl->nroots();
+    }
+
+    virtual Eigen::VectorXd roots() const override {
+        return impl->roots();
     }
 };
 
