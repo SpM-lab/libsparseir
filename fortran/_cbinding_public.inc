@@ -21,10 +21,13 @@
   public :: c_spir_sve_result_get_size
   public :: c_spir_sve_result_get_svals
   public :: c_spir_funcs_get_size
+  public :: c_spir_funcs_get_slice
   public :: c_spir_funcs_eval
   public :: c_spir_funcs_eval_matsu
   public :: c_spir_funcs_batch_eval
   public :: c_spir_funcs_batch_eval_matsu
+  public :: c_spir_funcs_get_n_roots
+  public :: c_spir_funcs_get_roots
   public :: c_spir_basis_new
   public :: c_spir_basis_get_size
   public :: c_spir_basis_get_svals
@@ -48,7 +51,9 @@
   public :: c_spir_dlr2ir_dd
   public :: c_spir_dlr2ir_zz
   public :: c_spir_tau_sampling_new
+  public :: c_spir_tau_sampling_new_with_matrix
   public :: c_spir_matsu_sampling_new
+  public :: c_spir_matsu_sampling_new_with_matrix
   public :: c_spir_sampling_get_npoints
   public :: c_spir_sampling_get_taus
   public :: c_spir_sampling_get_matsus

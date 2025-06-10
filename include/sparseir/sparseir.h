@@ -43,9 +43,9 @@ extern "C" {
     spir_##name *spir_##name##_clone(const spir_##name *src);                  \
                                                                                \
     /* Check if the shared_ptr is assigned to a valid object */                \
-    int spir_##name##_is_assigned(const spir_##name *obj);                      \
+    int spir_##name##_is_assigned(const spir_##name *obj);                     \
                                                                                \
-    /* Get the raw pointer to the shared_ptr (only for debugging) */            \
+    /* Get the raw pointer to the shared_ptr (only for debugging) */           \
     void *_spir_##name##_get_raw_ptr(const spir_##name *obj);
 
 /* Declare opaque types */
@@ -125,7 +125,7 @@ spir_kernel *spir_reg_bose_kernel_new(double lambda, int *status);
  *       typically [-1, 1] × [-1, 1] in dimensionless variables.
  */
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
-                           double *ymin, double *ymax);
+                       double *ymin, double *ymax);
 
 /**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
@@ -168,14 +168,13 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon,
                                      int *status);
 
-
 /**
  * @brief Gets the number of singular values/vectors in an SVE result.
  *
- * This function returns the number of singular values and corresponding singular
- * vectors contained in the specified SVE result object. This number is needed to
- * allocate arrays of the correct size when retrieving singular values or
- * evaluating singular vectors.
+ * This function returns the number of singular values and corresponding
+ * singular vectors contained in the specified SVE result object. This number is
+ * needed to allocate arrays of the correct size when retrieving singular values
+ * or evaluating singular vectors.
  *
  * @param sve Pointer to the SVE result object
  * @param size Pointer to store the number of singular values/vectors
@@ -188,8 +187,9 @@ int spir_sve_result_get_size(const spir_sve_result *sve, int *size);
 /**
  * @brief Gets the singular values from an SVE result.
  *
- * This function retrieves all singular values from the specified SVE result object.
- * The singular values are stored in descending order in the output array.
+ * This function retrieves all singular values from the specified SVE result
+ * object. The singular values are stored in descending order in the output
+ * array.
  *
  * @param sve Pointer to the SVE result object
  * @param svals Pre-allocated array to store the singular values.
@@ -219,21 +219,28 @@ int spir_sve_result_get_svals(const spir_sve_result *sve, double *svals);
 int spir_funcs_get_size(const spir_funcs *funcs, int *size);
 
 /**
- * @brief Creates a new function object containing a subset of functions from the input.
- * 
- * This function creates a new function object that contains only the functions specified
- * by the indices array. The indices must be valid (within range and no duplicates).
- * 
+ * @brief Creates a new function object containing a subset of functions from
+ * the input.
+ *
+ * This function creates a new function object that contains only the functions
+ * specified by the indices array. The indices must be valid (within range and
+ * no duplicates).
+ *
  * @param funcs Pointer to the source function object
  * @param nslice Number of functions to select (length of indices array)
- * @param indices Array of indices specifying which functions to include in the slice
- * @param status Pointer to store the status code (0 for success, non-zero for error)
- * @return Pointer to the new function object containing the selected functions, or NULL on error
- * 
- * @note The caller is responsible for freeing the returned object using spir_funcs_free
+ * @param indices Array of indices specifying which functions to include in the
+ * slice
+ * @param status Pointer to store the status code (0 for success, non-zero for
+ * error)
+ * @return Pointer to the new function object containing the selected functions,
+ * or NULL on error
+ *
+ * @note The caller is responsible for freeing the returned object using
+ * spir_funcs_free
  * @note If status is non-zero, the returned pointer will be NULL
  */
-spir_funcs *spir_funcs_get_slice(const spir_funcs *funcs, int nslice, int *indices, int *status);
+spir_funcs *spir_funcs_get_slice(const spir_funcs *funcs, int nslice,
+                                 int *indices, int *status);
 
 /**
  * @brief Evaluates functions at a single point in the imaginary-time domain or
@@ -258,46 +265,47 @@ int spir_funcs_eval(const spir_funcs *funcs, double x, double *out);
 
 /**
  * @brief Evaluate a funcs object at a single Matsubara frequency
- * 
- * This function evaluates the basis functions at a single Matsubara frequency index.
- * The output array will contain the values of all basis functions at the specified frequency.
- * 
+ *
+ * This function evaluates the basis functions at a single Matsubara frequency
+ * index. The output array will contain the values of all basis functions at the
+ * specified frequency.
+ *
  * @param funcs Pointer to the funcs object to evaluate
  * @param x The Matsubara frequency index (integer)
  * @param out Pointer to the output array where the results will be stored.
- *            The array must have enough space to store all basis function values.
- *            The values are stored in the order of basis functions.
+ *            The array must have enough space to store all basis function
+ * values. The values are stored in the order of basis functions.
  * @return int SPIR_COMPUTATION_SUCCESS on success, or an error code on failure
  */
 int spir_funcs_eval_matsu(const spir_funcs *funcs, int64_t x, c_complex *out);
 
 /**
- * @brief Evaluate a funcs object at multiple points in the imaginary-time domain or the real frequency domain
- * 
- * This function evaluates the basis functions at multiple points. The points can be either
- * in the imaginary-time domain or the real frequency domain, depending on the type of
- * the funcs object (u or v basis functions).
- * 
- * The output array can be stored in either row-major or column-major order, specified by
- * the order parameter. In row-major order, the output is stored as (num_points, nfuncs),
- * while in column-major order, it is stored as (nfuncs, num_points).
- * 
+ * @brief Evaluate a funcs object at multiple points in the imaginary-time
+ * domain or the real frequency domain
+ *
+ * This function evaluates the basis functions at multiple points. The points
+ * can be either in the imaginary-time domain or the real frequency domain,
+ * depending on the type of the funcs object (u or v basis functions).
+ *
+ * The output array can be stored in either row-major or column-major order,
+ * specified by the order parameter. In row-major order, the output is stored as
+ * (num_points, nfuncs), while in column-major order, it is stored as (nfuncs,
+ * num_points).
+ *
  * @param funcs Pointer to the funcs object to evaluate
  * @param order Memory layout of the output array:
  *             - SPIR_ORDER_ROW_MAJOR: (num_points, nfuncs)
  *             - SPIR_ORDER_COLUMN_MAJOR: (nfuncs, num_points)
  * @param num_points Number of points to evaluate
- * @param xs Array of points to evaluate at. The points should be in the appropriate domain
- *          (imaginary time for u basis, real frequency for v basis)
+ * @param xs Array of points to evaluate at. The points should be in the
+ * appropriate domain (imaginary time for u basis, real frequency for v basis)
  * @param out Pointer to the output array where the results will be stored.
- *            The array must have enough space to store num_points * nfuncs values,
- *            where nfuncs is the number of basis functions.
+ *            The array must have enough space to store num_points * nfuncs
+ * values, where nfuncs is the number of basis functions.
  * @return int SPIR_COMPUTATION_SUCCESS on success, or an error code on failure
  */
-int spir_funcs_batch_eval(const spir_funcs *funcs,
-                                      int order, int num_points,
-                                      double *xs,
-                                      double *out);
+int spir_funcs_batch_eval(const spir_funcs *funcs, int order, int num_points,
+                          const double *xs, double *out);
 
 /**
  * @brief Evaluates basis functions at multiple Matsubara frequencies.
@@ -324,38 +332,37 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
  * to ωn = nπ/β, where n are odd for fermionic frequencies and even for bosonic
  * frequencies.
  */
-int spir_funcs_batch_eval_matsu(const spir_funcs *funcs,
-                                      int order, int num_freqs,
-                                      int64_t *matsubara_freq_indices,
-                                      c_complex *out);
+int spir_funcs_batch_eval_matsu(const spir_funcs *funcs, int order,
+                                int num_freqs,
+                                const int64_t *matsubara_freq_indices,
+                                c_complex *out);
 
 /**
  * @brief Gets the number of roots of a funcs object.
- * 
+ *
  * This function returns the number of roots of the specified funcs object.
  * This function is only available for continuous functions.
- * 
+ *
  * @param funcs Pointer to the funcs object
  * @param n_roots Pointer to store the number of roots
  * @return An integer status code:
  */
 int spir_funcs_get_n_roots(const spir_funcs *funcs, int *n_roots);
 
-
 /**
  * @brief Gets the roots of a funcs object.
- * 
- * This function returns the roots of the specified funcs object in the non-ascending order.
- * If the size of the funcs object is greater than 1, the roots for all the functions are returned.
- * This function is only available for continuous functions.
- * 
+ *
+ * This function returns the roots of the specified funcs object in the
+ * non-ascending order. If the size of the funcs object is greater than 1, the
+ * roots for all the functions are returned. This function is only available for
+ * continuous functions.
+ *
  * @param funcs Pointer to the funcs object
  * @param n_roots Pointer to store the number of roots
  * @param roots Pointer to store the roots
  * @return An integer status code:
  */
 int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
-
 
 /**
  * @brief Creates a new finite temperature IR basis using a
@@ -380,11 +387,9 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
  * @see spir_sve_result_new
  * @see spir_release_finite_temp_basis
  */
-spir_basis *spir_basis_new(int statistics,
-                                    double beta, double omega_max,
-                                    const spir_kernel *k,
-                                    const spir_sve_result *sve,
-                                    int *status);
+spir_basis *spir_basis_new(int statistics, double beta, double omega_max,
+                           const spir_kernel *k, const spir_sve_result *sve,
+                           int *status);
 
 /**
  * @brief Gets the size (number of basis functions) of a finite temperature
@@ -406,7 +411,6 @@ spir_basis *spir_basis_new(int statistics,
  * @note For a DLR basis, the size is the number of poles.
  */
 int spir_basis_get_size(const spir_basis *b, int *size);
-
 
 /**
  * @brief Gets the singular values of a finite temperature basis.
@@ -447,13 +451,11 @@ int spir_basis_get_svals(const spir_basis *b, double *svals);
  * @note The statistics type affects the form of the basis functions and the
  *       sampling points used for evaluation.
  */
-int spir_basis_get_stats(const spir_basis *b,
-                                  int *statistics);
-
+int spir_basis_get_stats(const spir_basis *b, int *statistics);
 
 /**
  * @brief Gets the singular values of a finite temperature basis.
- * 
+ *
  * This function returns the singular values of the specified finite temperature
  * basis object. The singular values are the square roots of the eigenvalues of
  * the covariance matrix of the basis functions.
@@ -527,8 +529,7 @@ spir_funcs *spir_basis_get_uhat(const spir_basis *b, int *status);
  *       conditioning for the given basis size
  * @see spir_basis_get_default_taus
  */
-int spir_basis_get_n_default_taus(const spir_basis *b,
-                                                       int *num_points);
+int spir_basis_get_n_default_taus(const spir_basis *b, int *num_points);
 
 /**
  * @brief Gets the default tau sampling points for an IR basis.
@@ -551,8 +552,7 @@ int spir_basis_get_n_default_taus(const spir_basis *b,
  *       conditioning for the given basis size
  * @see spir_basis_get_n_default_taus
  */
-int spir_basis_get_default_taus(const spir_basis *b,
-                                                   double *points);
+int spir_basis_get_default_taus(const spir_basis *b, double *points);
 
 /**
  * @brief Gets the number of default omega sampling points for an IR basis.
@@ -573,8 +573,7 @@ int spir_basis_get_default_taus(const spir_basis *b,
  *       conditioning for the given basis size
  * @see spir_basis_get_default_ws
  */
-int spir_basis_get_n_default_ws(const spir_basis *b,
-                                                       int *num_points);
+int spir_basis_get_n_default_ws(const spir_basis *b, int *num_points);
 
 /**
  * @brief Gets the default omega sampling points for an IR basis.
@@ -597,8 +596,7 @@ int spir_basis_get_n_default_ws(const spir_basis *b,
  *       conditioning for the given basis size
  * @see spir_basis_get_n_default_ws
  */
-int spir_basis_get_default_ws(const spir_basis *b,
-                                                   double *points);
+int spir_basis_get_default_ws(const spir_basis *b, double *points);
 
 /**
  * @brief Gets the number of default Matsubara sampling points for an IR basis.
@@ -620,8 +618,8 @@ int spir_basis_get_default_ws(const spir_basis *b,
  *       conditioning for the given basis size
  * @see spir_basis_get_default_matsus
  */
-int spir_basis_get_n_default_matsus(
-    const spir_basis *b, bool positive_only, int *num_points);
+int spir_basis_get_n_default_matsus(const spir_basis *b, bool positive_only,
+                                    int *num_points);
 
 /**
  * @brief Gets the default Matsubara sampling points for an IR basis.
@@ -647,9 +645,8 @@ int spir_basis_get_n_default_matsus(
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
  * @see spir_basis_get_n_default_matsus
  */
-int spir_basis_get_default_matsus(const spir_basis *b,
-                                                         bool positive_only,
-                                                         int64_t *points);
+int spir_basis_get_default_matsus(const spir_basis *b, bool positive_only,
+                                  int64_t *points);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
@@ -680,7 +677,6 @@ int spir_basis_get_default_matsus(const spir_basis *b,
  * @return Pointer to the newly created DLR object, or NULL if creation fails
  */
 spir_basis *spir_dlr_new(const spir_basis *b, int *status);
-
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) with
@@ -755,14 +751,13 @@ int spir_dlr_get_poles(const spir_basis *dlr, double *poles);
  * @see spir_ir2dlr
  * @see spir_dlr2ir_dd
  */
-int spir_ir2dlr_dd(const spir_basis *dlr, int order,
-                          int ndim, const int *input_dims,
-                          int target_dim, const double *input, double *out);
+int spir_ir2dlr_dd(const spir_basis *dlr, int order, int ndim,
+                   const int *input_dims, int target_dim, const double *input,
+                   double *out);
 
-int spir_ir2dlr_zz(const spir_basis *dlr, int order,
-                          int ndim, const int *input_dims,
-                          int target_dim, const c_complex *input,
-                          c_complex *out);
+int spir_ir2dlr_zz(const spir_basis *dlr, int order, int ndim,
+                   const int *input_dims, int target_dim,
+                   const c_complex *input, c_complex *out);
 
 /**
  * @brief Transforms coefficients from DLR basis to IR representation.
@@ -797,9 +792,9 @@ int spir_ir2dlr_zz(const spir_basis *dlr, int order,
  *
  * @see spir_ir2dlr
  */
-int spir_dlr2ir_dd(const spir_basis *dlr, int order,
-                          int ndim, const int *input_dims,
-                          int target_dim, const double *input, double *out);
+int spir_dlr2ir_dd(const spir_basis *dlr, int order, int ndim,
+                   const int *input_dims, int target_dim, const double *input,
+                   double *out);
 
 /**
  * @brief Transforms coefficients from DLR basis to IR representation.
@@ -836,10 +831,9 @@ int spir_dlr2ir_dd(const spir_basis *dlr, int order,
  * @see spir_ir2dlr_zz
  * @see spir_dlr2ir_dd
  */
-int spir_dlr2ir_zz(const spir_basis *dlr, int order,
-                          int ndim, const int *input_dims,
-                          int target_dim, const c_complex *input,
-                          c_complex *out);
+int spir_dlr2ir_zz(const spir_basis *dlr, int order, int ndim,
+                   const int *input_dims, int target_dim,
+                   const c_complex *input, c_complex *out);
 
 /**
  * @brief Creates a new tau sampling object for sparse sampling in
@@ -869,6 +863,34 @@ spir_sampling *spir_tau_sampling_new(const spir_basis *b, int num_points,
                                      const double *points, int *status);
 
 /**
+ * @brief Creates a new tau sampling object for sparse sampling in
+ * imaginary time with custom sampling points and a pre-computed matrix.
+ *
+ * This function creates a sampling object that allows transformation between
+ * the IR basis and a user-specified set of sampling points in imaginary time
+ * (τ). The sampling points are provided by the user, allowing for custom
+ * sampling strategies.
+ *
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
+ * SPIR_STATISTICS_BOSONIC)
+ * @param basis_size Basis size
+ * @param num_points Number of sampling points
+ * @param points Array of sampling points in imaginary time (τ)
+ * @param matrix Pre-computed matrix for the sampling points (num_points x
+ * basis_size). For Matsubara sampling, this should be a complex matrix.
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created sampling object, or NULL if creation
+ * fails
+ */
+spir_sampling *spir_tau_sampling_new_with_matrix(int order, int statistics,
+                                                 int basis_size, int num_points,
+                                                 const double *points,
+                                                 const double *matrix,
+                                                 int *status);
+
+/**
  * @brief Creates a new Matsubara sampling object for sparse sampling
  * in Matsubara frequencies with custom sampling points.
  *
@@ -886,11 +908,40 @@ spir_sampling *spir_tau_sampling_new(const spir_basis *b, int num_points,
  * @return Pointer to the newly created sampling object, or NULL if creation
  * fails
  */
-spir_sampling *spir_matsu_sampling_new(const spir_basis *b,
-                                           bool positive_only,
-                                           int num_points,
-                                           const int64_t *points,
-                                           int *status);
+spir_sampling *spir_matsu_sampling_new(const spir_basis *b, bool positive_only,
+                                       int num_points, const int64_t *points,
+                                       int *status);
+
+/**
+ * @brief Creates a new Matsubara sampling object for sparse sampling in
+ * Matsubara frequencies with custom sampling points and a pre-computed
+ * evaluation matrix.
+ *
+ * This function creates a sampling object that can be used to evaluate and fit
+ * functions at specific Matsubara frequencies. The sampling points and
+ * evaluation matrix are provided directly, allowing for custom sampling
+ * configurations.
+ *
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
+ * SPIR_STATISTICS_BOSONIC)
+ * @param basis_size Basis size
+ * @param positive_only If true, only positive Matsubara frequencies are used
+ * @param num_points Number of sampling points
+ * @param points Array of Matsubara frequencies (integer indices)
+ * @param matrix Pre-computed evaluation matrix of size (num_points ×
+ * basis_size)
+ * @param status Pointer to store the status code
+ * @return Pointer to the new sampling object, or NULL if creation fails
+ *
+ * @see spir_matsu_sampling_new
+ */
+spir_sampling *
+spir_matsu_sampling_new_with_matrix(int order, int statistics, int basis_size,
+                                    bool positive_only, int num_points,
+                                    const int64_t *points,
+                                    const c_complex *matrix, int *status);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.
@@ -951,8 +1002,7 @@ int spir_sampling_get_taus(const spir_sampling *s, double *points);
  * @note For bosonic case, the indices n give frequencies ωn = 2nπ/β
  * @see spir_sampling_get_npoints
  */
-int spir_sampling_get_matsus(const spir_sampling *s,
-                                           int64_t *points);
+int spir_sampling_get_matsus(const spir_sampling *s, int64_t *points);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to double
@@ -985,15 +1035,9 @@ int spir_sampling_get_matsus(const spir_sampling *s,
  * @see spir_sampling_eval_dz
  * @see spir_sampling_eval_zz
  */
-int
-spir_sampling_eval_dd(const spir_sampling *s, // Sampling object
-                          int order,  // Order type (C or Fortran)
-                          int ndim,           // Number of dimensions
-                          const int *input_dims, // Array of dimensions
-                          int target_dim, // Target dimension for evaluation
-                          const double *input, // Input coefficients array
-                          double *out          // Output array
-);
+int spir_sampling_eval_dd(const spir_sampling *s, int order, int ndim,
+                          const int *input_dims, int target_dim,
+                          const double *input, double *out);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to complex
@@ -1002,15 +1046,9 @@ spir_sampling_eval_dd(const spir_sampling *s, // Sampling object
  * For more details, see spir_sampling_eval_dd
  * @see spir_sampling_eval_dd
  */
-int
-spir_sampling_eval_dz(const spir_sampling *s, // Sampling object
-                          int order,  // Order type (C or Fortran)
-                          int ndim,           // Number of dimensions
-                          const int *input_dims, // Array of dimensions
-                          int target_dim, // Target dimension for evaluation
-                          const double *input, // Input coefficients array
-                          c_complex *out       // Output array
-);
+int spir_sampling_eval_dz(const spir_sampling *s, int order, int ndim,
+                          const int *input_dims, int target_dim,
+                          const double *input, c_complex *out);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (complex to complex
@@ -1019,15 +1057,9 @@ spir_sampling_eval_dz(const spir_sampling *s, // Sampling object
  * For more details, see spir_sampling_eval_dd
  * @see spir_sampling_eval_dd
  */
-int
-spir_sampling_eval_zz(const spir_sampling *s, // Sampling object
-                          int order,  // Order type (C or Fortran)
-                          int ndim,           // Number of dimensions
-                          const int *input_dims, // Array of dimensions
-                          int target_dim, // Target dimension for evaluation
-                          const c_complex *input, // Input coefficients array
-                          c_complex *out          // Output array
-);
+int spir_sampling_eval_zz(const spir_sampling *s, int order, int ndim,
+                          const int *input_dims, int target_dim,
+                          const c_complex *input, c_complex *out);
 
 /**
  * @brief Fits values at sampling points to basis coefficients (double to double
@@ -1058,15 +1090,9 @@ spir_sampling_eval_zz(const spir_sampling *s, // Sampling object
  * @see spir_sampling_eval_dd
  * @see spir_sampling_fit_zz
  */
-int
-spir_sampling_fit_dd(const spir_sampling *s,    // Sampling object
-                     int order,     // Order type (C or Fortran)
-                     int ndim,              // Number of dimensions
-                     const int *input_dims, // Array of dimensions
-                     int target_dim,  // Target dimension for evaluation
-                     const double *input, // Input coefficients array
-                     double *out          // Output array
-);
+int spir_sampling_fit_dd(const spir_sampling *s, int order, int ndim,
+                         const int *input_dims, int target_dim,
+                         const double *input, double *out);
 
 /**
  * @brief Fits values at sampling points to basis coefficients (complex to
@@ -1075,15 +1101,9 @@ spir_sampling_fit_dd(const spir_sampling *s,    // Sampling object
  * For more details, see spir_sampling_fit_dd
  * @see spir_sampling_fit_dd
  */
-int
-spir_sampling_fit_zz(const spir_sampling *s,    // Sampling object
-                     int order,     // Order type (C or Fortran)
-                     int ndim,              // Number of dimensions
-                     const int *input_dims, // Array of dimensions
-                     int target_dim,     // Target dimension for evaluation
-                     const c_complex *input, // Input coefficients array
-                     c_complex *out          // Output array
-);
+int spir_sampling_fit_zz(const spir_sampling *s, int order, int ndim,
+                         const int *input_dims, int target_dim,
+                         const c_complex *input, c_complex *out);
 
 #ifdef __cplusplus
 }
