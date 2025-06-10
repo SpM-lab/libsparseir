@@ -238,7 +238,7 @@ spir_sampling* spir_tau_sampling_new_with_matrix(const spir_basis *b, int order,
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Fermionic>>(
-                b, order, num_points, points, matrix, status);
+             b, order, num_points, points, matrix, status);
         } else {
             return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Bosonic>>(
                 b, order, num_points, points, matrix, status);
@@ -267,28 +267,67 @@ spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, 
         }
     }
 
-    auto impl = get_impl_basis(b);
-    if (!impl) {
-        *status = SPIR_GET_IMPL_FAILED;
+    // Get basis functions
+    spir_funcs* uhat = spir_basis_get_uhat(b, status);
+    if (!uhat) {
+        DEBUG_LOG("Error: Failed to get basis functions");
         return nullptr;
     }
 
-    try {
-        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_matsu_sampling_new_with_points<sparseir::Fermionic,
-                                                sparseir::MatsubaraSampling<sparseir::Fermionic>>(
-                b, positive_only, num_points, points);
-        } else {
-            *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_matsu_sampling_new_with_points<sparseir::Bosonic,
-                                                sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-                b, positive_only, num_points, points);
-        }
-    } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_matsu_sampling_new: " << e.what());
-        *status = SPIR_INTERNAL_ERROR;
+    // Get basis size
+    int basis_size;
+    int size_status = spir_basis_get_size(b, &basis_size);
+    if (size_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to get basis size");
+        spir_funcs_release(uhat);
+        *status = size_status;
         return nullptr;
+    }
+
+    // Allocate memory for matrix
+    std::vector<std::complex<double>> matrix(num_points * basis_size);
+    int eval_status = spir_funcs_batch_eval_matsu(uhat, SPIR_ORDER_COLUMN_MAJOR, num_points, points, (c_complex*)matrix.data());
+    if (eval_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to evaluate basis functions");
+        spir_funcs_release(uhat);
+        *status = eval_status;
+        return nullptr;
+    }
+
+    // Create sampling object using the matrix version
+    spir_sampling* smpl = spir_matsu_sampling_new_with_matrix(b, SPIR_ORDER_COLUMN_MAJOR, positive_only, num_points, points, (c_complex*)matrix.data(), status);
+
+    spir_funcs_release(uhat);
+
+    return smpl;
+}
+
+spir_sampling* spir_matsu_sampling_new_with_matrix(const spir_basis *b,
+                                                  int order,
+                                                  bool positive_only,
+                                                  int num_points,
+                                                  const int64_t *points,
+                                                  const c_complex *matrix,
+                                                  int *status)
+{
+    if (!b || !points || !matrix || !status) {
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    int statistics;
+    int stats_status = spir_basis_get_stats(b, &statistics);
+    if (stats_status != SPIR_COMPUTATION_SUCCESS) {
+        *status = stats_status;
+        return nullptr;
+    }
+
+    if (statistics == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_matsu_sampling_new_with_matrix<sparseir::Fermionic, sparseir::MatsubaraSampling<sparseir::Fermionic>>(
+            b, order, positive_only, num_points, points, matrix, status);
+    } else {
+        return _spir_matsu_sampling_new_with_matrix<sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+            b, order, positive_only, num_points, points, matrix, status);
     }
 }
 

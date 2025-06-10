@@ -911,6 +911,33 @@ spir_sampling *spir_matsu_sampling_new(const spir_basis *b, bool positive_only,
                                        int *status);
 
 /**
+ * @brief Creates a new Matsubara sampling object for sparse sampling in
+ * Matsubara frequencies with custom sampling points and a pre-computed
+ * evaluation matrix.
+ *
+ * This function creates a sampling object that can be used to evaluate and fit
+ * functions at specific Matsubara frequencies. The sampling points and
+ * evaluation matrix are provided directly, allowing for custom sampling
+ * configurations.
+ *
+ * @param b Pointer to the finite temperature basis object
+ * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
+ * SPIR_ORDER_COLUMN_MAJOR)
+ * @param positive_only If true, only positive Matsubara frequencies are used
+ * @param num_points Number of sampling points
+ * @param points Array of Matsubara frequencies (integer indices)
+ * @param matrix Pre-computed evaluation matrix of size (num_points ×
+ * basis_size)
+ * @param status Pointer to store the status code
+ * @return Pointer to the new sampling object, or NULL if creation fails
+ *
+ * @see spir_matsu_sampling_new
+ */
+spir_sampling *spir_matsu_sampling_new_with_matrix(
+    const spir_basis *b, int order, bool positive_only, int num_points,
+    const int64_t *points, const c_complex *matrix, int *status);
+
+/**
  * @brief Gets the number of sampling points in a sampling object.
  *
  * This function returns the number of sampling points used in the specified
@@ -1002,14 +1029,9 @@ int spir_sampling_get_matsus(const spir_sampling *s, int64_t *points);
  * @see spir_sampling_eval_dz
  * @see spir_sampling_eval_zz
  */
-int spir_sampling_eval_dd(const spir_sampling *s, // Sampling object
-                          int order,              // Order type (C or Fortran)
-                          int ndim,               // Number of dimensions
-                          const int *input_dims,  // Array of dimensions
-                          int target_dim, // Target dimension for evaluation
-                          const double *input, // Input coefficients array
-                          double *out          // Output array
-);
+int spir_sampling_eval_dd(const spir_sampling *s, int order, int ndim,
+                          const int *input_dims, int target_dim,
+                          const double *input, double *out);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (double to complex
@@ -1018,14 +1040,9 @@ int spir_sampling_eval_dd(const spir_sampling *s, // Sampling object
  * For more details, see spir_sampling_eval_dd
  * @see spir_sampling_eval_dd
  */
-int spir_sampling_eval_dz(const spir_sampling *s, // Sampling object
-                          int order,              // Order type (C or Fortran)
-                          int ndim,               // Number of dimensions
-                          const int *input_dims,  // Array of dimensions
-                          int target_dim, // Target dimension for evaluation
-                          const double *input, // Input coefficients array
-                          c_complex *out       // Output array
-);
+int spir_sampling_eval_dz(const spir_sampling *s, int order, int ndim,
+                          const int *input_dims, int target_dim,
+                          const double *input, c_complex *out);
 
 /**
  * @brief Evaluates basis coefficients at sampling points (complex to complex
@@ -1034,14 +1051,9 @@ int spir_sampling_eval_dz(const spir_sampling *s, // Sampling object
  * For more details, see spir_sampling_eval_dd
  * @see spir_sampling_eval_dd
  */
-int spir_sampling_eval_zz(const spir_sampling *s, // Sampling object
-                          int order,              // Order type (C or Fortran)
-                          int ndim,               // Number of dimensions
-                          const int *input_dims,  // Array of dimensions
-                          int target_dim, // Target dimension for evaluation
-                          const c_complex *input, // Input coefficients array
-                          c_complex *out          // Output array
-);
+int spir_sampling_eval_zz(const spir_sampling *s, int order, int ndim,
+                          const int *input_dims, int target_dim,
+                          const c_complex *input, c_complex *out);
 
 /**
  * @brief Fits values at sampling points to basis coefficients (double to double
@@ -1072,14 +1084,9 @@ int spir_sampling_eval_zz(const spir_sampling *s, // Sampling object
  * @see spir_sampling_eval_dd
  * @see spir_sampling_fit_zz
  */
-int spir_sampling_fit_dd(const spir_sampling *s, // Sampling object
-                         int order,              // Order type (C or Fortran)
-                         int ndim,               // Number of dimensions
-                         const int *input_dims,  // Array of dimensions
-                         int target_dim,      // Target dimension for evaluation
-                         const double *input, // Input coefficients array
-                         double *out          // Output array
-);
+int spir_sampling_fit_dd(const spir_sampling *s, int order, int ndim,
+                         const int *input_dims, int target_dim,
+                         const double *input, double *out);
 
 /**
  * @brief Fits values at sampling points to basis coefficients (complex to
@@ -1088,14 +1095,9 @@ int spir_sampling_fit_dd(const spir_sampling *s, // Sampling object
  * For more details, see spir_sampling_fit_dd
  * @see spir_sampling_fit_dd
  */
-int spir_sampling_fit_zz(const spir_sampling *s, // Sampling object
-                         int order,              // Order type (C or Fortran)
-                         int ndim,               // Number of dimensions
-                         const int *input_dims,  // Array of dimensions
-                         int target_dim, // Target dimension for evaluation
-                         const c_complex *input, // Input coefficients array
-                         c_complex *out          // Output array
-);
+int spir_sampling_fit_zz(const spir_sampling *s, int order, int ndim,
+                         const int *input_dims, int target_dim,
+                         const c_complex *input, c_complex *out);
 
 #ifdef __cplusplus
 }

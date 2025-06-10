@@ -1,3 +1,4 @@
+#include <complex.h>
 #include <memory>
 #include <stdexcept>
 #include <cstdint>
@@ -292,7 +293,9 @@ spir_sampling* _spir_tau_sampling_new_with_matrix(const spir_basis *b, int order
         }
     } else {
         // Already column-major
-        std::copy(matrix, matrix + num_points * basis_size, eigen_matrix.data());
+        for (int i = 0; i < num_points * basis_size; i++) {
+            eigen_matrix.data()[i] = matrix[i];
+        }
     }
 
     // Create sampling object using the new constructor
@@ -329,6 +332,54 @@ spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool po
     }
 }
 
+template<typename S, typename SMPL>
+spir_sampling* _spir_matsu_sampling_new_with_matrix(const spir_basis *b, int order,
+                                                  bool positive_only, int num_points,
+                                                  const int64_t *points,
+                                                  const c_complex *matrix,
+                                                  int *status) {
+    if (num_points <= 0) {
+        DEBUG_LOG("Error: Number of points must be positive");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    // Create sampling points vector
+    std::vector<sparseir::MatsubaraFreq<S>> matsubara_points;
+    matsubara_points.reserve(num_points);
+    for (int i = 0; i < num_points; i++) {
+        matsubara_points.emplace_back(points[i]);
+    }
+
+    // Get basis size
+    int basis_size;
+    int size_status = spir_basis_get_size(b, &basis_size);
+    if (size_status != SPIR_COMPUTATION_SUCCESS) {
+        *status = size_status;
+        return nullptr;
+    }
+
+    // Create matrix from input data
+    Eigen::MatrixXcd eigen_matrix(num_points, basis_size);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        // Convert row-major to column-major
+        for (int i = 0; i < num_points; i++) {
+            for (int j = 0; j < basis_size; j++) {
+                eigen_matrix(i, j) = *reinterpret_cast<const std::complex<double>*>(&matrix[i * basis_size + j]);
+            }
+        }
+    } else {
+        // Already column-major
+        for (int i = 0; i < num_points * basis_size; i++) {
+            eigen_matrix.data()[i] = *reinterpret_cast<const std::complex<double>*>(&matrix[i]);
+        }
+    }
+
+    // Create sampling object using the new constructor
+    auto sampling = std::make_shared<SMPL>(eigen_matrix, matsubara_points, positive_only);
+    *status = SPIR_COMPUTATION_SUCCESS;
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(sampling));
+}
 
 template <typename S>
 spir_basis *_spir_dlr_new(const spir_basis *b)
