@@ -53,6 +53,7 @@
   public :: c_spir_tau_sampling_new
   public :: c_spir_tau_sampling_new_with_matrix
   public :: c_spir_matsu_sampling_new
+  public :: c_spir_matsu_sampling_new_with_matrix
   public :: c_spir_sampling_get_npoints
   public :: c_spir_sampling_get_taus
   public :: c_spir_sampling_get_matsus

@@ -462,6 +462,19 @@ function c_spir_matsu_sampling_new(b, positive_only, num_points, points, status)
   type(c_ptr) :: c_spir_matsu_sampling_new
 end function
 
+function c_spir_matsu_sampling_new_with_matrix(b, order, positive_only, num_points, points, matrix, status) &
+    bind(c, name="spir_matsu_sampling_new_with_matrix") result(c_spir_matsu_sampling_new_with_matrix)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  integer(c_int), value :: order
+  integer(c_int), value :: positive_only
+  integer(c_int), value :: num_points
+  type(c_ptr), value :: points
+  type(c_ptr), value :: matrix
+  type(c_ptr), value :: status
+  type(c_ptr) :: c_spir_matsu_sampling_new_with_matrix
+end function
+
 function c_spir_sampling_get_npoints(s, num_points) &
     bind(c, name="spir_sampling_get_npoints") result(c_spir_sampling_get_npoints)
   use iso_c_binding
