@@ -428,14 +428,14 @@ int fit_inplace_impl(
 }
 
 template <typename Basis>
-inline Eigen::MatrixXd eval_matrix(const std::shared_ptr<Basis> &basis,
+inline Eigen::MatrixXd eval_matrix(const Basis &basis,
                                    const Eigen::VectorXd &x)
 {
     // Initialize matrix with correct dimensions
-    Eigen::MatrixXd matrix(x.size(), basis->size());
+    Eigen::MatrixXd matrix(x.size(), basis.size());
 
     // Evaluate basis functions at sampling points
-    auto u_eval = (*basis->u)(x);
+    auto u_eval = (*basis.u)(x);
     // Transpose
     matrix = u_eval.transpose();
 
@@ -445,40 +445,67 @@ inline Eigen::MatrixXd eval_matrix(const std::shared_ptr<Basis> &basis,
 // Return a matrix of size (sampling_points.size(), basis_size)
 template <typename S, typename Base>
 inline Eigen::MatrixXcd
-eval_matrix(const std::shared_ptr<Base> &basis,
+eval_matrix(const Base &basis,
             const std::vector<MatsubaraFreq<S>> &sampling_points)
 {
     // check if basis->uhat is a valid shared_ptr
-    if (!basis) {
-        throw std::runtime_error("basis is not a valid shared_ptr");
-    }
-    if (!(basis->uhat)) {
+    if (!(basis.uhat)) {
         throw std::runtime_error("uhat is not a valid shared_ptr");
     }
     Eigen::Vector<int64_t, Eigen::Dynamic> freqs(sampling_points.size());
     for (size_t i = 0; i < sampling_points.size(); ++i) {
         freqs(i) = sampling_points[i].get_n();
     }
-    auto m = (*(basis->uhat))(freqs);
+    auto m = (*(basis.uhat))(freqs);
     return m.transpose();
-    //Eigen::MatrixXcd m(basis->uhat->size(), sampling_points.size());
-    // FIXME: this can be slow. Evaluate uhat[i] for multiple frequencies at
-    // once.
-    //for (size_t i = 0; i < sampling_points.size(); ++i) {
-        //m.col(i) = (*(basis->uhat))(sampling_points[i]);
-    //}
-    //Eigen::MatrixXcd matrix = m.transpose();
-    //return matrix;
 }
 
 template <typename S>
 class TauSampling : public AbstractSampling {
 private:
     Eigen::VectorXd sampling_points_;
+    //a matrix of size (sampling_points.size(), basis_size)
     Eigen::MatrixXd matrix_;
     mutable std::shared_ptr<Eigen::JacobiSVD<Eigen::MatrixXd>> matrix_svd_;
 
 public:
+    template <typename Basis>
+    TauSampling(const std::shared_ptr<Basis> &basis, const Eigen::VectorXd& sampling_points) : sampling_points_(sampling_points)
+    {
+        // Ensure matrix dimensions are correct
+        if (sampling_points.size() == 0) {
+            throw std::runtime_error("No sampling points given");
+        }
+
+        // Initialize evaluation matrix with correct dimensions
+        matrix_ = eval_matrix(*basis, sampling_points);
+
+        // Check matrix dimensions
+        if (matrix_.rows() != sampling_points.size() ||
+            matrix_.cols() != static_cast<long>(basis->size())) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points.size()) +
+                                     "x" + std::to_string(basis->size()));
+        }
+    }
+
+    // Constructor that takes matrix and sampling_points directly
+    TauSampling(const Eigen::MatrixXd& matrix, const Eigen::VectorXd& sampling_points) 
+        : sampling_points_(sampling_points), matrix_(matrix)
+    {
+        if (sampling_points.size() == 0 || matrix_.rows() != sampling_points.size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points.size()) +
+                                     "x" + std::to_string(matrix_.cols()));
+        }
+    }
+
     // Implement the pure virtual method from AbstractSampling
     int32_t n_sampling_points() const override
     {
@@ -539,29 +566,6 @@ public:
         return fit_inplace_impl<TauSampling<S>, std::complex<double>,
                                 std::complex<double>, 3>(*this, input, dim,
                                                          output);
-    }
-
-    template <typename Basis>
-    TauSampling(const std::shared_ptr<Basis> &basis, const Eigen::VectorXd& sampling_points) : sampling_points_(sampling_points)
-    {
-        // Ensure matrix dimensions are correct
-        if (sampling_points.size() == 0) {
-            throw std::runtime_error("No sampling points given");
-        }
-
-        // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(basis, sampling_points);
-
-        // Check matrix dimensions
-        if (matrix_.rows() != sampling_points.size() ||
-            matrix_.cols() != static_cast<long>(basis->size())) {
-            throw std::runtime_error("Matrix dimensions mismatch: got " +
-                                     std::to_string(matrix_.rows()) + "x" +
-                                     std::to_string(matrix_.cols()) +
-                                     ", expected " +
-                                     std::to_string(sampling_points.size()) +
-                                     "x" + std::to_string(basis->size()));
-        }
     }
 
     template <typename Basis>
@@ -756,7 +760,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(basis, sampling_points_);
+        matrix_ = eval_matrix(*basis, sampling_points_);
 
         // Check matrix dimensions
         if (matrix_.rows() != static_cast<long>(sampling_points_.size()) ||
@@ -788,7 +792,7 @@ public:
         }
 
         // Initialize evaluation matrix with correct dimensions
-        matrix_ = eval_matrix(basis, sampling_points_);
+        matrix_ = eval_matrix(*basis, sampling_points_);
 
         // Check matrix dimensions
         if (matrix_.rows() != sampling_points_.size() ||
@@ -819,6 +823,24 @@ public:
         : MatsubaraSampling(std::make_shared<Basis>(basis), sampling_points,
                             positive_only)
     {
+    }
+
+    // Constructor that takes matrix and sampling_points directly
+    MatsubaraSampling(const Eigen::MatrixXcd& matrix, 
+                      const std::vector<MatsubaraFreq<S>>& sampling_points,
+                      bool positive_only = false)
+        : sampling_points_(sampling_points), matrix_(matrix), 
+          positive_only_(positive_only), has_zero_(false)
+    {
+        if (sampling_points.size() == 0 || matrix_.rows() != sampling_points.size()) {
+            throw std::runtime_error("Matrix dimensions mismatch: got " +
+                                     std::to_string(matrix_.rows()) + "x" +
+                                     std::to_string(matrix_.cols()) +
+                                     ", expected " +
+                                     std::to_string(sampling_points.size()) +
+                                     "x" + std::to_string(matrix_.cols()));
+        }
+        has_zero_ = sampling_points_[0].n == 0;
     }
 
     template <typename T, int N>

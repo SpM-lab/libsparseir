@@ -159,6 +159,16 @@ function c_spir_funcs_get_size(funcs, size) &
   integer(c_int) :: c_spir_funcs_get_size
 end function
 
+function c_spir_funcs_get_slice(funcs, nslice, indices, status) &
+    bind(c, name="spir_funcs_get_slice") result(c_spir_funcs_get_slice)
+  use iso_c_binding
+  type(c_ptr), value :: funcs
+  integer(c_int), value :: nslice
+  type(c_ptr), value :: indices
+  type(c_ptr), value :: status
+  type(c_ptr) :: c_spir_funcs_get_slice
+end function
+
 function c_spir_funcs_eval(funcs, x, out) &
     bind(c, name="spir_funcs_eval") result(c_spir_funcs_eval)
   use iso_c_binding
@@ -197,6 +207,22 @@ function c_spir_funcs_batch_eval_matsu(funcs, order, num_freqs, matsubara_freq_i
   type(c_ptr), value :: matsubara_freq_indices
   type(c_ptr), value :: out
   integer(c_int) :: c_spir_funcs_batch_eval_matsu
+end function
+
+function c_spir_funcs_get_n_roots(funcs, n_roots) &
+    bind(c, name="spir_funcs_get_n_roots") result(c_spir_funcs_get_n_roots)
+  use iso_c_binding
+  type(c_ptr), value :: funcs
+  type(c_ptr), value :: n_roots
+  integer(c_int) :: c_spir_funcs_get_n_roots
+end function
+
+function c_spir_funcs_get_roots(funcs, roots) &
+    bind(c, name="spir_funcs_get_roots") result(c_spir_funcs_get_roots)
+  use iso_c_binding
+  type(c_ptr), value :: funcs
+  type(c_ptr), value :: roots
+  integer(c_int) :: c_spir_funcs_get_roots
 end function
 
 function c_spir_basis_new(statistics, beta, omega_max, k, sve, status) &
@@ -411,6 +437,18 @@ function c_spir_tau_sampling_new(b, num_points, points, status) &
   type(c_ptr), value :: points
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_tau_sampling_new
+end function
+
+function c_spir_tau_sampling_new_with_matrix(b, order, num_points, points, matrix, status) &
+    bind(c, name="spir_tau_sampling_new_with_matrix") result(c_spir_tau_sampling_new_with_matrix)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  integer(c_int), value :: order
+  integer(c_int), value :: num_points
+  type(c_ptr), value :: points
+  type(c_ptr), value :: matrix
+  type(c_ptr), value :: status
+  type(c_ptr) :: c_spir_tau_sampling_new_with_matrix
 end function
 
 function c_spir_matsu_sampling_new(b, positive_only, num_points, points, status) &

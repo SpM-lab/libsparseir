@@ -207,17 +207,44 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_tau_sampling_new_with_points<sparseir::Fermionic,
-                                                sparseir::TauSampling<sparseir::Fermionic>>(
+            return _spir_tau_sampling_new_with_points<sparseir::TauSampling<sparseir::Fermionic>>(
                 b, num_points, points);
         } else {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_tau_sampling_new_with_points<sparseir::Bosonic,
-                                                sparseir::TauSampling<sparseir::Bosonic>>(
+            return _spir_tau_sampling_new_with_points<sparseir::TauSampling<sparseir::Bosonic>>(
                 b, num_points, points);
         }
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_tau_sampling_new: " << e.what());
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
+
+spir_sampling* spir_tau_sampling_new_with_matrix(const spir_basis *b, int order, int num_points, const double *points, const double *matrix, int* status)
+{
+    if (!b || !points || !matrix || !status || num_points <= 0) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: b, points, matrix, status, or num_points is invalid");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Fermionic>>(
+                b, order, num_points, points, matrix, status);
+        } else {
+            return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Bosonic>>(
+                b, order, num_points, points, matrix, status);
+        }
+    } catch (const std::exception& e) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: " << e.what());
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -928,7 +955,7 @@ int spir_funcs_eval_matsu(const spir_funcs *funcs, int64_t x, c_complex *out)
 
 int spir_funcs_batch_eval(const spir_funcs *funcs,
                                  int order, int num_points,
-                                 double *xs, double *out)
+                                 const double *xs, double *out)
 {
     if (!funcs || !xs || !out || num_points <= 0) {
         return SPIR_INVALID_ARGUMENT;
@@ -948,7 +975,7 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
         }
 
         // result is a matrix of size n_funcs x num_points in column-major order
-        Eigen::MatrixXd result = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl)->operator()(Eigen::Map<Eigen::VectorXd>(xs, num_points));
+        Eigen::MatrixXd result = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl)->operator()(Eigen::Map<const Eigen::VectorXd>(xs, num_points));
 
         // out is a matrix of size num_points x n_funcs 
         if (order == SPIR_ORDER_ROW_MAJOR) {
@@ -980,7 +1007,7 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
 int spir_funcs_batch_eval_matsu(const spir_funcs *uiw,
                                           int order,
                                           int num_freqs,
-                                          int64_t *matsubara_freq_indices,
+                                          const int64_t *matsubara_freq_indices,
                                           c_complex *out)
 {
     auto impl = get_impl_funcs(uiw);
@@ -1006,7 +1033,7 @@ int spir_funcs_batch_eval_matsu(const spir_funcs *uiw,
     try {
         // Convert C array to Eigen vector
         Eigen::Vector<int64_t, Eigen::Dynamic> freq_indices =
-            Eigen::Map<Eigen::Vector<int64_t, Eigen::Dynamic>>(matsubara_freq_indices, num_freqs);
+            Eigen::Map<const Eigen::Vector<int64_t, Eigen::Dynamic>>(matsubara_freq_indices, num_freqs);
 
         // Get the func size
         int func_size = uiw->ptr->size();
