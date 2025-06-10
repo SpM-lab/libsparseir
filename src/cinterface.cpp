@@ -221,27 +221,35 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const 
     }
 }
 
-spir_sampling* spir_tau_sampling_new_with_matrix(const spir_basis *b, int order, int num_points, const double *points, const double *matrix, int* status)
+spir_sampling* spir_tau_sampling_new_with_matrix(int order, int statistics, int basis_size, int num_points, const double *points, const double *matrix, int* status)
 {
-    if (!b || !points || !matrix || !status || num_points <= 0) {
+    if (!points || !matrix || !status || num_points <= 0) {
         DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: b, points, matrix, status, or num_points is invalid");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
 
-    auto impl = get_impl_basis(b);
-    if (!impl) {
-        *status = SPIR_GET_IMPL_FAILED;
+        // check statistics
+    if (statistics != SPIR_STATISTICS_FERMIONIC && statistics != SPIR_STATISTICS_BOSONIC) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid statistics");
+        return nullptr;
+    }
+    
+    // check order
+    if (order != SPIR_ORDER_ROW_MAJOR && order != SPIR_ORDER_COLUMN_MAJOR) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid order");
         return nullptr;
     }
 
     try {
-        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {
             return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Fermionic>>(
-             b, order, num_points, points, matrix, status);
+                order, basis_size, num_points, points, matrix, status);
         } else {
             return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Bosonic>>(
-                b, order, num_points, points, matrix, status);
+                order, basis_size, num_points, points, matrix, status);
         }
     } catch (const std::exception& e) {
         DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: " << e.what());
@@ -284,6 +292,15 @@ spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, 
         return nullptr;
     }
 
+    int statistics;
+    int stats_status = spir_basis_get_stats(b, &statistics);
+    if (stats_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to get basis statistics");
+        spir_funcs_release(uhat);
+        *status = stats_status;
+        return nullptr;
+    }
+
     // Allocate memory for matrix
     std::vector<std::complex<double>> matrix(num_points * basis_size);
     int eval_status = spir_funcs_batch_eval_matsu(uhat, SPIR_ORDER_COLUMN_MAJOR, num_points, points, (c_complex*)matrix.data());
@@ -295,39 +312,49 @@ spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, 
     }
 
     // Create sampling object using the matrix version
-    spir_sampling* smpl = spir_matsu_sampling_new_with_matrix(b, SPIR_ORDER_COLUMN_MAJOR, positive_only, num_points, points, (c_complex*)matrix.data(), status);
+    spir_sampling* smpl = spir_matsu_sampling_new_with_matrix(
+        SPIR_ORDER_COLUMN_MAJOR, statistics, basis_size, positive_only, num_points, points, (c_complex*)matrix.data(), status);
 
     spir_funcs_release(uhat);
 
     return smpl;
 }
 
-spir_sampling* spir_matsu_sampling_new_with_matrix(const spir_basis *b,
+spir_sampling* spir_matsu_sampling_new_with_matrix(
                                                   int order,
+                                                  int statistics,
+                                                  int basis_size,
                                                   bool positive_only,
                                                   int num_points,
                                                   const int64_t *points,
                                                   const c_complex *matrix,
                                                   int *status)
 {
-    if (!b || !points || !matrix || !status) {
+    if (!points || !matrix || !status) {
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
-
-    int statistics;
-    int stats_status = spir_basis_get_stats(b, &statistics);
-    if (stats_status != SPIR_COMPUTATION_SUCCESS) {
-        *status = stats_status;
+    
+    // check statistics
+    if (statistics != SPIR_STATISTICS_FERMIONIC && statistics != SPIR_STATISTICS_BOSONIC) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid statistics");
+        return nullptr;
+    }
+    
+    // check order
+    if (order != SPIR_ORDER_ROW_MAJOR && order != SPIR_ORDER_COLUMN_MAJOR) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid order");
         return nullptr;
     }
 
     if (statistics == SPIR_STATISTICS_FERMIONIC) {
         return _spir_matsu_sampling_new_with_matrix<sparseir::Fermionic, sparseir::MatsubaraSampling<sparseir::Fermionic>>(
-            b, order, positive_only, num_points, points, matrix, status);
+            order, basis_size, positive_only, num_points, points, matrix, status);
     } else {
         return _spir_matsu_sampling_new_with_matrix<sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-            b, order, positive_only, num_points, points, matrix, status);
+            order, basis_size, positive_only, num_points, points, matrix, status);
     }
 }
 

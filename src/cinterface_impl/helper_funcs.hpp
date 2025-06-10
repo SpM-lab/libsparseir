@@ -250,8 +250,20 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_p
         return nullptr;
     }
 
+    int statistics;
+    int stats_status = spir_basis_get_stats(b, &statistics);
+    if (stats_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to get basis statistics");
+        spir_funcs_release(u);
+        return nullptr;
+    }
+
     // Create sampling object using the matrix version
-    spir_sampling* smpl = spir_tau_sampling_new_with_matrix(b, SPIR_ORDER_COLUMN_MAJOR, num_points, points, matrix.data(), &status);
+    spir_sampling* smpl = spir_tau_sampling_new_with_matrix(
+        SPIR_ORDER_COLUMN_MAJOR,
+        statistics,
+        basis_size,
+        num_points, points, matrix.data(), &status);
 
     spir_funcs_release(u);
 
@@ -259,7 +271,8 @@ spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_p
 }
 
 template<typename SMPL>
-spir_sampling* _spir_tau_sampling_new_with_matrix(const spir_basis *b, int order,
+spir_sampling* _spir_tau_sampling_new_with_matrix(int order,
+                                                int basis_size,
                                                 int num_points, const double *points,
                                                 const double *matrix, int *status) {
     if (num_points <= 0) {
@@ -272,14 +285,6 @@ spir_sampling* _spir_tau_sampling_new_with_matrix(const spir_basis *b, int order
     Eigen::VectorXd sampling_points(num_points);
     for (int i = 0; i < num_points; i++) {
         sampling_points(i) = points[i];
-    }
-
-    // Get basis size
-    int basis_size;
-    int size_status = spir_basis_get_size(b, &basis_size);
-    if (size_status != SPIR_COMPUTATION_SUCCESS) {
-        *status = size_status;
-        return nullptr;
     }
 
     // Create matrix from input data
@@ -333,7 +338,8 @@ spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool po
 }
 
 template<typename S, typename SMPL>
-spir_sampling* _spir_matsu_sampling_new_with_matrix(const spir_basis *b, int order,
+spir_sampling* _spir_matsu_sampling_new_with_matrix(int order,
+                                                  int basis_size,
                                                   bool positive_only, int num_points,
                                                   const int64_t *points,
                                                   const c_complex *matrix,
@@ -349,14 +355,6 @@ spir_sampling* _spir_matsu_sampling_new_with_matrix(const spir_basis *b, int ord
     matsubara_points.reserve(num_points);
     for (int i = 0; i < num_points; i++) {
         matsubara_points.emplace_back(points[i]);
-    }
-
-    // Get basis size
-    int basis_size;
-    int size_status = spir_basis_get_size(b, &basis_size);
-    if (size_status != SPIR_COMPUTATION_SUCCESS) {
-        *status = size_status;
-        return nullptr;
     }
 
     // Create matrix from input data

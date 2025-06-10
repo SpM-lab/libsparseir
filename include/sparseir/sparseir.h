@@ -871,19 +871,21 @@ spir_sampling *spir_tau_sampling_new(const spir_basis *b, int num_points,
  * (τ). The sampling points are provided by the user, allowing for custom
  * sampling strategies.
  *
- * @param b Pointer to a finite temperature basis object
  * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
  * SPIR_ORDER_COLUMN_MAJOR)
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
+ * SPIR_STATISTICS_BOSONIC)
+ * @param basis_size Basis size
  * @param num_points Number of sampling points
  * @param points Array of sampling points in imaginary time (τ)
  * @param matrix Pre-computed matrix for the sampling points (num_points x
- * basis_size)
+ * basis_size). For Matsubara sampling, this should be a complex matrix.
  * @param status Pointer to store the status code
  * @return Pointer to the newly created sampling object, or NULL if creation
  * fails
  */
-spir_sampling *spir_tau_sampling_new_with_matrix(const spir_basis *b, int order,
-                                                 int num_points,
+spir_sampling *spir_tau_sampling_new_with_matrix(int order, int statistics,
+                                                 int basis_size, int num_points,
                                                  const double *points,
                                                  const double *matrix,
                                                  int *status);
@@ -920,9 +922,11 @@ spir_sampling *spir_matsu_sampling_new(const spir_basis *b, bool positive_only,
  * evaluation matrix are provided directly, allowing for custom sampling
  * configurations.
  *
- * @param b Pointer to the finite temperature basis object
  * @param order Memory layout order (SPIR_ORDER_ROW_MAJOR or
  * SPIR_ORDER_COLUMN_MAJOR)
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or
+ * SPIR_STATISTICS_BOSONIC)
+ * @param basis_size Basis size
  * @param positive_only If true, only positive Matsubara frequencies are used
  * @param num_points Number of sampling points
  * @param points Array of Matsubara frequencies (integer indices)
@@ -933,9 +937,11 @@ spir_sampling *spir_matsu_sampling_new(const spir_basis *b, bool positive_only,
  *
  * @see spir_matsu_sampling_new
  */
-spir_sampling *spir_matsu_sampling_new_with_matrix(
-    const spir_basis *b, int order, bool positive_only, int num_points,
-    const int64_t *points, const c_complex *matrix, int *status);
+spir_sampling *
+spir_matsu_sampling_new_with_matrix(int order, int statistics, int basis_size,
+                                    bool positive_only, int num_points,
+                                    const int64_t *points,
+                                    const c_complex *matrix, int *status);
 
 /**
  * @brief Gets the number of sampling points in a sampling object.
