@@ -19,29 +19,6 @@ This C++ library provides routines for constructing and working with the interme
 
 We use [tuwien-cms/libxprec](https://github.com/tuwien-cms/libxprec) as a double-double precision arithmetic library.
 
-## CI/CD
-
-This project uses GitHub Actions for continuous integration and automated releases:
-
-- **CI_cmake.yml**: Runs automated tests on every push and pull request to ensure code quality
-- **CreateTag.yml**: Automatically creates tags and releases when version numbers are updated in `include/sparseir/version.h`
-
-### Automated Release Process
-
-The release process is fully automated:
-
-1. Update version numbers in `include/sparseir/version.h` by modifying:
-   - `SPARSEIR_VERSION_MAJOR`
-   - `SPARSEIR_VERSION_MINOR`
-   - `SPARSEIR_VERSION_PATCH`
-
-2. Push changes to the main branch
-
-3. The GitHub Action will automatically:
-   - Extract the version from the header file
-   - Check if a tag with that version already exists
-   - Create a new tag and release if the version is new
-   - Generate release notes automatically
 
 ## Building and Installation
 
@@ -155,3 +132,30 @@ This will create the `docs/html` directory. Open `docs/html/index.html` with you
 # Sample code in C
 
 Please refer [`./sample_c/README.md`](./sample_c/README.md) to learn more.
+
+# For developers
+
+
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and automated releases:
+
+- **CI_cmake.yml**: Runs automated tests on every push and pull request to ensure code quality
+- **CreateTag.yml**: Automatically creates tags and releases when version numbers are updated in `include/sparseir/version.h`
+
+### Automated Release Process
+
+The release process is fully automated:
+
+1. Update version numbers in `include/sparseir/version.h` by modifying:
+   - `SPARSEIR_VERSION_MAJOR`
+   - `SPARSEIR_VERSION_MINOR`
+   - `SPARSEIR_VERSION_PATCH`
+
+2. Push changes to the main branch
+
+3. The GitHub Action will automatically:
+   - Extract the version from the header file
+   - Check if a tag with that version already exists
+   - Create a new tag and release if the version is new
+   - Generate release notes automatically
