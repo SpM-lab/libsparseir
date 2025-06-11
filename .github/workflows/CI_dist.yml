@@ -53,16 +53,19 @@ jobs:
 
     - name: Build C++ library
       run: |
-        cd bundle/dist/libsparseir-*
+        cd bundle/dist
+        cd libsparseir-*/
         make CXX=${{ matrix.cxx }}
 
     - name: Build Fortran library
       run: |
-        cd bundle/dist/libsparseir-*
+        cd bundle/dist
+        cd libsparseir-*/
         make fortran FC=${{ matrix.fc }}
 
     - name: Install libraries
       run: |
-        cd bundle/dist/libsparseir-*
+        cd bundle/dist
+        cd libsparseir-*/
         make install
         make install-fortran 
