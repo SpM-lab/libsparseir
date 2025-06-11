@@ -29,7 +29,7 @@ if [ ! -d "deps/xprec" ]; then
 fi
 
 # Build
-echo "Building libsparseir..."
+echo "Building tar.gz..."
 make
 
 echo "Done!" 
