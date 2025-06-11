@@ -147,22 +147,19 @@ set_target_properties(sparseir PROPERTIES
 #-------------------------------------------------
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    # ----- macOS / Darwin (native or cross) -----
-    # 1. make the linker flag empty so -soname is never emitted
-    set(CMAKE_SHARED_LIBRARY_SONAME_FLAG      "" CACHE STRING "" FORCE)
-    # 2. drop any implicit SONAME value and use .dylib output
+    # ----- macOS / Darwin (native & cross) -----
     set_target_properties(sparseir PROPERTIES
-        SOVERSION             ""            # disable SONAME value
-        VERSION               ""            # avoid ".0.1.0" suffix
-        OUTPUT_NAME           "libsparseir" # keeps the stem
-        SUFFIX                ".dylib"
-        INSTALL_NAME_DIR      "@rpath"
-        MACOSX_RPATH          ON
+        NO_SONAME   ON            # ➜ -soname も値も丸ごと抹消
+        SUFFIX      ".dylib"      # 常に .dylib
+        OUTPUT_NAME "libsparseir" # stem を維持
+        INSTALL_NAME_DIR "@rpath"
+        MACOSX_RPATH ON
     )
 else()
-    # ----- ELF (Linux/BSD) -----
+    # ----- Linux / BSD / 他 ELF -----
     set_target_properties(sparseir PROPERTIES
-        SOVERSION ${PROJECT_VERSION_MAJOR}
+        VERSION    ${PROJECT_VERSION}
+        SOVERSION  ${PROJECT_VERSION_MAJOR}
     )
 endif()
 
