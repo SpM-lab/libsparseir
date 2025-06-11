@@ -26,7 +26,7 @@ OBJS = $(SRCS:.cpp=.o)
 # Fortran source files
 F90SRCS = $(FORTRAN_DIR)/sparseir.f90 $(FORTRAN_DIR)/sparseir_ext.f90
 F90OBJS = $(F90SRCS:.f90=.o)
-MOD_FILES = $(F90SRCS:.f90=.mod)
+MOD_FILES = sparseir.mod sparseir_ext.mod
 
 # Header files to install
 HEADERS = $(INCLUDE_DIR)/sparseir/sparseir.h \
