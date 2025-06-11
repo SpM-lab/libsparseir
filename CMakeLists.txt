@@ -138,10 +138,16 @@ target_include_directories(sparseir PRIVATE
 )
 set_target_properties(sparseir PROPERTIES
     VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR}
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED ON
     )
+
+if(UNIX AND NOT APPLE)
+    # Linux / BSD など (ELF)
+    set_target_properties(sparseir PROPERTIES
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+    )
+endif()
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
