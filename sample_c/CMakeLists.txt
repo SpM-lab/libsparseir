@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(SparseIRTests LANGUAGES C)
+project(SparseIRSamples LANGUAGES C)
 
 # Find SparseIR package
 find_package(SparseIR REQUIRED)

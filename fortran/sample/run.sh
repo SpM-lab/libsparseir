@@ -1,0 +1,2 @@
+cmake -B build -DSparseIR_DIR=$HOME/opt/libsparseir/share/cmake/SparseIR -DUSE_SYSTEM_LIBSPARSEIR=ON
+cmake --build build

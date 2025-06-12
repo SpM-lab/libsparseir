@@ -335,6 +335,8 @@ MODULE sparseir_ext
     TYPE(c_ptr) :: sve_ptr, basis_f_ptr, basis_b_ptr, k_ptr, dlr_f_ptr, dlr_b_ptr
     !
     wmax = lambda / beta
+    write(*, *) 'wmax', wmax
+    write(*, *) 'beta', beta
     lpositive = .false.
     IF (PRESENT(positive_only)) lpositive = positive_only
     !
