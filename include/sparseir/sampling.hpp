@@ -273,30 +273,28 @@ class AbstractSampling {
 public:
     virtual ~AbstractSampling() = default;
 
-    // Return number of sampling points
+    // Get the number of sampling points
     virtual int32_t n_sampling_points() const = 0;
 
-    // Return basis size
+    // Get the basis size
     virtual std::size_t basis_size() const = 0;
 
-    // Evaluate the basis functions at the sampling points with double input and
-    // double output
+    // Get the condition number of the sampling matrix
+    virtual double get_cond_num() const = 0;
+
+    // Evaluate the basis functions at the sampling points with double input
     virtual int evaluate_inplace_dd(
-        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> & /*input*/,
-        int /*dim*/,
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> & /*input*/, int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> & /*output*/) const
     {
         return SPIR_NOT_SUPPORTED;
     }
 
     // Evaluate the basis functions at the sampling points with complex input
-    // and complex output
     virtual int evaluate_inplace_zz(
-        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>>
-            & /*input*/,
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> & /*input*/,
         int /*dim*/,
-        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> & /*output*/)
-        const
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> & /*output*/) const
     {
         return SPIR_NOT_SUPPORTED;
     }
@@ -304,32 +302,25 @@ public:
     // Evaluate the basis functions at the sampling points with double input and
     // complex output
     virtual int evaluate_inplace_dz(
-        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> & /*input*/,
-        int /*dim*/,
-        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> & /*output*/)
-        const
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> & /*input*/, int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> & /*output*/) const
     {
         return SPIR_NOT_SUPPORTED;
     }
 
     // Fit basis coefficients from the sparse sampling points with double input
-    // and double output
     virtual int fit_inplace_dd(
-        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> & /*input*/,
-        int /*dim*/,
+        const Eigen::TensorMap<const Eigen::Tensor<double, 3>> & /*input*/, int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> & /*output*/) const
     {
         return SPIR_NOT_SUPPORTED;
     }
 
     // Fit basis coefficients from the sparse sampling points with complex input
-    // and complex output
     virtual int fit_inplace_zz(
-        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>>
-            & /*input*/,
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> & /*input*/,
         int /*dim*/,
-        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> & /*output*/)
-        const
+        Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> & /*output*/) const
     {
         return SPIR_NOT_SUPPORTED;
     }
@@ -337,8 +328,7 @@ public:
     // Fit basis coefficients from the sparse sampling points with complex input
     // and double output
     virtual int fit_inplace_dz(
-        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>>
-            & /*input*/,
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> & /*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> & /*output*/) const
     {
@@ -643,6 +633,16 @@ public:
         }
         return *matrix_svd_;
     }
+
+    // Get the condition number of the sampling matrix
+    double get_cond_num() const override {
+        auto _matrix_svd = get_matrix_svd();
+        const auto& singular_values = _matrix_svd.singularValues();
+        if (singular_values.size() == 0) {
+            throw std::runtime_error("No singular values found");
+        }
+        return singular_values(0) / singular_values(singular_values.size() - 1);
+    }
 };
 
 inline Eigen::JacobiSVD<Eigen::MatrixXcd>
@@ -911,6 +911,16 @@ public:
             }
         }
         return *matrix_svd_;
+    }
+
+    // Get the condition number of the sampling matrix
+    double get_cond_num() const override {
+        auto _matrix_svd = get_matrix_svd();
+        const auto& singular_values = _matrix_svd.singularValues();
+        if (singular_values.size() == 0) {
+            throw std::runtime_error("No singular values found");
+        }
+        return singular_values(0) / singular_values(singular_values.size() - 1);
     }
 };
 

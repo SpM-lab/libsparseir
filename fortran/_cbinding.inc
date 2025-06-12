@@ -501,6 +501,14 @@ function c_spir_sampling_get_matsus(s, points) &
   integer(c_int) :: c_spir_sampling_get_matsus
 end function
 
+function c_spir_sampling_get_cond_num(s, cond_num) &
+    bind(c, name="spir_sampling_get_cond_num") result(c_spir_sampling_get_cond_num)
+  use iso_c_binding
+  type(c_ptr), value :: s
+  type(c_ptr), value :: cond_num
+  integer(c_int) :: c_spir_sampling_get_cond_num
+end function
+
 function c_spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out) &
     bind(c, name="spir_sampling_eval_dd") result(c_spir_sampling_eval_dd)
   use iso_c_binding
