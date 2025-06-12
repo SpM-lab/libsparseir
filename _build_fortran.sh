@@ -20,6 +20,5 @@ cmake .. \
   -DSPARSEIR_USE_BLAS=OFF \
   -DSPARSEIR_USE_LAPACKE=OFF
 
-# Build (including tests)
 cmake --build . --config Release -j 4
-cmake --install
+make install

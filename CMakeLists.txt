@@ -129,7 +129,7 @@ if(NOT MSVC)
     target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
 endif()
 
-target_include_directories(sparseir PUBLIC
+target_include_directories(sparseir PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
     )
