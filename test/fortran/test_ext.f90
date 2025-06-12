@@ -145,7 +145,7 @@ contains
       deallocate(imag_tmp)
 
       ! Convert tau points back to IR
-      call fit_tau(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
+      call fit_tau(obj, target_dim, gtau_z, g_ir2_z)
 
       ! Evaluate Green's function at Matsubara frequencies again
       call evaluate_matsubara(obj, statistics, target_dim, g_ir2_z, giw_reconst)
@@ -238,7 +238,7 @@ contains
       call evaluate_tau(obj, target_dim, g_ir2_z, gtau_z)
 
       ! Convert tau points back to IR
-      call fit_tau(obj%tau_smpl_ptr, target_dim, gtau_z, g_ir2_z)
+      call fit_tau(obj, target_dim, gtau_z, g_ir2_z)
 
       ! Evaluate Green's function at Matsubara frequencies again
       call evaluate_matsubara(obj, statistics, target_dim, g_ir2_z, giw_reconst)

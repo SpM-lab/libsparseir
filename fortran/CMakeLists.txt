@@ -13,7 +13,7 @@ file(GLOB TYPE_FILES
 
 add_library(sparseir_fortran SHARED
     sparseir.f90
-    sparseir_ext.f90
+    sparseir_ext.F90
     _cbinding.inc
     _cbinding_public.inc
     ${TYPE_FILES}
