@@ -1,0 +1,6 @@
+include libsparseir/src/*.cpp
+include libsparseir/include/sparseir/*.h
+include Makefile.bundle
+include lib/*.so
+include lib/*.dylib
+include lib/*.dll 
