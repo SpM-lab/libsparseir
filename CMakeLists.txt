@@ -97,7 +97,7 @@ FetchContent_Declare(XPrec
 # Extract the content but don't process it through add_subdirectory
 FetchContent_GetProperties(XPrec)
 if(NOT xprec_POPULATED)
-    FetchContent_MakeAvailable(XPrec)
+    FetchContent_Populate(XPrec)
     message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
 endif()
 
@@ -238,18 +238,18 @@ configure_package_config_file(
 )
 
 # Configure and install Fortran config files
-if(SPARSEIR_BUILD_FORTRAN)
-    configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sparseir-fortran-config.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
-        INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
-    )
-
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
-    )
-endif()
+#if(SPARSEIR_BUILD_FORTRAN)
+    #configure_package_config_file(
+        #"${CMAKE_CURRENT_SOURCE_DIR}/cmake/sparseir-fortran-config.cmake.in"
+        #"${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
+        #INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+    #)
+#
+    #install(FILES
+        #"${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
+        #DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+    #)
+#endif()
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfig.cmake"

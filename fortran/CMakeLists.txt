@@ -26,6 +26,12 @@ target_include_directories(sparseir_fortran PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/fortran
 )
 
+# Add interface include directory for installed module files
+target_include_directories(sparseir_fortran INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/fortran>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/sparseir>
+)
+
 set_target_properties(sparseir_fortran PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
@@ -50,11 +56,6 @@ install(TARGETS sparseir_fortran
 # Install Fortran module files
 install(
     DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran/
-    DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/sparseir/fortran"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/sparseir"
     FILES_MATCHING PATTERN "*.mod"
 )
-
-# if(SPARSEIR_BUILD_TESTING)
-#     message(STATUS "Building Fortran tests")
-#     add_subdirectory(test)
-# endif()
