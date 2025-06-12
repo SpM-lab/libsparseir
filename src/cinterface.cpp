@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cstdint>
 #include <iostream>
+#include "sparseir/version.h"
 
 // Debug macro
 #ifdef DEBUG_SPIR
@@ -1437,6 +1438,18 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots)
         DEBUG_LOG("Unknown exception in spir_funcs_get_roots");
         return SPIR_INTERNAL_ERROR;
     }
+}
+
+int spir_get_version(int *major, int *minor, int *patch) {
+    if (!major || !minor || !patch) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    *major = SPARSEIR_VERSION_MAJOR;
+    *minor = SPARSEIR_VERSION_MINOR;
+    *patch = SPARSEIR_VERSION_PATCH;
+
+    return SPIR_COMPUTATION_SUCCESS;
 }
 
 } // extern "C"

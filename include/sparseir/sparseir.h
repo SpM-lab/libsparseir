@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "spir_status.h"
+#include "version.h"
 
 // Define a C-compatible type alias for the C99 complex number.
 typedef double _Complex c_complex;
@@ -30,6 +31,22 @@ typedef double _Complex c_complex;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * @brief Gets the version information of the SparseIR library.
+ *
+ * This function returns the version information of the SparseIR library
+ * through the provided pointers. The version follows semantic versioning
+ * (MAJOR.MINOR.PATCH).
+ *
+ * @param major Pointer to store the major version number
+ * @param minor Pointer to store the minor version number
+ * @param patch Pointer to store the patch version number
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ */
+int spir_get_version(int *major, int *minor, int *patch);
 
 /* Macro for declaring opaque types and their functions */
 #define DECLARE_OPAQUE_TYPE(name)                                              \
