@@ -57,6 +57,7 @@
   public :: c_spir_sampling_get_npoints
   public :: c_spir_sampling_get_taus
   public :: c_spir_sampling_get_matsus
+  public :: c_spir_sampling_get_cond_num
   public :: c_spir_sampling_eval_dd
   public :: c_spir_sampling_eval_dz
   public :: c_spir_sampling_eval_zz

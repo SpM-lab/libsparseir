@@ -87,6 +87,12 @@ void test_tau_sampling()
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
 
+    // Condition number
+    double cond_num;
+    int cond_num_status = spir_sampling_get_cond_num(sampling, &cond_num);
+    REQUIRE(cond_num_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(cond_num > 1.0);
+
     // Test getting number of sampling points
     int n_points;
     int points_status = spir_sampling_get_npoints(sampling, &n_points);
@@ -850,6 +856,11 @@ void test_matsubara_sampling_constructor()
     spir_sampling *sampling = spir_matsu_sampling_new(basis, false, n_points_org, smpl_points_org.data(), &sampling_status);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sampling != nullptr);
+
+    double cond_num;
+    int cond_num_status = spir_sampling_get_cond_num(sampling, &cond_num);
+    REQUIRE(cond_num_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(cond_num > 1.0);
 
     int n_points_positive_only_org;
     status = spir_basis_get_n_default_matsus(basis, true, &n_points_positive_only_org);

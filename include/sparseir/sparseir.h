@@ -1005,6 +1005,26 @@ int spir_sampling_get_taus(const spir_sampling *s, double *points);
 int spir_sampling_get_matsus(const spir_sampling *s, int64_t *points);
 
 /**
+ * @brief Gets the condition number of the sampling matrix.
+ *
+ * This function returns the condition number of the sampling matrix used in the
+ * specified sampling object. The condition number is a measure of how well-
+ * conditioned the sampling matrix is.
+ *
+ * @param s Pointer to the sampling object
+ * @param cond_num Pointer to store the condition number
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note A large condition number indicates that the sampling matrix is ill-conditioned,
+ *       which may lead to numerical instability in transformations
+ * @note The condition number is the ratio of the largest to smallest singular value
+ *       of the sampling matrix
+ */
+int spir_sampling_get_cond_num(const spir_sampling *s, double *cond_num);
+
+/**
  * @brief Evaluates basis coefficients at sampling points (double to double
  * version).
  *

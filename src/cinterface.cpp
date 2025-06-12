@@ -1439,4 +1439,30 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots)
     }
 }
 
+int spir_sampling_get_cond_num(const spir_sampling *s, double *cond_num)
+{
+    DEBUG_LOG("spir_sampling_get_cond_num called with sampling=" << s);
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        DEBUG_LOG("Failed to get sampling implementation");
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (!cond_num) {
+            DEBUG_LOG("cond_num is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+
+        *cond_num = impl->get_cond_num();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_sampling_get_cond_num: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_sampling_get_cond_num");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 } // extern "C"
