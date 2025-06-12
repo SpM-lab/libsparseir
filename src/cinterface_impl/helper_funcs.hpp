@@ -1,3 +1,4 @@
+#include <complex.h>
 #include <memory>
 #include <stdexcept>
 #include <cstdint>
@@ -216,35 +217,97 @@ int spir_ir2dlr(const spir_basis *dlr, int order,
     return SPIR_COMPUTATION_SUCCESS;
 }
 
-template<typename S, typename SMPL>
+template<typename SMPL>
 spir_sampling* _spir_tau_sampling_new_with_points(const spir_basis *b, int num_points, const double *points) {
-
-    std::shared_ptr<AbstractFiniteTempBasis> impl =
-        get_impl_basis(b);
-    if (!impl)
-        return nullptr;
-
     if (num_points <= 0) {
         DEBUG_LOG("Error: Number of points must be positive");
         return nullptr;
     }
 
+    // Get basis functions
+    int status;
+    spir_funcs* u = spir_basis_get_u(b, &status);
+    if (!u) {
+        DEBUG_LOG("Error: Failed to get basis functions");
+        return nullptr;
+    }
+
+    // Get basis size
+    int basis_size;
+    status = spir_basis_get_size(b, &basis_size);
+    if (status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to get basis size");
+        spir_funcs_release(u);
+        return nullptr;
+    }
+
+    // Evaluate basis functions at sampling points
+    Eigen::MatrixXd matrix(num_points, basis_size);
+    status = spir_funcs_batch_eval(u, SPIR_ORDER_COLUMN_MAJOR, num_points, points, matrix.data());
+    if (status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to evaluate basis functions");
+        spir_funcs_release(u);
+        return nullptr;
+    }
+
+    int statistics;
+    int stats_status = spir_basis_get_stats(b, &statistics);
+    if (stats_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to get basis statistics");
+        spir_funcs_release(u);
+        return nullptr;
+    }
+
+    // Create sampling object using the matrix version
+    spir_sampling* smpl = spir_tau_sampling_new_with_matrix(
+        SPIR_ORDER_COLUMN_MAJOR,
+        statistics,
+        basis_size,
+        num_points, points, matrix.data(), &status);
+
+    spir_funcs_release(u);
+
+    return smpl;
+}
+
+template<typename SMPL>
+spir_sampling* _spir_tau_sampling_new_with_matrix(int order,
+                                                int basis_size,
+                                                int num_points, const double *points,
+                                                const double *matrix, int *status) {
+    if (num_points <= 0) {
+        DEBUG_LOG("Error: Number of points must be positive");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    // Create sampling points vector
     Eigen::VectorXd sampling_points(num_points);
     for (int i = 0; i < num_points; i++) {
         sampling_points(i) = points[i];
     }
 
-    if (is_ir_basis(b)) {
-        auto impl_finite_temp_basis = _safe_static_pointer_cast<_IRBasis<S>>(impl)->get_impl();
-        return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
-            std::make_shared<SMPL>(impl_finite_temp_basis, sampling_points)));
+    // Create matrix from input data
+    Eigen::MatrixXd eigen_matrix(num_points, basis_size);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        // Convert row-major to column-major
+        for (int i = 0; i < num_points; i++) {
+            for (int j = 0; j < basis_size; j++) {
+                eigen_matrix(i, j) = matrix[i * basis_size + j];
+            }
+        }
     } else {
-        auto impl_finite_temp_basis = _safe_static_pointer_cast<DLRAdapter<S>>(impl)->get_impl();
-        return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(
-            std::make_shared<SMPL>(impl_finite_temp_basis, sampling_points)));
+        // Already column-major
+        for (int i = 0; i < num_points * basis_size; i++) {
+            eigen_matrix.data()[i] = matrix[i];
+        }
     }
-}
 
+    // Create sampling object using the new constructor
+    auto sampling = std::make_shared<SMPL>(eigen_matrix, sampling_points);
+    *status = SPIR_COMPUTATION_SUCCESS;
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(sampling));
+}
 
 template<typename S, typename SMPL>
 spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool positive_only, int num_points, const int64_t *points) {
@@ -274,6 +337,47 @@ spir_sampling* _spir_matsu_sampling_new_with_points(const spir_basis *b, bool po
     }
 }
 
+template<typename S, typename SMPL>
+spir_sampling* _spir_matsu_sampling_new_with_matrix(int order,
+                                                  int basis_size,
+                                                  bool positive_only, int num_points,
+                                                  const int64_t *points,
+                                                  const c_complex *matrix,
+                                                  int *status) {
+    if (num_points <= 0) {
+        DEBUG_LOG("Error: Number of points must be positive");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    // Create sampling points vector
+    std::vector<sparseir::MatsubaraFreq<S>> matsubara_points;
+    matsubara_points.reserve(num_points);
+    for (int i = 0; i < num_points; i++) {
+        matsubara_points.emplace_back(points[i]);
+    }
+
+    // Create matrix from input data
+    Eigen::MatrixXcd eigen_matrix(num_points, basis_size);
+    if (order == SPIR_ORDER_ROW_MAJOR) {
+        // Convert row-major to column-major
+        for (int i = 0; i < num_points; i++) {
+            for (int j = 0; j < basis_size; j++) {
+                eigen_matrix(i, j) = *reinterpret_cast<const std::complex<double>*>(&matrix[i * basis_size + j]);
+            }
+        }
+    } else {
+        // Already column-major
+        for (int i = 0; i < num_points * basis_size; i++) {
+            eigen_matrix.data()[i] = *reinterpret_cast<const std::complex<double>*>(&matrix[i]);
+        }
+    }
+
+    // Create sampling object using the new constructor
+    auto sampling = std::make_shared<SMPL>(eigen_matrix, matsubara_points, positive_only);
+    *status = SPIR_COMPUTATION_SUCCESS;
+    return create_sampling(std::static_pointer_cast<sparseir::AbstractSampling>(sampling));
+}
 
 template <typename S>
 spir_basis *_spir_dlr_new(const spir_basis *b)

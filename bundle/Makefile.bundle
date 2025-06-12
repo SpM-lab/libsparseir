@@ -1,0 +1,67 @@
+# Directories
+SRC_DIR = src
+INCLUDE_DIR = include
+FORTRAN_DIR = fortran
+DEPS_DIR = deps
+PREFIX ?= $(HOME)/opt/libsparseir
+
+# Include paths
+INCLUDES = -I$(INCLUDE_DIR) -I$(DEPS_DIR)/eigen3 -I$(DEPS_DIR)/xprec/include
+
+# Compiler settings
+CXX ?= g++
+CXXFLAGS = -O2 -Wall -std=c++11 $(INCLUDES)
+FC ?= gfortran
+FFLAGS = -O2 -Wall
+
+# Library settings
+LIB_NAME = libsparseir
+STATIC_LIB = $(LIB_NAME).a
+FORTRAN_LIB = $(LIB_NAME)_fortran.a
+
+# Source files
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+OBJS = $(SRCS:.cpp=.o)
+
+# Fortran source files
+F90SRCS = $(FORTRAN_DIR)/sparseir.f90 $(FORTRAN_DIR)/sparseir_ext.f90
+F90OBJS = $(F90SRCS:.f90=.o)
+MOD_FILES = sparseir.mod sparseir_ext.mod
+
+# Header files to install
+HEADERS = $(INCLUDE_DIR)/sparseir/sparseir.h \
+          $(INCLUDE_DIR)/sparseir/spir_status.h \
+          $(INCLUDE_DIR)/sparseir/version.h
+
+.PHONY: all clean install fortran
+
+all: $(STATIC_LIB)
+
+fortran: $(FORTRAN_LIB)
+
+$(STATIC_LIB): $(OBJS)
+	ar rcs $@ $^
+
+$(FORTRAN_LIB): $(F90OBJS)
+	ar rcs $@ $^
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+%.o: %.f90
+	$(FC) $(FFLAGS) -c $< -o $@
+
+install: $(STATIC_LIB)
+	@mkdir -p $(PREFIX)/include/sparseir
+	@mkdir -p $(PREFIX)/lib
+	cp $(HEADERS) $(PREFIX)/include/sparseir/
+	cp $(STATIC_LIB) $(PREFIX)/lib/
+
+install-fortran: fortran
+	@mkdir -p $(PREFIX)/include/sparseir
+	@mkdir -p $(PREFIX)/lib
+	cp $(MOD_FILES) $(PREFIX)/include/sparseir/
+	cp $(FORTRAN_LIB) $(PREFIX)/lib/
+
+clean:
+	rm -f $(OBJS) $(F90OBJS) $(STATIC_LIB) $(FORTRAN_LIB) $(MOD_FILES) 

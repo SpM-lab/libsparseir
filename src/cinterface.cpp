@@ -207,17 +207,52 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const 
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_tau_sampling_new_with_points<sparseir::Fermionic,
-                                                sparseir::TauSampling<sparseir::Fermionic>>(
+            return _spir_tau_sampling_new_with_points<sparseir::TauSampling<sparseir::Fermionic>>(
                 b, num_points, points);
         } else {
             *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_tau_sampling_new_with_points<sparseir::Bosonic,
-                                                sparseir::TauSampling<sparseir::Bosonic>>(
+            return _spir_tau_sampling_new_with_points<sparseir::TauSampling<sparseir::Bosonic>>(
                 b, num_points, points);
         }
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_tau_sampling_new: " << e.what());
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
+
+spir_sampling* spir_tau_sampling_new_with_matrix(int order, int statistics, int basis_size, int num_points, const double *points, const double *matrix, int* status)
+{
+    if (!points || !matrix || !status || num_points <= 0) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: b, points, matrix, status, or num_points is invalid");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+        // check statistics
+    if (statistics != SPIR_STATISTICS_FERMIONIC && statistics != SPIR_STATISTICS_BOSONIC) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid statistics");
+        return nullptr;
+    }
+    
+    // check order
+    if (order != SPIR_ORDER_ROW_MAJOR && order != SPIR_ORDER_COLUMN_MAJOR) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid order");
+        return nullptr;
+    }
+
+    try {
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {
+            return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Fermionic>>(
+                order, basis_size, num_points, points, matrix, status);
+        } else {
+            return _spir_tau_sampling_new_with_matrix<sparseir::TauSampling<sparseir::Bosonic>>(
+                order, basis_size, num_points, points, matrix, status);
+        }
+    } catch (const std::exception& e) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: " << e.what());
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -240,28 +275,86 @@ spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, 
         }
     }
 
-    auto impl = get_impl_basis(b);
-    if (!impl) {
-        *status = SPIR_GET_IMPL_FAILED;
+    // Get basis functions
+    spir_funcs* uhat = spir_basis_get_uhat(b, status);
+    if (!uhat) {
+        DEBUG_LOG("Error: Failed to get basis functions");
         return nullptr;
     }
 
-    try {
-        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
-            *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_matsu_sampling_new_with_points<sparseir::Fermionic,
-                                                sparseir::MatsubaraSampling<sparseir::Fermionic>>(
-                b, positive_only, num_points, points);
-        } else {
-            *status = SPIR_COMPUTATION_SUCCESS;
-            return _spir_matsu_sampling_new_with_points<sparseir::Bosonic,
-                                                sparseir::MatsubaraSampling<sparseir::Bosonic>>(
-                b, positive_only, num_points, points);
-        }
-    } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_matsu_sampling_new: " << e.what());
-        *status = SPIR_INTERNAL_ERROR;
+    // Get basis size
+    int basis_size;
+    int size_status = spir_basis_get_size(b, &basis_size);
+    if (size_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to get basis size");
+        spir_funcs_release(uhat);
+        *status = size_status;
         return nullptr;
+    }
+
+    int statistics;
+    int stats_status = spir_basis_get_stats(b, &statistics);
+    if (stats_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to get basis statistics");
+        spir_funcs_release(uhat);
+        *status = stats_status;
+        return nullptr;
+    }
+
+    // Allocate memory for matrix
+    std::vector<std::complex<double>> matrix(num_points * basis_size);
+    int eval_status = spir_funcs_batch_eval_matsu(uhat, SPIR_ORDER_COLUMN_MAJOR, num_points, points, (c_complex*)matrix.data());
+    if (eval_status != SPIR_COMPUTATION_SUCCESS) {
+        DEBUG_LOG("Error: Failed to evaluate basis functions");
+        spir_funcs_release(uhat);
+        *status = eval_status;
+        return nullptr;
+    }
+
+    // Create sampling object using the matrix version
+    spir_sampling* smpl = spir_matsu_sampling_new_with_matrix(
+        SPIR_ORDER_COLUMN_MAJOR, statistics, basis_size, positive_only, num_points, points, (c_complex*)matrix.data(), status);
+
+    spir_funcs_release(uhat);
+
+    return smpl;
+}
+
+spir_sampling* spir_matsu_sampling_new_with_matrix(
+                                                  int order,
+                                                  int statistics,
+                                                  int basis_size,
+                                                  bool positive_only,
+                                                  int num_points,
+                                                  const int64_t *points,
+                                                  const c_complex *matrix,
+                                                  int *status)
+{
+    if (!points || !matrix || !status) {
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    
+    // check statistics
+    if (statistics != SPIR_STATISTICS_FERMIONIC && statistics != SPIR_STATISTICS_BOSONIC) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid statistics");
+        return nullptr;
+    }
+    
+    // check order
+    if (order != SPIR_ORDER_ROW_MAJOR && order != SPIR_ORDER_COLUMN_MAJOR) {
+        *status = SPIR_INVALID_ARGUMENT;
+        DEBUG_LOG("Error: Invalid order");
+        return nullptr;
+    }
+
+    if (statistics == SPIR_STATISTICS_FERMIONIC) {
+        return _spir_matsu_sampling_new_with_matrix<sparseir::Fermionic, sparseir::MatsubaraSampling<sparseir::Fermionic>>(
+            order, basis_size, positive_only, num_points, points, matrix, status);
+    } else {
+        return _spir_matsu_sampling_new_with_matrix<sparseir::Bosonic, sparseir::MatsubaraSampling<sparseir::Bosonic>>(
+            order, basis_size, positive_only, num_points, points, matrix, status);
     }
 }
 
@@ -928,7 +1021,7 @@ int spir_funcs_eval_matsu(const spir_funcs *funcs, int64_t x, c_complex *out)
 
 int spir_funcs_batch_eval(const spir_funcs *funcs,
                                  int order, int num_points,
-                                 double *xs, double *out)
+                                 const double *xs, double *out)
 {
     if (!funcs || !xs || !out || num_points <= 0) {
         return SPIR_INVALID_ARGUMENT;
@@ -948,7 +1041,7 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
         }
 
         // result is a matrix of size n_funcs x num_points in column-major order
-        Eigen::MatrixXd result = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl)->operator()(Eigen::Map<Eigen::VectorXd>(xs, num_points));
+        Eigen::MatrixXd result = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl)->operator()(Eigen::Map<const Eigen::VectorXd>(xs, num_points));
 
         // out is a matrix of size num_points x n_funcs 
         if (order == SPIR_ORDER_ROW_MAJOR) {
@@ -980,7 +1073,7 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
 int spir_funcs_batch_eval_matsu(const spir_funcs *uiw,
                                           int order,
                                           int num_freqs,
-                                          int64_t *matsubara_freq_indices,
+                                          const int64_t *matsubara_freq_indices,
                                           c_complex *out)
 {
     auto impl = get_impl_funcs(uiw);
@@ -1006,7 +1099,7 @@ int spir_funcs_batch_eval_matsu(const spir_funcs *uiw,
     try {
         // Convert C array to Eigen vector
         Eigen::Vector<int64_t, Eigen::Dynamic> freq_indices =
-            Eigen::Map<Eigen::Vector<int64_t, Eigen::Dynamic>>(matsubara_freq_indices, num_freqs);
+            Eigen::Map<const Eigen::Vector<int64_t, Eigen::Dynamic>>(matsubara_freq_indices, num_freqs);
 
         // Get the func size
         int func_size = uiw->ptr->size();
@@ -1342,6 +1435,32 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots)
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_funcs_get_roots");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_sampling_get_cond_num(const spir_sampling *s, double *cond_num)
+{
+    DEBUG_LOG("spir_sampling_get_cond_num called with sampling=" << s);
+    auto impl = get_impl_sampling(s);
+    if (!impl) {
+        DEBUG_LOG("Failed to get sampling implementation");
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (!cond_num) {
+            DEBUG_LOG("cond_num is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+
+        *cond_num = impl->get_cond_num();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_sampling_get_cond_num: " << e.what());
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_sampling_get_cond_num");
         return SPIR_INTERNAL_ERROR;
     }
 }
