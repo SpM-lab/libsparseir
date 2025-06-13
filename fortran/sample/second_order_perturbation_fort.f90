@@ -44,7 +44,6 @@ CONTAINS
     nk_lin = 256
     hubbardu = 2.0E0_DP
     !
-    WRITE(*, *) 'Reading...'
     READ(5,NML=input,IOSTAT=ios)
     IF(ios.NE.0) THEN 
       PRINT*, 'ERROR in read_input: reading namelist input'
@@ -173,9 +172,6 @@ PROGRAM main
   !
   CALL init_ir(ir_obj, beta, lambda, eps, .false.)
   !
-  WRITE(*, *) ir_obj%beta
-  WRITE(*, *) beta
-
   IF (ABS(ir_obj%beta - beta) > 1E-10_DP) THEN
     PRINT*, 'ERROR in main: beta of ir_obj does not match input beta.'
     STOP
@@ -283,7 +279,7 @@ PROGRAM main
   !! G(k, l): (nk, size)
   ALLOCATE(gkl(nk, size_l))
   !
-  CALL fit_matsubara(ir_obj, SPIR_STATISTICS_FERMIONIC, 1, gkf, gkl)
+  CALL fit_matsubara(ir_obj, SPIR_STATISTICS_FERMIONIC, 2, gkf, gkl)
   !
   filename = "second_order_gkl_gamma.txt"
   OPEN(101,FILE=filename,STATUS="replace",IOSTAT=ios)
@@ -297,15 +293,18 @@ PROGRAM main
   !
   ALLOCATE(gkt(nk, ntau))
   !
-  CALL evaluate_tau(ir_obj, 1, gkl, gkt)
+  CALL evaluate_tau(ir_obj, 2, gkl, gkt)
   !
   filename = "second_order_gkt_gamma.txt"
   OPEN(102,FILE=filename,STATUS="replace",IOSTAT=ios)
   IF(ios.NE.0) PRINT*, 'ERROR in main while opening file: ', filename
   WRITE(102,'(2(A, ES14.6), A)') "#   k = ( ", kp(1, 1), ", ", kp(2, 1), " )"
   WRITE(102,'(A)') "#     tau           Re(G(k,tau))     Im(G(k,tau))    abs(G(k,tau))"
-  DO ix = 1, ntau
+  DO ix = ntau/2 + 1, ntau
     WRITE(102,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix), gkt(1, ix), ABS(gkt(1, ix))
+  ENDDO
+  DO ix = 1, ntau/2
+    WRITE(102,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix) + ir_obj%beta, -gkt(1, ix), ABS(-gkt(1, ix))
   ENDDO
   CLOSE(102)
   !
@@ -315,8 +314,11 @@ PROGRAM main
   idum = kps1 * (kps2 + 1) / 2 + 1
   WRITE(103,'(2(A, ES14.6), A)') "#   k = ( ", kp(1, idum), ", ", kp(2, idum), " )"
   WRITE(103,'(A)') "#     tau           Re(G(k,tau))     Im(G(k,tau))    abs(G(k,tau))"
-  DO ix = 1, ntau
+  DO ix = ntau/2 + 1, ntau
     WRITE(103,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix), gkt(idum, ix), ABS(gkt(idum, ix))
+  ENDDO
+  DO ix = 1, ntau/2
+    WRITE(103,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix) + ir_obj%beta, -gkt(idum, ix), ABS(-gkt(idum, ix))
   ENDDO
   CLOSE(103)
   !
@@ -364,8 +366,11 @@ PROGRAM main
   OPEN(104,FILE=filename,STATUS="replace",IOSTAT=ios)
   IF(ios.NE.0) PRINT*, 'ERROR in main while opening file: ', filename
   WRITE(104,'(A)') "#     tau           Re(G(r,tau))     Im(G(r,tau))    abs(G(r,tau))"
-  DO ix = 1, ntau
+  DO ix = ntau/2 + 1, ntau
     WRITE(104,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix), grt(1, ix), ABS(grt(1, ix))
+  ENDDO
+  DO ix = 1, ntau/2
+    WRITE(104,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix) + ir_obj%beta, -grt(1, ix), ABS(-grt(1, ix))
   ENDDO
   CLOSE(104)
   !
@@ -378,7 +383,7 @@ PROGRAM main
   ALLOCATE(grt_(nk, ntau))
   !
   DO ix = 1, ntau
-    grt_(:, ntau - ix + 1) = grt(:, ix)
+    grt_(:, ntau - ix + 1) = -grt(:, ix)
   ENDDO
   !
   srt = grt * grt * grt_ * hubbardu * hubbardu
@@ -389,8 +394,11 @@ PROGRAM main
   OPEN(105,FILE=filename,STATUS="replace",IOSTAT=ios)
   IF(ios.NE.0) PRINT*, 'ERROR in main while opening file: ', filename
   WRITE(105,'(A)') "#     tau          Re(Sigma(r,tau)) Im(Sigma(r,tau)) abs(Sigma(r,tau))"
-  DO ix = 1, ntau
+  DO ix = ntau/2 + 1, ntau
     WRITE(105,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix), srt(1, ix), ABS(srt(1, ix))
+  ENDDO
+  DO ix = 1, ntau/2
+    WRITE(105,"(3(ES16.8, 1x), ES16.8)") ir_obj%tau(ix) + ir_obj%beta, -srt(1, ix), ABS(-srt(1, ix))
   ENDDO
   CLOSE(105)
   !
@@ -401,7 +409,7 @@ PROGRAM main
   !! Sigma(r, l): (nr, size)
   ALLOCATE(srl(nk, size_l))
   !
-  CALL fit_tau(ir_obj, 1, srt, srl)
+  CALL fit_tau(ir_obj, 2, srt, srl)
   !
   filename = "second_order_srl_r_0.txt"
   OPEN(106,FILE=filename,STATUS="replace",IOSTAT=ios)
@@ -476,7 +484,7 @@ PROGRAM main
   !    ENDDO
   !  ENDDO
   !ENDDO
-  CALL evaluate_matsubara(ir_obj, SPIR_STATISTICS_FERMIONIC, 1, skl, sigma_iv)
+  CALL evaluate_matsubara(ir_obj, SPIR_STATISTICS_FERMIONIC, 2, skl, sigma_iv)
   !
   filename = "second_order_skf_gamma.txt"
   OPEN(108,FILE=filename,STATUS="replace",IOSTAT=ios)
