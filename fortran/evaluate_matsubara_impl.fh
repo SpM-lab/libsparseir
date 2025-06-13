@@ -19,6 +19,19 @@ SUBROUTINE NAME(obj, statistics, target_dim, arr, res)
   IF (target_dim < 1 .or. target_dim > NDIM) THEN
     CALL errore('NAME', 'Target dimension is out of range', 1)
   ENDIF
+  IF (input_dims_c(target_dim) /= obj%size) THEN
+    CALL errore('NAME', 'Target dimension is not the same as the basis size', 1)
+  ENDIF
+  SELECT CASE (statistics)
+  CASE (SPIR_STATISTICS_FERMIONIC)
+    IF (output_dims_c(target_dim) /= obj%nfreq_f) THEN
+      CALL errore('NAME', 'Target dimension is not the same as the number of Matsubara frequencies', 1)
+    ENDIF
+  CASE (SPIR_STATISTICS_BOSONIC)
+    IF (output_dims_c(target_dim) /= obj%nfreq_b) THEN
+      CALL errore('NAME', 'Target dimension is not the same as the number of Matsubara frequencies', 1)
+    ENDIF
+  END SELECT
   IF (.NOT. check_output_dims(target_dim, input_dims_c, output_dims_c)) THEN
     CALL errore('NAME', &
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
@@ -44,7 +57,7 @@ SUBROUTINE NAME(obj, statistics, target_dim, arr, res)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
       ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
 #endif
-  RETURN
+  CASE DEFAULT
     CALL errore('NAME', 'Invalid statistics', 1)
     RETURN
   END SELECT

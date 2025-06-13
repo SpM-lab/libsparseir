@@ -49,7 +49,7 @@ MODULE sparseir_ext
     !! integer part of sampling Matsubara freqs (Fermion)
     INTEGER(KIND=8), ALLOCATABLE :: freq_b(:)
     !! integer part of sampling Matsubara freqs (Boson)
-    LOGICAL :: positive_only
+    LOGICAL :: positive_only = .false.
     !! if true, take the Matsubara frequencies
     !! only from the positive region
     !
@@ -376,6 +376,11 @@ MODULE sparseir_ext
     IF (status_c /= 0) THEN
        CALL errore('init_ir', 'Error getting number of poles', status_c)
     ENDIF
+    !
+    obj%positive_only = lpositive
+    obj%beta = beta
+    obj%wmax = wmax
+    obj%lambda = lambda
     !
     obj%basis_f_ptr = basis_f_ptr
     obj%basis_b_ptr = basis_b_ptr
