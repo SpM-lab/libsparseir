@@ -24,7 +24,6 @@ foreach(TEST ${TEST_FILES})
         Fortran_MODULE_DIRECTORY ${SPARSEIR_FORTRAN_MODDIR}
     )
 
-    # Add test
     add_test(NAME fortran_${TEST}
         COMMAND ${TEST}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

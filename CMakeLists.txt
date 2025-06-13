@@ -9,6 +9,9 @@ set(CMAKE_CXX_STANDARD 11)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+# Provides CMAKE_INSTALL_* directories
+include(GNUInstallDirs)
+
 # extract version information from header file
 if (NOT SPARSEIR_VERSION)
     include("VersionFromHeader")
@@ -30,6 +33,12 @@ project(
     VERSION "${SPARSEIR_VERSION}"
     DESCRIPTION "SparseIR library"
     )
+
+# Set installation directories
+set(SPARSEIR_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}"
+    CACHE PATH "directory into which to install sparseir include files" FORCE)
+set(SPARSEIR_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+    CACHE PATH "directory into which to install sparseir library files" FORCE)
 
 # Add Fortran language support if building Fortran bindings
 option(SPARSEIR_BUILD_FORTRAN "Build Fortran bindings" OFF)
@@ -97,7 +106,7 @@ FetchContent_Declare(XPrec
 # Extract the content but don't process it through add_subdirectory
 FetchContent_GetProperties(XPrec)
 if(NOT xprec_POPULATED)
-    FetchContent_MakeAvailable(XPrec)
+    FetchContent_Populate(XPrec)
     message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
 endif()
 
@@ -129,12 +138,12 @@ if(NOT MSVC)
     target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
 endif()
 
-target_include_directories(sparseir PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-    )
-target_include_directories(sparseir PRIVATE
-    $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
+target_include_directories(sparseir
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
 )
 set_target_properties(sparseir PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -192,13 +201,6 @@ endif()
 # -------------------------------------
 # Installation
 
-# Provides CMAKE_INSTALL_* directories
-include(GNUInstallDirs)
-set(SPARSEIR_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}"
-    CACHE PATH "directory into which to install sparseir include files")
-set(SPARSEIR_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}"
-    CACHE PATH "directory into which to install sparseir library files")
-
 # Install only the C API library and headers
 install(TARGETS sparseir
     EXPORT sparseirTargets
@@ -238,18 +240,18 @@ configure_package_config_file(
 )
 
 # Configure and install Fortran config files
-if(SPARSEIR_BUILD_FORTRAN)
-    configure_package_config_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/sparseir-fortran-config.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
-        INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
-    )
-
-    install(FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
-        DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
-    )
-endif()
+#if(SPARSEIR_BUILD_FORTRAN)
+    #configure_package_config_file(
+        #"${CMAKE_CURRENT_SOURCE_DIR}/cmake/sparseir-fortran-config.cmake.in"
+        #"${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
+        #INSTALL_DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+    #)
+#
+    #install(FILES
+        #"${CMAKE_CURRENT_BINARY_DIR}/sparseir-fortran-config.cmake"
+        #DESTINATION "${CMAKE_INSTALL_DATADIR}/cmake/SparseIR"
+    #)
+#endif()
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/SparseIRConfig.cmake"

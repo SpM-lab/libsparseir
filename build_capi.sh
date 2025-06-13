@@ -13,7 +13,7 @@ cd build
 # Configure with minimal options (only C-API)
 cmake .. \
   -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX:-$HOME/opt/libsparseir} \
-  -DSPARSEIR_BUILD_FORTRAN=OFF \
+  -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=OFF \
   -DBUILD_TESTING=OFF
 
