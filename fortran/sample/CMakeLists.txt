@@ -18,12 +18,9 @@ endif()
 option(BUILD_TESTING "Build tests" OFF)
 option(USE_SYSTEM_LIBSPARSEIR "Use system-installed libsparseir" ON)
 
-set(SPARSEIR_TARGET SparseIR::sparseir_fortran)
-
 # Setup libsparseir dependency
 if(USE_SYSTEM_LIBSPARSEIR)
     find_package(SparseIR REQUIRED)
-    get_target_property(SPARSEIR_PREFIX SparseIR::sparseir_fortran INTERFACE_INCLUDE_DIRECTORIES)
     list(GET SPARSEIR_PREFIX 0 SPARSEIR_PREFIX)
 else()
     # Fetch and build libsparseir from source
@@ -48,10 +45,8 @@ find_path(FFTW3_INCLUDE_DIR fftw3.f)
 add_executable(second_order_perturbation_fort second_order_perturbation_fort.f90)
 
 # Link with libsparseir
-target_link_libraries(second_order_perturbation_fort PRIVATE ${SPARSEIR_TARGET} ${FFTW3_LIB})
+target_link_libraries(second_order_perturbation_fort PRIVATE SparseIR::sparseir_fortran ${FFTW3_LIB})
 
 target_include_directories(second_order_perturbation_fort PRIVATE
-    $<TARGET_PROPERTY:${SPARSEIR_TARGET},INTERFACE_INCLUDE_DIRECTORIES>
-    ${SPARSEIR_PREFIX}
     ${FFTW3_INCLUDE_DIR}
 )
