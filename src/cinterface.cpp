@@ -1016,7 +1016,40 @@ int spir_basis_get_default_matsus(const spir_basis *b, bool positive_only, int64
     }
 }
 
-int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, int n_points, int64_t *points, int *n_points_returned)
+int spir_basis_get_n_default_matsus_ext(const spir_basis *b, bool positive_only, int L, int *num_points_returned)
+{
+    if (!b || !num_points_returned) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        DEBUG_LOG("Error: The basis is not an IR basis");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only);
+            *num_points_returned = points.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only);
+            *num_points_returned = points.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, int L, int64_t *points, int *n_points_returned)
 {
       if (!b || !points) {
         return SPIR_INVALID_ARGUMENT;
@@ -1035,13 +1068,13 @@ int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, i
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
-            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(n_points, positive_only);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only);
             *n_points_returned = matsubara_points.size();
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;
         } else {
             auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
-            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(n_points, positive_only);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only);
             *n_points_returned = matsubara_points.size();
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;

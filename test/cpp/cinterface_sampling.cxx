@@ -913,13 +913,14 @@ void test_matsubara_sampling_constructor()
         REQUIRE(smpl_points_positive_only[i] == smpl_points_positive_only_org[i]);
     }
 
-    int n_matsubara_points_positive_only_false;
-    status = spir_basis_get_n_default_matsus(basis, false, &n_matsubara_points_positive_only_false);
+    int n_matsubara_points_returned_ext;
+    int L = n_points_org;
+
+    status = spir_basis_get_n_default_matsus_ext(basis, false, L, &n_matsubara_points_returned_ext);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
-    int n_matsubara_points_positive_only_false_ext = n_matsubara_points_positive_only_false;
-    int n_matsubara_points_returned;
-    status = spir_basis_get_default_matsus_ext(basis, false, n_matsubara_points_positive_only_false_ext, smpl_points_org.data(), &n_matsubara_points_returned);
+    int64_t *smpl_points_ext = (int64_t *)malloc(n_matsubara_points_returned_ext * sizeof(int64_t));
+    status = spir_basis_get_default_matsus_ext(basis, false, L, smpl_points_ext, &n_matsubara_points_returned_ext);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
     // Clean up
