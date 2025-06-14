@@ -50,10 +50,10 @@ public:
     virtual Eigen::MatrixXd operator()(const Eigen::VectorXd &xs) const = 0;
     virtual std::pair<double, double> get_domain() const = 0;
     virtual bool is_continuous_funcs() const override { return true; }
-    
+
     // Returns the number of roots of the functions
     virtual int nroots() const = 0;
-    
+
     // Returns the roots of the functions in non-ascending order
     virtual Eigen::VectorXd roots() const = 0;
 };
@@ -137,13 +137,13 @@ public:
     virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t>& indices) const override {
         // First get the sliced implementation
         auto sliced_impl = impl->slice(indices);
-        
+
         // Convert the sliced implementation to the correct type
         auto converted_impl = _safe_dynamic_pointer_cast<ImplType>(sliced_impl);
         if (!converted_impl) {
             throw std::runtime_error("Failed to convert sliced implementation to correct type");
         }
-        
+
         // Create new adapter with the converted implementation
         return std::make_shared<OmegaFunctionsAdaptor<ImplType>>(converted_impl);
     }
@@ -286,6 +286,20 @@ public:
         int L = size();
 
         std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
+        std::vector<int64_t> points(matsubara_points.size());
+        std::transform(
+            matsubara_points.begin(), matsubara_points.end(), points.begin(),
+        [](const sparseir::MatsubaraFreq<S> &freq) {
+            return static_cast<int64_t>(freq.get_n());
+        });
+        return points;
+    }
+
+    std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only) const
+    {
+        bool fence = false;
+
+        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, fence, positive_only);
         std::vector<int64_t> points(matsubara_points.size());
         std::transform(
             matsubara_points.begin(), matsubara_points.end(), points.begin(),

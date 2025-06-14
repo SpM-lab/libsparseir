@@ -664,6 +664,47 @@ int spir_basis_get_default_matsus(const spir_basis *b, bool positive_only,
                                   int64_t *points);
 
 /**
+ * @brief Gets the number of default Matsubara sampling points for an IR basis.
+ *
+ * This function returns the number of default sampling points in Matsubara
+ * frequencies (iωn) that are automatically chosen for optimal conditioning of
+ * the sampling matrix. These points are the extrema of the highest-order basis
+ * function in Matsubara frequencies.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param positive_only If true, only positive frequencies are used
+ * @param L Number of requested sampling points.
+ * @param num_points_returned Pointer to store the number of sampling points returned.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note The default sampling points are chosen to provide near-optimal
+ *       conditioning for the given basis size
+ * @see spir_basis_get_default_matsus
+ */
+int spir_basis_get_n_default_matsus_ext(const spir_basis *b, bool positive_only, int L, int *num_points_returned);
+
+/**
+ * @brief Gets the default Matsubara sampling points for an IR basis.
+ *
+ * This function fills the provided array with the default sampling points in
+ * Matsubara frequencies (iωn) that are automatically chosen for optimal
+ * conditioning of the sampling matrix. These points are the extrema of the
+ * highest-order basis function in Matsubara frequencies.
+ *
+ * @param b Pointer to a finite temperature basis object (must be an IR basis)
+ * @param positive_only If true, only positive frequencies are used
+ * @param n_points Number of requested sampling points.
+ * @param points Pre-allocated array to store the sampling points. The size of the array must be at least n_points.
+ * @param n_points_returned Number of sampling points returned.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ */
+int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, int n_points, int64_t *points, int *n_points_returned);
+
+/**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.
  *
  * This function implements a variant of the discrete Lehmann representation
