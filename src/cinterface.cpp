@@ -25,10 +25,10 @@ spir_kernel* spir_logistic_kernel_new(double lambda, int* status)
     try {
         auto kernel_ptr = std::make_shared<sparseir::LogisticKernel>(lambda);
         std::shared_ptr<sparseir::AbstractKernel> abstract_kernel = _safe_static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
-        
+
         // Check if dynamic_cast works at this point
         auto check_logistic = _safe_dynamic_pointer_cast<sparseir::LogisticKernel>(abstract_kernel);
-        
+
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_kernel(abstract_kernel);
     } catch (const std::exception &e) {
@@ -118,9 +118,9 @@ spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int* 
             *status = SPIR_GET_IMPL_FAILED;
             return nullptr;
         }
-        
+
         std::shared_ptr<sparseir::SVEResult> sve_result;
-        
+
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
             sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(*logistic, epsilon));
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
@@ -235,7 +235,7 @@ spir_sampling* spir_tau_sampling_new_with_matrix(int order, int statistics, int 
         DEBUG_LOG("Error: Invalid statistics");
         return nullptr;
     }
-    
+
     // check order
     if (order != SPIR_ORDER_ROW_MAJOR && order != SPIR_ORDER_COLUMN_MAJOR) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -334,14 +334,14 @@ spir_sampling* spir_matsu_sampling_new_with_matrix(
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
-    
+
     // check statistics
     if (statistics != SPIR_STATISTICS_FERMIONIC && statistics != SPIR_STATISTICS_BOSONIC) {
         *status = SPIR_INVALID_ARGUMENT;
         DEBUG_LOG("Error: Invalid statistics");
         return nullptr;
     }
-    
+
     // check order
     if (order != SPIR_ORDER_ROW_MAJOR && order != SPIR_ORDER_COLUMN_MAJOR) {
         *status = SPIR_INVALID_ARGUMENT;
@@ -476,7 +476,7 @@ int spir_dlr2ir_dd(const spir_basis *dlr, int order, int ndim,
     auto impl = get_impl_basis(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    
+
     if (!is_dlr_basis(dlr)) {
         DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
@@ -523,7 +523,7 @@ int spir_ir2dlr_dd(const spir_basis *dlr, int order,
     auto impl = get_impl_basis(dlr);
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
-    
+
     if (!is_dlr_basis(dlr)) {
         DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
@@ -545,7 +545,7 @@ int spir_ir2dlr_zz(const spir_basis *dlr, int order,
     auto impl = get_impl_basis(dlr);
     if  (!impl)
         return SPIR_GET_IMPL_FAILED;
-    
+
     if (!is_dlr_basis(dlr)) {
         DEBUG_LOG("Error: The basis is not a DLR basis");
         return SPIR_INVALID_ARGUMENT;
@@ -1016,6 +1016,41 @@ int spir_basis_get_default_matsus(const spir_basis *b, bool positive_only, int64
     }
 }
 
+int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, int n_points, int64_t *points, int *n_points_returned)
+{
+      if (!b || !points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        DEBUG_LOG("Error: The basis is not an IR basis");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(n_points, positive_only);
+            *n_points_returned = matsubara_points.size();
+            std::copy(matsubara_points.begin(), matsubara_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(n_points, positive_only);
+            *n_points_returned = matsubara_points.size();
+            std::copy(matsubara_points.begin(), matsubara_points.end(), points);
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
 int spir_basis_get_stats(const spir_basis *b,
                                   int *statistics)
 {
@@ -1093,7 +1128,7 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
         // result is a matrix of size n_funcs x num_points in column-major order
         Eigen::MatrixXd result = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl)->operator()(Eigen::Map<const Eigen::VectorXd>(xs, num_points));
 
-        // out is a matrix of size num_points x n_funcs 
+        // out is a matrix of size num_points x n_funcs
         if (order == SPIR_ORDER_ROW_MAJOR) {
             // Copy the results to the output array
             for (int i = 0; i < num_points; ++i) {
@@ -1475,7 +1510,7 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots)
 
         // Get the roots from the implementation
         Eigen::VectorXd roots_vec = continuous_impl->roots();
-        
+
         // Copy the roots to the output array
         std::memcpy(roots, roots_vec.data(), roots_vec.size() * sizeof(double));
 
