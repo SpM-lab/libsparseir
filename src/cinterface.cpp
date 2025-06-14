@@ -900,6 +900,56 @@ int spir_basis_get_default_taus(const spir_basis *b, double *points)
     }
 }
 
+int spir_basis_get_default_taus_ext(
+    const spir_basis *b, int n_points, double *points, int *n_points_returned)
+{
+    if (!b || !points) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    if (!is_ir_basis(b)) {
+        DEBUG_LOG("Error: The basis is not an IR basis");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    double beta = impl->get_beta();
+
+    try {
+        Eigen::VectorXd tau_points;
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            tau_points = sparseir::default_sampling_points(
+                *(ir_basis->get_impl()->sve_result->u), n_points
+            );
+            *n_points_returned = tau_points.size();
+        } else {
+            auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            tau_points = sparseir::default_sampling_points(
+                *(ir_basis->get_impl()->sve_result->u), n_points
+            );
+            *n_points_returned = tau_points.size();
+        }
+
+        // Copy the requested number of points
+        // rescale the points to the original domain
+        for (int i = 0; i < *n_points_returned; ++i) {
+            tau_points(i) = (tau_points(i) + 1) / 2 * beta;
+            if (tau_points(i) > 0.5 * beta) {
+                tau_points(i) -= beta;
+            }
+        }
+        std::copy(tau_points.data(), tau_points.data() + *n_points_returned, points);
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
 int spir_basis_get_n_default_matsus(const spir_basis *b, bool positive_only, int *num_points)
 {
     if (!b || !num_points) {
