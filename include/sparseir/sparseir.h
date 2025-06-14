@@ -598,6 +598,21 @@ int spir_basis_get_n_default_ws(const spir_basis *b, int *num_points);
  */
 int spir_basis_get_default_ws(const spir_basis *b, double *points);
 
+
+/***
+ * @brief Gets the default tau sampling points for ann IR basis.
+ *
+ * This function returns default tau sampling points for an IR basis object.
+ *
+ * @param b Pointer to the basis object
+ * @param n_points Number of requested sampling points.
+ * @param points Pre-allocated array to store the sampling points. The size of the array must be at least n_points.
+ * @param n_points_returned Number of sampling points returned.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ */
+int spir_basis_get_default_taus_ext(const spir_basis *b, int n_points, double *points, int *n_points_returned);
+
 /**
  * @brief Gets the number of default Matsubara sampling points for an IR basis.
  *

@@ -82,6 +82,18 @@ void test_tau_sampling()
     status = spir_basis_get_default_taus(basis, tau_points_org);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
 
+    int n_tau_points_ext = n_tau_points + 1;
+    double *tau_points_ext = (double *)malloc(n_tau_points_ext * sizeof(double));
+    int n_tau_points_returned;
+    status = spir_basis_get_default_taus_ext(
+        basis, n_tau_points_ext, tau_points_ext, &n_tau_points_returned);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_tau_points_returned == n_tau_points_ext);
+    for (int i = 0; i < n_tau_points_returned; i++) {
+        REQUIRE(tau_points_ext[i] >= -0.5 * beta);
+        REQUIRE(tau_points_ext[i] <=  0.5 * beta);
+    }
+
     int sampling_status;
     spir_sampling *sampling = spir_tau_sampling_new(basis, n_tau_points, tau_points_org, &sampling_status);
     REQUIRE(sampling_status == SPIR_COMPUTATION_SUCCESS);
