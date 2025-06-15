@@ -19,9 +19,26 @@ FFLAGS_PIC = $(FFLAGS) -fPIC
 # Library settings
 LIB_NAME = libsparseir
 STATIC_LIB = $(LIB_NAME).a
-SHARED_LIB = $(LIB_NAME).so
+
+# Determine shared library extension based on OS
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    SHARED_EXT = .dylib
+else ifeq ($(UNAME_S),Linux)
+    SHARED_EXT = .so
+else ifneq (,$(findstring CYGWIN,$(UNAME_S)))
+    SHARED_EXT = .dll
+else ifneq (,$(findstring MINGW,$(UNAME_S)))
+    SHARED_EXT = .dll
+else ifneq (,$(findstring MSYS,$(UNAME_S)))
+    SHARED_EXT = .dll
+else
+    SHARED_EXT = .so
+endif
+
+SHARED_LIB = $(LIB_NAME)$(SHARED_EXT)
 FORTRAN_LIB = $(LIB_NAME)_fortran.a
-FORTRAN_SHARED_LIB = $(LIB_NAME)_fortran.so
+FORTRAN_SHARED_LIB = $(LIB_NAME)_fortran$(SHARED_EXT)
 
 # Source files
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
