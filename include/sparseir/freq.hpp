@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "sparseir/sparseir-fwd.hpp"
 #include "sparseir/utils.hpp"
 
 namespace sparseir {
