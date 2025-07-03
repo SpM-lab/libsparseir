@@ -558,7 +558,7 @@ MODULE sparseir_ext
     is_valid = .true.
   END FUNCTION check_output_dims
 !
-#define NAME evaluate_tau_zz_1d
+#define FNAME evaluate_tau_zz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
@@ -566,7 +566,7 @@ MODULE sparseir_ext
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define RESHAPE_RES2 CMPLX(res_cz, KIND=DP)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -574,7 +574,7 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME evaluate_tau_zz_2d
+#define FNAME evaluate_tau_zz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
@@ -582,47 +582,47 @@ MODULE sparseir_ext
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define RESHAPE_RES2 RESHAPE(CMPLX(res_cz, KIND=DP), shape(res))
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zz_3d
+#define FNAME evaluate_tau_zz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zz_4d
+#define FNAME evaluate_tau_zz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zz_5d
+#define FNAME evaluate_tau_zz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zz_6d
+#define FNAME evaluate_tau_zz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zz_7d
+#define FNAME evaluate_tau_zz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -630,343 +630,343 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME evaluate_tau_dd_1d
+#define FNAME evaluate_tau_dd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define DD
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DD
 !
-#define NAME evaluate_tau_dd_2d
+#define FNAME evaluate_tau_dd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define DD
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dd_3d
+#define FNAME evaluate_tau_dd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dd_4d
+#define FNAME evaluate_tau_dd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dd_5d
+#define FNAME evaluate_tau_dd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dd_6d
+#define FNAME evaluate_tau_dd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dd_7d
+#define FNAME evaluate_tau_dd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DD
 !
-#define NAME evaluate_tau_dz_1d
+#define FNAME evaluate_tau_dz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define DZ
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME evaluate_tau_dz_2d
+#define FNAME evaluate_tau_dz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define DZ
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dz_3d
+#define FNAME evaluate_tau_dz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dz_4d
+#define FNAME evaluate_tau_dz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dz_5d
+#define FNAME evaluate_tau_dz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dz_6d
+#define FNAME evaluate_tau_dz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_dz_7d
+#define FNAME evaluate_tau_dz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME evaluate_tau_zd_1d
+#define FNAME evaluate_tau_zd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define ZD
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME evaluate_tau_zd_2d
+#define FNAME evaluate_tau_zd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define ZD
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zd_3d
+#define FNAME evaluate_tau_zd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zd_4d
+#define FNAME evaluate_tau_zd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zd_5d
+#define FNAME evaluate_tau_zd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zd_6d
+#define FNAME evaluate_tau_zd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_tau_zd_7d
+#define FNAME evaluate_tau_zd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "evaluate_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME evaluate_matsubara_zz_1d
+#define FNAME evaluate_matsubara_zz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT CMPLX(arr, kind=c_double)
 #define RESHAPE_RES CMPLX(res_c, KIND=DP)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 !
-#define NAME evaluate_matsubara_zz_2d
+#define FNAME evaluate_matsubara_zz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(CMPLX(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, KIND=DP), shape(res))
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_zz_3d
+#define FNAME evaluate_matsubara_zz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_zz_4d
+#define FNAME evaluate_matsubara_zz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_zz_5d
+#define FNAME evaluate_matsubara_zz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_zz_6d
+#define FNAME evaluate_matsubara_zz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_zz_7d
+#define FNAME evaluate_matsubara_zz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 !
-#define NAME evaluate_matsubara_dz_1d
+#define FNAME evaluate_matsubara_dz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES CMPLX(res_c, KIND=DP)
 #define DZ
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME evaluate_matsubara_dz_2d
+#define FNAME evaluate_matsubara_dz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, KIND=DP), shape(res))
 #define DZ
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_dz_3d
+#define FNAME evaluate_matsubara_dz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_dz_4d
+#define FNAME evaluate_matsubara_dz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_dz_5d
+#define FNAME evaluate_matsubara_dz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_dz_6d
+#define FNAME evaluate_matsubara_dz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME evaluate_matsubara_dz_7d
+#define FNAME evaluate_matsubara_dz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "evaluate_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME fit_tau_zz_1d
+#define FNAME fit_tau_zz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
@@ -974,7 +974,7 @@ MODULE sparseir_ext
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define RESHAPE_RES2 CMPLX(res_cz, KIND=DP)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -982,7 +982,7 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME fit_tau_zz_2d
+#define FNAME fit_tau_zz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
@@ -990,47 +990,47 @@ MODULE sparseir_ext
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define RESHAPE_RES2 RESHAPE(CMPLX(res_cz, KIND=DP), shape(res))
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zz_3d
+#define FNAME fit_tau_zz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zz_4d
+#define FNAME fit_tau_zz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zz_5d
+#define FNAME fit_tau_zz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zz_6d 
+#define FNAME fit_tau_zz_6d 
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zz_7d
+#define FNAME fit_tau_zz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -1038,343 +1038,343 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME fit_tau_dz_1d
+#define FNAME fit_tau_dz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define DZ
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME fit_tau_dz_2d
+#define FNAME fit_tau_dz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define DZ
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dz_3d
+#define FNAME fit_tau_dz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dz_4d
+#define FNAME fit_tau_dz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dz_5d
+#define FNAME fit_tau_dz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dz_6d
+#define FNAME fit_tau_dz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dz_7d
+#define FNAME fit_tau_dz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME fit_tau_zd_1d
+#define FNAME fit_tau_zd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define ZD
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME fit_tau_zd_2d
+#define FNAME fit_tau_zd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define ZD
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zd_3d
+#define FNAME fit_tau_zd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zd_4d
+#define FNAME fit_tau_zd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zd_5d
+#define FNAME fit_tau_zd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zd_6d
+#define FNAME fit_tau_zd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zd_7d
+#define FNAME fit_tau_zd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME fit_tau_dd_1d
+#define FNAME fit_tau_dd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define DD
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DD
 !
-#define NAME fit_tau_dd_2d
+#define FNAME fit_tau_dd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define DD
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dd_3d
+#define FNAME fit_tau_dd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dd_4d
+#define FNAME fit_tau_dd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dd_5d
+#define FNAME fit_tau_dd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dd_6d
+#define FNAME fit_tau_dd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_dd_7d
+#define FNAME fit_tau_dd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DD
 !
-#define NAME fit_matsubara_zz_1d
+#define FNAME fit_matsubara_zz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT CMPLX(arr, kind=c_double)
 #define RESHAPE_RES CMPLX(res_c, KIND=DP)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 !
-#define NAME fit_matsubara_zz_2d
+#define FNAME fit_matsubara_zz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(CMPLX(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, KIND=DP), shape(res))
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zz_3d
+#define FNAME fit_matsubara_zz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zz_4d
+#define FNAME fit_matsubara_zz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zz_5d
+#define FNAME fit_matsubara_zz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zz_6d
+#define FNAME fit_matsubara_zz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zz_7d
+#define FNAME fit_matsubara_zz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 !
-#define NAME fit_matsubara_zd_1d
+#define FNAME fit_matsubara_zd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT CMPLX(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define ZD
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME fit_matsubara_zd_2d
+#define FNAME fit_matsubara_zd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(CMPLX(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define ZD
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zd_3d
+#define FNAME fit_matsubara_zd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zd_4d
+#define FNAME fit_matsubara_zd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zd_5d
+#define FNAME fit_matsubara_zd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zd_6d
+#define FNAME fit_matsubara_zd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_matsubara_zd_7d
+#define FNAME fit_matsubara_zd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "fit_matsubara_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME ir2dlr_zz_1d
+#define FNAME ir2dlr_zz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
@@ -1382,7 +1382,7 @@ MODULE sparseir_ext
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define RESHAPE_RES2 CMPLX(res_cz, KIND=DP)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -1390,7 +1390,7 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME ir2dlr_zz_2d
+#define FNAME ir2dlr_zz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
@@ -1398,47 +1398,47 @@ MODULE sparseir_ext
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define RESHAPE_RES2 RESHAPE(CMPLX(res_cz, KIND=DP), shape(res))
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zz_3d
+#define FNAME ir2dlr_zz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zz_4d
+#define FNAME ir2dlr_zz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zz_5d
+#define FNAME ir2dlr_zz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zz_6d 
+#define FNAME ir2dlr_zz_6d 
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zz_7d
+#define FNAME ir2dlr_zz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -1446,211 +1446,211 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME ir2dlr_dz_1d
+#define FNAME ir2dlr_dz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define DZ
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME ir2dlr_dz_2d
+#define FNAME ir2dlr_dz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define DZ
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dz_3d
+#define FNAME ir2dlr_dz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dz_4d
+#define FNAME ir2dlr_dz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dz_5d
+#define FNAME ir2dlr_dz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dz_6d
+#define FNAME ir2dlr_dz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dz_7d
+#define FNAME ir2dlr_dz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME ir2dlr_zd_1d
+#define FNAME ir2dlr_zd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define ZD
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME ir2dlr_zd_2d
+#define FNAME ir2dlr_zd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define ZD
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zd_3d
+#define FNAME ir2dlr_zd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zd_4d
+#define FNAME ir2dlr_zd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zd_5d
+#define FNAME ir2dlr_zd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zd_6d
+#define FNAME ir2dlr_zd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zd_7d
+#define FNAME ir2dlr_zd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME ir2dlr_dd_1d
+#define FNAME ir2dlr_dd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define DD
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DD
 !
-#define NAME ir2dlr_dd_2d
+#define FNAME ir2dlr_dd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define DD
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dd_3d
+#define FNAME ir2dlr_dd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dd_4d
+#define FNAME ir2dlr_dd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dd_5d
+#define FNAME ir2dlr_dd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dd_6d
+#define FNAME ir2dlr_dd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_dd_7d
+#define FNAME ir2dlr_dd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DD
 !
-#define NAME dlr2ir_zz_1d
+#define FNAME dlr2ir_zz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
@@ -1658,7 +1658,7 @@ MODULE sparseir_ext
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define RESHAPE_RES2 CMPLX(res_cz, KIND=DP)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -1666,7 +1666,7 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME dlr2ir_zz_2d
+#define FNAME dlr2ir_zz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
@@ -1674,47 +1674,47 @@ MODULE sparseir_ext
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define RESHAPE_RES2 RESHAPE(CMPLX(res_cz, KIND=DP), shape(res))
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zz_3d
+#define FNAME dlr2ir_zz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zz_4d
+#define FNAME dlr2ir_zz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zz_5d
+#define FNAME dlr2ir_zz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zz_6d 
+#define FNAME dlr2ir_zz_6d 
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zz_7d
+#define FNAME dlr2ir_zz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
@@ -1722,204 +1722,204 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef RESHAPE_RES2
 !
-#define NAME dlr2ir_dz_1d
+#define FNAME dlr2ir_dz_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
 #define DZ
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME dlr2ir_dz_2d
+#define FNAME dlr2ir_dz_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
 #define DZ
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dz_3d
+#define FNAME dlr2ir_dz_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dz_4d
+#define FNAME dlr2ir_dz_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dz_5d
+#define FNAME dlr2ir_dz_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dz_6d
+#define FNAME dlr2ir_dz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dz_7d
+#define FNAME dlr2ir_dz_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DZ
 !
-#define NAME dlr2ir_zd_1d
+#define FNAME dlr2ir_zd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define ZD
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME dlr2ir_zd_2d
+#define FNAME dlr2ir_zd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define ZD
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zd_3d
+#define FNAME dlr2ir_zd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zd_4d
+#define FNAME dlr2ir_zd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zd_5d
+#define FNAME dlr2ir_zd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zd_6d
+#define FNAME dlr2ir_zd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zd_7d
+#define FNAME dlr2ir_zd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef ZD
 !
-#define NAME dlr2ir_dd_1d
+#define FNAME dlr2ir_dd_1d
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT REAL(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define DD
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT
 #undef RESHAPE_RES
 #undef DD
 !
-#define NAME dlr2ir_dd_2d
+#define FNAME dlr2ir_dd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define DD
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dd_3d
+#define FNAME dlr2ir_dd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dd_4d
+#define FNAME dlr2ir_dd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dd_5d
+#define FNAME dlr2ir_dd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dd_6d
+#define FNAME dlr2ir_dd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_dd_7d
+#define FNAME dlr2ir_dd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
-#undef NAME
+#undef FNAME
 #undef NDIM
 #undef SHAPE_
 #undef FLAT

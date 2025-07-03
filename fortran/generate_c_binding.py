@@ -115,13 +115,12 @@ subroutine {fortran_func_name}({arglist}) &
 end subroutine
 """.strip()
     else:
-        result_decl = f"  {result_type.split(',')[0]} :: {fortran_func_name}"
+        result_type_name = result_type.split(',')[0]
         c_binding = f"""
-function {fortran_func_name}({arglist}) &
-    bind(c, name="{func_name}") result({fortran_func_name})
+{result_type_name} function {fortran_func_name}({arglist}) &
+    bind(c, name="{func_name}")
   use iso_c_binding
 {decl_lines}
-{result_decl}
 end function
 """.strip()
 
