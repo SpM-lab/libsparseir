@@ -40,8 +40,9 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
         REQUIRE(sve_size > 0);
 
         // Create a fermionic finite temperature basis with pre-computed SVE result
+        int max_size = -1;
         basis = spir_basis_new(
-            statistics, beta, omega_max, kernel, sve, &status_);
+            statistics, beta, omega_max, kernel, sve, max_size, &status_);
         if (status_ != SPIR_COMPUTATION_SUCCESS || basis == nullptr) {
             *status = status_;
             spir_sve_result_release(sve);

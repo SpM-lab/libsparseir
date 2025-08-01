@@ -140,43 +140,48 @@ MODULE sparseir_ext
   FUNCTION create_sve_result(lambda, eps, k_ptr) RESULT(sve_ptr)
     REAL(KIND=DP), INTENT(IN) :: lambda
     REAL(KIND=DP), INTENT(IN) :: eps
-  
+
     REAL(KIND=DP), TARGET :: lambda_c, eps_c
     INTEGER(KIND=c_int), TARGET :: status_c
-  
+
     TYPE(c_ptr), INTENT(IN) :: k_ptr
     TYPE(c_ptr) :: sve_ptr
-  
+
     lambda_c = lambda
     eps_c = eps
-  
+
     sve_ptr = c_spir_sve_result_new(k_ptr, eps_c, c_loc(status_c))
     IF (status_c /= 0) THEN
        CALL errore('create_sve_result', 'Error creating SVE result', status_c)
     ENDIF
   END FUNCTION create_sve_result
-  
+
   FUNCTION create_basis(statistics, beta, wmax, k_ptr, sve_ptr) RESULT(basis_ptr)
     INTEGER, INTENT(IN) :: statistics
     REAL(KIND=DP), INTENT(IN) :: beta
     REAL(KIND=DP), INTENT(IN) :: wmax
     TYPE(c_ptr), INTENT(IN) :: k_ptr, sve_ptr
-  
-    INTEGER(KIND=c_int), TARGET :: status_c
+
+    ! Function result type declaration
     TYPE(c_ptr) :: basis_ptr
+
+    ! Local variable declarations
+    INTEGER(KIND=c_int), TARGET :: max_size
+    INTEGER(KIND=c_int), TARGET :: status_c
     INTEGER(KIND=c_int) :: statistics_c
     REAL(KIND=DP) :: beta_c, wmax_c
-    !
+
+    ! Executable statements
+    max_size = -1
     statistics_c = statistics
     beta_c = beta
     wmax_c = wmax
-    !
-    basis_ptr = c_spir_basis_new(statistics_c, beta_c, wmax_c, k_ptr, sve_ptr, c_loc(status_c))
+    basis_ptr = c_spir_basis_new(statistics_c, beta_c, wmax_c, k_ptr, sve_ptr, c_loc(max_size), c_loc(status_c))
     IF (status_c /= 0) THEN
        CALL errore('create_basis', 'Error creating basis', status_c)
     ENDIF
   END FUNCTION create_basis
-  
+
   FUNCTION get_basis_size(basis_ptr) RESULT(size)
     TYPE(c_ptr), INTENT(IN) :: basis_ptr
     INTEGER(KIND=c_int) :: size
@@ -189,7 +194,7 @@ MODULE sparseir_ext
     ENDIF
     size = size_c
   END FUNCTION get_basis_size
-  
+
   FUNCTION basis_get_svals(basis_ptr) RESULT(svals)
     TYPE(c_ptr), INTENT(IN) :: basis_ptr
     REAL(KIND=DP), ALLOCATABLE :: svals(:)
@@ -404,7 +409,7 @@ MODULE sparseir_ext
     obj%nomega = size(obj%omega)
     obj%eps = eps
     !
-  END SUBROUTINE init_ir  
+  END SUBROUTINE init_ir
   !
   SUBROUTINE finalize_ir(obj)
     !-----------------------------------------------------------------------
@@ -463,7 +468,7 @@ MODULE sparseir_ext
   SUBROUTINE errore( calling_routine, message, ierr )
   !----------------------------------------------------------------------------
   !
-  ! ... This is a simple routine which writes an error message to output: 
+  ! ... This is a simple routine which writes an error message to output:
   ! ... if ierr <= 0 it does nothing,
   ! ... if ierr  > 0 it stops.
   !
@@ -504,7 +509,7 @@ MODULE sparseir_ext
   RETURN
   !
   END SUBROUTINE errore
- 
+
   FUNCTION eval_u_tau(obj, tau) RESULT(res)
     TYPE(IR), INTENT(IN) :: obj
     REAL(KIND=DP), INTENT(IN) :: tau
@@ -531,7 +536,7 @@ MODULE sparseir_ext
     DEALLOCATE(res_c)
     CALL c_spir_funcs_release(u_tau_ptr)
   END FUNCTION eval_u_tau
-  
+
   FUNCTION check_output_dims(target_dim, input_dims, output_dims) RESULT(is_valid)
     INTEGER, INTENT(IN) :: target_dim
     INTEGER(KIND=c_int), INTENT(IN) :: input_dims(:)
@@ -1018,7 +1023,7 @@ MODULE sparseir_ext
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME fit_tau_zz_6d 
+#define NAME fit_tau_zz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "fit_tau_impl.fh"
@@ -1426,7 +1431,7 @@ MODULE sparseir_ext
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME ir2dlr_zz_6d 
+#define NAME ir2dlr_zz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "ir2dlr_impl.fh"
@@ -1702,7 +1707,7 @@ MODULE sparseir_ext
 #undef NDIM
 #undef SHAPE_
 !
-#define NAME dlr2ir_zz_6d 
+#define NAME dlr2ir_zz_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
 #include "dlr2ir_impl.fh"
@@ -1926,4 +1931,4 @@ MODULE sparseir_ext
 #undef RESHAPE_RES
 #undef DD
 !
-END MODULE sparseir_ext 
+END MODULE sparseir_ext

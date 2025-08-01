@@ -225,7 +225,7 @@ function c_spir_funcs_get_roots(funcs, roots) &
   integer(c_int) :: c_spir_funcs_get_roots
 end function
 
-function c_spir_basis_new(statistics, beta, omega_max, k, sve, status) &
+function c_spir_basis_new(statistics, beta, omega_max, k, sve, max_size, status) &
     bind(c, name="spir_basis_new") result(c_spir_basis_new)
   use iso_c_binding
   integer(c_int), value :: statistics
@@ -233,6 +233,7 @@ function c_spir_basis_new(statistics, beta, omega_max, k, sve, status) &
   real(c_double), value :: omega_max
   type(c_ptr), value :: k
   type(c_ptr), value :: sve
+  type(c_ptr), value :: max_size
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_basis_new
 end function

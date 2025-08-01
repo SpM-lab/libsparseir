@@ -40,7 +40,7 @@ contains
       type(c_ptr) :: sve_ptr
       type(c_ptr) :: basis_ptr, dlr_ptr
       type(c_ptr) :: tau_sampling_ptr, matsu_sampling_ptr
-      integer(c_int), target :: basis_size, sve_size
+      integer(c_int), target :: basis_size, sve_size, max_size
       real(c_double), allocatable, target :: taus(:)
       integer(c_int64_t), allocatable, target :: matsus(:) ! Use int64_t for Matsubara indices
       real(c_double), allocatable, target :: poles(:)
@@ -102,7 +102,8 @@ contains
 
       ! Create a finite temperature basis
       print *, "Creating finite temperature basis"
-      basis_ptr = c_spir_basis_new(statistics, beta, omega_max, k_ptr, sve_ptr, c_loc(status))
+      max_size = -1  ! Use default max size
+      basis_ptr = c_spir_basis_new(statistics, beta, omega_max, k_ptr, sve_ptr, c_loc(max_size), c_loc(status))
       if (status /= 0) then
          print *, "Error creating finite temperature basis"
          stop

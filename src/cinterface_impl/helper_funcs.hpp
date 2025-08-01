@@ -408,7 +408,7 @@ spir_basis *_spir_dlr_new_with_poles(const spir_basis *b,
     auto impl = get_impl_basis(b);
     if (!impl)
         return nullptr;
-    
+
     if(!is_ir_basis(b)) {
         DEBUG_LOG("Error: The basis is not an IR basis");
         return nullptr;
@@ -491,7 +491,7 @@ int _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
 template <typename K>
 spir_basis* _spir_basis_new(
     int statistics, double beta, double omega_max,
-    const K& kernel, const spir_sve_result *sve)
+    const K& kernel, const spir_sve_result *sve, int max_size)
 {
     try {
         auto sve_impl = get_impl_sve_result(sve);
@@ -501,14 +501,14 @@ spir_basis* _spir_basis_new(
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Fermionic>;
             auto impl = std::make_shared<FiniteTempBasisType>(
-                beta, omega_max, kernel, *sve_impl);
+                beta, omega_max, kernel, *sve_impl, max_size);
             return create_basis(
                 std::make_shared<_IRBasis<sparseir::Fermionic>>(impl));
         } else {
             using FiniteTempBasisType =
                 sparseir::FiniteTempBasis<sparseir::Bosonic>;
             auto impl = std::make_shared<FiniteTempBasisType>(
-                beta, omega_max, kernel, *sve_impl);
+                beta, omega_max, kernel, *sve_impl, max_size);
             return create_basis(
                 std::make_shared<_IRBasis<sparseir::Bosonic>>(impl));
         }

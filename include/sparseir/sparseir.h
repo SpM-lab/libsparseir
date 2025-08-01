@@ -379,6 +379,7 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
  * @param k Pointer to the kernel object used for the basis construction
  * @param sve Pointer to a pre-computed SVE result for the kernel
+ * @param max_size Maximum number of basis functions to include. If -1, all
  * @param status Pointer to store the status code
  * @return Pointer to the newly created basis object, or NULL if creation fails
  *
@@ -389,6 +390,7 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
  */
 spir_basis *spir_basis_new(int statistics, double beta, double omega_max,
                            const spir_kernel *k, const spir_sve_result *sve,
+                           int max_size,
                            int *status);
 
 /**

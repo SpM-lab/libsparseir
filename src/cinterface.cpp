@@ -145,7 +145,7 @@ spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int* 
 
 spir_basis* spir_basis_new(
     int statistics, double beta, double omega_max,
-    const spir_kernel *k, const spir_sve_result *sve, int* status)
+    const spir_kernel *k, const spir_sve_result *sve, int max_size, int* status)
 {
     try {
         // Get the kernel implementation
@@ -165,9 +165,9 @@ spir_basis* spir_basis_new(
         // switch on kernel type
         spir_basis* result = nullptr;
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
-            result = _spir_basis_new(statistics, beta, omega_max, *logistic, sve);
+            result = _spir_basis_new(statistics, beta, omega_max, *logistic, sve, max_size);
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
-            result = _spir_basis_new(statistics, beta, omega_max, *bose, sve);
+            result = _spir_basis_new(statistics, beta, omega_max, *bose, sve, max_size);
         } else {
             DEBUG_LOG("Unknown kernel type");
             *status = SPIR_INVALID_ARGUMENT;
