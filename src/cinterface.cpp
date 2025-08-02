@@ -110,7 +110,15 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
     }
 }
 
-spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int* status)
+spir_sve_result* spir_sve_result_new(
+    const spir_kernel *k,
+    double epsilon,
+    double cutoff,
+    int lmax,
+    int n_gauss,
+    int Twork,
+    int *status
+)
 {
     try {
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
@@ -119,12 +127,29 @@ spir_sve_result* spir_sve_result_new(const spir_kernel *k, double epsilon, int* 
             return nullptr;
         }
 
+        if (Twork != SPIR_TWORK_FLOAT64 && Twork != SPIR_TWORK_FLOAT64X2) {
+            DEBUG_LOG("Error: Invalid Twork");
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+
+        std::string Twork_str;
+        if (Twork == SPIR_TWORK_FLOAT64) {
+            Twork_str = "Float64";
+        } else if (Twork == SPIR_TWORK_FLOAT64X2) {
+            Twork_str = "Float64x2";
+        }
+
         std::shared_ptr<sparseir::SVEResult> sve_result;
 
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
-            sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(*logistic, epsilon));
+            sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(
+                *logistic, epsilon, cutoff, lmax, n_gauss, Twork_str
+            ));
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
-            sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(*bose, epsilon));
+            sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(
+                *bose, epsilon, cutoff, lmax, n_gauss, Twork_str
+            ));
         } else {
             *status = SPIR_INTERNAL_ERROR;
             return nullptr;
