@@ -71,7 +71,8 @@ contains
 
       ! Create a new SVE result
       print *, "Creating SVE result"
-      sve_ptr = c_spir_sve_result_new(k_ptr, epsilon, c_loc(status))
+
+      sve_ptr = c_spir_sve_result_new(k_ptr, epsilon, -1.0_c_double, -1_c_int, -1_c_int, 1_c_int, c_loc(status))
       if (status /= 0) then
          print *, "Error creating SVE result"
          stop
@@ -103,7 +104,7 @@ contains
       ! Create a finite temperature basis
       print *, "Creating finite temperature basis"
       max_size = -1  ! Use default max size
-      basis_ptr = c_spir_basis_new(statistics, beta, omega_max, k_ptr, sve_ptr, c_loc(max_size), c_loc(status))
+      basis_ptr = c_spir_basis_new(statistics, beta, omega_max, k_ptr, sve_ptr, max_size, c_loc(status))
       if (status /= 0) then
          print *, "Error creating finite temperature basis"
          stop

@@ -114,7 +114,11 @@ void test_finite_temp_basis_constructor_with_sve()
     REQUIRE(kernel != nullptr);
 
     int sve_status;
-    spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, &sve_status);
+    double cutoff = -1.0;
+    int lmax = -1;
+    int n_gauss = -1;
+    int Twork = SPIR_TWORK_FLOAT64X2;
+    spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, &sve_status);
     REQUIRE(sve_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve_result != nullptr);
 
@@ -174,7 +178,11 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         REQUIRE(kernel != nullptr);
 
         int sve_status;
-        spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, &sve_status);
+        double cutoff = -1.0;
+        int lmax = -1;
+        int n_gauss = -1;
+        int Twork = SPIR_TWORK_FLOAT64X2;
+        spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, &sve_status);
         REQUIRE(sve_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(sve_result != nullptr);
 
