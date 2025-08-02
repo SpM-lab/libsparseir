@@ -126,11 +126,15 @@ function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) &
   integer(c_int) :: c_spir_kernel_domain
 end function
 
-function c_spir_sve_result_new(k, epsilon, status) &
+function c_spir_sve_result_new(k, epsilon, cutoff, lmax, n_gauss, work_dtype, status) &
     bind(c, name="spir_sve_result_new") result(c_spir_sve_result_new)
   use iso_c_binding
   type(c_ptr), value :: k
   real(c_double), value :: epsilon
+  real(c_double), value :: cutoff
+  integer(c_int), value :: lmax
+  integer(c_int), value :: n_gauss
+  integer(c_int), value :: work_dtype
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_sve_result_new
 end function
@@ -233,7 +237,7 @@ function c_spir_basis_new(statistics, beta, omega_max, k, sve, max_size, status)
   real(c_double), value :: omega_max
   type(c_ptr), value :: k
   type(c_ptr), value :: sve
-  type(c_ptr), value :: max_size
+  integer(c_int), value :: max_size
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_basis_new
 end function
@@ -326,6 +330,16 @@ function c_spir_basis_get_default_ws(b, points) &
   integer(c_int) :: c_spir_basis_get_default_ws
 end function
 
+function c_spir_basis_get_default_taus_ext(b, n_points, points, n_points_returned) &
+    bind(c, name="spir_basis_get_default_taus_ext") result(c_spir_basis_get_default_taus_ext)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  integer(c_int), value :: n_points
+  type(c_ptr), value :: points
+  type(c_ptr), value :: n_points_returned
+  integer(c_int) :: c_spir_basis_get_default_taus_ext
+end function
+
 function c_spir_basis_get_n_default_matsus(b, positive_only, num_points) &
     bind(c, name="spir_basis_get_n_default_matsus") result(c_spir_basis_get_n_default_matsus)
   use iso_c_binding
@@ -342,6 +356,27 @@ function c_spir_basis_get_default_matsus(b, positive_only, points) &
   integer(c_int), value :: positive_only
   type(c_ptr), value :: points
   integer(c_int) :: c_spir_basis_get_default_matsus
+end function
+
+function c_spir_basis_get_n_default_matsus_ext(b, positive_only, L, num_points_returned) &
+    bind(c, name="spir_basis_get_n_default_matsus_ext") result(c_spir_basis_get_n_default_matsus_ext)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  integer(c_int), value :: positive_only
+  integer(c_int), value :: L
+  type(c_ptr), value :: num_points_returned
+  integer(c_int) :: c_spir_basis_get_n_default_matsus_ext
+end function
+
+function c_spir_basis_get_default_matsus_ext(b, positive_only, n_points, points, n_points_returned) &
+    bind(c, name="spir_basis_get_default_matsus_ext") result(c_spir_basis_get_default_matsus_ext)
+  use iso_c_binding
+  type(c_ptr), value :: b
+  integer(c_int), value :: positive_only
+  integer(c_int), value :: n_points
+  type(c_ptr), value :: points
+  type(c_ptr), value :: n_points_returned
+  integer(c_int) :: c_spir_basis_get_default_matsus_ext
 end function
 
 function c_spir_dlr_new(b, status) &

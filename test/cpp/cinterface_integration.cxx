@@ -408,7 +408,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // IR basis
     spir_kernel* kernel = _kernel_new<K>(beta * wmax);
-    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, &status);
+    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_FLOAT64X2, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve != nullptr);
 
@@ -593,14 +593,14 @@ void integration_test(double beta, double wmax, double epsilon,
         status = spir_sampling_eval_dd(
             tau_sampling_dlr, order, ndim,
             _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
-            target_dim, 
+            target_dim,
             reinterpret_cast<const double*>(coeffs.data()),
             reinterpret_cast<double*>(gtau_from_DLR.data()));
     } else if (std::is_same<T, std::complex<double>>::value) {
         status = spir_sampling_eval_zz(
             tau_sampling_dlr, order, ndim,
             _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
-            target_dim, 
+            target_dim,
             reinterpret_cast<const c_complex*>(coeffs.data()),
             reinterpret_cast<c_complex*>(gtau_from_DLR.data()));
     }
@@ -621,21 +621,21 @@ void integration_test(double beta, double wmax, double epsilon,
     REQUIRE(
         compare_tensors_with_relative_error<std::complex<double>, ndim, ORDER>(
             giw_from_IR, giw_from_DLR, tol));
-    
+
     // Use sampling to evaluate the Greens function at all Matsubara frequencies between IR and DLR
     {
         if (std::is_same<T, double>::value) {
             status = spir_sampling_eval_dz(
                 matsubara_sampling_dlr, order, ndim,
                 _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
-                target_dim, 
+                target_dim,
                 reinterpret_cast<const double*>(coeffs.data()),
                 reinterpret_cast<c_complex*>(giw_from_DLR.data()));
         } else if (std::is_same<T, std::complex<double>>::value) {
             status = spir_sampling_eval_zz(
                 matsubara_sampling_dlr, order, ndim,
                 _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(),
-                target_dim, 
+                target_dim,
                 reinterpret_cast<const c_complex*>(coeffs.data()),
                 reinterpret_cast<c_complex*>(giw_from_DLR.data()));
         }

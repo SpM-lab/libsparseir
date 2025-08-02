@@ -27,6 +27,10 @@ typedef double _Complex c_complex;
 #define SPIR_ORDER_COLUMN_MAJOR 1
 #define SPIR_ORDER_ROW_MAJOR 0
 
+// Twork type constants
+#define SPIR_TWORK_FLOAT64 0
+#define SPIR_TWORK_FLOAT64X2 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -165,8 +169,15 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  * longer needed
  * @see spir_release_sve_result
  */
-spir_sve_result *spir_sve_result_new(const spir_kernel *k, double epsilon,
-                                     int *status);
+spir_sve_result *spir_sve_result_new(
+    const spir_kernel *k,
+    double epsilon,
+    double cutoff,
+    int lmax,
+    int n_gauss,
+    int work_dtype,
+    int *status
+);
 
 /**
  * @brief Gets the number of singular values/vectors in an SVE result.

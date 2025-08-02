@@ -40,8 +40,11 @@
   public :: c_spir_basis_get_default_taus
   public :: c_spir_basis_get_n_default_ws
   public :: c_spir_basis_get_default_ws
+  public :: c_spir_basis_get_default_taus_ext
   public :: c_spir_basis_get_n_default_matsus
   public :: c_spir_basis_get_default_matsus
+  public :: c_spir_basis_get_n_default_matsus_ext
+  public :: c_spir_basis_get_default_matsus_ext
   public :: c_spir_dlr_new
   public :: c_spir_dlr_new_with_poles
   public :: c_spir_dlr_get_npoles

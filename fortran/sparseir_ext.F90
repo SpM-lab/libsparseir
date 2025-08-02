@@ -142,6 +142,7 @@ MODULE sparseir_ext
     REAL(KIND=DP), INTENT(IN) :: eps
 
     REAL(KIND=DP), TARGET :: lambda_c, eps_c
+    REAL(KIND=DP) :: cutoff
     INTEGER(KIND=c_int), TARGET :: status_c
 
     TYPE(c_ptr), INTENT(IN) :: k_ptr
@@ -149,8 +150,8 @@ MODULE sparseir_ext
 
     lambda_c = lambda
     eps_c = eps
-
-    sve_ptr = c_spir_sve_result_new(k_ptr, eps_c, c_loc(status_c))
+    cutoff = -1.0
+    sve_ptr = c_spir_sve_result_new(k_ptr, eps_c, cutoff, -1_c_int, -1_c_int, 1_c_int, c_loc(status_c))
     IF (status_c /= 0) THEN
        CALL errore('create_sve_result', 'Error creating SVE result', status_c)
     ENDIF
@@ -176,7 +177,7 @@ MODULE sparseir_ext
     statistics_c = statistics
     beta_c = beta
     wmax_c = wmax
-    basis_ptr = c_spir_basis_new(statistics_c, beta_c, wmax_c, k_ptr, sve_ptr, c_loc(max_size), c_loc(status_c))
+    basis_ptr = c_spir_basis_new(statistics_c, beta_c, wmax_c, k_ptr, sve_ptr, max_size, c_loc(status_c))
     IF (status_c /= 0) THEN
        CALL errore('create_basis', 'Error creating basis', status_c)
     ENDIF
