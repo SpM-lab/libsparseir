@@ -133,6 +133,14 @@ spir_sve_result* spir_sve_result_new(
             return nullptr;
         }
 
+        if (cutoff < 0) {
+            cutoff = std::numeric_limits<double>::quiet_NaN();
+        }
+
+        if (lmax < 0) {
+            lmax = std::numeric_limits<int>::max();
+        }
+
         std::string Twork_str;
         if (Twork == SPIR_TWORK_FLOAT64) {
             Twork_str = "Float64";
