@@ -16,16 +16,16 @@ jobs:
         MINOR=$(grep "#define SPARSEIR_VERSION_MINOR" include/sparseir/version.h | awk '{print $3}')
         PATCH=$(grep "#define SPARSEIR_VERSION_PATCH" include/sparseir/version.h | awk '{print $3}')
         VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         echo "Version: $VERSION"
 
         # Check if remote tag exists
         git fetch --tags
         if git tag -l | grep -q "^$VERSION$"; then
           echo "Tag $VERSION already exists"
-          echo "should_create=false" >> $GITHUB_OUTPUT
+          echo "should_create=false" >> "$GITHUB_OUTPUT"
         else
-          echo "should_create=true" >> $GITHUB_OUTPUT
+          echo "should_create=true" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Create Release
