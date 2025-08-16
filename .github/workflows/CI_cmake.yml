@@ -83,9 +83,18 @@ jobs:
     - name: Configure CMake (Unix)
       if: matrix.os != 'windows-latest'
       run: |
+        if [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "gcc" ]]; then
+          FORTRAN_COMPILER="gfortran-13"
+        elif [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "clang" ]]; then
+          FORTRAN_COMPILER="gfortran"
+        else
+          FORTRAN_COMPILER="gfortran"
+        fi
+        
         cmake -B ${{github.workspace}}/build \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DCMAKE_Fortran_COMPILER=$FORTRAN_COMPILER \
           -DSPARSEIR_BUILD_TESTING=ON \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
           -DSPARSEIR_BUILD_FORTRAN=ON \
@@ -177,9 +186,18 @@ jobs:
 
     - name: Configure CMake
       run: |
+        if [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "gcc" ]]; then
+          FORTRAN_COMPILER="gfortran-13"
+        elif [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "clang" ]]; then
+          FORTRAN_COMPILER="gfortran"
+        else
+          FORTRAN_COMPILER="gfortran"
+        fi
+        
         cmake -B ${{github.workspace}}/build \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DCMAKE_Fortran_COMPILER=$FORTRAN_COMPILER \
           -DSPARSEIR_BUILD_TESTING=ON \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
           -DSPARSEIR_BUILD_FORTRAN=ON \
