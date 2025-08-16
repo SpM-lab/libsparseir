@@ -4,6 +4,22 @@
 
 #include <sparseir/sparseir.h> // C interface
 
+// Portable helpers for C complex interoperability in C++ tests
+// MSVC uses struct-based c_complex; GCC/Clang use C99 double _Complex
+#ifdef _MSC_VER
+#  define C_COMPLEX_MAKE(r, i) (c_complex{ (r), (i) })
+#  define C_COMPLEX_REAL(z) ((z).real)
+#  define C_COMPLEX_IMAG(z) ((z).imag)
+#else
+#  include <complex.h>
+#  ifndef I
+#    define I _Complex_I
+#  endif
+#  define C_COMPLEX_MAKE(r, i) ((c_complex)((r) + (i) * I))
+#  define C_COMPLEX_REAL(z) (__real__ (z))
+#  define C_COMPLEX_IMAG(z) (__imag__ (z))
+#endif
+
 inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
                                   double omega_max, double epsilon,
                                   int32_t *status)
