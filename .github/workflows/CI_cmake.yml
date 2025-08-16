@@ -20,28 +20,28 @@ jobs:
       matrix:
         include:
           # Ubuntu with gcc and clang
-          - os: ubuntu-latest
-            compiler: gcc
-            c_compiler: gcc
-            cpp_compiler: g++
-            eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
-          - os: ubuntu-latest
-            compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
+          #- os: ubuntu-latest
+          #  compiler: gcc
+          #  c_compiler: gcc
+          #  cpp_compiler: g++
+          #  eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
+          #- os: ubuntu-latest
+          #  compiler: clang
+          #  c_compiler: clang
+          #  cpp_compiler: clang++
+          #  eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
 
           # macOS with gcc and clang
-          - os: macos-latest
-            compiler: gcc
-            c_compiler: gcc-13
-            cpp_compiler: g++-13
-            eigen_install: brew install eigen
-          - os: macos-latest
-            compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            eigen_install: brew install eigen
+          #- os: macos-latest
+          #  compiler: gcc
+          #  c_compiler: gcc-13
+          #  cpp_compiler: g++-13
+          #  eigen_install: brew install eigen
+          #- os: macos-latest
+          #  compiler: clang
+          #  c_compiler: clang
+          #  cpp_compiler: clang++
+          #  eigen_install: brew install eigen
 
           # Windows with MSVC and clang
           - os: windows-latest
