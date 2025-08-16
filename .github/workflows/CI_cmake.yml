@@ -80,13 +80,21 @@ jobs:
     - name: Install Eigen
       run: ${{ matrix.eigen_install }}
 
+    - name: Debug Fortran compilers (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        echo "Available Fortran compilers:"
+        ls -la /opt/homebrew/bin/*fortran* || echo "No *fortran* found in /opt/homebrew/bin/"
+        ls -la /usr/local/bin/*fortran* || echo "No *fortran* found in /usr/local/bin/"
+        which gfortran || echo "gfortran not in PATH"
+        which gfortran-13 || echo "gfortran-13 not in PATH"
+
     - name: Configure CMake (Unix)
       if: matrix.os != 'windows-latest'
       run: |
-        if [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "gcc" ]]; then
-          FORTRAN_COMPILER="gfortran-13"
-        elif [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "clang" ]]; then
-          FORTRAN_COMPILER="gfortran"
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # Use the full path to gfortran from Homebrew gcc
+          FORTRAN_COMPILER="/opt/homebrew/bin/gfortran-13"
         else
           FORTRAN_COMPILER="gfortran"
         fi
@@ -186,10 +194,9 @@ jobs:
 
     - name: Configure CMake
       run: |
-        if [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "gcc" ]]; then
-          FORTRAN_COMPILER="gfortran-13"
-        elif [[ "${{ matrix.os }}" == "macos-latest" && "${{ matrix.compiler }}" == "clang" ]]; then
-          FORTRAN_COMPILER="gfortran"
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # Use the full path to gfortran from Homebrew gcc
+          FORTRAN_COMPILER="/opt/homebrew/bin/gfortran-13"
         else
           FORTRAN_COMPILER="gfortran"
         fi
