@@ -73,6 +73,10 @@ jobs:
         .\vcpkg\bootstrap-vcpkg.bat
         "${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
+    - name: Install Fortran compiler (macOS)
+      if: matrix.os == 'macos-latest'
+      run: brew install gfortran
+
     - name: Install Eigen
       run: ${{ matrix.eigen_install }}
 
@@ -128,7 +132,7 @@ jobs:
         cmake -B build -DSparseIR_DIR="${{env.INSTALL_PREFIX}}/share/cmake/SparseIR"
         cmake --build build --config ${{env.BUILD_TYPE}}
         cmake --build build --target test --config ${{env.BUILD_TYPE}}
-  
+
   build_with_blas:
     strategy:
       fail-fast: false
@@ -163,6 +167,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+
+    - name: Install Fortran compiler (macOS)
+      if: matrix.os == 'macos-latest'
+      run: brew install gfortran
 
     - name: Install dependencies
       run: ${{ matrix.deps_install }}
