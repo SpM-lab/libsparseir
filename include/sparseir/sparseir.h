@@ -6,8 +6,17 @@
 
 #include "spir_status.h"
 
-// Define a C-compatible type alias for the C99 complex number.
+// Define a C-compatible type alias for complex numbers.
+#ifdef _MSC_VER
+// MSVC doesn't support C99 _Complex, use a struct instead
+typedef struct {
+    double real;
+    double imag;
+} c_complex;
+#else
+// Use C99 _Complex for other compilers
 typedef double _Complex c_complex;
+#endif
 
 // Status codes
 #define SPIR_COMPUTATION_SUCCESS 0

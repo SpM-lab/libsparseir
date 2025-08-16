@@ -59,13 +59,17 @@ func_for_part(const PiecewiseLegendreFT<S> &polyFT,
     if (part == nullptr) {
         int parity = polyFT.poly.get_symm();
         if (parity == 1) {
-            part = std::is_same<S, Bosonic>::value
-                       ? [](std::complex<double> x) { return x.real(); }
-                       : [](std::complex<double> x) { return x.imag(); };
+            if (std::is_same<S, Bosonic>::value) {
+                part = [](std::complex<double> x) { return x.real(); };
+            } else {
+                part = [](std::complex<double> x) { return x.imag(); };
+            }
         } else if (parity == -1) {
-            part = std::is_same<S, Bosonic>::value
-                       ? [](std::complex<double> x) { return x.imag(); }
-                       : [](std::complex<double> x) { return x.real(); };
+            if (std::is_same<S, Bosonic>::value) {
+                part = [](std::complex<double> x) { return x.imag(); };
+            } else {
+                part = [](std::complex<double> x) { return x.real(); };
+            }
         } else {
             throw std::runtime_error("Cannot detect parity");
         }

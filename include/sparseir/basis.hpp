@@ -237,7 +237,7 @@ public:
 
     Eigen::VectorXd default_tau_sampling_points() const override
     {
-        int sz = size();
+        int sz = static_cast<int>(size());
         auto x = default_sampling_points(*(this->sve_result->u), sz);
         Eigen::VectorXd smpl_taus = (this->beta / 2.0) * (x.array() + 1.0);
         std::sort(smpl_taus.data(), smpl_taus.data() + smpl_taus.size());
@@ -328,9 +328,9 @@ inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>> &wn,
     }
 
     for (const auto &wn_outer : outer_frequencies) {
-        int outer_val = wn_outer.n;
+        int outer_val = static_cast<int>(wn_outer.n);
         int diff_val = 2 * static_cast<int>(std::round(0.025 * outer_val));
-        int wn_diff = MatsubaraFreq<S>(diff_val).n;
+        int wn_diff = static_cast<int>(MatsubaraFreq<S>(diff_val).n);
 
         if (wn.size() >= 20) {
             wn.push_back(
