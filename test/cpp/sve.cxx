@@ -625,7 +625,7 @@ TEST_CASE("truncate", "[sve]")
         auto sveresult = sve.postprocess(u, s, v);
         REQUIRE(sveresult.u->size() == sveresult.s.size());
         REQUIRE(sveresult.s.size() == sveresult.v->size());
-        REQUIRE(sveresult.s.size() <= static_cast<size_t>(lmax - 1));
+        REQUIRE(static_cast<int>(sveresult.s.size()) <= (lmax - 1));
     }
 }
 

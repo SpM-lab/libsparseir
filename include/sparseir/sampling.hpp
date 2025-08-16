@@ -648,8 +648,8 @@ public:
 inline Eigen::JacobiSVD<Eigen::MatrixXcd>
 make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
 {
-    const int m = mat.rows(); // Number of rows in the input complex matrix
-    const int n = mat.cols(); // Number of columns in the input complex matrix
+    const int m = static_cast<int>(mat.rows()); // Number of rows in the input complex matrix
+    const int n = static_cast<int>(mat.cols()); // Number of columns in the input complex matrix
 
     // Determine the starting row for the imaginary part.
     // If has_zero is true, skip the first row (offset = 1); otherwise, start at

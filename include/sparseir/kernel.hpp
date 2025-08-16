@@ -824,7 +824,7 @@ public:
         zeros.pop_back();
 
         // updated nzeros
-        nzeros = zeros.size();
+        nzeros = static_cast<int>(zeros.size());
 
         // Adjust zeros
         for (int i = 0; i < nzeros; ++i) {
@@ -923,7 +923,7 @@ public:
         zeros.pop_back();
 
         // updated nzeros
-        nzeros = zeros.size();
+        nzeros = static_cast<int>(zeros.size());
 
         // Adjust zeros
         for (int i = 0; i < nzeros; ++i) {

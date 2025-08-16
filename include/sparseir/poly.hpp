@@ -358,7 +358,7 @@ public:
 
     // Returns the number of roots of the functions
     int nroots() const {
-        return roots().size();
+        return static_cast<int>(roots().size());
     }
 
     Eigen::VectorXd roots() const {
@@ -399,9 +399,9 @@ public:
         if (polyvec.empty())
             return Eigen::Tensor<double, 3>();
 
-        int npolys = polyvec.size();
-        int nrows = polyvec[0].data.rows();
-        int ncols = polyvec[0].data.cols();
+        int npolys = static_cast<int>(polyvec.size());
+        int nrows = static_cast<int>(polyvec[0].data.rows());
+        int ncols = static_cast<int>(polyvec[0].data.cols());
 
         Eigen::Tensor<double, 3> data(nrows, ncols, npolys);
         for (int i = 0; i < npolys; ++i) {
