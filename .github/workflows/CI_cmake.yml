@@ -51,8 +51,8 @@ jobs:
             eigen_install: vcpkg install eigen3
           - os: windows-latest
             compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
+            c_compiler: clang-cl
+            cpp_compiler: clang-cl
             eigen_install: vcpkg install eigen3
 
     runs-on: ${{ matrix.os }}
@@ -108,27 +108,44 @@ jobs:
           -DSPARSEIR_BUILD_FORTRAN=ON \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
           -DSPARSEIR_USE_BLAS=OFF \
-          -DSPARSEIR_USE_LAPACKE=OFF
+          -DSPARSEIR_USE_LAPACKE=OFF \
+          -DCMAKE_VERBOSE_MAKEFILE=ON
 
     - name: Configure CMake (Windows)
       if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
-        cmake -B ${{github.workspace}}/build `
-          -DCMAKE_TOOLCHAIN_FILE="${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-          -DSPARSEIR_BUILD_TESTING=ON `
-          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} `
-          -DSPARSEIR_BUILD_FORTRAN=OFF `
-          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} `
-          -DSPARSEIR_USE_BLAS=OFF `
-          -DSPARSEIR_USE_LAPACKE=OFF
+        if ("${{ matrix.compiler }}" -eq "clang") {
+          cmake -B ${{github.workspace}}/build `
+            -T ClangCL `
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
+            -DCMAKE_TOOLCHAIN_FILE="${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DSPARSEIR_BUILD_TESTING=ON `
+            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} `
+            -DSPARSEIR_BUILD_FORTRAN=OFF `
+            -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} `
+            -DSPARSEIR_USE_BLAS=OFF `
+            -DSPARSEIR_USE_LAPACKE=OFF
+        } else {
+          cmake -B ${{github.workspace}}/build `
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
+            -DCMAKE_TOOLCHAIN_FILE="${{github.workspace}}/vcpkg/scripts/buildsystems/vcpkg.cmake" `
+            -DSPARSEIR_BUILD_TESTING=ON `
+            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} `
+            -DSPARSEIR_BUILD_FORTRAN=OFF `
+            -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} `
+            -DSPARSEIR_USE_BLAS=OFF `
+            -DSPARSEIR_USE_LAPACKE=OFF
+        }
 
     - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --verbose
 
     - name: Test
       working-directory: ${{github.workspace}}/build
-      run: ctest --output-on-failure --build-config ${{env.BUILD_TYPE}}
+      run: ctest -VV --output-on-failure --build-config ${{env.BUILD_TYPE}}
 
     - name: Install
       run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
