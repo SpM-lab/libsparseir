@@ -483,10 +483,10 @@ public:
     }
 
     // Constructor that takes matrix and sampling_points directly
-    TauSampling(const Eigen::MatrixXd& matrix, const Eigen::VectorXd& sampling_points) 
+    TauSampling(const Eigen::MatrixXd& matrix, const Eigen::VectorXd& sampling_points)
         : sampling_points_(sampling_points), matrix_(matrix)
     {
-        if (sampling_points.size() == 0 || matrix_.rows() != sampling_points.size()) {
+        if (sampling_points.size() == 0 || matrix_.rows() != static_cast<long>(sampling_points.size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
@@ -499,7 +499,7 @@ public:
     // Implement the pure virtual method from AbstractSampling
     int32_t n_sampling_points() const override
     {
-        return sampling_points_.size();
+        return static_cast<int32_t>(sampling_points_.size());
     }
 
     // Implement the pure virtual method from AbstractSampling
@@ -783,7 +783,7 @@ public:
         // Get default sampling points from basis
         bool fence = false;
         sampling_points_ = basis->default_matsubara_sampling_points(
-            basis->size(), fence, positive_only);
+            static_cast<int>(basis->size()), fence, positive_only);
         std::sort(sampling_points_.begin(), sampling_points_.end());
 
         // Ensure matrix dimensions are correct
@@ -795,8 +795,8 @@ public:
         matrix_ = eval_matrix(*basis, sampling_points_);
 
         // Check matrix dimensions
-        if (matrix_.rows() != sampling_points_.size() ||
-            matrix_.cols() != static_cast<std::size_t>(basis->size())) {
+        if (matrix_.rows() != static_cast<long>(sampling_points_.size()) ||
+            matrix_.cols() != static_cast<long>(basis->size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
@@ -826,10 +826,10 @@ public:
     }
 
     // Constructor that takes matrix and sampling_points directly
-    MatsubaraSampling(const Eigen::MatrixXcd& matrix, 
+    MatsubaraSampling(const Eigen::MatrixXcd& matrix,
                       const std::vector<MatsubaraFreq<S>>& sampling_points,
                       bool positive_only = false)
-        : sampling_points_(sampling_points), matrix_(matrix), 
+        : sampling_points_(sampling_points), matrix_(matrix),
           positive_only_(positive_only), has_zero_(false)
     {
         if (sampling_points.size() == 0 || matrix_.rows() != sampling_points.size()) {

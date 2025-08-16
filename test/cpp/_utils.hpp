@@ -11,13 +11,28 @@
 #  define C_COMPLEX_REAL(z) ((z).real)
 #  define C_COMPLEX_IMAG(z) ((z).imag)
 #else
-#  include <complex.h>
-#  ifndef I
-#    define I _Complex_I
-#  endif
-#  define C_COMPLEX_MAKE(r, i) ((c_complex)((r) + (i) * I))
-#  define C_COMPLEX_REAL(z) (__real__ (z))
-#  define C_COMPLEX_IMAG(z) (__imag__ (z))
+#  include <complex>
+#  include <cstring>
+   inline c_complex _c_complex_make_impl(double r, double i) {
+       std::complex<double> cpp(r, i);
+       c_complex c{};
+       static_assert(sizeof(c_complex) == sizeof(std::complex<double>), "c_complex/std::complex size mismatch");
+       std::memcpy(&c, &cpp, sizeof(c));
+       return c;
+   }
+   inline double _c_complex_real_impl(c_complex z) {
+       std::complex<double> cpp;
+       std::memcpy(&cpp, &z, sizeof(z));
+       return cpp.real();
+   }
+   inline double _c_complex_imag_impl(c_complex z) {
+       std::complex<double> cpp;
+       std::memcpy(&cpp, &z, sizeof(z));
+       return cpp.imag();
+   }
+#  define C_COMPLEX_MAKE(r, i) (_c_complex_make_impl((r), (i)))
+#  define C_COMPLEX_REAL(z) (_c_complex_real_impl((z)))
+#  define C_COMPLEX_IMAG(z) (_c_complex_imag_impl((z)))
 #endif
 
 inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
