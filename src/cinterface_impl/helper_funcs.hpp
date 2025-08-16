@@ -5,6 +5,110 @@
 #include <iostream>
 #include "_util.hpp"
 
+// Helper functions for complex number conversion between C and C++
+#ifdef _MSC_VER
+// MSVC: convert between struct c_complex and std::complex<double>
+inline std::complex<double> c_to_cpp_complex(const c_complex& c) {
+    return std::complex<double>(c.real, c.imag);
+}
+
+inline c_complex cpp_to_c_complex(const std::complex<double>& cpp) {
+    c_complex c;
+    c.real = cpp.real();
+    c.imag = cpp.imag();
+    return c;
+}
+
+inline const std::complex<double>* as_cpp_complex(const c_complex* c) {
+    // Cannot use reinterpret_cast with struct layout
+    return nullptr; // This function should not be used with MSVC
+}
+
+inline std::complex<double>* as_cpp_complex(c_complex* c) {
+    // Cannot use reinterpret_cast with struct layout  
+    return nullptr; // This function should not be used with MSVC
+}
+#else
+// Non-MSVC: C99 _Complex and std::complex have compatible layout
+inline std::complex<double> c_to_cpp_complex(const c_complex& c) {
+    return *reinterpret_cast<const std::complex<double>*>(&c);
+}
+
+inline c_complex cpp_to_c_complex(const std::complex<double>& cpp) {
+    return *reinterpret_cast<const c_complex*>(&cpp);
+}
+
+inline const std::complex<double>* as_cpp_complex(const c_complex* c) {
+    return reinterpret_cast<const std::complex<double>*>(c);
+}
+
+inline std::complex<double>* as_cpp_complex(c_complex* c) {
+    return reinterpret_cast<std::complex<double>*>(c);
+}
+#endif
+
+// Helper class for managing complex array conversion in MSVC
+#ifdef _MSC_VER
+class ComplexArrayWrapper {
+private:
+    std::vector<c_complex> c_data;
+    std::vector<std::complex<double>>* cpp_data;
+    bool owns_cpp_data;
+
+public:
+    // Create from std::complex array (for output)
+    ComplexArrayWrapper(std::vector<std::complex<double>>& cpp_vec) 
+        : cpp_data(&cpp_vec), owns_cpp_data(false) {
+        c_data.resize(cpp_vec.size());
+        for (size_t i = 0; i < cpp_vec.size(); ++i) {
+            c_data[i] = cpp_to_c_complex(cpp_vec[i]);
+        }
+    }
+
+    // Create from c_complex array (for input)
+    ComplexArrayWrapper(const c_complex* c_array, size_t size)
+        : owns_cpp_data(true) {
+        cpp_data = new std::vector<std::complex<double>>(size);
+        for (size_t i = 0; i < size; ++i) {
+            (*cpp_data)[i] = c_to_cpp_complex(c_array[i]);
+        }
+    }
+
+    ~ComplexArrayWrapper() {
+        if (owns_cpp_data) {
+            delete cpp_data;
+        } else {
+            // Copy back to std::complex array
+            for (size_t i = 0; i < cpp_data->size(); ++i) {
+                (*cpp_data)[i] = c_to_cpp_complex(c_data[i]);
+            }
+        }
+    }
+
+    c_complex* c_ptr() { return c_data.data(); }
+    const c_complex* c_ptr() const { return c_data.data(); }
+    std::complex<double>* cpp_ptr() { return cpp_data->data(); }
+    const std::complex<double>* cpp_ptr() const { return cpp_data->data(); }
+};
+#else
+// For non-MSVC, no conversion needed
+class ComplexArrayWrapper {
+private:
+    std::vector<std::complex<double>>* data;
+
+public:
+    ComplexArrayWrapper(std::vector<std::complex<double>>& cpp_vec) : data(&cpp_vec) {}
+    ComplexArrayWrapper(const c_complex* c_array, size_t size) : data(nullptr) {
+        // This should not be used in non-MSVC case
+    }
+
+    c_complex* c_ptr() { return reinterpret_cast<c_complex*>(data->data()); }
+    const c_complex* c_ptr() const { return reinterpret_cast<const c_complex*>(data->data()); }
+    std::complex<double>* cpp_ptr() { return data->data(); }
+    const std::complex<double>* cpp_ptr() const { return data->data(); }
+};
+#endif
+
 inline bool is_dlr_basis(const spir_basis *b) {
     return std::dynamic_pointer_cast<DLRAdapter<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||
            std::dynamic_pointer_cast<DLRAdapter<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
@@ -363,13 +467,13 @@ spir_sampling* _spir_matsu_sampling_new_with_matrix(int order,
         // Convert row-major to column-major
         for (int i = 0; i < num_points; i++) {
             for (int j = 0; j < basis_size; j++) {
-                eigen_matrix(i, j) = *reinterpret_cast<const std::complex<double>*>(&matrix[i * basis_size + j]);
+                eigen_matrix(i, j) = c_to_cpp_complex(matrix[i * basis_size + j]);
             }
         }
     } else {
         // Already column-major
         for (int i = 0; i < num_points * basis_size; i++) {
-            eigen_matrix.data()[i] = *reinterpret_cast<const std::complex<double>*>(&matrix[i]);
+            eigen_matrix.data()[i] = c_to_cpp_complex(matrix[i]);
         }
     }
 

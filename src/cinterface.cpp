@@ -336,7 +336,8 @@ spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, 
 
     // Allocate memory for matrix
     std::vector<std::complex<double>> matrix(num_points * basis_size);
-    int eval_status = spir_funcs_batch_eval_matsu(uhat, SPIR_ORDER_COLUMN_MAJOR, num_points, points, (c_complex*)matrix.data());
+    ComplexArrayWrapper wrapper(matrix);
+    int eval_status = spir_funcs_batch_eval_matsu(uhat, SPIR_ORDER_COLUMN_MAJOR, num_points, points, wrapper.c_ptr());
     if (eval_status != SPIR_COMPUTATION_SUCCESS) {
         DEBUG_LOG("Error: Failed to evaluate basis functions");
         spir_funcs_release(uhat);
@@ -346,7 +347,7 @@ spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, 
 
     // Create sampling object using the matrix version
     spir_sampling* smpl = spir_matsu_sampling_new_with_matrix(
-        SPIR_ORDER_COLUMN_MAJOR, statistics, basis_size, positive_only, num_points, points, (c_complex*)matrix.data(), status);
+        SPIR_ORDER_COLUMN_MAJOR, statistics, basis_size, positive_only, num_points, points, wrapper.c_ptr(), status);
 
     spir_funcs_release(uhat);
 
