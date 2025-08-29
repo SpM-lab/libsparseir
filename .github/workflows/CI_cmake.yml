@@ -32,11 +32,11 @@ jobs:
             eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
 
           # macOS with gcc and clang
-          - os: macos-latest
-            compiler: gcc
-            c_compiler: gcc-15
-            cpp_compiler: g++-15
-            eigen_install: brew install eigen
+          #- os: macos-latest
+            #compiler: gcc
+            #c_compiler: gcc-15
+            #cpp_compiler: g++-15
+            #eigen_install: brew install eigen
           - os: macos-latest
             compiler: clang
             c_compiler: clang
