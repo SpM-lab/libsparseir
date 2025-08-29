@@ -50,34 +50,29 @@ endif()
 # Eigen3
 # BLAS/LAPACK options
 option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
-option(SPARSEIR_USE_LAPACKE "Enable LAPACK support" OFF)
 
 # BLAS/LAPACK search and configuration
-if(SPARSEIR_USE_BLAS OR SPARSEIR_USE_LAPACKE)
-    # Disable Eigen's BLAS/LAPACK usage for compatibility
-    add_compile_definitions(EIGEN_DONT_USE_BLAS_LAPACK)
-    message(STATUS "BLAS/LAPACK support disabled for compatibility")
+if(SPARSEIR_USE_BLAS)
+    add_compile_definitions(SPARSEIR_USE_BLAS)
+    message(STATUS "BLAS support enabled")
+    
+    # Find BLAS package
+    find_package(BLAS REQUIRED)
+    if(BLAS_FOUND)
+        message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
+    else()
+        message(FATAL_ERROR "BLAS not found")
+    endif()
+    
+    # CMake's find_package(BLAS) should provide include directories
+    #if(BLAS_INCLUDE_DIRS)
+        #include_directories(${BLAS_INCLUDE_DIRS})
+        #message(STATUS "BLAS include directories: ${BLAS_INCLUDE_DIRS}")
+    #else()
+        #message(FATAL_ERROR "BLAS include directories not found")
+    #endif()
 endif()
 
-# macOS-specific configuration
-if(APPLE)
-    # Explicitly add Accelerate Framework
-    find_library(ACCELERATE_FRAMEWORK Accelerate)
-    if(ACCELERATE_FRAMEWORK)
-        list(APPEND BLAS_LIBRARIES ${ACCELERATE_FRAMEWORK})
-        list(APPEND LAPACK_LIBRARIES ${ACCELERATE_FRAMEWORK})
-    endif()
-
-    # Specify LAPACKE header location
-    find_path(LAPACKE_INCLUDE_DIR lapacke.h
-        PATHS /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
-        /usr/local/include
-        /opt/homebrew/include
-    )
-    if(LAPACKE_INCLUDE_DIR)
-        include_directories(${LAPACKE_INCLUDE_DIR})
-    endif()
-endif()
 
 set(EIGEN3_REQUIRED_VERSION "3.4.0")
 find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
@@ -157,6 +152,9 @@ target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 # Add BLAS/LAPACK linking
 if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
     target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
+else()
+    message(STATUS "BLAS linking disabled or BLAS not found")
 endif()
 
 if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
