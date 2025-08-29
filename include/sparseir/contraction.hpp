@@ -50,42 +50,42 @@ namespace sparseir {
 #ifdef SPARSEIR_USE_BLAS
 // Type-specific CBLAS GEMM implementations
 template<typename U, typename V, typename ResultType>
-void _gemm_blas_impl(const U* A, const V* B, ResultType* C, int M, int N, int K, int lda, int ldb, int ldc);
+void _gemm_blas_impl(const U* A, const V* B, ResultType* C, int M, int N, int K);
 
 // Specialization for double * double -> double
 template<>
-inline void _gemm_blas_impl<double, double, double>(const double* A, const double* B, double* C, int M, int N, int K, int lda, int ldb, int ldc) {
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, A, lda, B, ldb, 0.0, C, ldc);
+inline void _gemm_blas_impl<double, double, double>(const double* A, const double* B, double* C, int M, int N, int K) {
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, A, M, B, K, 0.0, C, M);
 }
 
 // Specialization for complex<double> * complex<double> -> complex<double>
 template<>
-inline void _gemm_blas_impl<std::complex<double>, std::complex<double>, std::complex<double>>(const std::complex<double>* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K, int lda, int ldb, int ldc) {
+inline void _gemm_blas_impl<std::complex<double>, std::complex<double>, std::complex<double>>(const std::complex<double>* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
     cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, &alpha, 
-                 reinterpret_cast<const double*>(A), lda, 
-                 reinterpret_cast<const double*>(B), ldb, 
-                 &beta, reinterpret_cast<double*>(C), ldc);
+                 reinterpret_cast<const double*>(A), M, 
+                 reinterpret_cast<const double*>(B), K, 
+                 &beta, reinterpret_cast<double*>(C), M);
 }
 
 // Specialization for double * complex<double> -> complex<double>
 template<>
-inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K, int lda, int ldb, int ldc) {
+inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
     // Cast double to complex<double> and use zgemm
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
     
     // Create temporary complex arrays for A
-    std::vector<std::complex<double>> A_complex(M * lda);
-    for (int i = 0; i < M * lda; ++i) {
+    std::vector<std::complex<double>> A_complex(M * M);
+    for (int i = 0; i < M * M; ++i) {
         A_complex[i] = std::complex<double>(A[i], 0.0);
     }
     
     cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, &alpha, 
-                 reinterpret_cast<const double*>(A_complex.data()), lda, 
-                 reinterpret_cast<const double*>(B), ldb, 
-                 &beta, reinterpret_cast<double*>(C), ldc);
+                 reinterpret_cast<const double*>(A_complex.data()), M, 
+                 reinterpret_cast<const double*>(B), K, 
+                 &beta, reinterpret_cast<double*>(C), M);
 }
 
 #endif
@@ -105,7 +105,7 @@ _gemm(
     
 #ifdef SPARSEIR_USE_BLAS
     // Call appropriate CBLAS function based on input types
-    _gemm_blas_impl<U, V, ResultType>(A.data(), B.data(), result.data(), M, N, K, A.rows(), B.rows(), result.rows());
+    _gemm_blas_impl<U, V, ResultType>(A.data(), B.data(), result.data(), M, N, K);
 #else
     result = A * B;
 #endif
@@ -129,7 +129,7 @@ _gemm(
     
 #ifdef SPARSEIR_USE_BLAS
     // Call appropriate CBLAS function based on input types
-    _gemm_blas_impl<U, V, ResultType>(A.data(), B.data(), result.data(), M, N, K, A.rows(), B.rows(), result.rows());
+    _gemm_blas_impl<U, V, ResultType>(A.data(), B.data(), result.data(), M, N, K);
 #else
     result = A * B;
 #endif
