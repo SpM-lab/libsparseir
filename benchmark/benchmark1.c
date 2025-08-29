@@ -39,7 +39,17 @@ double beta = 1e+5;        // Inverse temperature
 double omega_max = 1.0;   // Ultraviolet cutoff
 double epsilon = 1e-8;     // Accuracy target
 
+int extra_size = 20; // Number of extra dimensions to add
+
+int nrun = 10000; // Number of runs to average over
+
 int32_t status;
+
+printf("beta: %f\n", beta);
+printf("omega_max: %f\n", omega_max);
+printf("epsilon: %f\n", epsilon);
+printf("Extra size: %d\n", extra_size);
+printf("Number of runs: %d\n", nrun);
 
 benchmark_start(&bench, "Kernel creation");
 spir_kernel* kernel = spir_logistic_kernel_new(beta * omega_max, &status);
@@ -102,8 +112,8 @@ assert(matsubara_sampling != NULL);
 status = spir_sampling_get_npoints(matsubara_sampling, &n_matsubara);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 
-c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
-
+// [n_matsubara, extra_size]
+c_complex* g_matsubara = (c_complex*)malloc(n_matsubara * extra_size * sizeof(c_complex));
 
 // Set pole position
 const double pole_position = 0.0 * omega_max;
@@ -111,71 +121,92 @@ const double pole_position = 0.0 * omega_max;
 // Initialize Green's function in Matsubara frequencies
 // G(iω_n) = 1/(iω_n - ε)
 for (int i = 0; i < n_matsubara; ++i) {
-    assert(llabs(matsubara_indices[i]) % 2 == 1); // fermionic Matsubara frequency
-    g_matsubara[i] = 1.0 / (I * matsubara_indices[i] * M_PI / beta - pole_position);
+    for (int j = 0; j < extra_size; ++j) {
+        assert(llabs(matsubara_indices[i]) % 2 == 1); // fermionic Matsubara frequency
+        g_matsubara[i * extra_size + j] = 1.0 / (I * matsubara_indices[i] * M_PI / beta - pole_position);
+    }
 }
 
 int32_t target_dim = 0; // target dimension for evaluation and fit
 
 // Matsubara sampling points to basis coefficients
 
-c_complex* g_fit = (c_complex*)malloc(n_basis * sizeof(c_complex));
-int32_t dims[1] = {n_matsubara};
-status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                             1, dims, target_dim, g_matsubara, g_fit); // First run to warm up the cache
+// [n_basis, extra_size]
+int ndim = 2;
+c_complex* g_fit = (c_complex*)malloc(n_basis * extra_size * sizeof(c_complex));
+int32_t dims[2] = {n_matsubara, extra_size};
+status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR,
+                            ndim, dims, target_dim, g_matsubara, g_fit); // First run to warm up the cache
 benchmark_start(&bench, "Matsubara fit");
-status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                             1, dims, target_dim, g_matsubara, g_fit);
-assert(status == SPIR_COMPUTATION_SUCCESS);
+for (int i = 0; i < nrun; ++i) {
+    status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR,
+                                ndim, dims, target_dim, g_matsubara, g_fit);
+    assert(status == SPIR_COMPUTATION_SUCCESS);
+}
 benchmark_end(&bench);
 
 // Basis coefficients to imaginary-time sampling points
-c_complex* g_tau = (c_complex*)malloc(n_tau * sizeof(c_complex));
+c_complex* g_tau = (c_complex*)malloc(n_tau * extra_size * sizeof(c_complex));
 dims[0] = n_basis;
+dims[1] = extra_size;
 benchmark_start(&bench, "Tau evaluation");
-status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                                  1, dims, target_dim, g_fit, g_tau);
-assert(status == SPIR_COMPUTATION_SUCCESS);
+for (int i = 0; i < nrun; ++i) {
+    status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR,
+                              ndim, dims, target_dim, g_fit, g_tau);
+    assert(status == SPIR_COMPUTATION_SUCCESS);
+}
 benchmark_end(&bench);
 
 // Compare with expected result:
 //   G(tau) = -exp(-tau * pole_position) / (1 + exp(-beta * pole_position))
 for (int i = 0; i < n_tau; ++i) {
-    double tau = tau_points[i];
-    double expected;
-    if (tau >= 0.0) {
-        expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
-    } else {
-        expected = +exp(-(tau + beta) * pole_position) / (1.0 + exp(-beta * pole_position));
+    for (int j = 0; j < extra_size; ++j) {
+        double tau = tau_points[i];
+        double expected;
+        if (tau >= 0.0) {
+            expected = -exp(-tau * pole_position) / (1.0 + exp(-beta * pole_position));
+        } else {
+            expected = +exp(-(tau + beta) * pole_position) / (1.0 + exp(-beta * pole_position));
+        }
+        assert(fabs(creal(g_tau[i * extra_size + j]) - expected) < epsilon);
+        assert(fabs(cimag(g_tau[i * extra_size + j])) < epsilon);
     }
-    assert(fabs(creal(g_tau[i]) - expected) < epsilon);
-    assert(fabs(cimag(g_tau[i])) < epsilon);
 }
 
 // Imaginary-time sampling points to basis coefficients
-c_complex* g_fit2 = (c_complex*)malloc(n_basis * sizeof(c_complex));
+c_complex* g_fit2 = (c_complex*)malloc(n_basis * extra_size * sizeof(c_complex));
 dims[0] = n_tau;
+dims[1] = extra_size;
 
-status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                              1, dims, target_dim, g_tau, g_fit2); // First run to warm up the cache
+status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR,
+                              ndim, dims, target_dim, g_tau, g_fit2); // First run to warm up the cache
 benchmark_start(&bench, "Tau fit (reverse)");
-status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                              1, dims, target_dim, g_tau, g_fit2);
+for (int i = 0; i < nrun; ++i) {
+    status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR,
+                                ndim, dims, target_dim, g_tau, g_fit2);
+    assert(status == SPIR_COMPUTATION_SUCCESS);
+}
 assert(status == SPIR_COMPUTATION_SUCCESS);
 benchmark_end(&bench);
 
 // Basis coefficients to Matsubara Green's function
-c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * sizeof(c_complex));
+c_complex* g_matsubara_reconstructed = (c_complex*)malloc(n_matsubara * extra_size * sizeof(c_complex));
 dims[0] = n_basis;
+dims[1] = extra_size;
 benchmark_start(&bench, "Matsubara eval (reverse)");
-status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
-                                  1, dims, target_dim, g_fit2, g_matsubara_reconstructed);
+for (int i = 0; i < nrun; ++i) {
+    status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR,
+                                ndim, dims, target_dim, g_fit2, g_matsubara_reconstructed);
+    assert(status == SPIR_COMPUTATION_SUCCESS);
+}
 assert(status == SPIR_COMPUTATION_SUCCESS);
 benchmark_end(&bench);
 
 for (int i = 0; i < n_matsubara; ++i) {
-    assert(fabs(creal(g_matsubara_reconstructed[i]) - creal(g_matsubara[i])) < epsilon);
-    assert(fabs(cimag(g_matsubara_reconstructed[i]) - cimag(g_matsubara[i])) < epsilon);
+    for (int j = 0; j < extra_size; ++j) {
+        assert(fabs(creal(g_matsubara_reconstructed[i * extra_size + j]) - creal(g_matsubara[i * extra_size + j])) < epsilon);
+        assert(fabs(cimag(g_matsubara_reconstructed[i * extra_size + j]) - cimag(g_matsubara[i * extra_size + j])) < epsilon);
+    }
 }
 
 // Clean up (order is arbitrary)
