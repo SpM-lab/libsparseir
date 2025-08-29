@@ -72,9 +72,20 @@ inline void _gemm_blas_impl<std::complex<double>, std::complex<double>, std::com
 // Specialization for double * complex<double> -> complex<double>
 template<>
 inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K, int lda, int ldb, int ldc) {
-    // For mixed types, fall back to Eigen
-    // This could be optimized with custom CBLAS calls if needed
-    // For now, we'll let the caller handle this case
+    // Cast double to complex<double> and use zgemm
+    const std::complex<double> alpha(1.0);
+    const std::complex<double> beta(0.0);
+    
+    // Create temporary complex arrays for A
+    std::vector<std::complex<double>> A_complex(M * lda);
+    for (int i = 0; i < M * lda; ++i) {
+        A_complex[i] = std::complex<double>(A[i], 0.0);
+    }
+    
+    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, &alpha, 
+                 reinterpret_cast<const double*>(A_complex.data()), lda, 
+                 reinterpret_cast<const double*>(B), ldb, 
+                 &beta, reinterpret_cast<double*>(C), ldc);
 }
 
 #endif
