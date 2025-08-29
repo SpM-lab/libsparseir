@@ -34,8 +34,8 @@ jobs:
           # macOS with gcc and clang
           - os: macos-latest
             compiler: gcc
-            c_compiler: gcc-13
-            cpp_compiler: g++-13
+            c_compiler: gcc-15
+            cpp_compiler: g++-15
             eigen_install: brew install eigen
           - os: macos-latest
             compiler: clang
