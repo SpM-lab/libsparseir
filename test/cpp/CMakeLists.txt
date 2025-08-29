@@ -16,6 +16,21 @@ target_link_libraries(libsparseirtests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(libsparseirtests PRIVATE SparseIR::sparseir)
 target_link_libraries(libsparseirtests PRIVATE Eigen3::Eigen Threads::Threads)
 
+# Add BLAS/LAPACK linking for tests if enabled
+if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
+    target_link_libraries(libsparseirtests PRIVATE ${BLAS_LIBRARIES})
+    message(STATUS "Linked BLAS libraries to tests: ${BLAS_LIBRARIES}")
+endif()
+
+if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
+    target_link_libraries(libsparseirtests PRIVATE ${LAPACK_LIBRARIES})
+endif()
+
+# macOS-specific configuration for tests
+if(APPLE AND ACCELERATE_FRAMEWORK)
+    target_link_libraries(libsparseirtests PRIVATE ${ACCELERATE_FRAMEWORK})
+endif()
+
 # Add include paths
 if(DEFINED TEST_INCLUDE_DIRS)
     target_include_directories(libsparseirtests PRIVATE ${TEST_INCLUDE_DIRS})

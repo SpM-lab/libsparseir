@@ -17,8 +17,7 @@ cmake .. \
   -DCMAKE_EXE_LINKER_FLAGS="" \
   -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=ON \
-  -DSPARSEIR_USE_BLAS=OFF \
-  -DSPARSEIR_USE_LAPACKE=OFF
+  -DSPARSEIR_USE_BLAS=ON
 
 # Build (including tests)
 cmake --build . --config Release -j 4
