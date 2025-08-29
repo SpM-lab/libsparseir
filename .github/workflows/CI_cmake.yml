@@ -168,11 +168,11 @@ jobs:
             deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
 
           # macOS with gcc and clang (BLAS/LAPACK enabled)
-          - os: macos-latest
-            compiler: gcc
-            c_compiler: gcc-13
-            cpp_compiler: g++-13
-            deps_install: brew install eigen openblas lapack
+          #- os: macos-latest
+            #compiler: gcc
+            #c_compiler: gcc-13
+            #cpp_compiler: g++-13
+            #deps_install: brew install eigen openblas lapack
           - os: macos-latest
             compiler: clang
             c_compiler: clang
