@@ -150,6 +150,24 @@ jobs:
         cmake --build build --config ${{env.BUILD_TYPE}}
         cmake --build build --target test --config ${{env.BUILD_TYPE}}
 
+    - name: Run benchmark (Unix)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cd benchmark
+        cmake -B build -DSparseIR_DIR=${{env.INSTALL_PREFIX}}/share/cmake/SparseIR
+        cmake --build build
+        cmake --build build --target test
+
+    - name: Run benchmark (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        cd benchmark
+        cmake -B build -DSparseIR_DIR="${{env.INSTALL_PREFIX}}/share/cmake/SparseIR"
+        cmake --build build --config ${{env.BUILD_TYPE}}
+        cmake --build build --target test --config ${{env.BUILD_TYPE}}
+
+
   build_with_blas:
     strategy:
       fail-fast: false
