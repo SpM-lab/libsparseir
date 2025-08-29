@@ -107,17 +107,20 @@ cd build
 
 ## BLAS/LAPACK Support
 
-The library can optionally use BLAS/LAPACK for improved performance. By default, BLAS/LAPACK usage is disabled for compatibility reasons to avoid linking issues. You can control this with CMake options:
+The library can optionally use BLAS for matrix-matrix multiplication internally.
+By default, BLAS usage is disabled and the internal implementation of Eigen3 is used.
+This implementation is well optimized, but we allow enabling BLAS.
+Note that the use of BLAS not always improves performance, and it may require additional system libraries.
 
 ```bash
-# Disable BLAS/LAPACK (default, uses Eigen's internal implementations)
-cmake .. -DSPARSEIR_USE_BLAS=OFF -DSPARSEIR_USE_LAPACKE=OFF
+# Disable BLAS (default, uses Eigen's internal implementations)
+cmake .. -DSPARSEIR_USE_BLAS=OFF
 
-# Enable BLAS/LAPACK (may require additional system libraries)
-cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_LAPACKE=ON
+# Enable BLAS (may require additional system libraries)
+cmake .. -DSPARSEIR_USE_BLAS=ON
 ```
 
-Note: When enabling BLAS/LAPACK, ensure that the appropriate libraries (such as OpenBLAS, Intel MKL, or Apple Accelerate) are properly installed and linked.
+Note: When enabling BLAS, ensure that the appropriate libraries (such as OpenBLAS, Intel MKL, or Apple Accelerate) are properly installed and linked.
 
 ## Generating documentation with Doxygen
 

@@ -16,6 +16,7 @@
 #include "./sve.hpp"
 #include "./basis.hpp"
 #include "./augment.hpp"
+#include "./contraction.hpp"
 #include "./sampling.hpp"
 #include "./dlr.hpp"
 #include "./basis_set.hpp"
