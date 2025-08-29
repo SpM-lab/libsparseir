@@ -10,6 +10,8 @@
 #include <complex>
 #include <tuple>
 
+#include "sparseir/jacobi_svd.hpp"
+
 namespace sparseir {
 
 // Forward declarations
@@ -204,7 +206,7 @@ private:
     Eigen::VectorXd sampling_points_;
     //a matrix of size (sampling_points.size(), basis_size)
     Eigen::MatrixXd matrix_;
-    mutable std::shared_ptr<Eigen::JacobiSVD<Eigen::MatrixXd>> matrix_svd_;
+    mutable std::shared_ptr<JacobiSVD<Eigen::MatrixXd>> matrix_svd_;
 
 public:
     template <typename Basis>
@@ -373,10 +375,10 @@ public:
     const Eigen::VectorXd &sampling_points() const { return sampling_points_; }
 
     const Eigen::VectorXd &tau() const { return sampling_points_; }
-    const Eigen::JacobiSVD<Eigen::MatrixXd>& get_matrix_svd() const
+    const JacobiSVD<Eigen::MatrixXd>& get_matrix_svd() const
     {
         if (!matrix_svd_) {
-            matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXd>>(
+            matrix_svd_ = std::make_shared<JacobiSVD<Eigen::MatrixXd>>(
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
         return *matrix_svd_;
@@ -393,7 +395,7 @@ public:
     }
 };
 
-inline Eigen::JacobiSVD<Eigen::MatrixXcd>
+inline JacobiSVD<Eigen::MatrixXcd>
 make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
 {
     const int m = mat.rows(); // Number of rows in the input complex matrix
@@ -412,8 +414,9 @@ make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
     // part.
     const int total_rows = m + imag_rows;
 
-    // Create a real matrix with 'total_rows' rows and 'n' columns.
-    Eigen::MatrixXcd rmat(total_rows, n);
+    // Create a REAL matrix with 'total_rows' rows and 'n' columns.
+    // This is the key optimization: use MatrixXd for SVD computation
+    Eigen::MatrixXd rmat(total_rows, n);
 
     // Top part: assign the real part of the input matrix.
     rmat.topRows(m) = mat.real();
@@ -421,12 +424,17 @@ make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
     // Bottom part: assign the selected block of the imaginary part.
     rmat.bottomRows(imag_rows) = mat.imag().block(offset_imag, 0, imag_rows, n);
 
-    // Compute the SVD of the real matrix.
-    // The options 'ComputeThinU' and 'ComputeThinV' compute the thin
-    // (economical) versions of U and V.
-    Eigen::JacobiSVD<Eigen::MatrixXcd> svd(rmat, Eigen::ComputeThinU |
-                                                     Eigen::ComputeThinV);
-    return svd;
+    // Compute SVD on the REAL matrix - this is much faster than complex SVD!
+    Eigen::JacobiSVD<Eigen::MatrixXd> real_svd(rmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    // Convert the real SVD results to complex matrices
+    Eigen::MatrixXcd U_complex = real_svd.matrixU().cast<std::complex<double>>();
+    Eigen::MatrixXcd V_complex = real_svd.matrixV().cast<std::complex<double>>();
+    const Eigen::VectorXd& singular_values = real_svd.singularValues();
+
+    // Create our custom JacobiSVD object with precomputed results
+    // This avoids recomputing SVD and provides the same interface
+    return JacobiSVD<Eigen::MatrixXcd>(U_complex, singular_values, V_complex);
 }
 
 template <typename S>
@@ -434,7 +442,7 @@ class MatsubaraSampling : public AbstractSampling {
 private:
     std::vector<MatsubaraFreq<S>> sampling_points_;
     Eigen::MatrixXcd matrix_;
-    mutable std::shared_ptr<Eigen::JacobiSVD<Eigen::MatrixXcd>> matrix_svd_;
+    mutable std::shared_ptr<JacobiSVD<Eigen::MatrixXcd>> matrix_svd_;
     bool positive_only_;
     bool has_zero_;
 
@@ -647,14 +655,14 @@ public:
         return sampling_points_;
     }
 
-    const Eigen::JacobiSVD<Eigen::MatrixXcd>& get_matrix_svd() const
+    const JacobiSVD<Eigen::MatrixXcd>& get_matrix_svd() const
     {
         if (!matrix_svd_) {
             if (positive_only_) {
-                matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXcd>>(
+                matrix_svd_ = std::make_shared<JacobiSVD<Eigen::MatrixXcd>>(
                     make_split_svd(matrix_, has_zero_));
             } else {
-                matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXcd>>(
+                matrix_svd_ = std::make_shared<JacobiSVD<Eigen::MatrixXcd>>(
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
             }
         }

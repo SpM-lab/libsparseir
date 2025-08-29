@@ -255,7 +255,7 @@ public:
     std::shared_ptr<DLRTauFuncsType<S>> u;
     std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
-    Eigen::JacobiSVD<Eigen::MatrixXd> matrix;
+    sparseir::JacobiSVD<Eigen::MatrixXd> matrix;
     std::function<double(double, double)> weight_func;
     Eigen::VectorXd _ir_default_tau_sampling_points;
 

@@ -10,6 +10,8 @@
 #include <complex>
 #include <tuple>
 
+#include "sparseir/jacobi_svd.hpp"
+
 #ifdef SPARSEIR_USE_BLAS
 extern "C" {
 
@@ -325,7 +327,7 @@ Eigen::Tensor<decltype(T1() * T2()), N2> _matop_along_dim(
 
 template <typename T, typename S, int N>
 Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
-_fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
+_fit_impl_first_dim(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
                     const Eigen::MatrixX<T> &B)
 {
     using ResultType = decltype(T() * S());
@@ -341,7 +343,7 @@ _fit_impl_first_dim(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
 }
 
 inline Eigen::MatrixXcd
-_fit_impl_first_dim_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
+_fit_impl_first_dim_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
                               const Eigen::MatrixXcd &B, bool has_zero)
 {
     auto U = svd.matrixU();
@@ -384,7 +386,7 @@ _fit_impl_first_dim_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
 
 template <typename T, typename S, int N>
 Eigen::Tensor<decltype(T() * S()), N>
-fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
+fit_impl(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
          const Eigen::Tensor<T, N> &arr, int dim)
 {
     if (dim < 0 || dim >= N) {
@@ -413,7 +415,7 @@ fit_impl(const Eigen::JacobiSVD<Eigen::MatrixX<S>> &svd,
 
 template <int N>
 Eigen::Tensor<std::complex<double>, N>
-fit_impl_split_svd(const Eigen::JacobiSVD<Eigen::MatrixXcd> &svd,
+fit_impl_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
                    const Eigen::Tensor<std::complex<double>, N> &arr, int dim,
                    bool has_zero)
 {

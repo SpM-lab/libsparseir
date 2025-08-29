@@ -31,20 +31,9 @@ static inline double benchmark_end(Benchmark *bench)
     return elapsed;
 }
 
-int main()
+int benchmark(double beta, double omega_max, double epsilon, int extra_size, int nrun, bool positive_only)
 {
-
-    typedef double _Complex c_complex;
     Benchmark bench;
-
-    // Create a fermionic finite temperature basis
-    double beta = 1e+5;     // Inverse temperature
-    double omega_max = 1.0; // Ultraviolet cutoff
-    double epsilon = 1e-8;  // Accuracy target
-
-    int extra_size = 20; // Number of extra dimensions to add
-
-    int nrun = 10000; // Number of runs to average over
 
     int32_t status;
 
@@ -91,6 +80,7 @@ int main()
     int32_t n_tau;
     status = spir_basis_get_n_default_taus(basis, &n_tau);
     assert(status == SPIR_COMPUTATION_SUCCESS);
+    printf("n_tau: %d\n", n_tau);
 
     double *tau_points = (double *)malloc(n_tau * sizeof(double));
     status = spir_basis_get_default_taus(basis, tau_points);
@@ -103,7 +93,6 @@ int main()
     assert(tau_sampling != NULL);
 
     // Get Matsubara frequency indices
-    bool positive_only = false;
     int32_t n_matsubara;
     status =
         spir_basis_get_n_default_matsus(basis, positive_only, &n_matsubara);
@@ -113,6 +102,7 @@ int main()
     status =
         spir_basis_get_default_matsus(basis, positive_only, matsubara_indices);
     assert(status == SPIR_COMPUTATION_SUCCESS);
+    printf("n_matsubara: %d\n", n_matsubara);
 
     // Create sampling object for Matsubara domain
     spir_sampling *matsubara_sampling = spir_matsu_sampling_new(
@@ -247,6 +237,28 @@ int main()
     spir_basis_release(basis);
     spir_sampling_release(tau_sampling);
     spir_sampling_release(matsubara_sampling);
+
+    return 0;
+}
+
+
+int main()
+{
+    double beta = 1e+5;     // Inverse temperature
+    double omega_max = 1.0; // Ultraviolet cutoff
+    double epsilon = 1e-8;  // Accuracy target
+
+    int extra_size = 1000; // dimension of the extra space
+
+    int nrun = 1000; // Number of runs to average over
+    
+    printf("Benchmark (positive only = false)\n");
+    benchmark(beta, omega_max, epsilon, extra_size, nrun, false);
+    printf("\n");
+
+    printf("Benchmark (positive only = true)\n");
+    benchmark(beta, omega_max, epsilon, extra_size, nrun, true);
+    printf("\n");
 
     return 0;
 }
