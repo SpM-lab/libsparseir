@@ -99,14 +99,15 @@ class AugmentedBasis;
 
 // Common implementation for evaluate_inplace
 template <typename Sampler, typename InputScalar = double,
-          typename OutputScalar = std::complex<double>, int Dim = 3>
+          typename OutputScalar = std::complex<double>>
 int evaluate_inplace_impl(
     const Sampler &sampler,
-    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, Dim>> &input,
-    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>> &output)
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
+    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
 {
     using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
     using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    const int Dim = 3;
 
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension
@@ -157,12 +158,13 @@ int evaluate_inplace_impl(
 
 // Common implementation for evaluate_inplace
 template <typename Sampler, typename InputScalar = double,
-          typename OutputScalar = std::complex<double>, int Dim = 3>
+          typename OutputScalar = std::complex<double>>
 int fit_inplace_impl(
     const Sampler &sampler,
-    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, Dim>> &input,
-    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>> &output)
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
+    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
 {
+    const int Dim = 3;
 
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension
@@ -288,7 +290,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return evaluate_inplace_impl<TauSampling<S>, double, double, 3>(
+        return evaluate_inplace_impl<TauSampling<S>, double, double>(
             *this, input, dim, output);
     }
 
@@ -299,7 +301,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return fit_inplace_impl<TauSampling<S>, double, double, 3>(*this, input,
+        return fit_inplace_impl<TauSampling<S>, double, double>(*this, input,
                                                                    dim, output);
     }
     // Implement evaluate_inplace_dd method using the common implementation
@@ -313,7 +315,7 @@ public:
         const override
     {
         return evaluate_inplace_impl<TauSampling<S>, std::complex<double>,
-                                     std::complex<double>, 3>(*this, input, dim,
+                                     std::complex<double>>(*this, input, dim,
                                                               output);
     }
     // Implement fit_inplace_zz method using the common implementation
@@ -327,7 +329,7 @@ public:
         const override
     {
         return fit_inplace_impl<TauSampling<S>, std::complex<double>,
-                                std::complex<double>, 3>(*this, input, dim,
+                                std::complex<double>>(*this, input, dim,
                                                          output);
     }
 
@@ -510,7 +512,7 @@ public:
         const override
     {
         return evaluate_inplace_impl<MatsubaraSampling<S>, double,
-                                     std::complex<double>, 3>(*this, input, dim,
+                                     std::complex<double>>(*this, input, dim,
                                                               output);
     }
 
@@ -525,7 +527,7 @@ public:
         const override
     {
         return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
-                                     std::complex<double>, 3>(*this, input, dim,
+                                     std::complex<double>>(*this, input, dim,
                                                               output);
     }
 
@@ -540,7 +542,7 @@ public:
         const override
     {
         return fit_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
-                                std::complex<double>, 3>(*this, input, dim,
+                                std::complex<double>>(*this, input, dim,
                                                          output);
     }
 
