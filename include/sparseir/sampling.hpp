@@ -140,11 +140,6 @@ int evaluate_inplace_impl(
         return SPIR_COMPUTATION_SUCCESS;
     }
 
-    // dim == 1
-    if (dim != 1) {
-        throw std::runtime_error("dim should be 1");
-    }
-
     // Cache buffers
     std::vector<InputScalar> input_buffer(sampler.basis_size() * extra_size);
     std::vector<OutputScalar> output_buffer(sampler.n_sampling_points() * extra_size);
@@ -160,23 +155,26 @@ int evaluate_inplace_impl(
         output_buffer.data(), sampler.n_sampling_points(), input_dimensions[0], input_dimensions[2]);
 
     // move the target dimension (dim=1) to the first position
-    //for (int k = 0; k < input_dimensions[2]; k++) {
-        //for (int j = 0; j < input_dimensions[1]; j++) {
-            //for (int i = 0; i < input_dimensions[0]; i++) {
-                //input_transposed(j, i, k) = input(i, j, k);
-            //}
-        //}
-    //}
-    input_transposed = movedim(input, 1, 0);
+    for (int k = 0; k < input_dimensions[2]; k++) {
+        for (int j = 0; j < input_dimensions[1]; j++) {
+            for (int i = 0; i < input_dimensions[0]; i++) {
+                input_transposed(j, i, k) = input(i, j, k);
+            }
+        }
+    }
 
     auto input_matrix = Eigen::Map<const InputMatrix>(&input_buffer[0], sampler.basis_size(), extra_size);
     auto output_matrix = Eigen::Map<OutputMatrix>(&output_buffer[0], sampler.n_sampling_points(), extra_size);
     sampler.evaluate_inplace(input_matrix, 0, output_matrix);
 
     // transpose back: (n_sampling_points, dim0, dim2) -> (dim0, n_sampling_points, dim2)
-    Eigen::TensorMap<const Eigen::Tensor<OutputScalar, Dim>> output_const_map(
-        output_transposed.data(), output_transposed.dimensions());
-    output = movedim(output_const_map, 0, dim);
+    for (int k = 0; k < input_dimensions[2]; k++) {
+        for (int j = 0; j < input_dimensions[0]; j++) {
+            for (int i = 0; i < sampler.n_sampling_points(); i++) {
+                output(j, i, k) = output_transposed(i, j, k);
+            }
+        }
+    }
 
     return SPIR_COMPUTATION_SUCCESS; // Success
 }
