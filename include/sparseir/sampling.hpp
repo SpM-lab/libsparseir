@@ -140,9 +140,8 @@ int evaluate_inplace_impl(
         return SPIR_COMPUTATION_SUCCESS;
     }
 
-    // Cache buffers
+    // TODO: Cache buffers to avoid reallocation
     std::vector<InputScalar> input_buffer(sampler.basis_size() * extra_size);
-    std::vector<OutputScalar> output_buffer(sampler.n_sampling_points() * extra_size);
 
     auto input_dimensions = input.dimensions();
     
@@ -152,7 +151,7 @@ int evaluate_inplace_impl(
         input_buffer.data(), sampler.basis_size(), input_dimensions[0], input_dimensions[2]);
 
     auto output_transposed = Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>>(
-        output_buffer.data(), sampler.n_sampling_points(), input_dimensions[0], input_dimensions[2]);
+        output.data(), sampler.n_sampling_points(), input_dimensions[0], input_dimensions[2]);
 
     // move the target dimension (dim=1) to the first position
     for (int k = 0; k < input_dimensions[2]; k++) {
@@ -164,14 +163,20 @@ int evaluate_inplace_impl(
     }
 
     auto input_matrix = Eigen::Map<const InputMatrix>(&input_buffer[0], sampler.basis_size(), extra_size);
-    auto output_matrix = Eigen::Map<OutputMatrix>(&output_buffer[0], sampler.n_sampling_points(), extra_size);
+    auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), sampler.n_sampling_points(), extra_size);
     sampler.evaluate_inplace(input_matrix, 0, output_matrix);
 
     // transpose back: (n_sampling_points, dim0, dim2) -> (dim0, n_sampling_points, dim2)
+    auto buffer = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>(input_dimensions[0], sampler.n_sampling_points());
     for (int k = 0; k < input_dimensions[2]; k++) {
         for (int j = 0; j < input_dimensions[0]; j++) {
             for (int i = 0; i < sampler.n_sampling_points(); i++) {
-                output(j, i, k) = output_transposed(i, j, k);
+                buffer(j, i) = output_transposed(i, j, k);
+            }
+        }
+        for (int i = 0; i < sampler.n_sampling_points(); i++) {
+            for (int j = 0; j < input_dimensions[0]; j++) {
+                output(j, i, k) = buffer(j, i);
             }
         }
     }
