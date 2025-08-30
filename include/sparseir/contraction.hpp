@@ -49,6 +49,26 @@ extern "C" {
 
 namespace sparseir {
 
+
+template <typename T1, typename T2, typename T3>
+void _gemm_inplace(const T1* A, const T2* B, T3* C, int M, int N, int K) {
+   // use Eigen + Eigen::Map
+   Eigen::Map<const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> A_map(A, M, K);
+   Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> B_map(B, K, N);
+   Eigen::Map<Eigen::Matrix<T3, Eigen::Dynamic, Eigen::Dynamic>> C_map(C, M, N);
+   C_map = A_map * B_map;
+}
+
+// second matrix is transposed
+template <typename T1, typename T2, typename T3>
+void _gemm_inplace_t(const T1* A, const T2* B, T3* C, int M, int N, int K) {
+   Eigen::Map<const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> A_map(A, M, K);
+   Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> B_map(B, K, N);
+   Eigen::Map<Eigen::Matrix<T3, Eigen::Dynamic, Eigen::Dynamic>> C_map(C, M, N);
+   C_map = A_map * B_map.transpose();
+}
+
+
 #ifdef SPARSEIR_USE_BLAS
 // Type-specific CBLAS GEMM implementations
 template<typename U, typename V, typename ResultType>

@@ -105,11 +105,34 @@ int evaluate_inplace_impl(
     const Eigen::TensorMap<const Eigen::Tensor<InputScalar, Dim>> &input,
     int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>> &output)
 {
+    using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
 
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension
         return SPIR_INVALID_DIMENSION;
     }
+
+    // extra dimension
+    int extra_size = 1;
+    for (int i = 0; i < Dim; i++) {
+        if (i != dim) {
+           extra_size *= input.dimension(i);
+        }
+    }
+
+    if (dim == 0) {
+        auto input_matrix = Eigen::Map<const InputMatrix>(input.data(), sampler.basis_size(), extra_size);
+        auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), sampler.n_sampling_points(), extra_size);
+        sampler.evaluate_inplace(input_matrix, dim, output_matrix);
+        return SPIR_COMPUTATION_SUCCESS;
+    } else if (dim == Dim - 1) {
+        auto input_matrix = Eigen::Map<const InputMatrix>(input.data(), extra_size, sampler.basis_size());
+        auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), extra_size, sampler.n_sampling_points());
+        sampler.evaluate_inplace(input_matrix, dim, output_matrix);
+        return SPIR_COMPUTATION_SUCCESS;
+    }
+
 
     if (sampler.basis_size() !=
         static_cast<std::size_t>(input.dimension(dim))) {
@@ -333,6 +356,26 @@ public:
     {
         return _matop_along_dim(matrix_, al, dim);
     }
+
+    template <typename InputScalar, typename OutputScalar>
+    void
+    evaluate_inplace(
+        const Eigen::Map<const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al, int dim, Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>> &output) const
+    {
+        // dim should be 0 or 1
+        if (dim != 0 && dim != 1) {
+            throw std::runtime_error("dim should be 0 or 1");
+        }
+        if (dim == 0) {
+            // (n_sampling_points, basis_size) * (basis_size, extra_size) = (n_sampling_points, extra_size)
+            _gemm_inplace(matrix_.data(), al.data(), output.data(), matrix_.rows(), output.cols(), matrix_.cols());
+        } else {
+            // (extra_size, basis_size) * (basis_size, n_sampling_points) = (extra_size, n_sampling_points)
+            _gemm_inplace_t(matrix_.data(), al.data(), output.data(), matrix_.rows(), output.cols(), matrix_.cols());
+        }
+    }
+
+
 
     // Overload for Tensor (converts to TensorMap)
     template <typename T, int N>
@@ -617,6 +660,25 @@ public:
                                                            al.dimensions());
         return evaluate(al_map, dim);
     }
+
+    template <typename InputScalar, typename OutputScalar>
+    void
+    evaluate_inplace(
+        const Eigen::Map<const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al, int dim, Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>> &output) const
+    {
+        // dim should be 0 or 1
+        if (dim != 0 && dim != 1) {
+            throw std::runtime_error("dim should be 0 or 1");
+        }
+        if (dim == 0) {
+            // (n_sampling_points, basis_size) * (basis_size, extra_size) = (n_sampling_points, extra_size)
+            output = matrix_ * al;
+        } else {
+            // (extra_size, basis_size) * (basis_size, n_sampling_points) = (extra_size, n_sampling_points)
+            output = al * matrix_.transpose();
+        }
+    }
+
 
     // Primary template for complex input tensors
     template <typename T, int N>
