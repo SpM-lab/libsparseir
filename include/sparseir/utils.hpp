@@ -191,6 +191,16 @@ Eigen::Tensor<T, N> movedim(const Eigen::Tensor<T, N> &arr, int src, int dst)
     return arr.shuffle(perm);
 }
 
+template <typename T, int N>
+Eigen::Tensor<T, N> movedim(const Eigen::TensorMap<const Eigen::Tensor<T, N>> &arr, int src, int dst)
+{
+    if (src == dst) {
+        return arr;
+    }
+    auto perm = getperm<N>(src, dst);
+    return arr.shuffle(perm);
+}
+
 template <typename T, int N, int Options>
 Eigen::Tensor<T, N, Options> movedim(const Eigen::Tensor<T, N, Options> &arr, int src, int dst)
 {

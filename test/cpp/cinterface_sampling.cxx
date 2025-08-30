@@ -333,9 +333,9 @@ void test_tau_sampling_evaluation_4d_row_major()
                 for (int k = 0; k < gtau_cpp.dimension(2); ++k) {
                     for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
                         REQUIRE(gtau_cpp(i, j, k, l) ==
-                                output_tensor(i, j, k, l));
+                                Approx(output_tensor(i, j, k, l)));
                         REQUIRE(gl_cpp_fit(i, j, k, l) ==
-                                fit_tensor(i, j, k, l));
+                                Approx(fit_tensor(i, j, k, l)));
                     }
                 }
             }
@@ -472,10 +472,14 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
             for (int j = 0; j < gtau_cpp.dimension(1); ++j) {
                 for (int k = 0; k < gtau_cpp.dimension(2); ++k) {
                     for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
-                        REQUIRE(gtau_cpp(i, j, k, l) ==
-                                output_tensor(i, j, k, l));
-                        REQUIRE(gl_cpp_fit(i, j, k, l) ==
-                                fit_tensor(i, j, k, l));
+                        REQUIRE(std::real(gtau_cpp(i, j, k, l)) ==
+                                Approx(std::real(output_tensor(i, j, k, l))));
+                        REQUIRE(std::imag(gtau_cpp(i, j, k, l)) ==
+                                Approx(std::imag(output_tensor(i, j, k, l))));
+                        REQUIRE(std::real(gl_cpp_fit(i, j, k, l)) ==
+                                Approx(std::real(fit_tensor(i, j, k, l))));
+                        REQUIRE(std::imag(gl_cpp_fit(i, j, k, l)) ==
+                                Approx(std::imag(fit_tensor(i, j, k, l))));
                     }
                 }
             }
@@ -574,10 +578,10 @@ void test_tau_sampling_evaluation_4d_column_major()
         REQUIRE(fit_status == 0);
         // Compare with C++ implementation
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(evaluate_output[i] == gtau_cpp(i));
+            REQUIRE(evaluate_output[i] == Approx(gtau_cpp(i)));
             // TODO: fix this
             REQUIRE(gl_cpp_fit(i) == Approx(gl_cpp(i)));
-            REQUIRE(fit_output[i] == gl_cpp_fit(i));
+            REQUIRE(fit_output[i] == Approx(gl_cpp_fit(i)));
         }
     }
 
@@ -1267,10 +1271,14 @@ void test_matsubara_sampling_evaluation_4d_row_major()
             for (int j = 0; j < gtau_cpp.dimension(1); ++j) {
                 for (int k = 0; k < gtau_cpp.dimension(2); ++k) {
                     for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
-                        REQUIRE(gtau_cpp(i, j, k, l) ==
-                                output_tensor(i, j, k, l));
-                        REQUIRE(gl_cpp_fit(i, j, k, l) ==
-                                fit_tensor(i, j, k, l));
+                        REQUIRE(std::real(gtau_cpp(i, j, k, l)) ==
+                                Approx(std::real(output_tensor(i, j, k, l))));
+                        REQUIRE(std::imag(gtau_cpp(i, j, k, l)) ==
+                                Approx(std::imag(output_tensor(i, j, k, l))));
+                        REQUIRE(std::real(gl_cpp_fit(i, j, k, l)) ==
+                                Approx(std::real(fit_tensor(i, j, k, l))));
+                        REQUIRE(std::imag(gl_cpp_fit(i, j, k, l)) ==
+                                Approx(std::imag(fit_tensor(i, j, k, l))));
                     }
                 }
             }
@@ -1403,10 +1411,14 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
             for (int j = 0; j < gtau_cpp.dimension(1); ++j) {
                 for (int k = 0; k < gtau_cpp.dimension(2); ++k) {
                     for (int l = 0; l < gtau_cpp.dimension(3); ++l) {
-                        REQUIRE(gtau_cpp(i, j, k, l) ==
-                                output_tensor(i, j, k, l));
-                        REQUIRE(gl_cpp_fit(i, j, k, l) ==
-                                fit_tensor(i, j, k, l));
+                        REQUIRE(std::real(gtau_cpp(i, j, k, l)) ==
+                                Approx(std::real(output_tensor(i, j, k, l))));
+                        REQUIRE(std::imag(gtau_cpp(i, j, k, l)) ==
+                                Approx(std::imag(output_tensor(i, j, k, l))));
+                        REQUIRE(std::real(gl_cpp_fit(i, j, k, l)) ==
+                                Approx(std::real(fit_tensor(i, j, k, l))));
+                        REQUIRE(std::imag(gl_cpp_fit(i, j, k, l)) ==
+                                Approx(std::imag(fit_tensor(i, j, k, l))));
                     }
                 }
             }

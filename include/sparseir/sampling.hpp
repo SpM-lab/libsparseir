@@ -114,6 +114,12 @@ int evaluate_inplace_impl(
         return SPIR_INVALID_DIMENSION;
     }
 
+    if (sampler.basis_size() !=
+        static_cast<std::size_t>(input.dimension(dim))) {
+        // Dimension mismatch
+        return SPIR_INPUT_DIMENSION_MISMATCH;
+    }
+
     // extra dimension
     int extra_size = 1;
     for (int i = 0; i < Dim; i++) {
@@ -134,24 +140,43 @@ int evaluate_inplace_impl(
         return SPIR_COMPUTATION_SUCCESS;
     }
 
-
-    if (sampler.basis_size() !=
-        static_cast<std::size_t>(input.dimension(dim))) {
-        // Dimension mismatch
-        return SPIR_INPUT_DIMENSION_MISMATCH;
+    // dim == 1
+    if (dim != 1) {
+        throw std::runtime_error("dim should be 1");
     }
 
-    // Calculate result using the existing evaluate method
-    Eigen::Tensor<OutputScalar, Dim> result = sampler.evaluate(input, dim);
+    // Cache buffers
+    std::vector<InputScalar> input_buffer(sampler.basis_size() * extra_size);
+    std::vector<OutputScalar> output_buffer(sampler.n_sampling_points() * extra_size);
 
-    // Check if output dimensions match result dimensions
-    if (output.dimensions() != result.dimensions()) {
-        // Output tensor has wrong dimensions
-        return SPIR_OUTPUT_DIMENSION_MISMATCH;
-    }
+    auto input_dimensions = input.dimensions();
+    
+    // For dim == 1, we need to transpose (dim0, dim1, dim2) -> (dim1, dim0, dim2)
+    // where dim1 is the basis dimension to be moved to first position
+    auto input_transposed = Eigen::TensorMap<Eigen::Tensor<InputScalar, Dim>>(
+        input_buffer.data(), sampler.basis_size(), input_dimensions[0], input_dimensions[2]);
 
-    // Copy the result to the output tensor
-    std::copy(result.data(), result.data() + result.size(), output.data());
+    auto output_transposed = Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>>(
+        output_buffer.data(), sampler.n_sampling_points(), input_dimensions[0], input_dimensions[2]);
+
+    // move the target dimension (dim=1) to the first position
+    //for (int k = 0; k < input_dimensions[2]; k++) {
+        //for (int j = 0; j < input_dimensions[1]; j++) {
+            //for (int i = 0; i < input_dimensions[0]; i++) {
+                //input_transposed(j, i, k) = input(i, j, k);
+            //}
+        //}
+    //}
+    input_transposed = movedim(input, 1, 0);
+
+    auto input_matrix = Eigen::Map<const InputMatrix>(&input_buffer[0], sampler.basis_size(), extra_size);
+    auto output_matrix = Eigen::Map<OutputMatrix>(&output_buffer[0], sampler.n_sampling_points(), extra_size);
+    sampler.evaluate_inplace(input_matrix, 0, output_matrix);
+
+    // transpose back: (n_sampling_points, dim0, dim2) -> (dim0, n_sampling_points, dim2)
+    Eigen::TensorMap<const Eigen::Tensor<OutputScalar, Dim>> output_const_map(
+        output_transposed.data(), output_transposed.dimensions());
+    output = movedim(output_const_map, 0, dim);
 
     return SPIR_COMPUTATION_SUCCESS; // Success
 }
