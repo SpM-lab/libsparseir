@@ -74,20 +74,33 @@ inline void _gemm_blas_impl<std::complex<double>, std::complex<double>, std::com
 // Specialization for double * complex<double> -> complex<double>
 template<>
 inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
-    // Cast double to complex<double> and use zgemm
-    const std::complex<double> alpha(1.0);
-    const std::complex<double> beta(0.0);
+    // Optimize by computing real and imaginary parts separately using dgemm
+    // This avoids complex arithmetic and temporary allocations
     
-    // Create temporary complex arrays for A
-    std::vector<std::complex<double>> A_complex(M * M);
-    for (int i = 0; i < M * M; ++i) {
-        A_complex[i] = std::complex<double>(A[i], 0.0);
+    // Extract real and imaginary parts of B
+    std::vector<double> B_real(K * N);
+    std::vector<double> B_imag(K * N);
+    for (int i = 0; i < K * N; ++i) {
+        B_real[i] = B[i].real();
+        B_imag[i] = B[i].imag();
     }
     
-    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, &alpha, 
-                 reinterpret_cast<const double*>(A_complex.data()), M, 
-                 reinterpret_cast<const double*>(B), K, 
-                 &beta, reinterpret_cast<double*>(C), M);
+    // Temporary storage for results
+    std::vector<double> C_real(M * N);
+    std::vector<double> C_imag(M * N);
+    
+    // Compute C_real = A * B_real
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
+                 A, M, B_real.data(), K, 0.0, C_real.data(), M);
+    
+    // Compute C_imag = A * B_imag
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, 
+                 A, M, B_imag.data(), K, 0.0, C_imag.data(), M);
+    
+    // Combine real and imaginary parts into final result
+    for (int i = 0; i < M * N; ++i) {
+        C[i] = std::complex<double>(C_real[i], C_imag[i]);
+    }
 }
 
 #endif
@@ -346,20 +359,20 @@ inline Eigen::MatrixXcd
 _fit_impl_first_dim_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
                               const Eigen::MatrixXcd &B, bool has_zero)
 {
-    auto U = svd.matrixU();
+    Eigen::MatrixXd U = svd.matrixU().real();
 
     Eigen::Index U_halfsize =
         U.rows() % 2 == 0 ? U.rows() / 2 : U.rows() / 2 + 1;
 
-    Eigen::MatrixXcd U_realT;
+    Eigen::MatrixXd U_realT;
     U_realT = U.block(0, 0, U_halfsize, U.cols()).transpose();
 
     // Create a properly sized matrix first
-    Eigen::MatrixXcd U_imag = Eigen::MatrixXcd::Zero(U_halfsize, U.cols());
+    Eigen::MatrixXd U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
 
     // Get the blocks we need
     if (has_zero) {
-        U_imag = Eigen::MatrixXcd::Zero(U_halfsize, U.cols());
+        U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
         auto U_imag_ = U.block(U_halfsize, 0, U_halfsize - 1, U.cols());
         auto U_imag_1 = U.block(0, 0, 1, U.cols());
 
@@ -370,18 +383,19 @@ _fit_impl_first_dim_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
         U_imag = U.block(U_halfsize, 0, U_halfsize, U.cols());
     }
 
-    Eigen::MatrixXcd U_imagT = U_imag.transpose();
-    Eigen::MatrixXcd B_real = B.real();
-    Eigen::MatrixXcd B_imag = B.imag();
-
-    Eigen::MatrixXcd UHB = _gemm(U_realT, B_real);
+    Eigen::MatrixXd U_imagT = U_imag.transpose();
+    Eigen::MatrixXd B_real = B.real();
+    Eigen::MatrixXd B_imag = B.imag();
+    Eigen::MatrixXd UHB = _gemm(U_realT, B_real);
     UHB += _gemm(U_imagT, B_imag);
 
     // Apply inverse singular values to the rows of UHB
     for (int i = 0; i < svd.singularValues().size(); ++i) {
-        UHB.row(i) /= std::complex<double>(svd.singularValues()(i));
+        UHB.row(i) /= svd.singularValues()(i);
     }
-    return _gemm(svd.matrixV(), UHB);
+    Eigen::MatrixXd matrixV = svd.matrixV().real();
+    auto result = _gemm(matrixV, UHB);
+    return result.cast<std::complex<double>>();
 }
 
 template <typename T, typename S, int N>

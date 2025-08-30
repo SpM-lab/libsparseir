@@ -220,9 +220,9 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     for (int i = 0; i < n_matsubara; ++i) {
         for (int j = 0; j < extra_size; ++j) {
             assert(fabs(creal(g_matsubara_reconstructed[i * extra_size + j]) -
-                        creal(g_matsubara[i * extra_size + j])) < epsilon);
+                        creal(g_matsubara[i * extra_size + j])) < 10 * epsilon);
             assert(fabs(cimag(g_matsubara_reconstructed[i * extra_size + j]) -
-                        cimag(g_matsubara[i * extra_size + j])) < epsilon);
+                        cimag(g_matsubara[i * extra_size + j])) < 10 * epsilon);
         }
     }
 
@@ -246,11 +246,11 @@ int main()
 {
     double beta = 1e+5;     // Inverse temperature
     double omega_max = 1.0; // Ultraviolet cutoff
-    double epsilon = 1e-8;  // Accuracy target
+    double epsilon = 1e-10;  // Accuracy target
 
-    int extra_size = 1000; // dimension of the extra space
+    int extra_size = 100; // dimension of the extra space
 
-    int nrun = 1000; // Number of runs to average over
+    int nrun = 10000; // Number of runs to average over
     
     printf("Benchmark (positive only = false)\n");
     benchmark(beta, omega_max, epsilon, extra_size, nrun, false);
