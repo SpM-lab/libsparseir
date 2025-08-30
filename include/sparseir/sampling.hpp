@@ -118,7 +118,7 @@ int evaluate_inplace_impl(
     }
 
     // Calculate result using the existing evaluate method
-    auto result = sampler.evaluate(input, dim);
+    Eigen::Tensor<OutputScalar, Dim> result = sampler.evaluate(input, dim);
 
     // Check if output dimensions match result dimensions
     if (output.dimensions() != result.dimensions()) {
