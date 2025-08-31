@@ -329,8 +329,9 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return fit_inplace_impl<TauSampling<S>, double, double>(*this, input,
-                                                                   dim, output);
+        return fit_inplace_dim3(get_matrix_svd(), input, dim, output);
+        //return fit_inplace_impl<TauSampling<S>, double, double>(*this, input,
+                                                                   //dim, output);
     }
     // Implement evaluate_inplace_dd method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
@@ -355,9 +356,10 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return fit_inplace_impl<TauSampling<S>, std::complex<double>,
-                                std::complex<double>>(*this, input, dim,
-                                                         output);
+        return fit_inplace_dim3(get_matrix_svd(), input, dim, output);
+        //return fit_inplace_impl<TauSampling<S>, std::complex<double>,
+                                //std::complex<double>>(*this, input, dim,
+                                                         //output);
     }
 
     template <typename Basis>
@@ -385,25 +387,6 @@ public:
     {
         return _matop_along_dim(matrix_, al, dim);
     }
-
-    template <typename InputScalar, typename OutputScalar>
-    void
-    evaluate_inplace(
-        const Eigen::Map<const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al, int dim, Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>> &output) const
-    {
-        // dim should be 0 or 1
-        if (dim != 0 && dim != 1) {
-            throw std::runtime_error("dim should be 0 or 1, but got " + std::to_string(dim));
-        }
-        if (dim == 0) {
-            // (n_sampling_points, basis_size) * (basis_size, extra_size) = (n_sampling_points, extra_size)
-            _gemm_inplace(matrix_.data(), al.data(), output.data(), matrix_.rows(), output.cols(), matrix_.cols());
-        } else {
-            // (extra_size, basis_size) * (basis_size, n_sampling_points) = (extra_size, n_sampling_points)
-            _gemm_inplace_t(al.data(), matrix_.data(), output.data(), al.rows(), matrix_.cols(), matrix_.rows());
-        }
-    }
-
 
 
     // Overload for Tensor (converts to TensorMap)
@@ -551,9 +534,6 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        //return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
-                                   //std::complex<double>>(*this, input, dim,
-                                                             //output);
         return evaluate_inplace_dim3(matrix_, input, dim, output);
     }
 
@@ -691,24 +671,6 @@ public:
         Eigen::TensorMap<const Eigen::Tensor<T, N>> al_map(al.data(),
                                                            al.dimensions());
         return evaluate(al_map, dim);
-    }
-
-    template <typename InputScalar, typename OutputScalar>
-    void
-    evaluate_inplace(
-        const Eigen::Map<const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al, int dim, Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>> &output) const
-    {
-        // dim should be 0 or 1
-        if (dim != 0 && dim != 1) {
-            throw std::runtime_error("dim should be 0 or 1");
-        }
-        if (dim == 0) {
-            // (n_sampling_points, basis_size) * (basis_size, extra_size) = (n_sampling_points, extra_size)
-            output = matrix_ * al;
-        } else {
-            // (extra_size, basis_size) * (basis_size, n_sampling_points) = (extra_size, n_sampling_points)
-            output = al * matrix_.transpose();
-        }
     }
 
 
