@@ -80,7 +80,6 @@ inline void _gemm_blas_impl<std::complex<double>, std::complex<double>, std::com
 template<>
 inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
     // Optimize by computing real and imaginary parts separately using dgemm
-    // This avoids complex arithmetic and temporary allocations
     
     // Extract real and imaginary parts of B
     std::vector<double> B_real(K * N);

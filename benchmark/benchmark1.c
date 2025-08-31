@@ -116,46 +116,59 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     assert(status == SPIR_COMPUTATION_SUCCESS);
 
     // [n_matsubara, extra_size]
-    c_complex *g_matsubara = (c_complex *)malloc(n_matsubara * extra_size * sizeof(c_complex));
+    c_complex *g_matsu_z = (c_complex *)malloc(n_matsubara * extra_size * sizeof(c_complex));
 
     // [n_basis, extra_size]
-    c_complex *g_basis = (c_complex *)malloc(n_basis * extra_size * sizeof(c_complex));
+    double *g_basis_d = (double *)malloc(n_basis * extra_size * sizeof(double));
+    c_complex *g_basis_z = (c_complex *)malloc(n_basis * extra_size * sizeof(c_complex));
 
     // target dimension for fit
     int32_t target_dim = 0;
 
+    // Test: matsubara, fit_zz
     int32_t dims[2] = {n_matsubara, extra_size};
-    status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR,
-                                  ndim, dims, target_dim, g_matsubara,
-                                  g_basis); // First run to warm up the cache
+    status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                  ndim, dims, target_dim, g_matsu_z,
+                                  g_basis_z); // First run to warm up the cache
     benchmark_start(&bench, "fit_zz (Matsubara)");
     for (int i = 0; i < nrun; ++i) {
         status =
-            spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR, ndim,
-                                 dims, target_dim, g_matsubara, g_basis);
+            spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                 dims, target_dim, g_matsu_z, g_basis_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
     benchmark_end(&bench);
 
+
+    // Test: matsubara, eval_zz
     dims[0] = n_basis;
     dims[1] = extra_size;
     benchmark_start(&bench, "eval_zz (Matsubara)");
     for (int i = 0; i < nrun; ++i) {
-        status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR,
-                                       ndim, dims, target_dim, g_basis, g_matsubara);
+        status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                       ndim, dims, target_dim, g_basis_z, g_matsu_z);
+        assert(status == SPIR_COMPUTATION_SUCCESS);
+    }
+    benchmark_end(&bench);
+
+    // Test: matsubara, eval_dz
+    benchmark_start(&bench, "eval_dz (Matsubara)");
+    for (int i = 0; i < nrun; ++i) {
+        status = spir_sampling_eval_dz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                       ndim, dims, target_dim, g_basis_d, g_matsu_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
     benchmark_end(&bench);
 
     benchmark_start(&bench, "fit_zz (Tau)");
-    c_complex *g_tau = (c_complex *)malloc(n_tau * extra_size * sizeof(c_complex));
+    c_complex *g_tau_z = (c_complex *)malloc(n_tau * extra_size * sizeof(c_complex));
     dims[0] = n_tau;
     dims[1] = extra_size;
-    status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR,
-                                  ndim, dims, target_dim, g_tau, g_basis); // First run to warm up the cache
+    status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                  ndim, dims, target_dim, g_tau_z, g_basis_z); // First run to warm up the cache
     for (int i = 0; i < nrun; ++i) {
-        status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR, ndim,
-                                      dims, target_dim, g_tau, g_basis);
+        status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                      dims, target_dim, g_tau_z, g_basis_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
     assert(status == SPIR_COMPUTATION_SUCCESS);
@@ -165,8 +178,19 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     dims[1] = extra_size;
     benchmark_start(&bench, "eval_zz (Tau)");
     for (int i = 0; i < nrun; ++i) {
-        status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR, ndim,
-                                       dims, target_dim, g_basis, g_tau);
+        status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                       dims, target_dim, g_basis_z, g_tau_z);
+        assert(status == SPIR_COMPUTATION_SUCCESS);
+    }
+    benchmark_end(&bench);
+    
+
+    dims[0] = n_basis;
+    dims[1] = extra_size;
+    benchmark_start(&bench, "eval_dz (Tau)");
+    for (int i = 0; i < nrun; ++i) {
+        status = spir_sampling_eval_dz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                       dims, target_dim, g_basis_d, g_tau_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
     benchmark_end(&bench);
@@ -174,9 +198,9 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
 
     // Clean up (order is arbitrary)
     free(matsubara_indices);
-    free(g_matsubara);
-    free(g_basis);
-    free(g_tau);
+    free(g_matsu_z);
+    free(g_basis_z);
+    free(g_tau_z);
     free(tau_points);
     spir_basis_release(basis);
     spir_sampling_release(tau_sampling);
