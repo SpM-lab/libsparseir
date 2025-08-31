@@ -159,20 +159,67 @@ void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
 }
 
 
+inline void
+fit_inplace_dim2_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                              const Eigen::MatrixXcd &B, 
+                              Eigen::Map<Eigen::MatrixXcd> &output, bool has_zero)
+{
+    Eigen::MatrixXd U = svd.matrixU().real();
+
+    Eigen::Index U_halfsize =
+        U.rows() % 2 == 0 ? U.rows() / 2 : U.rows() / 2 + 1;
+
+    Eigen::MatrixXd U_realT;
+    U_realT = U.block(0, 0, U_halfsize, U.cols()).transpose();
+
+    // Create a properly sized matrix first
+    Eigen::MatrixXd U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
+
+    // Get the blocks we need
+    if (has_zero) {
+        U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
+        auto U_imag_ = U.block(U_halfsize, 0, U_halfsize - 1, U.cols());
+        auto U_imag_1 = U.block(0, 0, 1, U.cols());
+
+        // Now do the assignments
+        U_imag.topRows(1) = U_imag_1;
+        U_imag.bottomRows(U_imag_.rows()) = U_imag_;
+    } else {
+        U_imag = U.block(U_halfsize, 0, U_halfsize, U.cols());
+    }
+
+    Eigen::MatrixXd U_imagT = U_imag.transpose();
+    Eigen::MatrixXd B_real = B.real();
+    Eigen::MatrixXd B_imag = B.imag();
+    Eigen::MatrixXd UHB = _gemm(U_realT, B_real);
+    UHB += _gemm(U_imagT, B_imag);
+
+    // Apply inverse singular values to the rows of UHB
+    for (int i = 0; i < svd.singularValues().size(); ++i) {
+        UHB.row(i) /= svd.singularValues()(i);
+    }
+    Eigen::MatrixXd matrixV = svd.matrixV().real();
+    auto result = _gemm(matrixV, UHB);
+    output = result.cast<std::complex<double>>();
+}
+
+
+
 template <typename Scalar, typename InputScalar, typename OutputScalar, typename Func>
 int fit_inplace_dim3(
+    int n_sampling_points,
+    int basis_size,
     const sparseir::JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
     const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
     int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output,
-    Func &&fit_inplace_dim2_func
+    Func &&fit_inplace_dim2_func,
+    bool split_svd = false
 )
 {
     using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
     using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
 
     const int Dim = 3;
-    const auto basis_size = svd.matrixV().rows();
-    const auto n_sampling_points = svd.matrixU().rows();
 
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension

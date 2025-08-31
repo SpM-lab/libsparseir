@@ -243,7 +243,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return fit_inplace_dim3(get_matrix_svd(), input, dim, output, 
+        return fit_inplace_dim3(n_sampling_points(), basis_size(), get_matrix_svd(), input, dim, output, 
                                [](const sparseir::JacobiSVD<Eigen::MatrixXd> &svd,
                                   const Eigen::Map<const Eigen::MatrixXd> &input,
                                   Eigen::Map<Eigen::MatrixXd> &output) {
@@ -275,7 +275,7 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return fit_inplace_dim3(get_matrix_svd(), input, dim, output,
+        return fit_inplace_dim3(n_sampling_points(), basis_size(), get_matrix_svd(), input, dim, output,
                                [](const sparseir::JacobiSVD<Eigen::MatrixXd> &svd,
                                   const Eigen::Map<const Eigen::MatrixXcd> &input,
                                   Eigen::Map<Eigen::MatrixXcd> &output) {
@@ -470,6 +470,7 @@ public:
     {
         if (!positive_only_) {
             return fit_inplace_dim3(
+                n_sampling_points(), basis_size(),
                 get_matrix_svd(), input, dim, output,
                 [](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
                    const Eigen::Map<const Eigen::MatrixXcd> &input,
@@ -477,11 +478,18 @@ public:
                     fit_inplace_dim2(svd, input, output);
                 }
             );
+        } else {
+            std::cout << "fit_inplace_zz positive_only_" << std::endl;
+            return fit_inplace_dim3(
+                n_sampling_points(), basis_size(),
+                get_matrix_svd(), input, dim, output,
+                [this](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                   const Eigen::Map<const Eigen::MatrixXcd> &input,
+                   Eigen::Map<Eigen::MatrixXcd> &output) {
+                    fit_inplace_dim2_split_svd(svd, input, output, this->has_zero_);
+                }
+            );
         }
-
-        return fit_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
-                                std::complex<double>>(*this, input, dim,
-                                                         output);
     }
 
     template <typename Basis>
