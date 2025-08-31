@@ -10,7 +10,8 @@
 #include <complex>
 #include <tuple>
 
-#include "sparseir/jacobi_svd.hpp"
+#include "jacobi_svd.hpp"
+#include "sampling_impl.hpp"
 
 namespace sparseir {
 
@@ -318,8 +319,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return evaluate_inplace_impl<TauSampling<S>, double, double>(
-            *this, input, dim, output);
+        return evaluate_inplace_dim3<double>(matrix_, input, dim, output);
     }
 
     // Implement fit_inplace_dd method using the common implementation
@@ -342,10 +342,9 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return evaluate_inplace_impl<TauSampling<S>, std::complex<double>,
-                                     std::complex<double>>(*this, input, dim,
-                                                              output);
+        return evaluate_inplace_dim3<std::complex<double>>(matrix_, input, dim, output);
     }
+
     // Implement fit_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
     // supported
