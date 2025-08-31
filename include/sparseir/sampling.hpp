@@ -131,12 +131,12 @@ int evaluate_inplace_impl(
     if (dim == 0) {
         auto input_matrix = Eigen::Map<const InputMatrix>(input.data(), sampler.basis_size(), extra_size);
         auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), sampler.n_sampling_points(), extra_size);
-        sampler.evaluate_inplace(input_matrix, dim, output_matrix);
+        sampler.evaluate_inplace(input_matrix, 0, output_matrix);
         return SPIR_COMPUTATION_SUCCESS;
     } else if (dim == Dim - 1) {
         auto input_matrix = Eigen::Map<const InputMatrix>(input.data(), extra_size, sampler.basis_size());
         auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), extra_size, sampler.n_sampling_points());
-        sampler.evaluate_inplace(input_matrix, dim, output_matrix);
+        sampler.evaluate_inplace(input_matrix, 1, output_matrix);
         return SPIR_COMPUTATION_SUCCESS;
     }
 
@@ -394,14 +394,14 @@ public:
     {
         // dim should be 0 or 1
         if (dim != 0 && dim != 1) {
-            throw std::runtime_error("dim should be 0 or 1");
+            throw std::runtime_error("dim should be 0 or 1, but got " + std::to_string(dim));
         }
         if (dim == 0) {
             // (n_sampling_points, basis_size) * (basis_size, extra_size) = (n_sampling_points, extra_size)
             _gemm_inplace(matrix_.data(), al.data(), output.data(), matrix_.rows(), output.cols(), matrix_.cols());
         } else {
             // (extra_size, basis_size) * (basis_size, n_sampling_points) = (extra_size, n_sampling_points)
-            _gemm_inplace_t(matrix_.data(), al.data(), output.data(), matrix_.rows(), output.cols(), matrix_.cols());
+            _gemm_inplace_t(al.data(), matrix_.data(), output.data(), al.rows(), matrix_.cols(), matrix_.rows());
         }
     }
 

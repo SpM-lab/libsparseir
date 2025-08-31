@@ -110,7 +110,7 @@ inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(
 // Specialization for double * double -> double (transpose B)
 template<>
 inline void _gemm_blas_impl_transpose<double, double, double>(const double* A, const double* B, double* C, int M, int N, int K) {
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0, A, M, B, K, 0.0, C, M);
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0, A, M, B, N, 0.0, C, M);
 }
 
 // Specialization for complex<double> * complex<double> -> complex<double> (transpose B)
@@ -120,40 +120,30 @@ inline void _gemm_blas_impl_transpose<std::complex<double>, std::complex<double>
     const std::complex<double> beta(0.0);
     cblas_zgemm(CblasColMajor, CblasNoTrans, CblasTrans, M, N, K, &alpha, 
                  reinterpret_cast<const double*>(A), M, 
-                 reinterpret_cast<const double*>(B), K, 
+                 reinterpret_cast<const double*>(B), N, 
                  &beta, reinterpret_cast<double*>(C), M);
 }
 
 // Specialization for double * complex<double> -> complex<double> (transpose B)
 template<>
 inline void _gemm_blas_impl_transpose<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
-    // Optimize by computing real and imaginary parts separately using dgemm
-    // This avoids complex arithmetic and temporary allocations
-    
-    // Extract real and imaginary parts of B (note: B is K x N when transposed, so we need N x K elements)
-    std::vector<double> B_real(K * N);
-    std::vector<double> B_imag(K * N);
-    for (int i = 0; i < K * N; ++i) {
-        B_real[i] = B[i].real();
-        B_imag[i] = B[i].imag();
-    }
-    
-    // Temporary storage for results
-    std::vector<double> C_real(M * N);
-    std::vector<double> C_imag(M * N);
-    
-    // Compute C_real = A * B_real^T
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0, 
-                 A, M, B_real.data(), K, 0.0, C_real.data(), M);
-    
-    // Compute C_imag = A * B_imag^T
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0, 
-                 A, M, B_imag.data(), K, 0.0, C_imag.data(), M);
-    
-    // Combine real and imaginary parts into final result
-    for (int i = 0; i < M * N; ++i) {
-        C[i] = std::complex<double>(C_real[i], C_imag[i]);
-    }
+    // Since std::complex<double> has the same memory layout as std::pair<double, double>,
+    // we can directly reinterpret_cast and call dgemm once
+    // Note: When treating complex as double*, the matrix dimensions are doubled
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, M, 2*N, K, 1.0, 
+                 A, M, reinterpret_cast<const double*>(B), 2*N, 0.0, 
+                 reinterpret_cast<double*>(C), M);
+}
+
+// Specialization for complex<double> * double -> complex<double> (transpose B)
+template<>
+inline void _gemm_blas_impl_transpose<std::complex<double>, double, std::complex<double>>(const std::complex<double>* A, const double* B, std::complex<double>* C, int M, int N, int K) {
+    // Since std::complex<double> has the same memory layout as std::pair<double, double>,
+    // we can directly reinterpret_cast and call dgemm once
+    // Note: When treating complex as double*, the matrix dimensions are doubled
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, 2*M, N, K, 1.0, 
+                 reinterpret_cast<const double*>(A), 2*M, B, N, 0.0, 
+                 reinterpret_cast<double*>(C), 2*M);
 }
 
 #endif
@@ -176,7 +166,7 @@ void _gemm_inplace(const T1* A, const T2* B, T3* C, int M, int N, int K) {
 template <typename T1, typename T2, typename T3>
 void _gemm_inplace_t(const T1* A, const T2* B, T3* C, int M, int N, int K) {
    Eigen::Map<const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> A_map(A, M, K);
-   Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> B_map(B, K, N);
+   Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> B_map(B, N, K);
    Eigen::Map<Eigen::Matrix<T3, Eigen::Dynamic, Eigen::Dynamic>> C_map(C, M, N);
 #ifdef SPARSEIR_USE_BLAS
     // Call appropriate CBLAS function based on input types

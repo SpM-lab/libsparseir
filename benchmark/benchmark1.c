@@ -185,15 +185,15 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     benchmark_end(&bench);
     
 
-    dims[0] = n_basis;
-    dims[1] = extra_size;
-    benchmark_start(&bench, "eval_dz (Tau)");
-    for (int i = 0; i < nrun; ++i) {
-        status = spir_sampling_eval_dz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
-                                       dims, target_dim, g_basis_d, g_tau_z);
-        assert(status == SPIR_COMPUTATION_SUCCESS);
-    }
-    benchmark_end(&bench);
+    //dims[0] = n_basis;
+    //dims[1] = extra_size;
+    //benchmark_start(&bench, "eval_dz (Tau)");
+    //for (int i = 0; i < nrun; ++i) {
+        //status = spir_sampling_eval_dz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                       //dims, target_dim, g_basis_z, g_tau_z);
+        //assert(status == SPIR_COMPUTATION_SUCCESS);
+    //}
+    //benchmark_end(&bench);
 
 
     // Clean up (order is arbitrary)

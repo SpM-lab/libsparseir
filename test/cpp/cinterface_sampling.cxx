@@ -1037,14 +1037,14 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 
         // Compare with C++ implementation
         for (int i = 0; i < n_points * d1 * d2 * d3; ++i) {
-            REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
-            REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
+            REQUIRE(std::abs(__real__ evaluate_output[i] - gtau_cpp(i).real()) < 1e-10);
+            REQUIRE(std::abs(__imag__ evaluate_output[i] - gtau_cpp(i).imag()) < 1e-10);
         }
-
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
-            REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
+            REQUIRE(std::abs(__real__ fit_output[i] - gl_cpp_fit(i).real()) < 1e-10);
+            REQUIRE(std::abs(__imag__ fit_output[i] - gl_cpp_fit(i).imag()) < 1e-10);
         }
+        
     }
 
     // Clean up
