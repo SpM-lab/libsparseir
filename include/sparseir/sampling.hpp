@@ -551,9 +551,10 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
-                                     std::complex<double>>(*this, input, dim,
-                                                              output);
+        //return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
+                                   //std::complex<double>>(*this, input, dim,
+                                                             //output);
+        return evaluate_inplace_dim3(matrix_, input, dim, output);
     }
 
     // Implement fit_inplace_zz method using the common implementation
@@ -566,6 +567,10 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
+        if (!positive_only_) {
+            return fit_inplace_dim3(get_matrix_svd(), input, dim, output);
+        }
+
         return fit_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
                                 std::complex<double>>(*this, input, dim,
                                                          output);

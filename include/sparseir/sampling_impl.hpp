@@ -137,4 +137,80 @@ int evaluate_inplace_dim3(
     return SPIR_COMPUTATION_SUCCESS; // Success
 }
 
+
+template <typename Scalar, typename InputMatrixType, typename OutputMatrixType>
+void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
+                    const InputMatrixType &input,
+                    OutputMatrixType &output)
+{
+    using InputScalar = typename InputMatrixType::Scalar;
+    using OutputScalar = typename OutputMatrixType::Scalar;
+
+    // TODO: USE BLAS
+    Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic> UHB =
+        svd.matrixU().adjoint() * input;
+
+    // Apply inverse singular values to the rows of UHB
+    for (int i = 0; i < svd.singularValues().size(); ++i) {
+        UHB.row(i) /= OutputScalar(svd.singularValues()(i));
+    }
+    _gemm_inplace(svd.matrixV().data(), UHB.data(), output.data(), svd.matrixV().rows(), output.cols(), svd.matrixV().cols());
+}
+
+
+template <typename Scalar, typename InputScalar, typename OutputScalar>
+int fit_inplace_dim3(
+    const sparseir::JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
+    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
+{
+    using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+
+    const int Dim = 3;
+    const auto basis_size = svd.matrixV().rows();
+    const auto n_sampling_points = svd.matrixU().rows();
+
+    if (dim < 0 || dim >= Dim) {
+        // Invalid dimension
+        return SPIR_INVALID_DIMENSION;
+    }
+
+    if (n_sampling_points !=
+        static_cast<int32_t>(input.dimension(dim))) {
+        // Dimension mismatch
+        return SPIR_INPUT_DIMENSION_MISMATCH;
+    }
+
+    auto input_dimensions = input.dimensions();
+    auto output_dimensions = output.dimensions();
+    output_dimensions[dim] = basis_size;
+
+    // extra dimension
+    int extra_size = 1;
+    for (int i = 0; i < Dim; i++) {
+        if (i != dim) {
+            extra_size *= input_dimensions[i];
+        }
+    }
+
+    // Move the target dimension to the first position
+    Eigen::Tensor<InputScalar, 3> input_transposed = movedim(input, dim, 0);
+    auto input_dimensions_transposed = input_transposed.dimensions();
+    auto output_dimensions_transposed = input_dimensions_transposed;
+    output_dimensions_transposed[0] = basis_size;
+    Eigen::Tensor<OutputScalar, 3> output_transposed = Eigen::Tensor<OutputScalar, 3>(output_dimensions_transposed);
+    
+    // Calculate result using the existing fit method
+    auto input_tranposed_matrix = Eigen::Map<const InputMatrix>(input_transposed.data(), n_sampling_points, extra_size);
+    auto output_tranposed_matrix = Eigen::Map<OutputMatrix>(output_transposed.data(), basis_size, extra_size);
+    fit_inplace_dim2(svd, input_tranposed_matrix, output_tranposed_matrix);
+
+    // Transpose back: (basis_size, n_sampling_points, dim2) -> (n_sampling_points, basis_size, dim2)
+    output = movedim(output_transposed, 0, dim);
+
+    return SPIR_COMPUTATION_SUCCESS;
+}
+
+
 } // namespace sparseir
