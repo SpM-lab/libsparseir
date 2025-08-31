@@ -14,12 +14,12 @@
 
 namespace sparseir {
 
-template <typename Scalar>
+template <typename Scalar, typename InputScalar, typename OutputScalar>
 void evaluate_inplace_dim2(
     const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &matrix,
-    const Eigen::Map<const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &al,
+    const Eigen::Map<const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al,
     int dim,
-    Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &output)
+    Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>> &output)
 {
     // dim should be 0 or 1
     if (dim != 0 && dim != 1) {
@@ -35,19 +35,19 @@ void evaluate_inplace_dim2(
         // (extra_size, basis_size) * (basis_size, n_sampling_points) =
         // (extra_size, n_sampling_points)
         _gemm_inplace_t(al.data(), matrix.data(), output.data(), al.rows(),
-                        matrix.cols(), matrix.rows());
+                        matrix.rows(), matrix.cols());
     }
 }
 
 // Common implementation for evaluate_inplace
-template <typename Scalar>
+template <typename Scalar, typename InputScalar, typename OutputScalar>
 int evaluate_inplace_dim3(
     const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &matrix,
-    const Eigen::TensorMap<const Eigen::Tensor<Scalar, 3>> &input, int dim,
-    Eigen::TensorMap<Eigen::Tensor<Scalar, 3>> &output)
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input, int dim,
+    Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
 {
-    using InputMatrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
-    using OutputMatrix = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
     const int Dim = 3;
 
     if (dim < 0 || dim >= Dim) {
@@ -88,17 +88,17 @@ int evaluate_inplace_dim3(
     }
 
     // TODO: Cache buffers to avoid reallocation
-    std::vector<Scalar> input_buffer(basis_size * extra_size);
+    std::vector<InputScalar> input_buffer(basis_size * extra_size);
 
     auto input_dimensions = input.dimensions();
 
     // For dim == 1, we need to transpose (dim0, dim1, dim2) -> (dim1, dim0,
     // dim2) where dim1 is the basis dimension to be moved to first position
-    auto input_transposed = Eigen::TensorMap<Eigen::Tensor<Scalar, Dim>>(
+    auto input_transposed = Eigen::TensorMap<Eigen::Tensor<InputScalar, Dim>>(
         input_buffer.data(), basis_size, input_dimensions[0],
         input_dimensions[2]);
 
-    auto output_transposed = Eigen::TensorMap<Eigen::Tensor<Scalar, Dim>>(
+    auto output_transposed = Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>>(
         output.data(), n_sampling_points, input_dimensions[0],
         input_dimensions[2]);
 
@@ -119,7 +119,7 @@ int evaluate_inplace_dim3(
 
     // transpose back: (n_sampling_points, dim0, dim2) -> (dim0,
     // n_sampling_points, dim2)
-    auto buffer = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>(
+    auto buffer = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>(
         input_dimensions[0], n_sampling_points);
     for (int k = 0; k < input_dimensions[2]; k++) {
         for (int j = 0; j < input_dimensions[0]; j++) {

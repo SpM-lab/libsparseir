@@ -538,9 +538,7 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return evaluate_inplace_impl<MatsubaraSampling<S>, double,
-                                     std::complex<double>>(*this, input, dim,
-                                                              output);
+        return evaluate_inplace_dim3(matrix_, input, dim, output);
     }
 
     // Implement evaluate_inplace_zz method using the common implementation
