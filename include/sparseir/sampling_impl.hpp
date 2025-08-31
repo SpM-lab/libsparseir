@@ -9,6 +9,7 @@
 #include <vector>
 #include <complex>
 #include <tuple>
+#include <functional>
 
 #include "sparseir/contraction.hpp"
 
@@ -158,11 +159,13 @@ void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
 }
 
 
-template <typename Scalar, typename InputScalar, typename OutputScalar>
+template <typename Scalar, typename InputScalar, typename OutputScalar, typename Func>
 int fit_inplace_dim3(
     const sparseir::JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
     const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
-    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
+    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output,
+    Func &&fit_inplace_dim2_func
+)
 {
     using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
     using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
@@ -204,13 +207,14 @@ int fit_inplace_dim3(
     // Calculate result using the existing fit method
     auto input_tranposed_matrix = Eigen::Map<const InputMatrix>(input_transposed.data(), n_sampling_points, extra_size);
     auto output_tranposed_matrix = Eigen::Map<OutputMatrix>(output_transposed.data(), basis_size, extra_size);
-    fit_inplace_dim2(svd, input_tranposed_matrix, output_tranposed_matrix);
+    fit_inplace_dim2_func(svd, input_tranposed_matrix, output_tranposed_matrix);
 
     // Transpose back: (basis_size, n_sampling_points, dim2) -> (n_sampling_points, basis_size, dim2)
     output = movedim(output_transposed, 0, dim);
 
     return SPIR_COMPUTATION_SUCCESS;
 }
+
 
 
 } // namespace sparseir

@@ -98,92 +98,6 @@ class MatsubaraSampling;
 template <typename S>
 class AugmentedBasis;
 
-// Common implementation for evaluate_inplace
-template <typename Sampler, typename InputScalar = double,
-          typename OutputScalar = std::complex<double>>
-int evaluate_inplace_impl(
-    const Sampler &sampler,
-    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
-    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
-{
-    using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
-    using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
-    const int Dim = 3;
-
-    if (dim < 0 || dim >= Dim) {
-        // Invalid dimension
-        return SPIR_INVALID_DIMENSION;
-    }
-
-    if (sampler.basis_size() !=
-        static_cast<std::size_t>(input.dimension(dim))) {
-        // Dimension mismatch
-        return SPIR_INPUT_DIMENSION_MISMATCH;
-    }
-
-    // extra dimension
-    int extra_size = 1;
-    for (int i = 0; i < Dim; i++) {
-        if (i != dim) {
-           extra_size *= input.dimension(i);
-        }
-    }
-
-    if (dim == 0) {
-        auto input_matrix = Eigen::Map<const InputMatrix>(input.data(), sampler.basis_size(), extra_size);
-        auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), sampler.n_sampling_points(), extra_size);
-        sampler.evaluate_inplace(input_matrix, 0, output_matrix);
-        return SPIR_COMPUTATION_SUCCESS;
-    } else if (dim == Dim - 1) {
-        auto input_matrix = Eigen::Map<const InputMatrix>(input.data(), extra_size, sampler.basis_size());
-        auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), extra_size, sampler.n_sampling_points());
-        sampler.evaluate_inplace(input_matrix, 1, output_matrix);
-        return SPIR_COMPUTATION_SUCCESS;
-    }
-
-    // TODO: Cache buffers to avoid reallocation
-    std::vector<InputScalar> input_buffer(sampler.basis_size() * extra_size);
-
-    auto input_dimensions = input.dimensions();
-    
-    // For dim == 1, we need to transpose (dim0, dim1, dim2) -> (dim1, dim0, dim2)
-    // where dim1 is the basis dimension to be moved to first position
-    auto input_transposed = Eigen::TensorMap<Eigen::Tensor<InputScalar, Dim>>(
-        input_buffer.data(), sampler.basis_size(), input_dimensions[0], input_dimensions[2]);
-
-    auto output_transposed = Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>>(
-        output.data(), sampler.n_sampling_points(), input_dimensions[0], input_dimensions[2]);
-
-    // move the target dimension (dim=1) to the first position
-    for (int k = 0; k < input_dimensions[2]; k++) {
-        for (int j = 0; j < input_dimensions[1]; j++) {
-            for (int i = 0; i < input_dimensions[0]; i++) {
-                input_transposed(j, i, k) = input(i, j, k);
-            }
-        }
-    }
-
-    auto input_matrix = Eigen::Map<const InputMatrix>(&input_buffer[0], sampler.basis_size(), extra_size);
-    auto output_matrix = Eigen::Map<OutputMatrix>(output.data(), sampler.n_sampling_points(), extra_size);
-    sampler.evaluate_inplace(input_matrix, 0, output_matrix);
-
-    // transpose back: (n_sampling_points, dim0, dim2) -> (dim0, n_sampling_points, dim2)
-    auto buffer = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>(input_dimensions[0], sampler.n_sampling_points());
-    for (int k = 0; k < input_dimensions[2]; k++) {
-        for (int j = 0; j < input_dimensions[0]; j++) {
-            for (int i = 0; i < sampler.n_sampling_points(); i++) {
-                buffer(j, i) = output_transposed(i, j, k);
-            }
-        }
-        for (int i = 0; i < sampler.n_sampling_points(); i++) {
-            for (int j = 0; j < input_dimensions[0]; j++) {
-                output(j, i, k) = buffer(j, i);
-            }
-        }
-    }
-
-    return SPIR_COMPUTATION_SUCCESS; // Success
-}
 
 // Common implementation for evaluate_inplace
 template <typename Sampler, typename InputScalar = double,
@@ -329,7 +243,12 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return fit_inplace_dim3(get_matrix_svd(), input, dim, output);
+        return fit_inplace_dim3(get_matrix_svd(), input, dim, output, 
+                               [](const sparseir::JacobiSVD<Eigen::MatrixXd> &svd,
+                                  const Eigen::Map<const Eigen::MatrixXd> &input,
+                                  Eigen::Map<Eigen::MatrixXd> &output) {
+                                   fit_inplace_dim2(svd, input, output);
+                               });
         //return fit_inplace_impl<TauSampling<S>, double, double>(*this, input,
                                                                    //dim, output);
     }
@@ -356,10 +275,12 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return fit_inplace_dim3(get_matrix_svd(), input, dim, output);
-        //return fit_inplace_impl<TauSampling<S>, std::complex<double>,
-                                //std::complex<double>>(*this, input, dim,
-                                                         //output);
+        return fit_inplace_dim3(get_matrix_svd(), input, dim, output,
+                               [](const sparseir::JacobiSVD<Eigen::MatrixXd> &svd,
+                                  const Eigen::Map<const Eigen::MatrixXcd> &input,
+                                  Eigen::Map<Eigen::MatrixXcd> &output) {
+                                   fit_inplace_dim2(svd, input, output);
+                               });
     }
 
     template <typename Basis>
@@ -548,7 +469,14 @@ public:
         const override
     {
         if (!positive_only_) {
-            return fit_inplace_dim3(get_matrix_svd(), input, dim, output);
+            return fit_inplace_dim3(
+                get_matrix_svd(), input, dim, output,
+                [](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                   const Eigen::Map<const Eigen::MatrixXcd> &input,
+                   Eigen::Map<Eigen::MatrixXcd> &output) {
+                    fit_inplace_dim2(svd, input, output);
+                }
+            );
         }
 
         return fit_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
