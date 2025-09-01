@@ -118,6 +118,8 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     // [n_matsubara, extra_size]
     c_complex *g_matsu_z = (c_complex *)malloc(n_matsubara * extra_size * sizeof(c_complex));
 
+    c_complex *g_tau_z = (c_complex *)malloc(n_tau * extra_size * sizeof(c_complex));
+
     // [n_basis, extra_size]
     double *g_basis_d = (double *)malloc(n_basis * extra_size * sizeof(double));
     c_complex *g_basis_z = (c_complex *)malloc(n_basis * extra_size * sizeof(c_complex));
@@ -161,7 +163,6 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     benchmark_end(&bench);
 
     benchmark_start(&bench, "fit_zz (Tau)");
-    c_complex *g_tau_z = (c_complex *)malloc(n_tau * extra_size * sizeof(c_complex));
     dims[0] = n_tau;
     dims[1] = extra_size;
     status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
@@ -184,18 +185,6 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     }
     benchmark_end(&bench);
     
-
-    //dims[0] = n_basis;
-    //dims[1] = extra_size;
-    //benchmark_start(&bench, "eval_dz (Tau)");
-    //for (int i = 0; i < nrun; ++i) {
-        //status = spir_sampling_eval_dz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
-                                       //dims, target_dim, g_basis_z, g_tau_z);
-        //assert(status == SPIR_COMPUTATION_SUCCESS);
-    //}
-    //benchmark_end(&bench);
-
-
     // Clean up (order is arbitrary)
     free(matsubara_indices);
     free(g_matsu_z);

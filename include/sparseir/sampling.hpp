@@ -249,10 +249,9 @@ public:
                                   Eigen::Map<Eigen::MatrixXd> &output) {
                                    fit_inplace_dim2(svd, input, output);
                                });
-        //return fit_inplace_impl<TauSampling<S>, double, double>(*this, input,
-                                                                   //dim, output);
     }
-    // Implement evaluate_inplace_dd method using the common implementation
+
+    // Implement evaluate_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
     // supported
     int evaluate_inplace_zz(
@@ -479,7 +478,6 @@ public:
                 }
             );
         } else {
-            std::cout << "fit_inplace_zz positive_only_" << std::endl;
             return fit_inplace_dim3(
                 n_sampling_points(), basis_size(),
                 get_matrix_svd(), input, dim, output,

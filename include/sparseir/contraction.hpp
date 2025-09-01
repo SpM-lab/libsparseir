@@ -59,6 +59,10 @@ void _gemm_blas_impl(const U* A, const V* B, ResultType* C, int M, int N, int K)
 template<typename U, typename V, typename ResultType>
 void _gemm_blas_impl_transpose(const U* A, const V* B, ResultType* C, int M, int N, int K);
 
+// Type-specific CBLAS GEMM implementations for conjugate case (A is conjugated)
+template<typename U, typename V, typename ResultType>
+void _gemm_blas_impl_conj(const U* A, const V* B, ResultType* C, int M, int N, int K);
+
 // Specialization for double * double -> double
 template<>
 inline void _gemm_blas_impl<double, double, double>(const double* A, const double* B, double* C, int M, int N, int K) {
@@ -79,23 +83,35 @@ inline void _gemm_blas_impl<std::complex<double>, std::complex<double>, std::com
 // Specialization for double * complex<double> -> complex<double>
 template<>
 inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
-    // Use Eigen's internal gemm - it's fast enough and much simpler
-    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> A_map(A, M, K);
-    Eigen::Map<const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>> B_map(B, K, N);
-    Eigen::Map<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>> C_map(C, M, N);
+    // Create temporary complex matrix from real matrix A
+    std::vector<std::complex<double>> A_complex(M * K);
+    for (int i = 0; i < M * K; ++i) {
+        A_complex[i] = std::complex<double>(A[i], 0.0);
+    }
     
-    C_map.noalias() = A_map * B_map;
+    const std::complex<double> alpha(1.0);
+    const std::complex<double> beta(0.0);
+    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, &alpha,
+                 reinterpret_cast<const double*>(A_complex.data()), M,
+                 reinterpret_cast<const double*>(B), K,
+                 &beta, reinterpret_cast<double*>(C), M);
 }
 
 // Specialization for complex<double> * double -> complex<double>
 template<>
 inline void _gemm_blas_impl<std::complex<double>, double, std::complex<double>>(const std::complex<double>* A, const double* B, std::complex<double>* C, int M, int N, int K) {
-    // Use Eigen's internal gemm - it's fast enough and much simpler
-    Eigen::Map<const Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>> A_map(A, M, K);
-    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> B_map(B, K, N);
-    Eigen::Map<Eigen::Matrix<std::complex<double>, Eigen::Dynamic, Eigen::Dynamic>> C_map(C, M, N);
+    // Create temporary complex matrix from real matrix B
+    std::vector<std::complex<double>> B_complex(K * N);
+    for (int i = 0; i < K * N; ++i) {
+        B_complex[i] = std::complex<double>(B[i], 0.0);
+    }
     
-    C_map.noalias() = A_map * B_map;
+    const std::complex<double> alpha(1.0);
+    const std::complex<double> beta(0.0);
+    cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, &alpha,
+                 reinterpret_cast<const double*>(A), M,
+                 reinterpret_cast<const double*>(B_complex.data()), K,
+                 &beta, reinterpret_cast<double*>(C), M);
 }
 
 // Specialization for double * double -> double (transpose B)
@@ -137,6 +153,57 @@ inline void _gemm_blas_impl_transpose<std::complex<double>, double, std::complex
     C_map.noalias() = A_map * B_map.transpose();
 }
 
+// Specialization for double * double -> double (conjugate A, but double is real so same as transpose)
+template<>
+inline void _gemm_blas_impl_conj<double, double, double>(const double* A, const double* B, double* C, int M, int N, int K) {
+    cblas_dgemm(CblasColMajor, CblasTrans, CblasNoTrans, M, N, K, 1.0, A, K, B, K, 0.0, C, M);
+}
+
+// Specialization for complex<double> * complex<double> -> complex<double> (conjugate A)
+template<>
+inline void _gemm_blas_impl_conj<std::complex<double>, std::complex<double>, std::complex<double>>(const std::complex<double>* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
+    const std::complex<double> alpha(1.0);
+    const std::complex<double> beta(0.0);
+    cblas_zgemm(CblasColMajor, CblasConjTrans, CblasNoTrans, M, N, K, &alpha,
+                 reinterpret_cast<const double*>(A), K,
+                 reinterpret_cast<const double*>(B), K,
+                 &beta, reinterpret_cast<double*>(C), M);
+}
+
+// Specialization for complex<double> * double -> complex<double> (conjugate A)
+template<>
+inline void _gemm_blas_impl_conj<std::complex<double>, double, std::complex<double>>(const std::complex<double>* A, const double* B, std::complex<double>* C, int M, int N, int K) {
+    // Create temporary complex matrix from real matrix B
+    std::vector<std::complex<double>> B_complex(K * N);
+    for (int i = 0; i < K * N; ++i) {
+        B_complex[i] = std::complex<double>(B[i], 0.0);
+    }
+    
+    const std::complex<double> alpha(1.0);
+    const std::complex<double> beta(0.0);
+    cblas_zgemm(CblasColMajor, CblasConjTrans, CblasNoTrans, M, N, K, &alpha,
+                 reinterpret_cast<const double*>(A), K,
+                 reinterpret_cast<const double*>(B_complex.data()), K,
+                 &beta, reinterpret_cast<double*>(C), M);
+}
+
+// Specialization for double * complex<double> -> complex<double> (conjugate A, but double is real)
+template<>
+inline void _gemm_blas_impl_conj<double, std::complex<double>, std::complex<double>>(const double* A, const std::complex<double>* B, std::complex<double>* C, int M, int N, int K) {
+    // Create temporary complex matrix from real matrix A
+    std::vector<std::complex<double>> A_complex(K * M);
+    for (int i = 0; i < K * M; ++i) {
+        A_complex[i] = std::complex<double>(A[i], 0.0);
+    }
+    
+    const std::complex<double> alpha(1.0);
+    const std::complex<double> beta(0.0);
+    cblas_zgemm(CblasColMajor, CblasTrans, CblasNoTrans, M, N, K, &alpha,
+                 reinterpret_cast<const double*>(A_complex.data()), K,
+                 reinterpret_cast<const double*>(B), K,
+                 &beta, reinterpret_cast<double*>(C), M);
+}
+
 #endif
 
 template <typename T1, typename T2, typename T3>
@@ -166,6 +233,21 @@ void _gemm_inplace_t(const T1* A, const T2* B, T3* C, int M, int N, int K) {
    C_map.noalias() = A_map * B_map.transpose();
 #endif
 }
+
+// first matrix is complex conjugated
+template <typename T1, typename T2, typename T3>
+void _gemm_inplace_conj(const T1* A, const T2* B, T3* C, int M, int N, int K) {
+   Eigen::Map<const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> A_map(A, K, M);
+   Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> B_map(B, K, N);
+   Eigen::Map<Eigen::Matrix<T3, Eigen::Dynamic, Eigen::Dynamic>> C_map(C, M, N);
+#ifdef SPARSEIR_USE_BLAS
+    // Call appropriate CBLAS function based on input types
+    _gemm_blas_impl_conj<T1, T2, T3>(A, B, C, M, N, K);
+#else
+   C_map.noalias() = A_map.adjoint() * B_map;
+#endif
+}
+
 
 template <typename U, typename V>
 Eigen::Matrix<decltype(std::declval<U>() * std::declval<V>()), Eigen::Dynamic, Eigen::Dynamic>

@@ -147,14 +147,27 @@ void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
     using InputScalar = typename InputMatrixType::Scalar;
     using OutputScalar = typename OutputMatrixType::Scalar;
 
-    // TODO: USE BLAS
-    Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic> UHB =
-        svd.matrixU().adjoint() * input;
+    // equivalent to UHB = U.adjoint() * input
+    auto UHB = Eigen::MatrixX<OutputScalar>(svd.matrixU().cols(), input.cols());
+    _gemm_inplace_conj(
+        svd.matrixU().data(), input.data(), UHB.data(), svd.matrixU().cols(), input.cols(), svd.matrixU().rows());
 
     // Apply inverse singular values to the rows of UHB
-    for (int i = 0; i < svd.singularValues().size(); ++i) {
-        UHB.row(i) /= OutputScalar(svd.singularValues()(i));
+    {
+        const int num_singular_values = svd.singularValues().size();
+        const int num_rows = UHB.rows();
+        const int num_cols = UHB.cols();
+        OutputScalar* UHB_data = UHB.data();
+        
+        for (int i = 0; i < num_singular_values; ++i) {
+            const OutputScalar inv_sigma = OutputScalar(1.0) / OutputScalar(svd.singularValues()(i));
+            for (int j = 0; j < num_cols; ++j) {
+                UHB(i, j) *= inv_sigma;
+            }
+        }
     }
+    auto t3 = std::chrono::high_resolution_clock::now();
+
     _gemm_inplace(svd.matrixV().data(), UHB.data(), output.data(), svd.matrixV().rows(), output.cols(), svd.matrixV().cols());
 }
 
@@ -195,9 +208,19 @@ fit_inplace_dim2_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
     UHB += _gemm(U_imagT, B_imag);
 
     // Apply inverse singular values to the rows of UHB
-    for (int i = 0; i < svd.singularValues().size(); ++i) {
-        UHB.row(i) /= svd.singularValues()(i);
+    {
+        const int num_singular_values = svd.singularValues().size();
+        const int num_cols = UHB.cols();
+        double* UHB_data = UHB.data();
+        
+        for (int i = 0; i < num_singular_values; ++i) {
+            const double inv_sigma = 1.0 / svd.singularValues()(i);
+            for (int j = 0; j < num_cols; ++j) {
+                UHB(i, j) *= inv_sigma;
+            }
+        }
     }
+
     Eigen::MatrixXd matrixV = svd.matrixV().real();
     auto result = _gemm(matrixV, UHB);
     output = result.cast<std::complex<double>>();
@@ -250,7 +273,7 @@ int fit_inplace_dim3(
     auto output_dimensions_transposed = input_dimensions_transposed;
     output_dimensions_transposed[0] = basis_size;
     Eigen::Tensor<OutputScalar, 3> output_transposed = Eigen::Tensor<OutputScalar, 3>(output_dimensions_transposed);
-    
+
     // Calculate result using the existing fit method
     auto input_tranposed_matrix = Eigen::Map<const InputMatrix>(input_transposed.data(), n_sampling_points, extra_size);
     auto output_tranposed_matrix = Eigen::Map<OutputMatrix>(output_transposed.data(), basis_size, extra_size);
