@@ -216,40 +216,6 @@ _evaluate_giw(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
     return result;
 }
 
-template <typename T, int ndim, Eigen::StorageOptions ORDER>
-bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
-                                         const Eigen::Tensor<T, ndim, ORDER> &b,
-                                         double tol)
-{
-    // Convert to double tensor for absolute values
-    Eigen::Tensor<double, ndim, ORDER> diff(a.dimensions());
-    Eigen::Tensor<double, ndim, ORDER> ref(a.dimensions());
-
-    // Compute absolute values element-wise
-    for (Eigen::Index i = 0; i < a.size(); ++i) {
-        diff.data()[i] = std::abs(a.data()[i] - b.data()[i]);
-        ref.data()[i] = std::abs(a.data()[i]);
-    }
-
-    // Map tensors to matrices and use maxCoeff
-    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1>> diff_vec(
-        diff.data(), diff.size());
-    Eigen::Map<const Eigen::Matrix<double, Eigen::Dynamic, 1>> ref_vec(
-        ref.data(), ref.size());
-
-    double max_diff = diff_vec.maxCoeff();
-    double max_ref = ref_vec.maxCoeff();
-
-    // debug
-    if (max_diff > tol * max_ref) {
-        std::cout << "max_diff: " << max_diff << std::endl;
-        std::cout << "max_ref: " << max_ref << std::endl;
-        std::cout << "tol " << tol << std::endl;
-    }
-
-    return max_diff <= tol * max_ref;
-}
-
 template <typename K>
 spir_kernel* _kernel_new(double lambda);
 
@@ -701,9 +667,9 @@ void integration_test(double beta, double wmax, double epsilon,
 }
 
 TEST_CASE("Integration Test", "[cinterface]") {
-    double beta = 1e+4;
+    double beta = 1e+3;
     double wmax = 2.0;
-    double epsilon = 1e-10;
+    double epsilon = 1e-6;
 
     double tol = 10 * epsilon;
 

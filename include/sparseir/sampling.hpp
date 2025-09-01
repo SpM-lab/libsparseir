@@ -10,6 +10,9 @@
 #include <complex>
 #include <tuple>
 
+#include "jacobi_svd.hpp"
+#include "sampling_impl.hpp"
+
 namespace sparseir {
 
 // Forward declarations
@@ -95,49 +98,16 @@ class MatsubaraSampling;
 template <typename S>
 class AugmentedBasis;
 
-// Common implementation for evaluate_inplace
-template <typename Sampler, typename InputScalar = double,
-          typename OutputScalar = std::complex<double>, int Dim = 3>
-int evaluate_inplace_impl(
-    const Sampler &sampler,
-    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, Dim>> &input,
-    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>> &output)
-{
-
-    if (dim < 0 || dim >= Dim) {
-        // Invalid dimension
-        return SPIR_INVALID_DIMENSION;
-    }
-
-    if (sampler.basis_size() !=
-        static_cast<std::size_t>(input.dimension(dim))) {
-        // Dimension mismatch
-        return SPIR_INPUT_DIMENSION_MISMATCH;
-    }
-
-    // Calculate result using the existing evaluate method
-    auto result = sampler.evaluate(input, dim);
-
-    // Check if output dimensions match result dimensions
-    if (output.dimensions() != result.dimensions()) {
-        // Output tensor has wrong dimensions
-        return SPIR_OUTPUT_DIMENSION_MISMATCH;
-    }
-
-    // Copy the result to the output tensor
-    std::copy(result.data(), result.data() + result.size(), output.data());
-
-    return SPIR_COMPUTATION_SUCCESS; // Success
-}
 
 // Common implementation for evaluate_inplace
 template <typename Sampler, typename InputScalar = double,
-          typename OutputScalar = std::complex<double>, int Dim = 3>
+          typename OutputScalar = std::complex<double>>
 int fit_inplace_impl(
     const Sampler &sampler,
-    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, Dim>> &input,
-    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, Dim>> &output)
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
+    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
 {
+    const int Dim = 3;
 
     if (dim < 0 || dim >= Dim) {
         // Invalid dimension
@@ -204,7 +174,7 @@ private:
     Eigen::VectorXd sampling_points_;
     //a matrix of size (sampling_points.size(), basis_size)
     Eigen::MatrixXd matrix_;
-    mutable std::shared_ptr<Eigen::JacobiSVD<Eigen::MatrixXd>> matrix_svd_;
+    mutable std::shared_ptr<JacobiSVD<Eigen::MatrixXd>> matrix_svd_;
 
 public:
     template <typename Basis>
@@ -263,8 +233,7 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return evaluate_inplace_impl<TauSampling<S>, double, double, 3>(
-            *this, input, dim, output);
+        return evaluate_inplace_dim3<double>(matrix_, input, dim, output);
     }
 
     // Implement fit_inplace_dd method using the common implementation
@@ -274,10 +243,15 @@ public:
         const Eigen::TensorMap<const Eigen::Tensor<double, 3>> &input, int dim,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> &output) const override
     {
-        return fit_inplace_impl<TauSampling<S>, double, double, 3>(*this, input,
-                                                                   dim, output);
+        return fit_inplace_dim3(n_sampling_points(), basis_size(), get_matrix_svd(), input, dim, output, 
+                               [](const sparseir::JacobiSVD<Eigen::MatrixXd> &svd,
+                                  const Eigen::Map<const Eigen::MatrixXd> &input,
+                                  Eigen::Map<Eigen::MatrixXd> &output) {
+                                   fit_inplace_dim2(svd, input, output);
+                               });
     }
-    // Implement evaluate_inplace_dd method using the common implementation
+
+    // Implement evaluate_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
     // supported
     int evaluate_inplace_zz(
@@ -287,10 +261,9 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return evaluate_inplace_impl<TauSampling<S>, std::complex<double>,
-                                     std::complex<double>, 3>(*this, input, dim,
-                                                              output);
+        return evaluate_inplace_dim3<std::complex<double>>(matrix_, input, dim, output);
     }
+
     // Implement fit_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
     // supported
@@ -301,9 +274,12 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return fit_inplace_impl<TauSampling<S>, std::complex<double>,
-                                std::complex<double>, 3>(*this, input, dim,
-                                                         output);
+        return fit_inplace_dim3(n_sampling_points(), basis_size(), get_matrix_svd(), input, dim, output,
+                               [](const sparseir::JacobiSVD<Eigen::MatrixXd> &svd,
+                                  const Eigen::Map<const Eigen::MatrixXcd> &input,
+                                  Eigen::Map<Eigen::MatrixXcd> &output) {
+                                   fit_inplace_dim2(svd, input, output);
+                               });
     }
 
     template <typename Basis>
@@ -331,6 +307,7 @@ public:
     {
         return _matop_along_dim(matrix_, al, dim);
     }
+
 
     // Overload for Tensor (converts to TensorMap)
     template <typename T, int N>
@@ -373,10 +350,10 @@ public:
     const Eigen::VectorXd &sampling_points() const { return sampling_points_; }
 
     const Eigen::VectorXd &tau() const { return sampling_points_; }
-    const Eigen::JacobiSVD<Eigen::MatrixXd>& get_matrix_svd() const
+    const JacobiSVD<Eigen::MatrixXd>& get_matrix_svd() const
     {
         if (!matrix_svd_) {
-            matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXd>>(
+            matrix_svd_ = std::make_shared<JacobiSVD<Eigen::MatrixXd>>(
                 matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
         }
         return *matrix_svd_;
@@ -393,7 +370,7 @@ public:
     }
 };
 
-inline Eigen::JacobiSVD<Eigen::MatrixXcd>
+inline JacobiSVD<Eigen::MatrixXcd>
 make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
 {
     const int m = mat.rows(); // Number of rows in the input complex matrix
@@ -412,8 +389,9 @@ make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
     // part.
     const int total_rows = m + imag_rows;
 
-    // Create a real matrix with 'total_rows' rows and 'n' columns.
-    Eigen::MatrixXcd rmat(total_rows, n);
+    // Create a REAL matrix with 'total_rows' rows and 'n' columns.
+    // This is the key optimization: use MatrixXd for SVD computation
+    Eigen::MatrixXd rmat(total_rows, n);
 
     // Top part: assign the real part of the input matrix.
     rmat.topRows(m) = mat.real();
@@ -421,12 +399,17 @@ make_split_svd(const Eigen::MatrixXcd &mat, bool has_zero = false)
     // Bottom part: assign the selected block of the imaginary part.
     rmat.bottomRows(imag_rows) = mat.imag().block(offset_imag, 0, imag_rows, n);
 
-    // Compute the SVD of the real matrix.
-    // The options 'ComputeThinU' and 'ComputeThinV' compute the thin
-    // (economical) versions of U and V.
-    Eigen::JacobiSVD<Eigen::MatrixXcd> svd(rmat, Eigen::ComputeThinU |
-                                                     Eigen::ComputeThinV);
-    return svd;
+    // Compute SVD on the REAL matrix - this is much faster than complex SVD!
+    Eigen::JacobiSVD<Eigen::MatrixXd> real_svd(rmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    // Convert the real SVD results to complex matrices
+    Eigen::MatrixXcd U_complex = real_svd.matrixU().cast<std::complex<double>>();
+    Eigen::MatrixXcd V_complex = real_svd.matrixV().cast<std::complex<double>>();
+    const Eigen::VectorXd& singular_values = real_svd.singularValues();
+
+    // Create our custom JacobiSVD object with precomputed results
+    // This avoids recomputing SVD and provides the same interface
+    return JacobiSVD<Eigen::MatrixXcd>(U_complex, singular_values, V_complex);
 }
 
 template <typename S>
@@ -434,7 +417,7 @@ class MatsubaraSampling : public AbstractSampling {
 private:
     std::vector<MatsubaraFreq<S>> sampling_points_;
     Eigen::MatrixXcd matrix_;
-    mutable std::shared_ptr<Eigen::JacobiSVD<Eigen::MatrixXcd>> matrix_svd_;
+    mutable std::shared_ptr<JacobiSVD<Eigen::MatrixXcd>> matrix_svd_;
     bool positive_only_;
     bool has_zero_;
 
@@ -458,9 +441,7 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return evaluate_inplace_impl<MatsubaraSampling<S>, double,
-                                     std::complex<double>, 3>(*this, input, dim,
-                                                              output);
+        return evaluate_inplace_dim3(matrix_, input, dim, output);
     }
 
     // Implement evaluate_inplace_zz method using the common implementation
@@ -473,9 +454,7 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return evaluate_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
-                                     std::complex<double>, 3>(*this, input, dim,
-                                                              output);
+        return evaluate_inplace_dim3(matrix_, input, dim, output);
     }
 
     // Implement fit_inplace_zz method using the common implementation
@@ -488,9 +467,27 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        return fit_inplace_impl<MatsubaraSampling<S>, std::complex<double>,
-                                std::complex<double>, 3>(*this, input, dim,
-                                                         output);
+        if (!positive_only_) {
+            return fit_inplace_dim3(
+                n_sampling_points(), basis_size(),
+                get_matrix_svd(), input, dim, output,
+                [](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                   const Eigen::Map<const Eigen::MatrixXcd> &input,
+                   Eigen::Map<Eigen::MatrixXcd> &output) {
+                    fit_inplace_dim2(svd, input, output);
+                }
+            );
+        } else {
+            return fit_inplace_dim3(
+                n_sampling_points(), basis_size(),
+                get_matrix_svd(), input, dim, output,
+                [this](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                   const Eigen::Map<const Eigen::MatrixXcd> &input,
+                   Eigen::Map<Eigen::MatrixXcd> &output) {
+                    fit_inplace_dim2_split_svd(svd, input, output, this->has_zero_);
+                }
+            );
+        }
     }
 
     template <typename Basis>
@@ -610,6 +607,7 @@ public:
         return evaluate(al_map, dim);
     }
 
+
     // Primary template for complex input tensors
     template <typename T, int N>
     Eigen::Tensor<std::complex<T>, N>
@@ -647,14 +645,14 @@ public:
         return sampling_points_;
     }
 
-    const Eigen::JacobiSVD<Eigen::MatrixXcd>& get_matrix_svd() const
+    const JacobiSVD<Eigen::MatrixXcd>& get_matrix_svd() const
     {
         if (!matrix_svd_) {
             if (positive_only_) {
-                matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXcd>>(
+                matrix_svd_ = std::make_shared<JacobiSVD<Eigen::MatrixXcd>>(
                     make_split_svd(matrix_, has_zero_));
             } else {
-                matrix_svd_ = std::make_shared<Eigen::JacobiSVD<Eigen::MatrixXcd>>(
+                matrix_svd_ = std::make_shared<JacobiSVD<Eigen::MatrixXcd>>(
                     matrix_, Eigen::ComputeThinU | Eigen::ComputeThinV);
             }
         }

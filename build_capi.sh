@@ -15,10 +15,11 @@ cmake .. \
   -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX:-$HOME/opt/libsparseir} \
   -DSPARSEIR_BUILD_FORTRAN=ON \
   -DSPARSEIR_BUILD_TESTING=OFF \
+  -DSPARSEIR_USE_BLAS=OFF \
   -DBUILD_TESTING=OFF
 
 # Build and install
-cmake --build . --config Release
+cmake --build . --config Release -- -j 4
 cmake --install .
 
 echo "SparseIR C-API library has been built and installed successfully." 

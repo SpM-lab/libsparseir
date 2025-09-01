@@ -31,22 +31,12 @@ static inline double benchmark_end(Benchmark *bench)
     return elapsed;
 }
 
-int main()
+int benchmark(double beta, double omega_max, double epsilon, int extra_size, int nrun, bool positive_only)
 {
-
-    typedef double _Complex c_complex;
     Benchmark bench;
 
-    // Create a fermionic finite temperature basis
-    double beta = 1e+5;     // Inverse temperature
-    double omega_max = 1.0; // Ultraviolet cutoff
-    double epsilon = 1e-8;  // Accuracy target
-
-    int extra_size = 20; // Number of extra dimensions to add
-
-    int nrun = 10000; // Number of runs to average over
-
     int32_t status;
+    int ndim = 2;
 
     printf("beta: %f\n", beta);
     printf("omega_max: %f\n", omega_max);
@@ -91,6 +81,7 @@ int main()
     int32_t n_tau;
     status = spir_basis_get_n_default_taus(basis, &n_tau);
     assert(status == SPIR_COMPUTATION_SUCCESS);
+    printf("n_tau: %d\n", n_tau);
 
     double *tau_points = (double *)malloc(n_tau * sizeof(double));
     status = spir_basis_get_default_taus(basis, tau_points);
@@ -103,7 +94,6 @@ int main()
     assert(tau_sampling != NULL);
 
     // Get Matsubara frequency indices
-    bool positive_only = false;
     int32_t n_matsubara;
     status =
         spir_basis_get_n_default_matsus(basis, positive_only, &n_matsubara);
@@ -113,6 +103,7 @@ int main()
     status =
         spir_basis_get_default_matsus(basis, positive_only, matsubara_indices);
     assert(status == SPIR_COMPUTATION_SUCCESS);
+    printf("n_matsubara: %d\n", n_matsubara);
 
     // Create sampling object for Matsubara domain
     spir_sampling *matsubara_sampling = spir_matsu_sampling_new(
@@ -125,128 +116,106 @@ int main()
     assert(status == SPIR_COMPUTATION_SUCCESS);
 
     // [n_matsubara, extra_size]
-    c_complex *g_matsubara =
-        (c_complex *)malloc(n_matsubara * extra_size * sizeof(c_complex));
+    c_complex *g_matsu_z = (c_complex *)malloc(n_matsubara * extra_size * sizeof(c_complex));
 
-    // Set pole position
-    const double pole_position = 0.0 * omega_max;
-
-    // Initialize Green's function in Matsubara frequencies
-    // G(iω_n) = 1/(iω_n - ε)
-    for (int i = 0; i < n_matsubara; ++i) {
-        for (int j = 0; j < extra_size; ++j) {
-            assert(llabs(matsubara_indices[i]) % 2 ==
-                   1); // fermionic Matsubara frequency
-            g_matsubara[i * extra_size + j] =
-                1.0 / (I * matsubara_indices[i] * M_PI / beta - pole_position);
-        }
-    }
-
-    int32_t target_dim = 0; // target dimension for evaluation and fit
-
-    // Matsubara sampling points to basis coefficients
+    c_complex *g_tau_z = (c_complex *)malloc(n_tau * extra_size * sizeof(c_complex));
 
     // [n_basis, extra_size]
-    int ndim = 2;
-    c_complex *g_fit =
-        (c_complex *)malloc(n_basis * extra_size * sizeof(c_complex));
+    double *g_basis_d = (double *)malloc(n_basis * extra_size * sizeof(double));
+    c_complex *g_basis_z = (c_complex *)malloc(n_basis * extra_size * sizeof(c_complex));
+
+    // target dimension for fit
+    int32_t target_dim = 0;
+
+    // Test: matsubara, fit_zz
     int32_t dims[2] = {n_matsubara, extra_size};
-    status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR,
-                                  ndim, dims, target_dim, g_matsubara,
-                                  g_fit); // First run to warm up the cache
-    benchmark_start(&bench, "Matsubara fit");
+    status = spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                  ndim, dims, target_dim, g_matsu_z,
+                                  g_basis_z); // First run to warm up the cache
+    benchmark_start(&bench, "fit_zz (Matsubara)");
     for (int i = 0; i < nrun; ++i) {
         status =
-            spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR, ndim,
-                                 dims, target_dim, g_matsubara, g_fit);
+            spir_sampling_fit_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                 dims, target_dim, g_matsu_z, g_basis_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
     benchmark_end(&bench);
 
-    // Basis coefficients to imaginary-time sampling points
-    c_complex *g_tau =
-        (c_complex *)malloc(n_tau * extra_size * sizeof(c_complex));
+
+    // Test: matsubara, eval_zz
     dims[0] = n_basis;
     dims[1] = extra_size;
-    benchmark_start(&bench, "Tau evaluation");
+    benchmark_start(&bench, "eval_zz (Matsubara)");
     for (int i = 0; i < nrun; ++i) {
-        status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR, ndim,
-                                       dims, target_dim, g_fit, g_tau);
+        status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                       ndim, dims, target_dim, g_basis_z, g_matsu_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
     benchmark_end(&bench);
 
-    // Compare with expected result:
-    //   G(tau) = -exp(-tau * pole_position) / (1 + exp(-beta * pole_position))
-    for (int i = 0; i < n_tau; ++i) {
-        for (int j = 0; j < extra_size; ++j) {
-            double tau = tau_points[i];
-            double expected;
-            if (tau >= 0.0) {
-                expected = -exp(-tau * pole_position) /
-                           (1.0 + exp(-beta * pole_position));
-            } else {
-                expected = +exp(-(tau + beta) * pole_position) /
-                           (1.0 + exp(-beta * pole_position));
-            }
-            assert(fabs(creal(g_tau[i * extra_size + j]) - expected) < epsilon);
-            assert(fabs(cimag(g_tau[i * extra_size + j])) < epsilon);
-        }
+    // Test: matsubara, eval_dz
+    benchmark_start(&bench, "eval_dz (Matsubara)");
+    for (int i = 0; i < nrun; ++i) {
+        status = spir_sampling_eval_dz(matsubara_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                       ndim, dims, target_dim, g_basis_d, g_matsu_z);
+        assert(status == SPIR_COMPUTATION_SUCCESS);
     }
+    benchmark_end(&bench);
 
-    // Imaginary-time sampling points to basis coefficients
-    c_complex *g_fit2 =
-        (c_complex *)malloc(n_basis * extra_size * sizeof(c_complex));
+    benchmark_start(&bench, "fit_zz (Tau)");
     dims[0] = n_tau;
     dims[1] = extra_size;
-
-    status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR, ndim,
-                                  dims, target_dim, g_tau,
-                                  g_fit2); // First run to warm up the cache
-    benchmark_start(&bench, "Tau fit (reverse)");
+    status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR,
+                                  ndim, dims, target_dim, g_tau_z, g_basis_z); // First run to warm up the cache
     for (int i = 0; i < nrun; ++i) {
-        status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_ROW_MAJOR, ndim,
-                                      dims, target_dim, g_tau, g_fit2);
+        status = spir_sampling_fit_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                      dims, target_dim, g_tau_z, g_basis_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
     assert(status == SPIR_COMPUTATION_SUCCESS);
     benchmark_end(&bench);
 
-    // Basis coefficients to Matsubara Green's function
-    c_complex *g_matsubara_reconstructed =
-        (c_complex *)malloc(n_matsubara * extra_size * sizeof(c_complex));
     dims[0] = n_basis;
     dims[1] = extra_size;
-    benchmark_start(&bench, "Matsubara eval (reverse)");
+    benchmark_start(&bench, "eval_zz (Tau)");
     for (int i = 0; i < nrun; ++i) {
-        status = spir_sampling_eval_zz(matsubara_sampling, SPIR_ORDER_ROW_MAJOR,
-                                       ndim, dims, target_dim, g_fit2,
-                                       g_matsubara_reconstructed);
+        status = spir_sampling_eval_zz(tau_sampling, SPIR_ORDER_COLUMN_MAJOR, ndim,
+                                       dims, target_dim, g_basis_z, g_tau_z);
         assert(status == SPIR_COMPUTATION_SUCCESS);
     }
-    assert(status == SPIR_COMPUTATION_SUCCESS);
     benchmark_end(&bench);
-
-    for (int i = 0; i < n_matsubara; ++i) {
-        for (int j = 0; j < extra_size; ++j) {
-            assert(fabs(creal(g_matsubara_reconstructed[i * extra_size + j]) -
-                        creal(g_matsubara[i * extra_size + j])) < epsilon);
-            assert(fabs(cimag(g_matsubara_reconstructed[i * extra_size + j]) -
-                        cimag(g_matsubara[i * extra_size + j])) < epsilon);
-        }
-    }
-
+    
     // Clean up (order is arbitrary)
     free(matsubara_indices);
-    free(g_matsubara);
-    free(g_fit);
-    free(g_fit2);
-    free(g_tau);
+    free(g_matsu_z);
+    free(g_basis_z);
+    free(g_tau_z);
     free(tau_points);
-    free(g_matsubara_reconstructed);
     spir_basis_release(basis);
     spir_sampling_release(tau_sampling);
     spir_sampling_release(matsubara_sampling);
+
+    return 0;
+}
+
+
+int main()
+{
+    double beta = 1e+5;     // Inverse temperature
+    double omega_max = 1.0; // Ultraviolet cutoff
+    double epsilon = 1e-10;  // Accuracy target
+
+    int extra_size = 1000; // dimension of the extra space
+
+    int nrun = 10000; // Number of runs to average over
+    
+    printf("Benchmark (positive only = false)\n");
+    benchmark(beta, omega_max, epsilon, extra_size, nrun, false);
+    printf("\n");
+
+    printf("Benchmark (positive only = true)\n");
+    benchmark(beta, omega_max, epsilon, extra_size, nrun, true);
+    printf("\n");
 
     return 0;
 }

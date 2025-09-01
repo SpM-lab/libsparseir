@@ -17,8 +17,30 @@ inline bool is_ir_basis(const spir_basis *b) {
 
 // Helper function to convert N-dimensional array to 3D array by collapsing
 // dimensions
-static std::array<int, 3> collapse_to_3d(int ndim, const int *dims,
+static std::pair<int,std::array<int, 3>> collapse_to_3d(int ndim, const int *dims,
                                              int target_dim)
+{
+    std::array<int, 3> dims_3d = {1, dims[target_dim], 1};
+    // Multiply all dimensions before target_dim into first dimension
+    for (int i = 0; i < target_dim; ++i) {
+        dims_3d[0] *= dims[i];
+    }
+    // Multiply all dimensions after target_dim into last dimension
+    for (int i = target_dim + 1; i < ndim; ++i) {
+        dims_3d[2] *= dims[i];
+    }
+    if (dims_3d[0] == 1) {
+        // Prefer to have the target dimension as the first dimension
+        std::array<int, 3> dims_3d_2 = {dims_3d[1], dims_3d[2], 1};
+        return std::make_pair(0, dims_3d_2);
+    } else {
+        return std::make_pair(1, dims_3d);
+    }
+}
+
+
+static std::array<int, 3> collapse_to_3d_old(int ndim, const int *dims,
+    int target_dim)
 {
     std::array<int, 3> dims_3d = {1, dims[target_dim], 1};
     // Multiply all dimensions before target_dim into first dimension
@@ -49,33 +71,35 @@ evaluate_impl(const spir_sampling *s, int order, int ndim,
         return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
-    std::array<int, 3> dims_3d =
-        collapse_to_3d(ndim, input_dims, target_dim);
+    int target_dim_3d;
+    std::array<int, 3> dims_3d;
+    std::tie(target_dim_3d, dims_3d) = collapse_to_3d(ndim, input_dims, target_dim);
 
     // output ndim, target_dim, dims_3d
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::array<int, 3> input_dims_3d = dims_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = static_cast<int>(impl.get()->n_sampling_points());
+        target_dim_3d = 2 - target_dim_3d;
+        output_dims_3d[target_dim_3d] = static_cast<int>(impl.get()->n_sampling_points());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
             input, input_dims_3d);
         Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
             out, output_dims_3d);
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+        return (impl.get()->*eval_func)(input_3d, target_dim_3d, output_3d);
     } else {
         std::array<int, 3> input_dims_3d = dims_3d;
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = static_cast<int>(impl.get()->n_sampling_points());
+        output_dims_3d[target_dim_3d] = static_cast<int>(impl.get()->n_sampling_points());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
             input, input_dims_3d);
         Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
             out, output_dims_3d);
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+        return (impl.get()->*eval_func)(input_3d, target_dim_3d, output_3d);
     }
 }
 
@@ -95,15 +119,17 @@ fit_impl(const spir_sampling *s, int order, int ndim,
         return SPIR_GET_IMPL_FAILED;
 
     // Convert dimensions
-    std::array<int, 3> dims_3d =
-        collapse_to_3d(ndim, input_dims, target_dim);
-
+    int target_dim_3d;
+    std::array<int, 3> dims_3d;
+    std::tie(target_dim_3d, dims_3d) = collapse_to_3d(ndim, input_dims, target_dim);
+    
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::array<int, 3> input_dims_3d = dims_3d;
+        target_dim_3d = 2 - target_dim_3d;
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
 
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = static_cast<int>(impl.get()->basis_size());
+        output_dims_3d[target_dim_3d] = static_cast<int>(impl.get()->basis_size());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -111,11 +137,11 @@ fit_impl(const spir_sampling *s, int order, int ndim,
         Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
             out, output_dims_3d);
         // Convert to column-major order for Eigen
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+        return (impl.get()->*eval_func)(input_3d, target_dim_3d, output_3d);
     } else {
         std::array<int, 3> input_dims_3d = dims_3d;
         std::array<int, 3> output_dims_3d = input_dims_3d;
-        output_dims_3d[1] = static_cast<int>(impl.get()->basis_size());
+        output_dims_3d[target_dim_3d] = static_cast<int>(impl.get()->basis_size());
 
         // Create TensorMaps
         Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> input_3d(
@@ -123,7 +149,7 @@ fit_impl(const spir_sampling *s, int order, int ndim,
         Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> output_3d(
             out, output_dims_3d);
 
-        return (impl.get()->*eval_func)(input_3d, 1, output_3d);
+        return (impl.get()->*eval_func)(input_3d, target_dim_3d, output_3d);
     }
 }
 
@@ -157,7 +183,7 @@ int spir_dlr2ir(const spir_basis *dlr, int order, int ndim,
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+    std::array<int, 3> input_dims_3d = collapse_to_3d_old(ndim, input_dims, target_dim);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
@@ -185,7 +211,7 @@ int spir_ir2dlr(const spir_basis *dlr, int order,
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int, 3> input_dims_3d = collapse_to_3d(ndim, input_dims, target_dim);
+    std::array<int, 3> input_dims_3d = collapse_to_3d_old(ndim, input_dims, target_dim);
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
     }
