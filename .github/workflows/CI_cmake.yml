@@ -107,8 +107,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
           -DSPARSEIR_BUILD_FORTRAN=ON \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
-          -DSPARSEIR_USE_BLAS=OFF \
-          -DSPARSEIR_USE_LAPACKE=OFF
+          -DSPARSEIR_USE_BLAS=OFF
 
     - name: Configure CMake (Windows)
       if: matrix.os == 'windows-latest'
@@ -120,8 +119,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} `
           -DSPARSEIR_BUILD_FORTRAN=OFF `
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} `
-          -DSPARSEIR_USE_BLAS=OFF `
-          -DSPARSEIR_USE_LAPACKE=OFF
+          -DSPARSEIR_USE_BLAS=OFF
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
@@ -227,8 +225,7 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
           -DSPARSEIR_BUILD_FORTRAN=ON \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
-          -DSPARSEIR_USE_BLAS=ON \
-          -DSPARSEIR_USE_LAPACKE=ON
+          -DSPARSEIR_USE_BLAS=ON
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
