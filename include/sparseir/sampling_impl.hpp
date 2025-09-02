@@ -341,6 +341,45 @@ int fit_inplace_dim3(
 }
 
 
+template <typename T1, typename T2, int N2, typename InputTensorType>
+Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
+    int n_sampling_points,
+    int basis_size,
+    const sparseir::JacobiSVD<Eigen::MatrixX<T1>> &svd,
+    const InputTensorType &tensor2, int dim = 0)
+{
+    //static check if InputTensorType is Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
+    static_assert(std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value, "InputTensorType must be Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
+
+    int target_dim_3d;
+    std::array<int, 3> dims_3d;
+    
+    // Convert dimensions to int array for collapse_to_3d
+    std::array<int, N2> int_dims;
+    for (int i = 0; i < N2; ++i) {
+        int_dims[i] = static_cast<int>(tensor2.dimension(i));
+    }
+    
+    std::tie(target_dim_3d, dims_3d) = collapse_to_3d(N2, int_dims.data(), dim);
+
+    Eigen::TensorMap<const Eigen::Tensor<T2, 3>> tensor2_map(tensor2.data(), dims_3d);
+
+    auto result_dimensions = tensor2.dimensions();
+    result_dimensions[dim] = basis_size;
+    auto result = Eigen::Tensor<decltype(T1() * T2()), N2>(result_dimensions);
+    {
+        auto result_dimensions_3d = dims_3d;
+        result_dimensions_3d[target_dim_3d] = basis_size;
+        auto result_map = Eigen::TensorMap<Eigen::Tensor<decltype(T1() * T2()), 3>>(result.data(), result_dimensions_3d);
+        auto fit_inplace_dim2_func = [](const sparseir::JacobiSVD<Eigen::MatrixX<T1>> &svd,
+                                       const Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> &input,
+                                       Eigen::Map<Eigen::Matrix<decltype(T1() * T2()), Eigen::Dynamic, Eigen::Dynamic>> &output) {
+                                       fit_inplace_dim2(svd, input, output);
+                                   };
+        fit_inplace_dim3(n_sampling_points, basis_size, svd, tensor2_map, target_dim_3d, result_map, fit_inplace_dim2_func);
+    }
+    return result;
+}
 
 
 template <typename T, typename S, int N>

@@ -271,21 +271,6 @@ public:
           uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
           _ir_default_tau_sampling_points(b.default_tau_sampling_points())
     {
-        // initialize u
-        /*
-        std::vector<std::shared_ptr<TauFunction<S, DLRBasisFunction<S>>>> u_funcs;
-        for (int i = 0; i < poles.size(); ++i) {
-            u_funcs.push_back(
-                std::make_shared<TauFunction<S, DLRBasisFunction<S>>>(
-                    std::make_shared<DLRBasisFunction<S>>(
-                        b.get_beta(), poles[i], b.get_wmax(), b.weight_func(beta, poles[i])
-                    ),
-                    b.get_beta()
-                )
-            );
-        }
-        */
-
         Eigen::VectorXd weights(poles.size());
         for (int i = 0; i < poles.size(); ++i) {
             weights(i) = b.weight_func(beta, poles[i]);
@@ -344,58 +329,13 @@ public:
     }
 
     template <typename T, int N>
-    Eigen::Tensor<T, N> from_IR(const Eigen::Tensor<T, N> &ir)
+    Eigen::Tensor<T, N> from_IR(const Eigen::Tensor<T, N> &ir, int dim=0)
     {
-        // Let fitmat have shape (r, c)
-        const int r = fitmat.rows();
-        const int c = fitmat.cols();
+        auto ouput_dims = ir.dimensions();
+        ouput_dims[dim] = fitmat.cols();
+        auto output_tensor = Eigen::Tensor<T, N>(ouput_dims);
 
-        // Get dimensions of input tensor 'ir' (should be (r, d2, d3, ...))
-        std::array<Eigen::Index, N> ir_dims;
-        for (int i = 0; i < N; ++i) {
-            ir_dims[i] = ir.dimension(i);
-        }
-        // Ensure that the first dimension of ir matches the rows of fitmat
-        assert(ir_dims[0] == r && "Mismatch between fitmat.rows() and first "
-                                  "dimension of input tensor ir");
-
-        // Compute total number of slices = product of dimensions from index 1
-        // to N-1
-        Eigen::Index numSlices = 1;
-        for (int i = 1; i < N; ++i) {
-            numSlices *= ir_dims[i];
-        }
-
-        // Map 'ir' to a matrix of shape (r, numSlices).
-        // This works if the tensor's data is stored contiguously.
-        Eigen::Map<const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
-            ir_mat(ir.data(), r, numSlices);
-
-        // Prepare a matrix to hold the solution X, which will have shape (c,
-        // numSlices)
-        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> X(c, numSlices);
-
-        // Solve the linear systems: fitmat * X = ir_mat.
-        // Here we use ColPivHouseholderQR (you could also use another solver if
-        // desired).
-        Eigen::ColPivHouseholderQR<
-            Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>>
-            solver(fitmat);
-        X = solver.solve(ir_mat);
-
-        // Define output tensor dimensions: first dimension becomes c, and the
-        // remaining dimensions are unchanged.
-        std::array<Eigen::Index, N> out_dims;
-        out_dims[0] = c;
-        for (int i = 1; i < N; ++i) {
-            out_dims[i] = ir_dims[i];
-        }
-
-        // Create an output tensor and copy the data from X into it.
-        Eigen::Tensor<T, N> result(out_dims);
-        std::copy(X.data(), X.data() + X.size(), result.data());
-
-        return result;
+        return fit_dimx<double, T, N>(fitmat.rows(), fitmat.cols(), matrix, ir, dim);
     }
 
     // Convert from DLR to IR
