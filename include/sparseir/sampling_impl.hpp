@@ -11,9 +11,30 @@
 #include <tuple>
 #include <functional>
 
-#include "sparseir/contraction.hpp"
-
 namespace sparseir {
+
+// Helper function to convert N-dimensional array to 3D array by collapsing
+// dimensions
+static std::pair<int, std::array<int, 3>>
+collapse_to_3d(int ndim, const int *dims, int target_dim)
+{
+    std::array<int, 3> dims_3d = {1, dims[target_dim], 1};
+    // Multiply all dimensions before target_dim into first dimension
+    for (int i = 0; i < target_dim; ++i) {
+        dims_3d[0] *= dims[i];
+    }
+    // Multiply all dimensions after target_dim into last dimension
+    for (int i = target_dim + 1; i < ndim; ++i) {
+        dims_3d[2] *= dims[i];
+    }
+    if (dims_3d[0] == 1) {
+        // Prefer to have the target dimension as the first dimension
+        std::array<int, 3> dims_3d_2 = {dims_3d[1], dims_3d[2], 1};
+        return std::make_pair(0, dims_3d_2);
+    } else {
+        return std::make_pair(1, dims_3d);
+    }
+}
 
 template <typename Scalar, typename InputScalar, typename OutputScalar>
 void evaluate_inplace_dim2(
@@ -40,7 +61,7 @@ void evaluate_inplace_dim2(
     }
 }
 
-// Common implementation for evaluate_inplace
+// Applying a matrix to a three-dimensionaltensor along a specific dimension
 template <typename Scalar, typename InputScalar, typename OutputScalar>
 int evaluate_inplace_dim3(
     const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &matrix,
@@ -136,6 +157,40 @@ int evaluate_inplace_dim3(
     }
 
     return SPIR_COMPUTATION_SUCCESS; // Success
+}
+
+
+template <typename T1, typename T2, int N2, typename InputTensorType>
+Eigen::Tensor<decltype(T1() * T2()), N2> evaluate_dimx(
+    const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+    const InputTensorType &tensor2, int dim = 0)
+{
+    //static check if InputTensorType is Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
+    static_assert(std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value, "InputTensorType must be Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
+
+    int target_dim_3d;
+    std::array<int, 3> dims_3d;
+    
+    // Convert dimensions to int array for collapse_to_3d
+    std::array<int, N2> int_dims;
+    for (int i = 0; i < N2; ++i) {
+        int_dims[i] = static_cast<int>(tensor2.dimension(i));
+    }
+    
+    std::tie(target_dim_3d, dims_3d) = collapse_to_3d(N2, int_dims.data(), dim);
+
+    Eigen::TensorMap<const Eigen::Tensor<T2, 3>> tensor2_map(tensor2.data(), dims_3d);
+
+    auto result_dimensions = tensor2.dimensions();
+    result_dimensions[dim] = matrix.rows();
+    auto result = Eigen::Tensor<decltype(T1() * T2()), N2>(result_dimensions);
+    {
+        auto result_dimensions_3d = dims_3d;
+        result_dimensions_3d[target_dim_3d] = matrix.rows();
+        auto result_map = Eigen::TensorMap<Eigen::Tensor<decltype(T1() * T2()), 3>>(result.data(), result_dimensions_3d);
+        evaluate_inplace_dim3(matrix, tensor2_map, target_dim_3d, result_map);
+    }
+    return result;
 }
 
 
@@ -286,5 +341,125 @@ int fit_inplace_dim3(
 }
 
 
+
+
+template <typename T, typename S, int N>
+Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
+_fit_impl_first_dim(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
+                    const Eigen::MatrixX<T> &B)
+{
+    using ResultType = decltype(T() * S());
+
+    Eigen::Matrix<ResultType, Eigen::Dynamic, Eigen::Dynamic> UHB =
+        svd.matrixU().adjoint() * B;
+
+    // Apply inverse singular values to the rows of UHB
+    for (int i = 0; i < svd.singularValues().size(); ++i) {
+        UHB.row(i) /= ResultType(svd.singularValues()(i));
+    }
+    return _gemm(svd.matrixV(), UHB);
+}
+
+inline Eigen::MatrixXcd
+_fit_impl_first_dim_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                              const Eigen::MatrixXcd &B, bool has_zero)
+{
+    Eigen::MatrixXd U = svd.matrixU().real();
+
+    Eigen::Index U_halfsize =
+        U.rows() % 2 == 0 ? U.rows() / 2 : U.rows() / 2 + 1;
+
+    Eigen::MatrixXd U_realT;
+    U_realT = U.block(0, 0, U_halfsize, U.cols()).transpose();
+
+    // Create a properly sized matrix first
+    Eigen::MatrixXd U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
+
+    // Get the blocks we need
+    if (has_zero) {
+        U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
+        auto U_imag_ = U.block(U_halfsize, 0, U_halfsize - 1, U.cols());
+        auto U_imag_1 = U.block(0, 0, 1, U.cols());
+
+        // Now do the assignments
+        U_imag.topRows(1) = U_imag_1;
+        U_imag.bottomRows(U_imag_.rows()) = U_imag_;
+    } else {
+        U_imag = U.block(U_halfsize, 0, U_halfsize, U.cols());
+    }
+
+    Eigen::MatrixXd U_imagT = U_imag.transpose();
+    Eigen::MatrixXd B_real = B.real();
+    Eigen::MatrixXd B_imag = B.imag();
+    Eigen::MatrixXd UHB = _gemm(U_realT, B_real);
+    UHB += _gemm(U_imagT, B_imag);
+
+    // Apply inverse singular values to the rows of UHB
+    for (int i = 0; i < svd.singularValues().size(); ++i) {
+        UHB.row(i) /= svd.singularValues()(i);
+    }
+    Eigen::MatrixXd matrixV = svd.matrixV().real();
+    auto result = _gemm(matrixV, UHB);
+    return result.cast<std::complex<double>>();
+}
+
+template <typename T, typename S, int N>
+Eigen::Tensor<decltype(T() * S()), N>
+fit_impl(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
+         const Eigen::Tensor<T, N> &arr, int dim)
+{
+    if (dim < 0 || dim >= N) {
+        throw std::domain_error("Dimension must be in [0, N).");
+    }
+
+    // First move the dimension to the first
+    auto arr_ = movedim(arr, dim, 0);
+    // Create a view of the tensor as a matrix
+    Eigen::MatrixX<T> arr_view = Eigen::Map<Eigen::MatrixX<T>>(
+        arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
+    // output matrix size
+    Eigen::MatrixX<T> result = _fit_impl_first_dim<T, S, N>(svd, arr_view);
+    // Copy the result to a tensor
+    Eigen::array<Eigen::Index, N> dims;
+    dims[0] = result.rows();
+    for (int i = 1; i < N; ++i) {
+        dims[i] = arr_.dimension(i);
+    }
+    Eigen::Tensor<T, N> result_tensor(dims);
+    std::copy(result.data(), result.data() + result.size(),
+              result_tensor.data());
+
+    return movedim(result_tensor, 0, dim);
+}
+
+template <int N>
+Eigen::Tensor<std::complex<double>, N>
+fit_impl_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                   const Eigen::Tensor<std::complex<double>, N> &arr, int dim,
+                   bool has_zero)
+{
+    if (dim < 0 || dim >= N) {
+        throw std::domain_error("Dimension must be in [0, N).");
+    }
+
+    // First move the dimension to the first
+    auto arr_ = movedim(arr, dim, 0);
+    // Create a view of the tensor as a matrix
+    Eigen::MatrixXcd arr_view = Eigen::Map<Eigen::MatrixXcd>(
+        arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
+    Eigen::MatrixXcd result =
+        _fit_impl_first_dim_split_svd(svd, arr_view, has_zero);
+    // Copy the result to a tensor
+    Eigen::array<Eigen::Index, N> dims;
+    dims[0] = result.rows();
+    for (int i = 1; i < N; ++i) {
+        dims[i] = arr_.dimension(i);
+    }
+    Eigen::Tensor<std::complex<double>, N> result_tensor(dims);
+    std::copy(result.data(), result.data() + result.size(),
+              result_tensor.data());
+
+    return movedim(result_tensor, 0, dim);
+}
 
 } // namespace sparseir

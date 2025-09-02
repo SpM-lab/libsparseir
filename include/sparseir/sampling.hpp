@@ -10,9 +10,6 @@
 #include <complex>
 #include <tuple>
 
-#include "jacobi_svd.hpp"
-#include "sampling_impl.hpp"
-
 namespace sparseir {
 
 // Forward declarations
@@ -305,7 +302,7 @@ public:
     evaluate(const Eigen::TensorMap<const Eigen::Tensor<T, N>> &al,
              int dim = 0) const
     {
-        return _matop_along_dim(matrix_, al, dim);
+        return evaluate_dimx<double, T, N>(matrix_, al, dim);
     }
 
 
@@ -593,7 +590,8 @@ public:
     evaluate(const Eigen::TensorMap<const Eigen::Tensor<T, N>> &al,
              int dim = 0) const
     {
-        return _matop_along_dim(matrix_, al, dim);
+        //return _matop_along_dim(matrix_, al, dim);
+        return evaluate_dimx<std::complex<double>, T, N>(matrix_, al, dim);
     }
 
     // Overload for Tensor (converts to TensorMap)

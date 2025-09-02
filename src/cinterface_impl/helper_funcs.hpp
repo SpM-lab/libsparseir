@@ -15,29 +15,6 @@ inline bool is_ir_basis(const spir_basis *b) {
            std::dynamic_pointer_cast<_IRBasis<sparseir::Bosonic>>(get_impl_basis(b)) != nullptr;
 }
 
-// Helper function to convert N-dimensional array to 3D array by collapsing
-// dimensions
-static std::pair<int,std::array<int, 3>> collapse_to_3d(int ndim, const int *dims,
-                                             int target_dim)
-{
-    std::array<int, 3> dims_3d = {1, dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int i = 0; i < target_dim; ++i) {
-        dims_3d[0] *= dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int i = target_dim + 1; i < ndim; ++i) {
-        dims_3d[2] *= dims[i];
-    }
-    if (dims_3d[0] == 1) {
-        // Prefer to have the target dimension as the first dimension
-        std::array<int, 3> dims_3d_2 = {dims_3d[1], dims_3d[2], 1};
-        return std::make_pair(0, dims_3d_2);
-    } else {
-        return std::make_pair(1, dims_3d);
-    }
-}
-
 
 static std::array<int, 3> collapse_to_3d_old(int ndim, const int *dims,
     int target_dim)
@@ -73,7 +50,7 @@ evaluate_impl(const spir_sampling *s, int order, int ndim,
     // Convert dimensions
     int target_dim_3d;
     std::array<int, 3> dims_3d;
-    std::tie(target_dim_3d, dims_3d) = collapse_to_3d(ndim, input_dims, target_dim);
+    std::tie(target_dim_3d, dims_3d) = sparseir::collapse_to_3d(ndim, input_dims, target_dim);
 
     // output ndim, target_dim, dims_3d
     if (order == SPIR_ORDER_ROW_MAJOR) {
@@ -121,7 +98,7 @@ fit_impl(const spir_sampling *s, int order, int ndim,
     // Convert dimensions
     int target_dim_3d;
     std::array<int, 3> dims_3d;
-    std::tie(target_dim_3d, dims_3d) = collapse_to_3d(ndim, input_dims, target_dim);
+    std::tie(target_dim_3d, dims_3d) = sparseir::collapse_to_3d(ndim, input_dims, target_dim);
     
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::array<int, 3> input_dims_3d = dims_3d;
