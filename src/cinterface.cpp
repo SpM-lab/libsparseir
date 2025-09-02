@@ -6,12 +6,12 @@
 #include <cstdint>
 #include <iostream>
 
-// Debug macro
-#ifdef DEBUG_SPIR
-#define DEBUG_LOG(msg) std::cerr << "[DEBUG] " << msg << std::endl
-#else
-#define DEBUG_LOG(msg)
-#endif
+inline void DEBUG_LOG(const std::string& msg) {
+    const char* env = std::getenv("SPARSEIR_DEBUG");
+    if (env && std::string(env) == "1") {
+        std::cout << "[DEBUG] " << msg << std::endl;
+    }
+}
 
 #include "cinterface_impl/helper_types.hpp"
 #include "cinterface_impl/opaque_types.hpp"
@@ -32,7 +32,7 @@ spir_kernel* spir_logistic_kernel_new(double lambda, int* status)
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_kernel(abstract_kernel);
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_logistic_kernel_new: " << e.what());
+        DEBUG_LOG("Exception in spir_logistic_kernel_new: " + std::string(e.what()));
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     } catch (...) {
@@ -44,14 +44,14 @@ spir_kernel* spir_logistic_kernel_new(double lambda, int* status)
 
 spir_kernel* spir_reg_bose_kernel_new(double lambda, int* status)
 {
-    DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" << lambda);
+    DEBUG_LOG("Creating RegularizedBoseKernel with lambda=" + std::to_string(lambda));
     try {
         auto kernel_ptr = std::make_shared<sparseir::RegularizedBoseKernel>(lambda);
         auto abstract_kernel = _safe_static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_kernel(abstract_kernel);
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_reg_bose_kernel_new: " << e.what());
+        DEBUG_LOG("Exception in spir_reg_bose_kernel_new: " + std::string(e.what()));
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     } catch (...) {
@@ -64,7 +64,7 @@ spir_kernel* spir_reg_bose_kernel_new(double lambda, int* status)
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax)
 {
-    DEBUG_LOG("spir_kernel_domain called with kernel=" << k);
+    DEBUG_LOG("spir_kernel_domain called with kernel=" + std::to_string(reinterpret_cast<uintptr_t>(k)));
     auto impl = get_impl_kernel(k);
     if (!impl) {
         DEBUG_LOG("Failed to get kernel implementation");
@@ -76,9 +76,9 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
         auto xrange = impl->xrange();
         auto yrange = impl->yrange();
 
-        DEBUG_LOG("Setting output values: xrange=("
-                  << xrange.first << ", " << xrange.second << "), yrange=("
-                  << yrange.first << ", " << yrange.second << ")");
+        DEBUG_LOG("Setting output values: xrange=(" +
+                  std::to_string(xrange.first) + ", " + std::to_string(xrange.second) + "), yrange=(" +
+                  std::to_string(yrange.first) + ", " + std::to_string(yrange.second) + ")");
         if (!xmin) {
             DEBUG_LOG("xmin is nullptr");
             return SPIR_INVALID_ARGUMENT;
@@ -102,7 +102,7 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_kernel_domain: " << e.what());
+        DEBUG_LOG("Exception in spir_kernel_domain: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_kernel_domain");
@@ -123,6 +123,7 @@ spir_sve_result* spir_sve_result_new(
     try {
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
         if (!impl) {
+            DEBUG_LOG("Failed to get a sve result implementation");
             *status = SPIR_GET_IMPL_FAILED;
             return nullptr;
         }
@@ -159,6 +160,7 @@ spir_sve_result* spir_sve_result_new(
                 *bose, epsilon, cutoff, lmax, n_gauss, Twork_str
             ));
         } else {
+            DEBUG_LOG("Unknown kernel type");
             *status = SPIR_INTERNAL_ERROR;
             return nullptr;
         }
@@ -166,7 +168,7 @@ spir_sve_result* spir_sve_result_new(
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_sve_result(sve_result);
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_sve_result_new: " << e.what());
+        DEBUG_LOG("Exception in spir_sve_result_new: " + std::string(e.what()));
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     } catch (...) {
@@ -184,6 +186,7 @@ spir_basis* spir_basis_new(
         // Get the kernel implementation
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
         if (!impl) {
+            DEBUG_LOG("Failed to get a basis implementation");
             *status = SPIR_GET_IMPL_FAILED;
             return nullptr;
         }
@@ -191,6 +194,7 @@ spir_basis* spir_basis_new(
         // Get the SVE result implementation
         auto sve_impl = get_impl_sve_result(sve);
         if (!sve_impl) {
+            DEBUG_LOG("Failed to get a basis implementation");
             *status = SPIR_GET_IMPL_FAILED;
             return nullptr;
         }
@@ -216,7 +220,7 @@ spir_basis* spir_basis_new(
         *status = SPIR_COMPUTATION_SUCCESS;
         return result;
     } catch (const std::exception& e) {
-        DEBUG_LOG("Exception in spir_basis_new: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_new: " + std::string(e.what()));
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -225,14 +229,25 @@ spir_basis* spir_basis_new(
 
 spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const double *points, int* status)
 {
-    if (!b || !points || num_points <= 0) {
-        DEBUG_LOG("Error in spir_tau_sampling_new: b, points, or num_points is null");
+    if (!b) {
+        DEBUG_LOG("Error in spir_tau_sampling_new: invalid pointer b");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!points) {
+        DEBUG_LOG("Error in spir_tau_sampling_new: invalid pointer points");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (num_points <= 0) {
+        DEBUG_LOG("Error in spir_tau_sampling_new: num_points is less than or equal to 0");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
 
     auto impl = get_impl_basis(b);
     if (!impl) {
+        DEBUG_LOG("Failed to get a tau sampling implementation");
         *status = SPIR_GET_IMPL_FAILED;
         return nullptr;
     }
@@ -248,7 +263,7 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const 
                 b, num_points, points);
         }
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_tau_sampling_new: " << e.what());
+        DEBUG_LOG("Exception in spir_tau_sampling_new: " + std::string(e.what()));
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -256,8 +271,23 @@ spir_sampling* spir_tau_sampling_new(const spir_basis *b, int num_points, const 
 
 spir_sampling* spir_tau_sampling_new_with_matrix(int order, int statistics, int basis_size, int num_points, const double *points, const double *matrix, int* status)
 {
-    if (!points || !matrix || !status || num_points <= 0) {
-        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: b, points, matrix, status, or num_points is invalid");
+    if (!points) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: invalid pointer points");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!matrix) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: invalid pointer matrix");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!status) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: invalid pointer status");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (num_points <= 0) {
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: num_points is less than or equal to 0");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -285,7 +315,7 @@ spir_sampling* spir_tau_sampling_new_with_matrix(int order, int statistics, int 
                 order, basis_size, num_points, points, matrix, status);
         }
     } catch (const std::exception& e) {
-        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: " << e.what());
+        DEBUG_LOG("Error in spir_tau_sampling_new_with_matrix: " + std::string(e.what()));
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -293,7 +323,18 @@ spir_sampling* spir_tau_sampling_new_with_matrix(int order, int statistics, int 
 
 spir_sampling* spir_matsu_sampling_new(const spir_basis *b, bool positive_only, int num_points, const int64_t *points, int* status)
 {
-    if (!b || !points || num_points <= 0) {
+    if (!b) {
+        DEBUG_LOG("Error in spir_matsu_sampling_new: invalid pointer b");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!points) {
+        DEBUG_LOG("Error in spir_matsu_sampling_new: invalid pointer points");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (num_points <= 0) {
+        DEBUG_LOG("Error in spir_matsu_sampling_new: num_points is less than or equal to 0");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -363,7 +404,18 @@ spir_sampling* spir_matsu_sampling_new_with_matrix(
                                                   const c_complex *matrix,
                                                   int *status)
 {
-    if (!points || !matrix || !status) {
+    if (!points) {
+        DEBUG_LOG("Error in spir_matsu_sampling_new_with_matrix: invalid pointer points");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!matrix) {
+        DEBUG_LOG("Error in spir_matsu_sampling_new_with_matrix: invalid pointer matrix");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!status) {
+        DEBUG_LOG("Error in spir_matsu_sampling_new_with_matrix: invalid pointer status");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -507,8 +559,10 @@ int spir_dlr2ir_dd(const spir_basis *dlr, int order, int ndim,
                        const double *input, double *out)
 {
     auto impl = get_impl_basis(dlr);
-    if (!impl)
+    if (!impl) {
+        DEBUG_LOG("Error in spir_dlr2ir_dd: failed to get basis implementation");
         return SPIR_GET_IMPL_FAILED;
+    }
 
     if (!is_dlr_basis(dlr)) {
         DEBUG_LOG("Error: The basis is not a DLR basis");
@@ -647,7 +701,13 @@ int spir_dlr_get_poles(const spir_basis *dlr, double *poles)
 
 spir_funcs* spir_basis_get_u(const spir_basis *b, int *status)
 {
-    if (!b || !status) {
+    if (!b) {
+        DEBUG_LOG("Error in spir_basis_get_u: invalid pointer b");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!status) {
+        DEBUG_LOG("Error in spir_basis_get_u: invalid pointer status");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -686,7 +746,13 @@ spir_funcs* spir_basis_get_u(const spir_basis *b, int *status)
 
 spir_funcs* spir_basis_get_v(const spir_basis *b, int *status)
 {
-    if (!b || !status) {
+    if (!b) {
+        DEBUG_LOG("Error in spir_basis_get_v: invalid pointer b");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!status) {
+        DEBUG_LOG("Error in spir_basis_get_v: invalid pointer status");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -725,7 +791,13 @@ spir_funcs* spir_basis_get_v(const spir_basis *b, int *status)
 
 spir_funcs* spir_basis_get_uhat(const spir_basis *b, int *status)
 {
-    if (!b || !status) {
+    if (!b) {
+        DEBUG_LOG("Error in spir_basis_get_uhat: invalid pointer b");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!status) {
+        DEBUG_LOG("Error in spir_basis_get_uhat: invalid pointer status");
         *status = SPIR_INVALID_ARGUMENT;
         return nullptr;
     }
@@ -768,15 +840,18 @@ int spir_sampling_get_npoints(const spir_sampling *s,
 {
     auto impl = get_impl_sampling(s);
     if (!impl) {
+        DEBUG_LOG("Error in spir_sampling_get_npoints: failed to get sampling implementation");
         return SPIR_GET_IMPL_FAILED;
     }
     if (!num_points) {
+        DEBUG_LOG("Error in spir_sampling_get_npoints: invalid pointer num_points");
         return SPIR_INVALID_ARGUMENT;
     }
     try {
         *num_points = impl->n_sampling_points();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
+        DEBUG_LOG("Error in spir_sampling_get_npoints: unknown exception");
         return SPIR_GET_IMPL_FAILED;
     }
 }
@@ -785,6 +860,7 @@ int spir_sampling_get_taus(const spir_sampling *s, double *points)
 {
     auto impl = get_impl_sampling(s);
     if (!impl) {
+        DEBUG_LOG("Error in spir_sampling_get_taus: failed to get sampling implementation");
         return SPIR_GET_IMPL_FAILED;
     }
     try {
@@ -859,22 +935,30 @@ int spir_basis_get_size(const spir_basis *b,
 {
     auto impl = get_impl_basis(b);
     if (!impl) {
+        DEBUG_LOG("Error in spir_basis_get_size: failed to get basis implementation");
         return SPIR_GET_IMPL_FAILED;
     }
     if (!size) {
+        DEBUG_LOG("Error in spir_basis_get_size: invalid pointer size");
         return SPIR_INVALID_ARGUMENT;
     }
     try {
         *size = impl->size();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (...) {
+        DEBUG_LOG("Error in spir_basis_get_size: unknown exception");
         return SPIR_GET_IMPL_FAILED;
     }
 }
 
 int spir_basis_get_n_default_taus(const spir_basis *b, int *num_points)
 {
-    if (!b || !num_points) {
+    if (!b) {
+        DEBUG_LOG("Error in spir_basis_get_n_default_taus: invalid pointer b");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!num_points) {
+        DEBUG_LOG("Error in spir_basis_get_n_default_taus: invalid pointer num_points");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -902,7 +986,12 @@ int spir_basis_get_n_default_taus(const spir_basis *b, int *num_points)
 
 int spir_basis_get_default_taus(const spir_basis *b, double *points)
 {
-    if (!b || !points) {
+    if (!b) {
+        DEBUG_LOG("Error in spir_basis_get_default_taus: invalid pointer b");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!points) {
+        DEBUG_LOG("Error in spir_basis_get_default_taus: invalid pointer points");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1155,14 +1244,19 @@ int spir_funcs_eval(const spir_funcs *funcs, double x, double *out)
         std::memcpy(out, result.data(), result.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_eval: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_eval: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     }
 }
 
 int spir_funcs_eval_matsu(const spir_funcs *funcs, int64_t x, c_complex *out)
 {
-    if (!funcs || !out) {
+    if (!funcs) {
+        DEBUG_LOG("Error in spir_funcs_eval_matsu: invalid pointer funcs");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!out) {
+        DEBUG_LOG("Error in spir_funcs_eval_matsu: invalid pointer out");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1174,7 +1268,20 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
                                  int order, int num_points,
                                  const double *xs, double *out)
 {
-    if (!funcs || !xs || !out || num_points <= 0) {
+    if (!funcs) {
+        DEBUG_LOG("Error in spir_funcs_batch_eval: invalid pointer funcs");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!xs) {
+        DEBUG_LOG("Error in spir_funcs_batch_eval: invalid pointer xs");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!out) {
+        DEBUG_LOG("Error in spir_funcs_batch_eval: invalid pointer out");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (num_points <= 0) {
+        DEBUG_LOG("Error in spir_funcs_batch_eval: num_points is less than or equal to 0");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1213,7 +1320,7 @@ int spir_funcs_batch_eval(const spir_funcs *funcs,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_batch_eval: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_batch_eval: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_funcs_batch_eval");
@@ -1273,14 +1380,19 @@ int spir_funcs_batch_eval_matsu(const spir_funcs *uiw,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_batch_eval_matsu: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_batch_eval_matsu: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     }
 }
 
 int spir_funcs_get_size(const spir_funcs *funcs, int *size)
 {
-    if (funcs == nullptr || size == nullptr) {
+    if (!funcs) {
+        DEBUG_LOG("Error in spir_funcs_get_size: invalid pointer funcs");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!size) {
+        DEBUG_LOG("Error in spir_funcs_get_size: invalid pointer size");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1313,7 +1425,7 @@ spir_funcs *spir_funcs_get_slice(const spir_funcs *funcs, int nslice, int *indic
         try {
             check_indices(indices_vec, impl->size());
         } catch (const std::runtime_error& e) {
-            DEBUG_LOG("Error: " << e.what());
+            DEBUG_LOG("Error: " + std::string(e.what()));
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
@@ -1329,7 +1441,7 @@ spir_funcs *spir_funcs_get_slice(const spir_funcs *funcs, int nslice, int *indic
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_funcs(sliced_impl);
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_get_slice: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_get_slice: " + std::string(e.what()));
         *status = SPIR_INTERNAL_ERROR;
         return nullptr;
     }
@@ -1370,7 +1482,7 @@ int spir_basis_get_n_default_ws(const spir_basis *b,
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_basis_get_n_default_ws: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_get_n_default_ws: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_basis_get_n_default_ws");
@@ -1413,7 +1525,7 @@ int spir_basis_get_default_ws(const spir_basis *b,
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_basis_get_default_ws: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_get_default_ws: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_basis_get_default_ws");
@@ -1448,7 +1560,7 @@ int spir_sve_result_get_size(const spir_sve_result *sve, int *size)
         *size = impl->s.size();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_sve_result_get_size: " << e.what());
+        DEBUG_LOG("Exception in spir_sve_result_get_size: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_sve_result_get_size");
@@ -1471,7 +1583,7 @@ int spir_sve_result_get_svals(const spir_sve_result *sve, double *svals)
         std::memcpy(svals, impl->s.data(), impl->s.size() * sizeof(double));
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_sve_result_get_svals: " << e.what());
+        DEBUG_LOG("Exception in spir_sve_result_get_svals: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_sve_result_get_svals");
@@ -1513,7 +1625,7 @@ int spir_basis_get_svals(const spir_basis *b, double *svals)
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_basis_get_svals: " << e.what());
+        DEBUG_LOG("Exception in spir_basis_get_svals: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_basis_get_svals");
@@ -1523,7 +1635,12 @@ int spir_basis_get_svals(const spir_basis *b, double *svals)
 
 int spir_funcs_get_n_roots(const spir_funcs *funcs, int *n_roots)
 {
-    if (!funcs || !n_roots) {
+    if (!funcs) {
+        DEBUG_LOG("Error in spir_funcs_get_n_roots: invalid pointer funcs");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!n_roots) {
+        DEBUG_LOG("Error in spir_funcs_get_n_roots: invalid pointer n_roots");
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1545,7 +1662,7 @@ int spir_funcs_get_n_roots(const spir_funcs *funcs, int *n_roots)
         *n_roots = continuous_impl->nroots();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_get_n_roots: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_get_n_roots: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_funcs_get_n_roots");
@@ -1582,7 +1699,7 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots)
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_funcs_get_roots: " << e.what());
+        DEBUG_LOG("Exception in spir_funcs_get_roots: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_funcs_get_roots");
@@ -1592,7 +1709,7 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots)
 
 int spir_sampling_get_cond_num(const spir_sampling *s, double *cond_num)
 {
-    DEBUG_LOG("spir_sampling_get_cond_num called with sampling=" << s);
+    DEBUG_LOG("spir_sampling_get_cond_num called with sampling=" + std::to_string(reinterpret_cast<uintptr_t>(s)));
     auto impl = get_impl_sampling(s);
     if (!impl) {
         DEBUG_LOG("Failed to get sampling implementation");
@@ -1608,7 +1725,7 @@ int spir_sampling_get_cond_num(const spir_sampling *s, double *cond_num)
         *cond_num = impl->get_cond_num();
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_sampling_get_cond_num: " << e.what());
+        DEBUG_LOG("Exception in spir_sampling_get_cond_num: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_sampling_get_cond_num");

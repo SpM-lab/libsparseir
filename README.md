@@ -78,15 +78,7 @@ cmake --build .
 cmake --install .
 ```
 
-### Debug Build
 
-To enable debug logging output, use the `SPARSEIR_DEBUG` CMake option:
-
-```bash
-cmake .. -DSPARSEIR_DEBUG=ON
-```
-
-This will enable detailed debug logging for various operations in the library, which can be helpful for troubleshooting and development.
 
 ### Quick Test Build
 
@@ -105,7 +97,7 @@ cd build
 ./test_kernel
 ```
 
-## BLAS Support
+### BLAS Support
 
 By default, the library uses Eigen's internal implementations for matrix-matrix multiplication for fitting and sampling.
 This does not require any additional system libraries.
@@ -130,6 +122,15 @@ set(SPARSEIR_USE_BLAS ON)
 
 Note: When enabling BLAS, ensure that the appropriate libraries (such as OpenBLAS, Intel MKL, or Apple Accelerate) can be found by CMake.
 
+### Debug Logging at runtime
+
+You can also control debug output at runtime using the `SPARSEIR_DEBUG` environment variable:
+
+```bash
+export SPARSEIR_DEBUG=1
+./your_program
+```
+
 ## Generating documentation with Doxygen
 
 Install `doxygen` and `graphviz`. Then, run the following command:
@@ -140,14 +141,14 @@ bash generate_docs.sh
 
 This will create the `docs/html` directory. Open `docs/html/index.html` with your browser to see it.
 
-# Sample code in C
+## Sample code in C
 
 Please refer [`./sample_c/README.md`](./sample_c/README.md) to learn more.
 
-# For developers
+## For developers
 
 
-## CI/CD
+### CI/CD
 
 This project uses GitHub Actions for continuous integration and automated releases:
 

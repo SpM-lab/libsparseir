@@ -177,7 +177,7 @@ int spir_dlr2ir(const spir_basis *dlr, int order, int ndim,
         std::copy(out_tensor.data(), out_tensor.data() + out_tensor.size(), out);
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Error: " << e.what());
+        DEBUG_LOG("Error: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     }
 }
@@ -209,7 +209,7 @@ int spir_ir2dlr(const spir_basis *dlr, int order,
         std::copy(out_tensor.data(), out_tensor.data() + out_tensor.size(), out);
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Error: " << e.what());
+        DEBUG_LOG("Error: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     }
 }
@@ -444,7 +444,7 @@ int _spir_basis_get_u(const spir_basis *b,
         }
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Error: " << e.what());
+        DEBUG_LOG("Error: " + std::string(e.what()));
         return SPIR_GET_IMPL_FAILED;
     }
 }
