@@ -339,9 +339,12 @@ public:
     }
 
     // Convert from DLR to IR
-    template <typename T, int N>
-    Eigen::Tensor<T, N> to_IR(const Eigen::Tensor<T, N> &g_dlr, int target_dim=0) const
+    template <typename T, int N, typename InputTensorType>
+    Eigen::Tensor<T, N> to_IR(const InputTensorType &g_dlr, int target_dim=0) const
     {
+        // check if InputTensorType is Eigen::Tensor<T, N> or Eigen::TensorMap<const Eigen::Tensor<T, N>>
+        static_assert(std::is_same<InputTensorType, Eigen::Tensor<T, N>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T, N>>>::value, "InputTensorType must be Eigen::Tensor<T, N> or Eigen::TensorMap<const Eigen::Tensor<T, N>>");
+
         return evaluate_dimx<double, T, N>(fitmat, g_dlr, target_dim);
     }
 

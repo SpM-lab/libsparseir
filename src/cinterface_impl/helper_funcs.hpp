@@ -160,22 +160,26 @@ int spir_dlr2ir(const spir_basis *dlr, int order, int ndim,
     if (!impl)
         return SPIR_GET_IMPL_FAILED;
 
-    std::array<int, 3> input_dims_3d = collapse_to_3d_old(ndim, input_dims, target_dim);
+    int target_dim_3d;
+    std::array<int, 3> input_dims_3d;
+    std::tie(target_dim_3d, input_dims_3d) = sparseir::collapse_to_3d(ndim, input_dims, target_dim);
+
     if (order == SPIR_ORDER_ROW_MAJOR) {
         std::reverse(input_dims_3d.begin(), input_dims_3d.end());
+        target_dim_3d = 2 - target_dim_3d;
     }
-    Eigen::Tensor<T, 3> input_tensor(input_dims_3d[0], input_dims_3d[1], input_dims_3d[2]);
-    std::size_t total_input_size = input_dims_3d[0] * input_dims_3d[1] * input_dims_3d[2];
-    for (std::size_t i = 0; i < total_input_size; i++) {
-        input_tensor.data()[i] = input[i];
+    
+    Eigen::TensorMap<const Eigen::Tensor<T, 3>> input_tensor(input, input_dims_3d);
+    Eigen::TensorMap<Eigen::Tensor<T, 3>> out_tensor(out, input_dims_3d);
+
+    try {
+        Eigen::Tensor<T, 3> out_tensor = impl->get_impl()->template to_IR<T, 3>(input_tensor, target_dim_3d);
+        std::copy(out_tensor.data(), out_tensor.data() + out_tensor.size(), out);
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Error: " << e.what());
+        return SPIR_INTERNAL_ERROR;
     }
-    Eigen::Tensor<T, 3> out_tensor = impl->get_impl()->to_IR(input_tensor, 1);
-    std::size_t total_output_size =
-        out_tensor.dimension(0) * out_tensor.dimension(1) * out_tensor.dimension(2);
-    for (std::size_t i = 0; i < total_output_size; i++) {
-        out[i] = out_tensor.data()[i];
-    }
-    return SPIR_COMPUTATION_SUCCESS;
 }
 
 template <typename S, typename T>

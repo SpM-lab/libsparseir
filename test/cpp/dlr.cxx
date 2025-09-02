@@ -61,16 +61,10 @@ TEST_CASE("DLR Tests", "[dlr]")
             for (int i = 0; i < coeffs.size(); ++i) {
                 coeffs_as_tensor(i) = coeffs(i);
             }
-            std::cout << "dlr_poles.fitmat.rows() = " << dlr_poles.fitmat.rows() << std::endl;
-            std::cout << "dlr_poles.fitmat.cols() = " << dlr_poles.fitmat.cols() << std::endl;
             Eigen::Tensor<double, 1> Gl_tensor =
-                dlr_poles.to_IR(coeffs_as_tensor);
+                dlr_poles.template to_IR<double, 1>(coeffs_as_tensor);
             Eigen::Tensor<double, 1> g_dlr_tensor = dlr.from_IR(Gl_tensor);
-            std::cout << "g_dlr_tensor.dimension(0) = " << g_dlr_tensor.dimension(0) << std::endl;
 
-            for (int i = 0; i < g_dlr_tensor.dimension(0); ++i) {
-                std::cout << "g_dlr_tensor[" << i << "] = " << g_dlr_tensor(i) << std::endl;
-            }
             auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
             auto smpl_points = smpl.sampling_points();
             auto smpl_for_dlr =
@@ -137,7 +131,6 @@ TEST_CASE("DLR Tests", "[dlr]")
 
     SECTION("DLR basis function tests (bosonic)")
     {
-        std::cout << "DLR basis function tests (bosonic)" << std::endl;
         //double beta = 1e+2;
         //double omega_max = 2.0;
         double beta = 1e+2;
@@ -206,7 +199,7 @@ TEST_CASE("DLR Tests", "[dlr]")
         for (int i = 0; i < coeff.size(); ++i) {
             coeff_as_tensor(i) = coeff(i);
         }
-        Eigen::Tensor<double, 1> gl_pole2_as_tensor = sp.to_IR(coeff_as_tensor);
+        Eigen::Tensor<double, 1> gl_pole2_as_tensor = sp.template to_IR<double, 1>(coeff_as_tensor);
         // convert to matrix
         Eigen::Map<const Eigen::MatrixXd> gl_pole2(
             gl_pole2_as_tensor.data(), gl_pole2_as_tensor.dimension(0), 1);
