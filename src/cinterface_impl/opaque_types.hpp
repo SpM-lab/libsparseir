@@ -23,18 +23,18 @@
     int spir_##name##_is_assigned(const spir_##name *obj)                        \
     {                                                                          \
         if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
+            DEBUG_LOG(std::string(#name) + " object is null");                \
             return 0;                                                          \
         }                                                                      \
         bool is_assigned = static_cast<bool>(obj->ptr);                        \
-        DEBUG_LOG(#name << " object at " << obj                             \
-                        << ", std::shared_ptr at " << obj->ptr  \
-                        << ", raw ptr=" << obj->ptr.get()                      \
-                        << ", use_count=" << obj->ptr.use_count()             \
-                        << ", is_assigned=" << is_assigned);                   \
+        DEBUG_LOG(std::string(#name) + " object at " + std::to_string(reinterpret_cast<uintptr_t>(obj)) + \
+                  ", std::shared_ptr at " + std::to_string(reinterpret_cast<uintptr_t>(obj->ptr.get())) + \
+                  ", raw ptr=" + std::to_string(reinterpret_cast<uintptr_t>(obj->ptr.get())) + \
+                  ", use_count=" + std::to_string(obj->ptr.use_count()) + \
+                  ", is_assigned=" + (is_assigned ? "true" : "false"));        \
         if (is_assigned) {                                                    \
             if (obj->ptr.use_count() == 0) {                                  \
-                DEBUG_LOG(#name << " object has 0 use_count");                \
+                DEBUG_LOG(std::string(#name) + " object has 0 use_count");    \
                 return 0;                                                     \
             }                                                                  \
         }                                                                      \
@@ -44,9 +44,9 @@
     /* Clone function */                                                       \
     spir_##name *spir_##name##_clone(const spir_##name *src)                     \
     {                                                                          \
-        DEBUG_LOG("Cloning " << #name << " at " << src);                       \
+        DEBUG_LOG("Cloning " + std::string(#name) + " at " + std::to_string(reinterpret_cast<uintptr_t>(src))); \
         if (!src) {                                                            \
-            DEBUG_LOG("Source " << #name << " is null");                       \
+            DEBUG_LOG("Source " + std::string(#name) + " is null");           \
             return nullptr;                                                    \
         }                                                                      \
                                                                                \
@@ -58,20 +58,19 @@
             if (src->ptr) {                                                    \
                 /* Create a new shared_ptr instance that shares ownership */   \
                 result->ptr = src->ptr;                                        \
-                DEBUG_LOG("Cloned " << #name << " to " << result               \
-                                    << ", shared_ptr points to "               \
-                                    << result->ptr.get());                     \
+                DEBUG_LOG("Cloned " + std::string(#name) + " to " + std::to_string(reinterpret_cast<uintptr_t>(result)) + \
+                          ", shared_ptr points to " + std::to_string(reinterpret_cast<uintptr_t>(result->ptr.get())));                     \
             } else {                                                           \
-                DEBUG_LOG("Source " << #name << " has null shared_ptr");       \
+                DEBUG_LOG("Source " + std::string(#name) + " has null shared_ptr");       \
                 result->ptr = nullptr;                                         \
             }                                                                  \
                                                                                \
             return result;                                                     \
         } catch (const std::exception &e) {                                    \
-            DEBUG_LOG("Exception in " << #name << "_clone: " << e.what());     \
+            DEBUG_LOG("Exception in " + std::string(#name) + "_clone: " + e.what());     \
             return nullptr;                                                    \
         } catch (...) {                                                        \
-            DEBUG_LOG("Unknown exception in " << #name << "_clone");           \
+            DEBUG_LOG("Unknown exception in " + std::string(#name) + "_clone");           \
             return nullptr;                                                    \
         }                                                                      \
     }                                                                          \
@@ -80,14 +79,14 @@
     void spir_##name##_release(spir_##name *obj)                                 \
     {                                                                          \
         if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
+            DEBUG_LOG(std::string(#name) + " object is null");                \
             return;                                                            \
         }                                                                      \
-        DEBUG_LOG("Destroying " << #name << " object at " << obj);             \
+        DEBUG_LOG("Destroying " + std::string(#name) + " object at " + std::to_string(reinterpret_cast<uintptr_t>(obj))); \
         /* Check before resetting */                                           \
         if (obj->ptr) {                                                        \
-            DEBUG_LOG("Resetting shared_ptr in " << #name << " at "            \
-                                                 << obj->ptr.get());           \
+            DEBUG_LOG("Resetting shared_ptr in " + std::string(#name) + " at " + \
+                      std::to_string(reinterpret_cast<uintptr_t>(obj->ptr.get()))); \
             obj->ptr.reset();                                                  \
         }                                                                      \
         /* Safely delete the object */                                         \
@@ -99,13 +98,13 @@
         const spir_##name *obj)                                                \
     {                                                                          \
         if (!obj) {                                                            \
-            DEBUG_LOG(#name << " object is null");                             \
+            DEBUG_LOG(std::string(#name) + " object is null");                \
             return nullptr;                                                    \
         }                                                                      \
-        DEBUG_LOG(#name << " object at " << obj                                \
-                        << ", ptr=" << obj->ptr.get());                        \
+        DEBUG_LOG(std::string(#name) + " object at " + std::to_string(reinterpret_cast<uintptr_t>(obj)) + \
+                  ", ptr=" + std::to_string(reinterpret_cast<uintptr_t>(obj->ptr.get()))); \
         if (!obj->ptr) {                                                       \
-            DEBUG_LOG(#name << " object has null shared_ptr");                 \
+            DEBUG_LOG(std::string(#name) + " object has null shared_ptr");    \
             return nullptr;                                                    \
         }                                                                      \
         return obj->ptr;                                                       \
