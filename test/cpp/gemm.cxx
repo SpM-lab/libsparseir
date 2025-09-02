@@ -1,9 +1,10 @@
-#include "sparseir/contraction.hpp"
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>
 #include <iostream>
 #include <complex>
 #include <random>
+
+#include <sparseir/sparseir.hpp> // C++ interface
 
 using namespace Eigen;
 using namespace sparseir;
