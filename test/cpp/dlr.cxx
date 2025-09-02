@@ -63,7 +63,7 @@ TEST_CASE("DLR Tests", "[dlr]")
             }
             Eigen::Tensor<double, 1> Gl_tensor =
                 dlr_poles.template to_IR<double, 1>(coeffs_as_tensor);
-            Eigen::Tensor<double, 1> g_dlr_tensor = dlr.from_IR(Gl_tensor);
+            Eigen::Tensor<double, 1> g_dlr_tensor = dlr.template from_IR<double, 1>(Gl_tensor);
 
             auto smpl = sparseir::MatsubaraSampling<Statistics>(basis);
             auto smpl_points = smpl.sampling_points();

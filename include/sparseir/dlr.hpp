@@ -328,9 +328,12 @@ public:
         //return basis.default_matsubara_sampling_points(L, fence, positive_only);
     }
 
-    template <typename T, int N>
-    Eigen::Tensor<T, N> from_IR(const Eigen::Tensor<T, N> &ir, int dim=0)
+    template <typename T, int N, typename InputTensorType>
+    Eigen::Tensor<T, N> from_IR(const InputTensorType &ir, int dim=0)
     {
+        // check if InputTensorType is Eigen::Tensor<T, N> or Eigen::TensorMap<const Eigen::Tensor<T, N>>
+        static_assert(std::is_same<InputTensorType, Eigen::Tensor<T, N>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T, N>>>::value, "InputTensorType must be Eigen::Tensor<T, N> or Eigen::TensorMap<const Eigen::Tensor<T, N>>");
+
         auto ouput_dims = ir.dimensions();
         ouput_dims[dim] = fitmat.cols();
         auto output_tensor = Eigen::Tensor<T, N>(ouput_dims);
