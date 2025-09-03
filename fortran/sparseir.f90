@@ -9,6 +9,7 @@ module sparseir
    !include '_fortran_types_public.inc'
    include '_cbinding_public.inc'
    public :: SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC, SPIR_ORDER_COLUMN_MAJOR
+   public :: SPIR_TWORK_FLOAT64, SPIR_TWORK_FLOAT64X2, SPIR_TWORK_AUTO
 
    ! Constants for statistics types
    integer(c_int32_t), parameter :: SPIR_STATISTICS_FERMIONIC = 1_c_int32_t
@@ -16,19 +17,13 @@ module sparseir
    integer(c_int32_t), parameter :: SPIR_ORDER_ROW_MAJOR = 0_c_int32_t
    integer(c_int32_t), parameter :: SPIR_ORDER_COLUMN_MAJOR = 1_c_int32_t
 
-   ! Type definitions
-   !include '_fortran_types.inc'
-
-   ! Assignment operator interfaces
-   !include '_fortran_assign.inc'
+   ! Constants for Twork types
+   integer(c_int32_t), parameter :: SPIR_TWORK_FLOAT64 = 0_c_int32_t
+   integer(c_int32_t), parameter :: SPIR_TWORK_FLOAT64X2 = 1_c_int32_t
+   integer(c_int32_t), parameter :: SPIR_TWORK_AUTO = -1_c_int32_t
 
    ! C bindings
    interface
       include '_cbinding.inc'
    end interface
-
-   !contains
-   ! Type implementations
-   !include '_impl_types.inc'
-
 end module sparseir

@@ -548,7 +548,7 @@ TEST_CASE("compute_sve/LogisticKernel", "[sve]")
     // std::cout << "S values: \n" << s << std::endl;
     // std::cout << "diff " << s[0] - 0.52428 << std::endl;
     auto diff = s[0] - 0.5242807065966566;
-    REQUIRE(std::abs(diff) < 1e-20);
+    REQUIRE(std::abs(diff) <= 1e-15);
 }
 
 TEST_CASE("compute_sve/RegularizedBoseKernel", "[sve]")
@@ -557,7 +557,7 @@ TEST_CASE("compute_sve/RegularizedBoseKernel", "[sve]")
     auto sve = SVECache::get_sve_result(rbk, 1e-6);
     auto s = sve.s;
     auto diff = s[0] - 0.23501228587222459;
-    REQUIRE(std::abs(diff) < 1e-20);
+    REQUIRE(std::abs(diff) <= 1e-15);
 }
 
 TEST_CASE("choose_accuracy", "[sve]")

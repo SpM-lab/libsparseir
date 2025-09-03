@@ -374,7 +374,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // IR basis
     spir_kernel* kernel = _kernel_new<K>(beta * wmax);
-    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_FLOAT64X2, &status);
+    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve != nullptr);
 

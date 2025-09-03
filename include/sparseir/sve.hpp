@@ -142,19 +142,37 @@ pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                 double cutoff = std::numeric_limits<double>::quiet_NaN(),
                 int lmax = std::numeric_limits<int>::max());
 
-//template <typename T>
-//std::tuple<SVEResult, std::shared_ptr<AbstractSVE<T>>>
-//pre_postprocess(const std::shared_ptr<AbstractKernel> &kernel,
-                //double safe_epsilon, int n_gauss,
-                ////double cutoff = std::numeric_limits<double>::quiet_NaN(),
-                //int lmax = std::numeric_limits<int>::max());
+// SVE computation parameters
+struct SVEParams {
+    double cutoff = std::numeric_limits<double>::quiet_NaN();
+    int lmax = std::numeric_limits<int>::max();
+    int n_gauss = -1;
+    std::string Twork = "auto";
+    
+    // Default constructor with default values
+    SVEParams() = default;
+    
+    // Constructor with custom values
+    SVEParams(double cutoff_, int lmax_, int n_gauss_, const std::string& Twork_)
+        : cutoff(cutoff_), lmax(lmax_), n_gauss(n_gauss_), Twork(Twork_) {}
+    
+    // Constructor with custom cutoff only
+    explicit SVEParams(double cutoff_) : cutoff(cutoff_) {}
+    
+    // Constructor with custom Twork only
+    explicit SVEParams(const std::string& Twork_) : Twork(Twork_) {}
+};
 
 // Restrict compute_sve to concrete kernel types only
 template <typename K>
 SVEResult compute_sve(const K &kernel, double epsilon,
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
             int lmax = std::numeric_limits<int>::max(),
-            int n_gauss = -1, std::string Twork = "Float64x2");
+            int n_gauss = -1, std::string Twork = "auto");
+
+// New overload using SVEParams struct
+template <typename K>
+SVEResult compute_sve(const K &kernel, double epsilon, const SVEParams& params);
 
 
 } // namespace sparseir

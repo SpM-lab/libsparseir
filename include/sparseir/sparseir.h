@@ -30,6 +30,7 @@ typedef double _Complex c_complex;
 // Twork type constants
 #define SPIR_TWORK_FLOAT64 0
 #define SPIR_TWORK_FLOAT64X2 1
+#define SPIR_TWORK_AUTO -1
 
 #ifdef __cplusplus
 extern "C" {
@@ -156,14 +157,22 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  * @param epsilon Accuracy target for the basis. Determines:
  *               - The relative magnitude of included singular values
  *               - The accuracy of computed singular values and vectors
+ * @param cutoff Cutoff value for singular values
+ * @param lmax Maximum number of Legendre polynomials to use
+ * @param n_gauss Number of Gauss points for numerical integration
+ * @param Twork Working data type for computations (sve). Must be one of:
+ *                   - SPIR_TWORK_FLOAT64 (0): Use double precision (64-bit)
+ *                   - SPIR_TWORK_FLOAT64X2 (1): Use extended precision (128-bit)
+ *                   - SPIR_TWORK_AUTO (-1): Automatically choose precision based on epsilon
  * @param status Pointer to store the status code
  * @return Pointer to the newly created SVE result, or NULL if creation fails
  *
  * @note The computation automatically uses optimized strategies:
  *       - For centrosymmetric kernels, specialized algorithms are employed
- *       - The working precision is adjusted to meet accuracy requirements
+ *       - If Twork is SPIR_TWORK_AUTO, the working precision is automatically
+ *         adjusted to meet accuracy requirements based on epsilon
  *       - If epsilon is below √ε (where ε is machine epsilon), a warning is
- *         issued and higher precision arithmetic is used
+ *         issued and higher precision arithmetic is used if possible.
  *
  * @note The returned object must be freed using spir_release_sve_result when no
  * longer needed
@@ -175,7 +184,7 @@ spir_sve_result *spir_sve_result_new(
     double cutoff,
     int lmax,
     int n_gauss,
-    int work_dtype,
+    int Twork,
     int *status
 );
 

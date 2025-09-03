@@ -128,7 +128,7 @@ spir_sve_result* spir_sve_result_new(
             return nullptr;
         }
 
-        if (Twork != SPIR_TWORK_FLOAT64 && Twork != SPIR_TWORK_FLOAT64X2) {
+        if (Twork != SPIR_TWORK_FLOAT64 && Twork != SPIR_TWORK_FLOAT64X2 && Twork != SPIR_TWORK_AUTO) {
             DEBUG_LOG("Error: Invalid Twork");
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
@@ -147,6 +147,8 @@ spir_sve_result* spir_sve_result_new(
             Twork_str = "Float64";
         } else if (Twork == SPIR_TWORK_FLOAT64X2) {
             Twork_str = "Float64x2";
+        } else if (Twork == SPIR_TWORK_AUTO) {
+            Twork_str = "auto";
         }
 
         std::shared_ptr<sparseir::SVEResult> sve_result;
