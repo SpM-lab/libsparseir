@@ -142,19 +142,12 @@ pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                 double cutoff = std::numeric_limits<double>::quiet_NaN(),
                 int lmax = std::numeric_limits<int>::max());
 
-//template <typename T>
-//std::tuple<SVEResult, std::shared_ptr<AbstractSVE<T>>>
-//pre_postprocess(const std::shared_ptr<AbstractKernel> &kernel,
-                //double safe_epsilon, int n_gauss,
-                ////double cutoff = std::numeric_limits<double>::quiet_NaN(),
-                //int lmax = std::numeric_limits<int>::max());
-
 // Restrict compute_sve to concrete kernel types only
 template <typename K>
 SVEResult compute_sve(const K &kernel, double epsilon,
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
             int lmax = std::numeric_limits<int>::max(),
-            int n_gauss = -1, std::string Twork = "Float64x2");
+            int n_gauss = -1, std::string Twork = "auto");
 
 
 } // namespace sparseir

@@ -25,7 +25,7 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
         double cutoff = -1.0;
         int lmax = -1;
         int n_gauss = -1;
-        int Twork = SPIR_TWORK_FLOAT64X2;
+        int Twork = SPIR_TWORK_AUTO;
         sve = spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, &status_);
         if (status_ != SPIR_COMPUTATION_SUCCESS || sve == nullptr) {
             *status = status_;

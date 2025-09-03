@@ -44,31 +44,42 @@ choose_accuracy(double epsilon, const std::string &Twork)
 {
     using std::sqrt;
 
-    if (Twork != "Float64" && Twork != "Float64x2") {
+    if (Twork != "Float64" && Twork != "Float64x2" && Twork != "auto") {
         throw std::invalid_argument(
-            "Twork must be either 'Float64' or 'Float64x2'");
+            "Twork must be either 'Float64', 'Float64x2', or 'auto'");
     }
     if (Twork == "Float64") {
         if (epsilon >= sqrt(std::numeric_limits<double>::epsilon())) {
             return std::make_tuple(epsilon, Twork, "default");
         } else {
             std::cerr << "Warning: Basis cutoff is " << epsilon
-                      << ", which is below sqrt(ε) with ε = "
+                      << ", which is below sqrt(ε) with numerical precision of double ε = "
                       << std::numeric_limits<double>::epsilon() << ".\n"
                       << "Expect singular values and basis functions for large "
                          "l to have lower precision than the cutoff.\n";
             return std::make_tuple(epsilon, Twork, "accurate");
         }
-    } else {
+    } else if (Twork == "Float64x2") {
         if (epsilon >= sqrt(std::numeric_limits<xprec::DDouble>::epsilon())) {
             return std::make_tuple(epsilon, Twork, "default");
         } else {
             std::cerr << "Warning: Basis cutoff is " << epsilon
-                      << ", which is below sqrt(ε) with ε = "
+                      << ", which is below sqrt(ε) with numerical precision of double-double ε = "
                       << std::numeric_limits<xprec::DDouble>::epsilon() << ".\n"
                       << "Expect singular values and basis functions for large "
                          "l to have lower precision than the cutoff.\n";
             return std::make_tuple(epsilon, Twork, "accurate");
+        }
+    } else { // Twork == "auto"
+        // Auto-select precision based on epsilon
+        if (epsilon >= sqrt(std::numeric_limits<double>::epsilon())) {
+            return std::make_tuple(epsilon, "Float64", "default");
+        } else {
+            std::cerr << "Warning: Basis cutoff is " << epsilon
+                      << ", which is below sqrt(ε) with numerical precision of double-double ε = "
+                      << std::numeric_limits<xprec::DDouble>::epsilon() << ".\n"
+                      << "However, no higher precision arithmetic is available in the C API.\n";
+            return std::make_tuple(epsilon, "Float64x2", "default");
         }
     }
 }
@@ -140,6 +151,12 @@ auto_choose_accuracy(double epsilon, std::string Twork, std::string svd_strat)
     return std::make_tuple(epsilon, Twork, final_svd_strat);
 }
 
+std::tuple<double, std::string, std::string>
+auto_choose_accuracy(double epsilon, std::string Twork)
+{
+    return auto_choose_accuracy(epsilon, Twork, "auto");
+}
+
 void canonicalize(PiecewiseLegendrePolyVector &u,
                   PiecewiseLegendrePolyVector &v)
 {
@@ -149,30 +166,6 @@ void canonicalize(PiecewiseLegendrePolyVector &u,
         v.polyvec[i].data *= gauge;
     }
 }
-
-/*
-SVEResult compute_sve(const std::shared_ptr<AbstractKernel> &kernel,
-                      double epsilon, double cutoff, int lmax, int n_gauss,
-                      std::string Twork)
-{
-    double safe_epsilon;
-    std::string Twork_actual;
-    std::string svd_strategy_actual;
-    std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
-        sparseir::auto_choose_accuracy(epsilon, Twork);
-
-    if (Twork_actual == "Float64") {
-        return std::get<0>(pre_postprocess<double>(kernel, safe_epsilon,
-                                                   n_gauss, cutoff, lmax));
-    } else if (Twork_actual == "Float64x2") {
-        return std::get<0>(pre_postprocess<xprec::DDouble>(
-            kernel, safe_epsilon, n_gauss, cutoff, lmax));
-    } else {
-        throw std::invalid_argument(
-            "Twork must be either 'Float64' or 'Float64x2'");
-    }
-}
-*/
 
 // Explicit template instantiations
 template SVEResult compute_sve(const LogisticKernel &, double, double, int, int,
@@ -188,6 +181,14 @@ template class SamplingSVE<ReducedKernel<LogisticKernel>, double>;
 template class SamplingSVE<ReducedKernel<LogisticKernel>, DDouble>;
 template class SamplingSVE<LogisticKernelOdd, double>;
 template class SamplingSVE<LogisticKernelOdd, DDouble>;
+
+// 2-argument version of compute_sve
+//template <typename K>
+//SVEResult compute_sve(const K &kernel, double epsilon)
+//{
+    //return compute_sve(kernel, epsilon, std::numeric_limits<double>::quiet_NaN(),
+                      //std::numeric_limits<int>::max(), -1, "Float64x2");
+//}
 
 // Explicit template instantiations for CentrosymmSVE
 template class CentrosymmSVE<LogisticKernel, double>;

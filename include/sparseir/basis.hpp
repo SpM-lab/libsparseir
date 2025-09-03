@@ -69,14 +69,6 @@ public:
 
     template <typename K, typename = typename std::enable_if<is_concrete_kernel<K>::value>::type>
     FiniteTempBasis(double beta, double omega_max, double epsilon,
-                    const K& kernel, int max_size = -1)
-        : FiniteTempBasis(beta, omega_max, epsilon, kernel,
-                          compute_sve(kernel, epsilon), max_size)
-    {
-    }
-
-    template <typename K, typename = typename std::enable_if<is_concrete_kernel<K>::value>::type>
-    FiniteTempBasis(double beta, double omega_max, double epsilon,
                     const K &kernel,
                     SVEResult sve_result, int max_size = -1)
     {
@@ -171,7 +163,6 @@ public:
             std::make_shared<PiecewiseLegendreFTVector<S>>(uhat_polyvec);
     }
 
-    // Delegating constructor 1
     FiniteTempBasis(double beta, double omega_max, double epsilon,
                     int max_size = -1)
     {
