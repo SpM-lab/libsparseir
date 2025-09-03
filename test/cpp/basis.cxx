@@ -574,7 +574,9 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         auto omega_max = 4.0;
         auto epsilon = 1e-6;
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
-        auto sve_result = sparseir::compute_sve(kernel, epsilon);
+        sparseir::SVEParams params;
+        params.Twork = "Float64x2";
+        auto sve_result = sparseir::compute_sve(kernel, epsilon, params);
         auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic>(
             beta, omega_max, epsilon, kernel, sve_result);
         auto s = sve_result.s;

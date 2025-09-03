@@ -183,12 +183,23 @@ template class SamplingSVE<LogisticKernelOdd, double>;
 template class SamplingSVE<LogisticKernelOdd, DDouble>;
 
 // 2-argument version of compute_sve
-//template <typename K>
-//SVEResult compute_sve(const K &kernel, double epsilon)
-//{
-    //return compute_sve(kernel, epsilon, std::numeric_limits<double>::quiet_NaN(),
-                      //std::numeric_limits<int>::max(), -1, "Float64x2");
-//}
+template <typename K>
+SVEResult compute_sve(const K &kernel, double epsilon)
+{
+    return compute_sve(kernel, epsilon, std::numeric_limits<double>::quiet_NaN(),
+                      std::numeric_limits<int>::max(), -1, "Float64x2");
+}
+
+// SVEParams version of compute_sve
+template <typename K>
+SVEResult compute_sve(const K &kernel, double epsilon, const SVEParams& params)
+{
+    return compute_sve(kernel, epsilon, params.cutoff, params.lmax, params.n_gauss, params.Twork);
+}
+
+// Explicit template instantiations for SVEParams version
+template SVEResult compute_sve<LogisticKernel>(const LogisticKernel &kernel, double epsilon, const SVEParams& params);
+template SVEResult compute_sve<RegularizedBoseKernel>(const RegularizedBoseKernel &kernel, double epsilon, const SVEParams& params);
 
 // Explicit template instantiations for CentrosymmSVE
 template class CentrosymmSVE<LogisticKernel, double>;
