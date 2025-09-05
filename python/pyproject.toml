@@ -11,7 +11,7 @@ dependencies = [
 authors = [
     {name = "SpM-lab"}
 ]
-license = "MIT"
+license = {text = "MIT"}
 keywords = ["physics", "many-body", "green-functions", "sparse-ir"]
 classifiers = [
     "Development Status :: 3 - Alpha",
