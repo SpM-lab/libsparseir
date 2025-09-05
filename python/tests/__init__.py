@@ -1,1 +1,1 @@
-# Tests for pysparseir
+# Tests for python bindings
