@@ -27,7 +27,7 @@ Repository = "https://github.com/SpM-lab/libsparseir"
 "Bug Tracker" = "https://github.com/SpM-lab/libsparseir/issues"
 
 [build-system]
-requires = ["setuptools>=77.0.0", "wheel", "packaging>=24.2", "cmake>=3", "scikit-build"]
+requires = ["setuptools>=77.0.0", "wheel", "packaging>=24.2", "cmake>=3.25", "scikit-build"]
 build-backend = "setuptools.build_meta"
 
 [dependency-groups]
