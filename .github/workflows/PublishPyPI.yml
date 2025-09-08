@@ -1,0 +1,81 @@
+name: Python Build & Publish (Trusted)
+
+on:
+  push:
+    tags: ["v*"]     # 例: v0.1.0 を push で発火
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cibw_archs: "auto"
+          #- os: windows-latest
+          #  cibw_archs: "auto"
+          #- os: macos-13  # Intel Mac
+          #  cibw_archs: "x86_64"
+          #- os: macos-latest  # Apple Silicon Mac
+          #  cibw_archs: "arm64"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Remove python/.gitignore
+        run: |
+          rm -rf python/.gitignore
+      - uses: pypa/cibuildwheel@v2.18
+        env:
+          CIBW_DEPENDENCY_VERSIONS: "latest"
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel cmake scikit-build"
+          CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: "delocate-wheel -w {dest_dir} -v {wheel} || cp {wheel} {dest_dir}/"
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: "auditwheel repair -w {dest_dir} {wheel} || cp {wheel} {dest_dir}/"
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
+          CIBW_SKIP: "*-linux_i686 *-manylinux_i686 *-musllinux_i686"
+          CIBW_BUILD: "cp312-*"
+        with:
+          package-dir: ./python
+          output-dir: dist
+      - name: Inspect built wheels
+        run: |
+          echo "=== WHEEL INSPECTION ==="
+          ls -la dist/
+          for wheel in dist/*.whl; do
+            echo "=== Inspecting $wheel ==="
+            python -m zipfile -l "$wheel"
+            echo "=== Wheel size and info ==="
+            ls -lh "$wheel"
+            echo "=== Checking for library files in wheel ==="
+            python -m zipfile -l "$wheel" | grep -E "\.(so|dylib|dll)" || echo "No library files found in wheel"
+          done
+          echo "=== END WHEEL INSPECTION ==="
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}
+          path: dist/*
+
+  publish-testpypi:
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+    permissions:
+      id-token: write     # ← Trusted Publishing に必須
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish to TestPyPI (Trusted)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+          skip-existing: true
+          attestations: false  # Disable attestations due to Sigstore service issues
