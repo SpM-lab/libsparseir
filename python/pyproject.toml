@@ -44,3 +44,8 @@ testpaths = ["tests"]
 python_files = ["test_*.py", "*_tests.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+
+[project.scripts]
+# Remove files/directories copied in by setup_build.py and included via MANIFEST.in,
+# plus common build artifacts produced in this package directory.
+clean = "pylibsparseir.clean_build_artifacts:clean_build_artifacts"
