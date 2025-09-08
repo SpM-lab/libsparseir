@@ -9,35 +9,6 @@ import pytest
 import numpy as np
 import pylibsparseir
 
-from sparse_ir.kernel import LogisticKernel, RegularizedBoseKernel
-
-@pytest.fixture(scope="session")
-def sve_logistic():
-    """Precomputed SVE results for logistic kernels with different Lambda values."""
-    print("Precomputing SVEs for logistic kernel ...")
-    kernels = {}
-    for lambda_ in [10, 42, 1000]:
-        try:
-            kernel = LogisticKernel(lambda_)
-            kernels[lambda_] = pylibsparseir.sve_result_new(kernel, 1e-12)
-        except Exception as e:
-            print(f"Failed to create SVE for lambda={lambda_}: {e}")
-    return kernels
-
-
-@pytest.fixture(scope="session")
-def sve_reg_bose():
-    """Precomputed SVE results for regularized Bose kernels."""
-    print("Precomputing SVEs for regularized Bose kernel ...")
-    kernels = {}
-    for lambda_ in [10, 1000]:
-        try:
-            kernel = RegularizedBoseKernel(lambda_)
-            kernels[lambda_] = pylibsparseir.sve_result_new(kernel, 1e-12)
-        except Exception as e:
-            print(f"Failed to create Bose SVE for lambda={lambda_}: {e}")
-    return kernels
-
 
 @pytest.fixture(scope="session")
 def test_bases():

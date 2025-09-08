@@ -9,7 +9,6 @@ import pytest
 import numpy as np
 import ctypes
 from ctypes import c_int, c_double, byref, POINTER
-from sparse_ir.kernel import LogisticKernel, RegularizedBoseKernel
 
 from pylibsparseir.core import (
     _lib,
