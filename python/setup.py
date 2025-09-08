@@ -10,7 +10,7 @@ class CMakeBuild(build_ext):
         # Always run setup to ensure we have the latest source code
         print("Setting up build environment...")
         subprocess.check_call([sys.executable, 'setup_build.py'])
-        
+
         # Build submodule
         build_dir = os.path.abspath(self.build_temp)
         os.makedirs(build_dir, exist_ok=True)
@@ -25,7 +25,7 @@ class CMakeBuild(build_ext):
             '..',   # Alternative build environment
             '../..' # Another possible location
         ]
-        
+
         source_dir = None
         for path in possible_paths:
             cmake_file = os.path.join(path, 'CMakeLists.txt')
@@ -33,7 +33,7 @@ class CMakeBuild(build_ext):
                 source_dir = os.path.abspath(path)
                 print(f"Found libsparseir source at: {source_dir}")
                 break
-        
+
         if source_dir is None:
             # Debug information
             print(f"Current working directory: {os.getcwd()}")
@@ -46,10 +46,10 @@ class CMakeBuild(build_ext):
         cmake_args = [
             'cmake',
             source_dir,
-            f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={os.path.abspath("src/pylibsparseir")}',
+            f'-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={os.path.abspath("pylibsparseir")}',
             f'-DCMAKE_BUILD_TYPE=Release',
         ]
-        
+
         print(f"Running CMake with args: {cmake_args}")
         subprocess.check_call(cmake_args, cwd=build_dir)
 
@@ -65,7 +65,7 @@ else:
     package_data = {}
 
 setup(
-    package_dir={'': 'src'},
+    package_dir={'': './'},
     packages=['pylibsparseir'],
     cmdclass={'build_ext': CMakeBuild},
     ext_modules=[Extension('dummy', sources=[])],  # dummy Extension to enable build_ext
