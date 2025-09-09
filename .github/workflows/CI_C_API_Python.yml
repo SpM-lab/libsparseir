@@ -18,6 +18,8 @@ jobs:
           - "3.12"
 
     steps:
+      - name: Install dependencies
+        run: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
       - uses: actions/checkout@v4
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v6
