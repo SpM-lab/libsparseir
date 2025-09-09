@@ -159,13 +159,15 @@ class CMakeBuild(build_ext):
         # Debug: Check what files were created
         output_dir = os.path.abspath("pylibsparseir")
         print(f"Checking output directory: {output_dir}")
+        output_has_libs = False
         if os.path.exists(output_dir):
             files = os.listdir(output_dir)
             print(f"Files in output directory: {files}")
 
-            # Check architecture of any library files
+            # Check architecture of any library files and record presence
             for file in files:
                 if file.endswith(('.dylib', '.so', '.dll')):
+                    output_has_libs = True
                     lib_path = os.path.join(output_dir, file)
                     print(f"Checking library {file}:")
                     try:
@@ -230,6 +232,51 @@ class CMakeBuild(build_ext):
                     print(f"  {f}", flush=True)
             else:
                 print("No files containing 'sparseir' found at all!", flush=True)
+
+        # If we are building a wheel, ensure that at least one binary library is present.
+        # Otherwise the wheel will be platform-tagged (e.g., linux_x86_64) without containing
+        # any native code, which is invalid for PyPI/TestPyPI policies.
+        if 'bdist_wheel' in sys.argv and not (found_libraries or output_has_libs):
+            raise RuntimeError(
+                "Wheel build aborted: no libsparseir binary libraries were produced by CMake. "
+                "Ensure the native library is built and copied into 'pylibsparseir/'."
+            )
+
+        # Ensure binary libraries are present in build_lib so that wheel includes them.
+        # build_py runs before build_ext, so copy the produced libraries here into build_lib.
+        if 'bdist_wheel' in sys.argv:
+            try:
+                build_py_cmd = self.get_finalized_command('build_py')
+                build_py_cmd.ensure_finalized()
+                build_lib_dir = getattr(build_py_cmd, 'build_lib', None)
+                if build_lib_dir:
+                    dest_pkg_dir = os.path.join(build_lib_dir, 'pylibsparseir')
+                    os.makedirs(dest_pkg_dir, exist_ok=True)
+                    print(f"Copying binary libraries into wheel build dir: {dest_pkg_dir}")
+                    try:
+                        import glob
+                        import shutil
+                        lib_patterns = [
+                            os.path.join(output_dir, 'libsparseir*.so*'),
+                            os.path.join(output_dir, 'libsparseir*.dylib'),
+                            os.path.join(output_dir, 'libsparseir*.dll'),
+                        ]
+                        copied_any = False
+                        for pattern in lib_patterns:
+                            for src_path in glob.glob(pattern):
+                                if os.path.isfile(src_path):
+                                    dst_path = os.path.join(dest_pkg_dir, os.path.basename(src_path))
+                                    shutil.copy2(src_path, dst_path)
+                                    print(f"  Copied {src_path} -> {dst_path}")
+                                    copied_any = True
+                        if not copied_any:
+                            print("No binary libraries matched patterns for copying into build_lib")
+                    except Exception as copy_err:
+                        print(f"Error while copying libraries into build_lib: {copy_err}")
+                else:
+                    print("build_py build_lib path not available; cannot copy binary libraries into wheel build dir")
+            except Exception as e:
+                print(f"Failed to access build_py command for copying binaries: {e}")
 
         # Also check if CMake actually configured to build a shared library
         print("Checking CMake cache for library type:", flush=True)
