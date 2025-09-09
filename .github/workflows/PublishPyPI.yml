@@ -21,7 +21,7 @@ jobs:
           #  cibw_archs: "AMD64"
           - os: macos-13  # Intel Mac
             cibw_archs: "x86_64"
-            deployment_target: "11.0"
+            deployment_target: "13.0"
             openblas_path: "/usr/local/opt/openblas"
           - os: macos-latest  # Apple Silicon Mac
             cibw_archs: "arm64"
