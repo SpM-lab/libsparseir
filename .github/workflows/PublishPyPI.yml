@@ -15,12 +15,12 @@ jobs:
         include:
           - os: ubuntu-latest
             cibw_archs: "auto"
-          #- os: windows-latest
-          #  cibw_archs: "auto"
-          #- os: macos-13  # Intel Mac
-          #  cibw_archs: "x86_64"
-          #- os: macos-latest  # Apple Silicon Mac
-          #  cibw_archs: "arm64"
+          - os: windows-latest
+            cibw_archs: "auto"
+          - os: macos-13  # Intel Mac
+            cibw_archs: "x86_64"
+          - os: macos-latest  # Apple Silicon Mac
+            cibw_archs: "arm64"
     steps:
       - uses: actions/checkout@v4
       - name: Remove python/.gitignore
