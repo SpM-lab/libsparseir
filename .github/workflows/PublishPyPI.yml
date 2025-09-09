@@ -28,6 +28,7 @@ jobs:
           CIBW_DEPENDENCY_VERSIONS: "latest"
           CIBW_BUILD_VERBOSITY: 1
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
+          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_SKIP: "*-linux_i686 *-manylinux_i686 *-musllinux_i686"
           CIBW_BUILD: "cp312-*"
