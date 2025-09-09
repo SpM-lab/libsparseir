@@ -4,7 +4,7 @@ This is a low-level binding for the [libsparseir](https://github.com/SpM-lab/lib
 
 ## Requirements
 
-- Python >= 3.12
+- Python >= 3.10
 - CMake (for building the C++ library)
 - C++11 compatible compiler
 - numpy
