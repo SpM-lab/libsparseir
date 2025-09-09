@@ -9,15 +9,23 @@ on:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version:
           - "3.10"
           - "3.11"
           - "3.12"
 
     steps:
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt update && sudo apt install -y libeigen3-dev libopenblas-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install eigen openblas
       - uses: actions/checkout@v4
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v6
@@ -33,8 +41,12 @@ jobs:
       - name: Run uv sync
         run: uv sync
         working-directory: python
+        env:
+          SPARSEIR_USE_BLAS: 1
 
       - name: Run tests
         # For example, using `pytest`
         run: uv run pytest tests
         working-directory: python
+        env:
+          SPARSEIR_USE_BLAS: 1
