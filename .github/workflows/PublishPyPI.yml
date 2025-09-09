@@ -15,12 +15,18 @@ jobs:
         include:
           - os: ubuntu-latest
             cibw_archs: "auto"
+            deployment_target: ""
+            openblas_path: ""
           #- os: windows-latest
           #  cibw_archs: "AMD64"
           - os: macos-13  # Intel Mac
             cibw_archs: "x86_64"
+            deployment_target: "11.0"
+            openblas_path: "/usr/local/opt/openblas"
           - os: macos-latest  # Apple Silicon Mac
             cibw_archs: "arm64"
+            deployment_target: "15.0"
+            openblas_path: "/opt/homebrew/opt/openblas"
     steps:
       - uses: actions/checkout@v4
       - name: remove python/.gitignore
@@ -32,7 +38,7 @@ jobs:
           CIBW_DEPENDENCY_VERSIONS: "latest"
           CIBW_BUILD_VERBOSITY: 1
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
-          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_PREFIX_PATH=/opt/homebrew/opt/openblas:/usr/local/opt/openblas PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig SPARSEIR_USE_BLAS=1"
+          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target || '11.0' }} CMAKE_PREFIX_PATH=${{ matrix.openblas_path }}:/opt/homebrew/opt/openblas:/usr/local/opt/openblas PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig SPARSEIR_USE_BLAS=1"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_SKIP: "*-manylinux_i686 *-musllinux_i686"
           # Install OpenBLAS and development tools before building
