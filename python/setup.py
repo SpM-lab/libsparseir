@@ -114,6 +114,9 @@ class CMakeBuild(build_ext):
             '-DCMAKE_CXX_STANDARD_REQUIRED=ON',
         ]
 
+        # Import platform module here before using it
+        import platform
+
         # Only enable BLAS if we can find it or if explicitly requested
         enable_blas = os.environ.get('SPARSEIR_USE_BLAS', '').lower() in ('1', 'on', 'true', 'yes')
         if not enable_blas:
@@ -190,7 +193,6 @@ class CMakeBuild(build_ext):
             openblas_found = False
 
         # Add architecture-specific flags for macOS
-        import platform
         if platform.system() == 'Darwin':
             # Get the target architecture from environment or system
             target_arch = os.environ.get('ARCHFLAGS', '').replace('-arch ', '')
