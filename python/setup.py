@@ -110,6 +110,8 @@ class CMakeBuild(build_ext):
             f'-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY={output_dir_abs}',
             f'-DCMAKE_BUILD_TYPE=Release',
             '-DBUILD_SHARED_LIBS=ON',
+            '-DCMAKE_CXX_STANDARD=11',
+            '-DCMAKE_CXX_STANDARD_REQUIRED=ON',
         ]
 
         # Add architecture-specific flags for macOS
@@ -153,6 +155,15 @@ class CMakeBuild(build_ext):
                 print(f"sparseir target build stderr: {e.stderr}", flush=True)
         except subprocess.CalledProcessError as e:
             print(f"CMake build failed: {e}")
+            try:
+                if hasattr(e, 'stdout') and e.stdout:
+                    print("----- CMake stdout (captured) -----")
+                    print(e.stdout)
+                if hasattr(e, 'stderr') and e.stderr:
+                    print("----- CMake stderr (captured) -----")
+                    print(e.stderr)
+            except Exception:
+                pass
             print("CMake build is required for this package!")
             raise RuntimeError(f"Failed to build native library: {e}")
 
