@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        run: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+        run: sudo apt update && sudo apt install -y libeigen3-dev libopenblas-dev
       - uses: actions/checkout@v4
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v6
@@ -35,8 +35,12 @@ jobs:
       - name: Run uv sync
         run: uv sync
         working-directory: python
+        env:
+          SPARSEIR_USE_BLAS: 1
 
       - name: Run tests
         # For example, using `pytest`
         run: uv run pytest tests
         working-directory: python
+        env:
+          SPARSEIR_USE_BLAS: 1
