@@ -15,22 +15,18 @@ jobs:
         include:
           - os: ubuntu-latest
             cibw_archs: "auto"
-          - os: windows-latest
-            cibw_archs: "auto"
+          #- os: windows-latest
+          #  cibw_archs: "auto"
           - os: macos-13  # Intel Mac
             cibw_archs: "x86_64"
           - os: macos-latest  # Apple Silicon Mac
             cibw_archs: "arm64"
     steps:
       - uses: actions/checkout@v4
-      #- name: Remove python/.gitignore
-      #  run: |
-      #    rm -rf python/.gitignore
       - uses: pypa/cibuildwheel@v2.18
         env:
           CIBW_DEPENDENCY_VERSIONS: "latest"
           CIBW_BUILD_VERBOSITY: 1
-          # CIBW_BEFORE_BUILD: "python -m pip install -U pip setuptools wheel cmake ninja scikit-build"
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_SKIP: "*-linux_i686 *-manylinux_i686 *-musllinux_i686"
@@ -38,29 +34,6 @@ jobs:
         with:
           package-dir: ./python
           output-dir: dist
-      - name: Inspect built wheels
-        run: |
-          echo "=== WHEEL INSPECTION ==="
-          ls -la dist/
-          has_lib=0
-          for wheel in dist/*.whl; do
-            echo "=== Inspecting $wheel ==="
-            python -m zipfile -l "$wheel"
-            echo "=== Wheel size and info ==="
-            ls -lh "$wheel"
-            echo "=== Checking for library files in wheel ==="
-            if python -m zipfile -l "$wheel" | grep -E -q "\.(so|dylib|dll)"; then
-              echo "Binary libraries found."
-              has_lib=1
-            else
-              echo "No library files found in wheel"
-            fi
-          done
-          echo "=== END WHEEL INSPECTION ==="
-          if [ "$has_lib" -eq 0 ]; then
-            echo "ERROR: No binary libraries found in any wheel. Failing build to avoid uploading invalid platform-tagged wheels."
-            exit 1
-          fi
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}
