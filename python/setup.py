@@ -112,6 +112,7 @@ class CMakeBuild(build_ext):
             '-DBUILD_SHARED_LIBS=ON',
             '-DCMAKE_CXX_STANDARD=11',
             '-DCMAKE_CXX_STANDARD_REQUIRED=ON',
+            '-DSPARSEIR_USE_BLAS=ON',  # Enable BLAS support
         ]
 
         # Add architecture-specific flags for macOS
