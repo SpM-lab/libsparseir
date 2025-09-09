@@ -96,8 +96,8 @@ jobs:
           CIBW_BEFORE_ALL_MUSLLINUX: "apk add --no-cache bzip2 && curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && ./bin/micromamba create -y -p /opt/openblas && ./bin/micromamba install -y -c conda-forge openblas -p /opt/openblas --no-deps"
           CIBW_BEFORE_ALL_MACOS: "brew install openblas"
           # Set environment variables to help CMake find OpenBLAS
-          CIBW_ENVIRONMENT_MANYLINUX: "CMAKE_PREFIX_PATH=/opt/openblas:/usr/lib64/openblas:/usr/lib/openblas:/usr/local/lib64/openblas:/usr/local/lib/openblas PKG_CONFIG_PATH=/opt/openblas/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib64/pkgconfig SPARSEIR_USE_BLAS=1"
-          CIBW_ENVIRONMENT_MUSLLINUX: "CMAKE_PREFIX_PATH=/opt/openblas:/usr/lib64/openblas:/usr/lib/openblas:/usr/local/lib64/openblas:/usr/local/lib/openblas PKG_CONFIG_PATH=/opt/openblas/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib64/pkgconfig SPARSEIR_USE_BLAS=1"
+          CIBW_ENVIRONMENT_MANYLINUX: "SPARSEIR_USE_BLAS=1"
+          CIBW_ENVIRONMENT_MUSLLINUX: "SPARSEIR_USE_BLAS=1"
         with:
           package-dir: ./python
           output-dir: dist
