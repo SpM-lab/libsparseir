@@ -32,9 +32,14 @@ jobs:
           CIBW_DEPENDENCY_VERSIONS: "latest"
           CIBW_BUILD_VERBOSITY: 1
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
-          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0"
+          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_PREFIX_PATH=/opt/homebrew/opt/openblas:/usr/local/opt/openblas PKG_CONFIG_PATH=/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig SPARSEIR_USE_BLAS=1"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_SKIP: "*-manylinux_i686 *-musllinux_i686"
+          # Install OpenBLAS and development tools before building
+          CIBW_BEFORE_ALL_LINUX: "yum install -y openblas-devel || (yum install -y epel-release && yum install -y openblas-devel) || dnf install -y openblas-devel || apt-get update && apt-get install -y libopenblas-dev"
+          CIBW_BEFORE_ALL_MACOS: "brew install openblas"
+          # Set environment variables to help CMake find OpenBLAS
+          CIBW_ENVIRONMENT_LINUX: "CMAKE_PREFIX_PATH=/usr/lib64/openblas:/usr/lib/openblas:/usr/local/lib64/openblas:/usr/local/lib/openblas PKG_CONFIG_PATH=/usr/lib64/pkgconfig:/usr/local/lib64/pkgconfig SPARSEIR_USE_BLAS=1"
           # CIBW_BUILD: "cp312-*"
         with:
           package-dir: ./python

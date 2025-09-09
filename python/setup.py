@@ -112,8 +112,82 @@ class CMakeBuild(build_ext):
             '-DBUILD_SHARED_LIBS=ON',
             '-DCMAKE_CXX_STANDARD=11',
             '-DCMAKE_CXX_STANDARD_REQUIRED=ON',
-            '-DSPARSEIR_USE_BLAS=ON',  # Enable BLAS support
         ]
+
+        # Only enable BLAS if we can find it or if explicitly requested
+        enable_blas = os.environ.get('SPARSEIR_USE_BLAS', '').lower() in ('1', 'on', 'true', 'yes')
+        if not enable_blas:
+            # Try to detect if BLAS is available
+            blas_paths = [
+                '/usr/lib64/openblas',
+                '/usr/lib/openblas',
+                '/usr/local/lib64/openblas',
+                '/usr/local/lib/openblas',
+                '/opt/homebrew/opt/openblas/lib',
+                '/usr/local/opt/openblas/lib'
+            ]
+
+            for path in blas_paths:
+                if os.path.exists(path):
+                    enable_blas = True
+                    print(f"Found BLAS library path: {path}", flush=True)
+                    break
+
+        if enable_blas:
+            cmake_args.append('-DSPARSEIR_USE_BLAS=ON')
+            print("BLAS support enabled", flush=True)
+
+            # Try to detect and prefer OpenBLAS
+            openblas_found = False
+
+            # Check common OpenBLAS installation paths
+            openblas_paths = []
+            if platform.system() == 'Darwin':
+                openblas_paths = [
+                    '/opt/homebrew/opt/openblas',
+                    '/usr/local/opt/openblas',
+                    '/opt/local'  # MacPorts
+                ]
+            else:  # Linux and others
+                openblas_paths = [
+                    '/usr/local',
+                    '/usr',
+                    '/opt/openblas',
+                    '/usr/lib64/openblas',
+                    '/usr/lib/openblas'
+                ]
+
+            # Look for OpenBLAS
+            for path in openblas_paths:
+                if path.endswith('openblas'):
+                    # Direct path to OpenBLAS directory
+                    lib_path = path
+                    include_path = path.replace('lib', 'include').replace('openblas', '')
+                else:
+                    lib_path = os.path.join(path, 'lib')
+                    include_path = os.path.join(path, 'include')
+
+                # Check for OpenBLAS library
+                possible_libs = [
+                    os.path.join(lib_path, 'libopenblas.dylib'),  # macOS
+                    os.path.join(lib_path, 'libopenblas.so'),     # Linux
+                    os.path.join(lib_path, 'libopenblas.a'),      # Static
+                ]
+
+                if any(os.path.exists(lib) for lib in possible_libs):
+                    print(f"Found OpenBLAS at: {path}", flush=True)
+                    cmake_args.extend([
+                        f'-DCMAKE_PREFIX_PATH={path}',
+                        f'-DBLAS_ROOT={path}',
+                    ])
+                    openblas_found = True
+                    break
+
+            if not openblas_found:
+                print("OpenBLAS not found in standard locations, using system BLAS", flush=True)
+        else:
+            print("BLAS support disabled - no BLAS libraries found", flush=True)
+            openblas_found = False
 
         # Add architecture-specific flags for macOS
         import platform
