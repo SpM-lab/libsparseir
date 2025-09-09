@@ -3,8 +3,8 @@ name: Python Build & Publish (Trusted)
 on:
   push:
     tags: ["v*"]     # 例: v0.1.0 を push で発火
-  pull_request:
-    branches: [main]
+  #pull_request: # for debugging
+  #  branches: [main] # for debugging
   workflow_dispatch:
 
 jobs:
