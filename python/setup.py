@@ -16,7 +16,7 @@ sys.stdout.flush()
 class CMakeBuild(build_ext):
     def run(self):
         print("\n" + "=" * 100, flush=True)
-        print("🚀 CMAKE BUILD PROCESS STARTED - CMakeBuild.run() CALLED!", flush=True)
+        print("CMAKE BUILD PROCESS STARTED - CMakeBuild.run() CALLED!", flush=True)
         print("=" * 100, flush=True)
         print(f"Python executable: {sys.executable}", flush=True)
         print(f"Current working directory: {os.getcwd()}", flush=True)
