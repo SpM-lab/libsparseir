@@ -3,8 +3,6 @@ name: Python Build & Publish (Trusted)
 on:
   push:
     tags: ["v*"]     # 例: v0.1.0 を push で発火
-  #pull_request: # for debugging
-  #  branches: [main] # for debugging
   workflow_dispatch:
 
 jobs:
@@ -106,11 +104,11 @@ jobs:
           name: wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.py_tag }}
           path: dist/*
 
-  publish-testpypi:
+  publish-pypi:
     needs: build-wheels
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
+      name: pypi
     permissions:
       id-token: write     # ← Trusted Publishing に必須
       contents: read
@@ -119,11 +117,11 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - name: Publish to TestPyPI (Trusted)
+      - name: Publish to PyPI (Trusted)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
-          repository-url: https://test.pypi.org/legacy/
+          repository-url: https://pypi.org/legacy/
           verbose: true
           skip-existing: true
           attestations: false  # Disable attestations due to Sigstore service issues
