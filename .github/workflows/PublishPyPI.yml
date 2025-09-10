@@ -121,7 +121,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
-          repository-url: https://pypi.org/legacy/
+          repository-url: https://upload.pypi.org/legacy/
           verbose: true
           skip-existing: true
           attestations: false  # Disable attestations due to Sigstore service issues
