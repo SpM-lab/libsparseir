@@ -1,8 +1,10 @@
-name: Python Build & Publish (Trusted)
+name: CI Python Build & Publish to TestPyPI (Trusted)
 
 on:
   push:
-    tags: ["v*"]     # 例: v0.1.0 を push で発火
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -17,63 +19,18 @@ jobs:
             deployment_target: ""
             openblas_path: ""
             py_tag: "cp310"
-          - os: ubuntu-latest
-            cibw_archs: "auto"
-            deployment_target: ""
-            openblas_path: ""
-            py_tag: "cp311"
-          - os: ubuntu-latest
-            cibw_archs: "auto"
-            deployment_target: ""
-            openblas_path: ""
-            py_tag: "cp312"
-          - os: ubuntu-latest
-            cibw_archs: "auto"
-            deployment_target: ""
-            openblas_path: ""
-            py_tag: "cp313"
           # macOS Intel builds
           - os: macos-13  # Intel Mac
             cibw_archs: "x86_64"
             deployment_target: "13.0"
             openblas_path: "/usr/local/opt/openblas"
             py_tag: "cp310"
-          - os: macos-13  # Intel Mac
-            cibw_archs: "x86_64"
-            deployment_target: "13.0"
-            openblas_path: "/usr/local/opt/openblas"
-            py_tag: "cp311"
-          - os: macos-13  # Intel Mac
-            cibw_archs: "x86_64"
-            deployment_target: "13.0"
-            openblas_path: "/usr/local/opt/openblas"
-            py_tag: "cp312"
-          - os: macos-13  # Intel Mac
-            cibw_archs: "x86_64"
-            deployment_target: "13.0"
-            openblas_path: "/usr/local/opt/openblas"
-            py_tag: "cp313"
           # macOS Apple Silicon builds
           - os: macos-latest  # Apple Silicon Mac
             cibw_archs: "arm64"
             deployment_target: "15.0"
             openblas_path: "/opt/homebrew/opt/openblas"
             py_tag: "cp310"
-          - os: macos-latest  # Apple Silicon Mac
-            cibw_archs: "arm64"
-            deployment_target: "15.0"
-            openblas_path: "/opt/homebrew/opt/openblas"
-            py_tag: "cp311"
-          - os: macos-latest  # Apple Silicon Mac
-            cibw_archs: "arm64"
-            deployment_target: "15.0"
-            openblas_path: "/opt/homebrew/opt/openblas"
-            py_tag: "cp312"
-          - os: macos-latest  # Apple Silicon Mac
-            cibw_archs: "arm64"
-            deployment_target: "15.0"
-            openblas_path: "/opt/homebrew/opt/openblas"
-            py_tag: "cp313"
     steps:
       - uses: actions/checkout@v4
       - name: remove python/.gitignore
@@ -104,11 +61,11 @@ jobs:
           name: wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.py_tag }}
           path: dist/*
 
-  publish-pypi:
+  publish-testpypi:
     needs: build-wheels
     runs-on: ubuntu-latest
     environment:
-      name: pypi
+      name: testpypi
     permissions:
       id-token: write     # ← Trusted Publishing に必須
       contents: read
@@ -117,11 +74,11 @@ jobs:
         with:
           path: dist
           merge-multiple: true
-      - name: Publish to PyPI (Trusted)
+      - name: Publish to TestPyPI (Trusted)
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
-          repository-url: https://pypi.org/legacy/
+          repository-url: https://test.pypi.org/legacy/
           verbose: true
           skip-existing: true
           attestations: false  # Disable attestations due to Sigstore service issues
