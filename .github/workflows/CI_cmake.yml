@@ -19,13 +19,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu with gcc and clang
+          # Ubuntu with gcc and clang (x86_64)
           - os: ubuntu-latest
             compiler: gcc
             c_compiler: gcc
             cpp_compiler: g++
             eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
           - os: ubuntu-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
+
+          # Ubuntu ARM64 with gcc and clang
+          - os: ubuntu-latest
+            arch: arm64
+            compiler: gcc
+            c_compiler: gcc
+            cpp_compiler: g++
+            eigen_install: sudo apt update && sudo apt install -y libeigen3-dev
+          - os: ubuntu-latest
+            arch: arm64
             compiler: clang
             c_compiler: clang
             cpp_compiler: clang++
@@ -56,7 +70,7 @@ jobs:
           #  eigen_install: vcpkg install eigen3
 
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.compiler }}
+    name: ${{ matrix.os }}-${{ matrix.compiler }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}
 
     steps:
     - uses: actions/checkout@v5
@@ -171,13 +185,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Ubuntu with gcc and clang (BLAS/LAPACK enabled)
+          # Ubuntu with gcc and clang (BLAS/LAPACK enabled) - x86_64
           - os: ubuntu-latest
             compiler: gcc
             c_compiler: gcc
             cpp_compiler: g++
             deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
           - os: ubuntu-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+
+          # Ubuntu ARM64 with gcc and clang (BLAS/LAPACK enabled)
+          - os: ubuntu-latest
+            arch: arm64
+            compiler: gcc
+            c_compiler: gcc
+            cpp_compiler: g++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+          - os: ubuntu-latest
+            arch: arm64
             compiler: clang
             c_compiler: clang
             cpp_compiler: clang++
@@ -196,7 +224,7 @@ jobs:
             deps_install: brew install eigen openblas lapack
 
     runs-on: ${{ matrix.os }}
-    name: ${{ matrix.os }}-${{ matrix.compiler }}-blas
+    name: ${{ matrix.os }}-${{ matrix.compiler }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}-blas
 
     steps:
     - uses: actions/checkout@v5
