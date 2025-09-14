@@ -112,7 +112,7 @@ TEST_CASE("_gemm_inplace basic functionality", "[contraction]")
 
     SECTION("double * complex<double> -> complex<double>")
     {
-        int M = 1, N = 1, K = 1;
+        int M = 3, N = 4, K = 2;
 
         Matrix<double, Dynamic, Dynamic> A =
             create_random_matrix<double>(M, K, gen);
@@ -126,12 +126,6 @@ TEST_CASE("_gemm_inplace basic functionality", "[contraction]")
         // Test _gemm_inplace
         _gemm_inplace<double, std::complex<double>, std::complex<double>>(
             A.data(), B.data(), C_actual.data(), M, N, K);
-
-        // Debug output
-        std::cout << "Expected C[0,0]: " << C_expected(0, 0) << std::endl;
-        std::cout << "Actual C[0,0]: " << C_actual(0, 0) << std::endl;
-        std::cout << "Expected C[0,1]: " << C_expected(0, 1) << std::endl;
-        std::cout << "Actual C[0,1]: " << C_actual(0, 1) << std::endl;
 
         REQUIRE(matrices_approximately_equal(C_expected, C_actual));
     }
@@ -153,11 +147,6 @@ TEST_CASE("_gemm_inplace basic functionality", "[contraction]")
         _gemm_inplace<std::complex<double>, double, std::complex<double>>(
             A.data(), B.data(), C_actual.data(), M, N, K);
 
-        // Debug output
-        std::cout << "Expected C[0,0]: " << C_expected(0, 0) << std::endl;
-        std::cout << "Actual C[0,0]: " << C_actual(0, 0) << std::endl;
-        std::cout << "Expected C[0,1]: " << C_expected(0, 1) << std::endl;
-        std::cout << "Actual C[0,1]: " << C_actual(0, 1) << std::endl;
 
         REQUIRE(matrices_approximately_equal(C_expected, C_actual));
     }
