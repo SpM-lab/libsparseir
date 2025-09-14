@@ -1,0 +1,72 @@
+# Benchmark workflow for libsparseir
+# Runs benchmarks on Ubuntu x64 with OpenBLAS ON/OFF
+name: Benchmark
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  BUILD_TYPE: Release
+  INSTALL_PREFIX: ${{github.workspace}}/install
+
+jobs:
+  benchmark:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu x64 with clang - OpenBLAS OFF
+          - os: ubuntu-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev
+            use_blas: OFF
+            job_name: ubuntu-clang-no-blas
+
+          # Ubuntu x64 with clang - OpenBLAS ON
+          - os: ubuntu-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+            use_blas: ON
+            job_name: ubuntu-clang-with-blas
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.job_name }}
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install dependencies
+      run: ${{ matrix.deps_install }}
+
+    - name: Configure CMake
+      run: |
+        cmake -B ${{github.workspace}}/build \
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DSPARSEIR_BUILD_TESTING=OFF \
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+          -DSPARSEIR_BUILD_FORTRAN=OFF \
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
+          -DSPARSEIR_USE_BLAS=${{ matrix.use_blas }}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Install
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Run benchmark
+      run: |
+        cd benchmark
+        cmake -B build -DSparseIR_DIR=${{env.INSTALL_PREFIX}}/share/cmake/SparseIR
+        cmake --build build
+        cmake --build build --target test
+
+
