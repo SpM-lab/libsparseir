@@ -1,13 +1,19 @@
 #pragma once
 
 #include <stdbool.h>
-#include <complex.h>
 #include <stdint.h>
 
-#include "spir_status.h"
-
+#ifdef _MSC_VER
+// MSVC doesn't support C99 complex types by default
+#include <complex>
+typedef std::complex<double> c_complex;
+#else
+#include <complex.h>
 // Define a C-compatible type alias for the C99 complex number.
 typedef double _Complex c_complex;
+#endif
+
+#include "spir_status.h"
 
 // Status codes
 #define SPIR_COMPUTATION_SUCCESS 0
