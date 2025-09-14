@@ -24,7 +24,7 @@ SVEResult::part(double eps, int max_size) const
     eps = std::isnan(eps) ? this->epsilon : eps;
     double threshold = eps * s(0);
 
-    int cut =
+    auto cut =
         std::count_if(s.data(), s.data() + s.size(),
                       [threshold](double val) { return val >= threshold; });
 
