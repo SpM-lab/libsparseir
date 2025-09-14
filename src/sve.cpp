@@ -29,7 +29,7 @@ SVEResult::part(double eps, int max_size) const
                       [threshold](double val) { return val >= threshold; });
 
     if (max_size > 0) {
-        cut = std::min(cut, max_size);
+        cut = std::min(cut, static_cast<decltype(cut)>(max_size));
     }
     std::vector<PiecewiseLegendrePoly> u_part_(u->begin(), u->begin() + cut);
     PiecewiseLegendrePolyVector u_part(u_part_);
