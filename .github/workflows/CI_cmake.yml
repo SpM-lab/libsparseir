@@ -58,16 +58,16 @@ jobs:
             eigen_install: brew install eigen
 
           # Windows with MSVC and clang
-          #- os: windows-latest
-          #  compiler: msvc
-          #  c_compiler: cl
-          #  cpp_compiler: cl
-          #  eigen_install: vcpkg install eigen3
-          #- os: windows-latest
-          #  compiler: clang
-          #  c_compiler: clang
-          #  cpp_compiler: clang++
-          #  eigen_install: vcpkg install eigen3
+          - os: windows-latest
+            compiler: msvc
+            c_compiler: cl
+            cpp_compiler: cl
+            eigen_install: vcpkg install eigen3
+          - os: windows-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            eigen_install: vcpkg install eigen3
 
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }}-${{ matrix.compiler }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}
