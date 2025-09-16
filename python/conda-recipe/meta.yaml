@@ -14,10 +14,18 @@ build:
     export SPARSEIR_USE_BLAS=1
     cd ${SRC_DIR}/python
     ${PYTHON} setup.py install --single-version-externally-managed --record=record.txt
+    # Ensure the shared library is copied to the correct location
+    if [ -f "${SRC_DIR}/build/lib/libsparseir.dylib" ]; then
+      cp "${SRC_DIR}/build/lib/libsparseir.dylib" "${PREFIX}/lib/"
+    elif [ -f "${SRC_DIR}/build/lib/libsparseir.so" ]; then
+      cp "${SRC_DIR}/build/lib/libsparseir.so" "${PREFIX}/lib/"
+    fi
   files:
     - lib/python3.*/site-packages/pylibsparseir/
     - lib/python3.*/site-packages/pylibsparseir-*.egg-info/
     - bin/clean
+    - lib/libsparseir.*
+    - lib/python3.*/site-packages/libsparseir.*
 
 requirements:
   build:
@@ -48,6 +56,9 @@ test:
     - pylibsparseir
   commands:
     - python -c "import pylibsparseir; print('pylibsparseir imported successfully')"
+    - test -f ${PREFIX}/lib/libsparseir.dylib  # [osx]
+    - test -f ${PREFIX}/lib/libsparseir.so     # [linux]
+    - test -f ${PREFIX}/lib/libsparseir.dll    # [win]
 
 about:
   home: https://github.com/SpM-lab/libsparseir
