@@ -147,7 +147,6 @@ jobs:
         
         echo "=== Running Fortran Sample ==="
         
-        # 強引にPATH設定 - Linux/macOS両対応
         export LD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$LD_LIBRARY_PATH"
         export DYLD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$DYLD_LIBRARY_PATH"
         echo "Set library paths:"
