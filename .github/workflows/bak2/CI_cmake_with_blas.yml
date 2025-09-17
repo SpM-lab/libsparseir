@@ -1,0 +1,147 @@
+# Multi-platform CMake CI workflow for libsparseir (with BLAS/OpenBLAS)
+# Tests across Ubuntu and macOS with BLAS/LAPACK support
+name: CMake Multi-Platform CI (With BLAS)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  INSTALL_PREFIX: ${{github.workspace}}/install
+
+jobs:
+  build-with-blas:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Ubuntu with gcc and clang (BLAS/LAPACK enabled) - x86_64
+          - os: ubuntu-latest
+            compiler: gcc
+            c_compiler: gcc
+            cpp_compiler: g++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+          - os: ubuntu-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+
+          # Ubuntu ARM64 with gcc and clang (BLAS/LAPACK enabled)
+          - os: ubuntu-latest
+            arch: arm64
+            compiler: gcc
+            c_compiler: gcc
+            cpp_compiler: g++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+          - os: ubuntu-latest
+            arch: arm64
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+
+          # Ubuntu with OpenBLAS specifically
+          - os: ubuntu-latest
+            compiler: gcc
+            c_compiler: gcc
+            cpp_compiler: g++
+            blas_type: openblas
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libopenblas-dev
+          - os: ubuntu-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            blas_type: openblas
+            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libopenblas-dev
+
+          # macOS with BLAS (using Accelerate framework)
+          - os: macos-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            blas_type: accelerate
+            deps_install: brew install eigen
+
+          # macOS with OpenBLAS
+          - os: macos-latest
+            compiler: clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            blas_type: openblas
+            deps_install: brew install eigen openblas
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.os }}-${{ matrix.compiler }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}${{ matrix.blas_type && format('-{0}', matrix.blas_type) || '' }}-blas
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install Fortran compiler (macOS)
+      if: matrix.os == 'macos-latest'
+      run: brew install gfortran
+
+    - name: Install dependencies
+      run: ${{ matrix.deps_install }}
+
+    - name: Debug Fortran compilers (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        echo "Available Fortran compilers:"
+        ls -la /opt/homebrew/bin/*fortran* || echo "No *fortran* found in /opt/homebrew/bin/"
+        ls -la /usr/local/bin/*fortran* || echo "No *fortran* found in /usr/local/bin/"
+        which gfortran || echo "gfortran not in PATH"
+        which gfortran-13 || echo "gfortran-13 not in PATH"
+
+    - name: Configure CMake
+      run: |
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # Use the full path to gfortran from Homebrew gcc
+          FORTRAN_COMPILER="/opt/homebrew/bin/gfortran-13"
+          
+          # Set OpenBLAS paths for macOS if using OpenBLAS
+          if [[ "${{ matrix.blas_type }}" == "openblas" ]]; then
+            OPENBLAS_ROOT="/opt/homebrew/opt/openblas"
+            export LDFLAGS="-L${OPENBLAS_ROOT}/lib"
+            export CPPFLAGS="-I${OPENBLAS_ROOT}/include"
+            export PKG_CONFIG_PATH="${OPENBLAS_ROOT}/lib/pkgconfig"
+          fi
+        else
+          FORTRAN_COMPILER="gfortran"
+        fi
+
+        cmake -B ${{github.workspace}}/build \
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+          -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER" \
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+          -DSPARSEIR_BUILD_FORTRAN=ON \
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
+          -DSPARSEIR_USE_BLAS=ON
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Install
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Verify Installation
+      run: |
+        ls -la ${{env.INSTALL_PREFIX}}/include/sparseir/
+        ls -la ${{env.INSTALL_PREFIX}}/lib/
+
+    - name: Check BLAS linking
+      run: |
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          otool -L ${{env.INSTALL_PREFIX}}/lib/libsparseir.dylib | grep -E "(Accelerate|openblas)" || echo "No BLAS library found in linking"
+        else
+          ldd ${{env.INSTALL_PREFIX}}/lib/libsparseir.so | grep -E "(blas|lapack|openblas)" || echo "No BLAS library found in linking"
+        fi

@@ -1,0 +1,94 @@
+# Windows MinGW-w64 CI workflow for libsparseir using MSYS2
+# Tests Windows with MinGW-w64 compiler via MSYS2
+name: Windows MinGW-w64 CI (MSYS2)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  INSTALL_PREFIX: ${{github.workspace}}/install
+
+jobs:
+  build-mingw64:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # MinGW-w64 with GCC (64-bit)
+          - os: windows-latest
+            compiler: mingw64-gcc
+            msystem: MINGW64
+            generator: "MinGW Makefiles"
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.compiler }}-${{ matrix.msystem }}
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        update: true
+        install: >
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-g++
+          mingw-w64-x86_64-gfortran
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-eigen3
+          mingw-w64-x86_64-pkg-config
+
+    - name: Debug compiler setup
+      shell: msys2 {0}
+      run: |
+        echo "=== Compiler Information ==="
+        gcc --version
+        g++ --version
+        gfortran --version
+        cmake --version
+        make --version
+        echo "=== PATH ==="
+        echo $PATH
+        echo "=== Available compilers ==="
+        which gcc g++ gfortran cmake make
+
+    - name: Configure CMake
+      shell: msys2 {0}
+      run: |
+        cmake -B build \
+          -G "${{ matrix.generator }}" \
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+          -DSPARSEIR_BUILD_FORTRAN=ON \
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
+          -DSPARSEIR_USE_BLAS=OFF \
+          -DCMAKE_C_COMPILER=gcc \
+          -DCMAKE_CXX_COMPILER=g++ \
+          -DCMAKE_Fortran_COMPILER=gfortran
+
+    - name: Build
+      shell: msys2 {0}
+      run: cmake --build build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      shell: msys2 {0}
+      working-directory: build
+      run: ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Install
+      shell: msys2 {0}
+      run: cmake --install build --config ${{env.BUILD_TYPE}}
+
+    - name: Verify Installation
+      shell: msys2 {0}
+      run: |
+        ls -la ${{env.INSTALL_PREFIX}}/include/sparseir/
+        ls -la ${{env.INSTALL_PREFIX}}/lib/
+        echo "=== Library dependencies ==="
+        ldd ${{env.INSTALL_PREFIX}}/lib/libsparseir.dll || echo "ldd not available or library not found"

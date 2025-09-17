@@ -43,3 +43,14 @@ latex
 # Generated test files
 testsample/readme_samples_test.cpp
 fortran/test/readme_samples_test.f90
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+.venv/
+python/src/
+python/pylibsparseir/*.dylib
+python/pylibsparseir/*.so
+python/pylibsparseir/*.dll
