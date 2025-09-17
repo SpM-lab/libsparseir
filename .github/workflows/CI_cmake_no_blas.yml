@@ -146,6 +146,13 @@ jobs:
         cmake --build build
         
         echo "=== Running Fortran Sample ==="
+        
+        # Add libsparseir shared library to LD_LIBRARY_PATH for Linux
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          export LD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$LD_LIBRARY_PATH"
+          echo "Updated LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+        fi
+        
         ./build/second_order_perturbation_fort
         
         echo "=== Fortran Sample completed successfully ==="
