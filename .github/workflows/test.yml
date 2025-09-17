@@ -75,12 +75,32 @@ jobs:
 
     - name: Build
       shell: msys2 {0}
-      run: cmake --build build --config ${{env.BUILD_TYPE}}
+      run: |
+        cmake --build build --config ${{env.BUILD_TYPE}}
+        
+        echo "=== Checking built executables and their dependencies ==="
+        # Check test executables
+        find build -name "*.exe" | head -5 | while read exe; do
+          echo "Checking: $exe"
+          ldd "$exe" | head -10 || echo "ldd failed for $exe"
+        done
 
     - name: Test
       shell: msys2 {0}
       working-directory: build
-      run: ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
+      run: |
+        # Add MinGW64 bin to PATH for DLL resolution
+        export PATH="/mingw64/bin:$PATH"
+        echo "Updated PATH for tests: $PATH"
+        
+        # Check if required DLLs are available
+        echo "Checking DLL availability:"
+        which libgcc_s_seh-1.dll || echo "libgcc_s_seh-1.dll not found"
+        which libgfortran-5.dll || echo "libgfortran-5.dll not found"
+        which libfftw3-3.dll || echo "libfftw3-3.dll not found"
+        
+        # Run tests with proper PATH
+        ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
 
     - name: Install
       shell: msys2 {0}
@@ -112,6 +132,10 @@ jobs:
     - name: Build and Run Fortran Sample
       shell: msys2 {0}
       run: |
+        # Set PATH for DLL resolution at the beginning
+        export PATH="/mingw64/bin:$PATH"
+        echo "PATH set for Fortran sample: $PATH"
+        
         echo "=== Building Fortran Sample ==="
         cd fortran/sample
         
@@ -168,10 +192,6 @@ jobs:
         # Check DLL dependencies
         echo "Checking DLL dependencies:"
         ldd "$EXEC" || echo "ldd failed"
-        
-        # Add MinGW64 bin to PATH for DLL resolution
-        export PATH="/mingw64/bin:$PATH"
-        echo "Updated PATH: $PATH"
         
         # Try to run the executable
         echo "Attempting to run: $EXEC"
