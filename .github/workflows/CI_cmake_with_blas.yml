@@ -186,6 +186,13 @@ jobs:
         cmake --build build
         
         echo "=== Running Fortran Sample ==="
+        
+        export LD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$LD_LIBRARY_PATH"
+        export DYLD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$DYLD_LIBRARY_PATH"
+        echo "Set library paths:"
+        echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+        echo "DYLD_LIBRARY_PATH: $DYLD_LIBRARY_PATH"
+        
         ./build/second_order_perturbation_fort
         
         echo "=== Fortran Sample completed successfully ==="
