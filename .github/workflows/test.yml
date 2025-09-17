@@ -70,6 +70,7 @@ jobs:
           -DSPARSEIR_USE_BLAS=OFF \
           -DCMAKE_C_COMPILER=gcc \
           -DCMAKE_CXX_COMPILER=g++ \
+          -DSPARSEIR_BUILD_TESTING=ON \
           -DCMAKE_Fortran_COMPILER=gfortran
 
     - name: Build
@@ -140,12 +141,46 @@ jobs:
           -G "MinGW Makefiles" \
           -DSparseIR_DIR="$SPARSEIR_DIR" \
           -DUSE_SYSTEM_LIBSPARSEIR=ON \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+          -DFFTW3_INCLUDE_DIR=/mingw64/include \
+          -DFFTW3_LIB=/mingw64/lib/libfftw3.dll.a
         
         cmake --build build
         
         echo "=== Running Fortran Sample ==="
-        # Run the executable
-        ./build/second_order_perturbation_fort.exe || ./build/second_order_perturbation_fort
+        
+        # Check what was built
+        echo "Files in build directory:"
+        ls -la build/
+        
+        # Check executable
+        if [ -f "build/second_order_perturbation_fort.exe" ]; then
+          EXEC="build/second_order_perturbation_fort.exe"
+        elif [ -f "build/second_order_perturbation_fort" ]; then
+          EXEC="build/second_order_perturbation_fort"
+        else
+          echo "ERROR: Executable not found"
+          exit 1
+        fi
+        
+        echo "Found executable: $EXEC"
+        
+        # Check DLL dependencies
+        echo "Checking DLL dependencies:"
+        ldd "$EXEC" || echo "ldd failed"
+        
+        # Add MinGW64 bin to PATH for DLL resolution
+        export PATH="/mingw64/bin:$PATH"
+        echo "Updated PATH: $PATH"
+        
+        # Try to run the executable
+        echo "Attempting to run: $EXEC"
+        ./$EXEC || {
+          echo "Execution failed with exit code: $?"
+          echo "Checking if required DLLs are in PATH:"
+          which libgfortran-5.dll || echo "libgfortran-5.dll not found in PATH"
+          which libfftw3-3.dll || echo "libfftw3-3.dll not found in PATH"
+          exit 1
+        }
         
         echo "=== Fortran Sample completed successfully ==="
