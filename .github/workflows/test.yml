@@ -42,6 +42,7 @@ jobs:
           mingw-w64-x86_64-fc
           make
           mingw-w64-x86_64-eigen3
+          mingw-w64-x86_64-fftw
           mingw-w64-x86_64-pkg-config
 
     - name: Debug compiler setup
