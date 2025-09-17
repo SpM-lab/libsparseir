@@ -146,3 +146,37 @@ jobs:
         else
           ldd ${{env.INSTALL_PREFIX}}/lib/libsparseir.so | grep -E "(blas|lapack|openblas)" || echo "No BLAS library found in linking"
         fi
+
+    - name: Build and Run Fortran Sample
+      run: |
+        echo "=== Building Fortran Sample ==="
+        cd fortran/sample
+        
+        # Find SparseIR CMake config
+        SPARSEIR_DIR="${{env.INSTALL_PREFIX}}/share/cmake/SparseIR"
+        if [ ! -d "$SPARSEIR_DIR" ]; then
+          echo "ERROR: SparseIR CMake config not found at $SPARSEIR_DIR"
+          exit 1
+        fi
+        
+        # Install FFTW3 if needed
+        if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          sudo apt-get update && sudo apt-get install -y libfftw3-dev
+        elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          # FFTW3 might already be installed via deps_install, but ensure it's available
+          brew list fftw || brew install fftw
+        fi
+        
+        # Clean and build
+        rm -rf build
+        cmake -B build \
+          -DSparseIR_DIR="$SPARSEIR_DIR" \
+          -DUSE_SYSTEM_LIBSPARSEIR=ON \
+          -DCMAKE_BUILD_TYPE=Release
+        
+        cmake --build build
+        
+        echo "=== Running Fortran Sample ==="
+        ./build/second_order_perturbation_fort
+        
+        echo "=== Fortran Sample completed successfully ==="
