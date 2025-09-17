@@ -171,3 +171,4 @@ The release process is fully automated:
    - Check if a tag with that version already exists
    - Create a new tag and release if the version is new
    - Generate release notes automatically
+
