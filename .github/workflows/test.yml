@@ -106,3 +106,45 @@ jobs:
             ls -la "$dir/lib/" 2>/dev/null || echo "  No lib/ in $dir"
           fi
         done
+
+    - name: Build and Run Fortran Sample
+      shell: msys2 {0}
+      run: |
+        echo "=== Building Fortran Sample ==="
+        cd fortran/sample
+        
+        # Use the environment variable for install prefix
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        echo "Expected install directory: $INSTALL_DIR"
+        
+        # Check if CMake config exists at expected location
+        if [ -d "$INSTALL_DIR/share/cmake/SparseIR" ]; then
+          SPARSEIR_DIR="$INSTALL_DIR/share/cmake/SparseIR"
+          echo "Found SparseIR CMake config at: $SPARSEIR_DIR"
+        else
+          echo "CMake config not found at expected location, searching..."
+          # Fallback: search for actual location
+          SPARSEIR_DIR=$(find /d/a/libsparseir/libsparseir -name "SparseIRConfig.cmake" -exec dirname {} \; | head -1)
+          if [ -n "$SPARSEIR_DIR" ]; then
+            echo "Found SparseIR CMake config at: $SPARSEIR_DIR"
+          else
+            echo "ERROR: SparseIR CMake config not found"
+            exit 1
+          fi
+        fi
+        
+        # Clean and build
+        rm -rf build
+        cmake -B build \
+          -G "MinGW Makefiles" \
+          -DSparseIR_DIR="$SPARSEIR_DIR" \
+          -DUSE_SYSTEM_LIBSPARSEIR=ON \
+          -DCMAKE_BUILD_TYPE=Release
+        
+        cmake --build build
+        
+        echo "=== Running Fortran Sample ==="
+        # Run the executable
+        ./build/second_order_perturbation_fort.exe || ./build/second_order_perturbation_fort
+        
+        echo "=== Fortran Sample completed successfully ==="
