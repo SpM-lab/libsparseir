@@ -44,6 +44,15 @@ find_path(FFTW3_INCLUDE_DIR fftw3.f)
 # Create a simple Fortran test
 add_executable(second_order_perturbation_fort second_order_perturbation_fort.f90)
 
+# Set RPATH for both Linux and macOS
+set_target_properties(second_order_perturbation_fort PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+    BUILD_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+    INSTALL_RPATH_USE_LINK_PATH TRUE
+    # macOS specific: use @rpath for better portability
+    MACOSX_RPATH TRUE
+)
+
 # Link with libsparseir
 target_link_libraries(second_order_perturbation_fort PRIVATE SparseIR::sparseir_fortran ${FFTW3_LIB})
 
