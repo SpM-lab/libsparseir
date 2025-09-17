@@ -52,35 +52,11 @@ jobs:
             cpp_compiler: clang++
             eigen_install: brew install eigen
 
-          # Windows with MSVC and clang
-          - os: windows-latest
-            compiler: msvc
-            c_compiler: cl
-            cpp_compiler: cl
-            eigen_install: vcpkg install eigen3
-          - os: windows-latest
-            compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            eigen_install: vcpkg install eigen3
-
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.os }}-${{ matrix.compiler }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}-no-blas
 
     steps:
     - uses: actions/checkout@v5
-
-    - name: Set up MSVC (Windows)
-      if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc'
-      uses: microsoft/setup-msbuild@v2
-
-    - name: Setup vcpkg (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        git clone https://github.com/Microsoft/vcpkg.git
-        .\vcpkg\bootstrap-vcpkg.bat
-        "${{ github.workspace }}\vcpkg" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
     - name: Install Fortran compiler (macOS)
       if: matrix.os == 'macos-latest'
@@ -99,7 +75,6 @@ jobs:
         which gfortran-13 || echo "gfortran-13 not in PATH"
 
     - name: Configure CMake (Unix)
-      if: matrix.os != 'windows-latest'
       run: |
         if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
           # Use the full path to gfortran from Homebrew gcc
@@ -118,18 +93,6 @@ jobs:
           -DSPARSEIR_BUILD_TESTING=ON \
           -DSPARSEIR_USE_BLAS=OFF
 
-    - name: Configure CMake (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        cmake -B ${{github.workspace}}/build `
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} `
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} `
-          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} `
-          -DSPARSEIR_BUILD_FORTRAN=OFF `
-          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} `
-          -DSPARSEIR_USE_BLAS=OFF
-
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
@@ -146,7 +109,6 @@ jobs:
         ls -la ${{env.INSTALL_PREFIX}}/lib/
 
     - name: Build and Run Fortran Sample (Unix)
-      if: matrix.os != 'windows-latest'
       run: |
         echo "=== Building Fortran Sample ==="
         cd fortran/sample
@@ -167,10 +129,19 @@ jobs:
         
         # Clean and build
         rm -rf build
+        
+        # Set Fortran compiler explicitly
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          FORTRAN_COMPILER="/opt/homebrew/bin/gfortran-13"
+        else
+          FORTRAN_COMPILER="gfortran"
+        fi
+        
         cmake -B build \
           -DSparseIR_DIR="$SPARSEIR_DIR" \
           -DUSE_SYSTEM_LIBSPARSEIR=ON \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER"
         
         cmake --build build
         

@@ -85,26 +85,21 @@ jobs:
           ldd "$exe" | head -10 || echo "ldd failed for $exe"
         done
 
+    - name: Install
+      shell: msys2 {0}
+      run: cmake --install build --config ${{env.BUILD_TYPE}}
+
     - name: Test
       shell: msys2 {0}
       working-directory: build
       run: |
-        # Add MinGW64 bin to PATH for DLL resolution
-        export PATH="/mingw64/bin:$PATH"
-        echo "Updated PATH for tests: $PATH"
+        # Simple PATH setup: MinGW64 + build dir + installed DLLs
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        export PATH="/mingw64/bin:$(pwd):$INSTALL_DIR/lib:$PATH"
+        echo "Updated PATH for tests with installed DLLs"
         
-        # Check if required DLLs are available
-        echo "Checking DLL availability:"
-        which libgcc_s_seh-1.dll || echo "libgcc_s_seh-1.dll not found"
-        which libgfortran-5.dll || echo "libgfortran-5.dll not found"
-        which libfftw3-3.dll || echo "libfftw3-3.dll not found"
-        
-        # Run tests with proper PATH
+        # Run tests
         ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
-
-    - name: Install
-      shell: msys2 {0}
-      run: cmake --install build --config ${{env.BUILD_TYPE}}
 
     - name: Verify Installation
       shell: msys2 {0}
@@ -193,13 +188,15 @@ jobs:
         echo "Checking DLL dependencies:"
         ldd "$EXEC" || echo "ldd failed"
         
+        # Add installed DLLs to PATH before running
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        export PATH="/mingw64/bin:$INSTALL_DIR/lib:$PATH"
+        echo "Updated PATH for Fortran execution: $PATH"
+        
         # Try to run the executable
         echo "Attempting to run: $EXEC"
         ./$EXEC || {
           echo "Execution failed with exit code: $?"
-          echo "Checking if required DLLs are in PATH:"
-          which libgfortran-5.dll || echo "libgfortran-5.dll not found in PATH"
-          which libfftw3-3.dll || echo "libfftw3-3.dll not found in PATH"
           exit 1
         }
         

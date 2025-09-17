@@ -169,10 +169,19 @@ jobs:
         
         # Clean and build
         rm -rf build
+        
+        # Set Fortran compiler explicitly
+        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          FORTRAN_COMPILER="/opt/homebrew/bin/gfortran-13"
+        else
+          FORTRAN_COMPILER="gfortran"
+        fi
+        
         cmake -B build \
           -DSparseIR_DIR="$SPARSEIR_DIR" \
           -DUSE_SYSTEM_LIBSPARSEIR=ON \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER"
         
         cmake --build build
         
