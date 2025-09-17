@@ -87,7 +87,16 @@ jobs:
     - name: Verify Installation
       shell: msys2 {0}
       run: |
-        ls -la ${{env.INSTALL_PREFIX}}/include/sparseir/
-        ls -la ${{env.INSTALL_PREFIX}}/lib/
+        # Convert Windows path to MSYS2 path
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        echo "Install directory: $INSTALL_DIR"
+        ls -la "$INSTALL_DIR/include/sparseir/" || echo "Include directory not found"
+        ls -la "$INSTALL_DIR/lib/" || echo "Lib directory not found"
+        echo "=== Library files ==="
+        find "$INSTALL_DIR" -name "*.dll" -o -name "*.dll.a" | head -10
         echo "=== Library dependencies ==="
-        ldd ${{env.INSTALL_PREFIX}}/lib/libsparseir.dll || echo "ldd not available or library not found"
+        if [ -f "$INSTALL_DIR/lib/libsparseir.dll" ]; then
+          ldd "$INSTALL_DIR/lib/libsparseir.dll" || echo "ldd failed"
+        else
+          echo "libsparseir.dll not found in expected location"
+        fi
