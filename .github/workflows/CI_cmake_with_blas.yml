@@ -45,20 +45,6 @@ jobs:
             cpp_compiler: clang++
             deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
 
-          # Ubuntu with OpenBLAS specifically
-          - os: ubuntu-latest
-            compiler: gcc
-            c_compiler: gcc
-            cpp_compiler: g++
-            blas_type: openblas
-            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libopenblas-dev
-          - os: ubuntu-latest
-            compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            blas_type: openblas
-            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libopenblas-dev
-
           # macOS with BLAS (using Accelerate framework)
           - os: macos-latest
             compiler: clang
