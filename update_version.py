@@ -64,11 +64,12 @@ def update_python_version(version_string, repo_root):
     with open(pyproject_path, 'r') as f:
         content = f.read()
     
-    # Update version in [project] section
+    # Update version in [project] section only (not cmake.version)
     content = re.sub(
-        r'version = "[^"]*"',
-        f'version = "{version_string}"',
-        content
+        r'(\[project\][^\[]*?)version = "[^"]*"',
+        f'\\1version = "{version_string}"',
+        content,
+        flags=re.DOTALL
     )
     
     # If no version field exists, add it after name
@@ -86,6 +87,7 @@ def update_python_version(version_string, repo_root):
     print(f"✓ Updated Python version in {pyproject_path}")
     return True
 
+
 def validate_version(version_string):
     """Validate version string format (x.y.z)"""
     pattern = r'^\d+\.\d+\.\d+$'
@@ -99,51 +101,109 @@ def parse_version(version_string):
     parts = version_string.split('.')
     return [int(part) for part in parts]
 
+def get_cpp_version(repo_root):
+    """Get current C++ version from version.h"""
+    version_h_path = repo_root / "include" / "sparseir" / "version.h"
+    if not version_h_path.exists():
+        return None
+    
+    with open(version_h_path, 'r') as f:
+        content = f.read()
+    
+    major_match = re.search(r'#define SPARSEIR_VERSION_MAJOR (\d+)', content)
+    minor_match = re.search(r'#define SPARSEIR_VERSION_MINOR (\d+)', content)
+    patch_match = re.search(r'#define SPARSEIR_VERSION_PATCH (\d+)', content)
+    
+    if major_match and minor_match and patch_match:
+        return f"{major_match.group(1)}.{minor_match.group(1)}.{patch_match.group(1)}"
+    return None
+
+def get_python_version(repo_root):
+    """Get current Python version from pyproject.toml"""
+    pyproject_path = repo_root / "python" / "pyproject.toml"
+    if not pyproject_path.exists():
+        return None
+    
+    with open(pyproject_path, 'r') as f:
+        content = f.read()
+    
+    version_match = re.search(r'version = "([^"]*)"', content)
+    if version_match:
+        return version_match.group(1)
+    return None
+
 def show_current_versions(repo_root):
     """Show current versions in both files"""
     print("Current versions:")
     
-    # C++ version
-    version_h_path = repo_root / "include" / "sparseir" / "version.h"
-    if version_h_path.exists():
-        with open(version_h_path, 'r') as f:
-            content = f.read()
-        
-        major_match = re.search(r'#define SPARSEIR_VERSION_MAJOR (\d+)', content)
-        minor_match = re.search(r'#define SPARSEIR_VERSION_MINOR (\d+)', content)
-        patch_match = re.search(r'#define SPARSEIR_VERSION_PATCH (\d+)', content)
-        
-        if major_match and minor_match and patch_match:
-            cpp_version = f"{major_match.group(1)}.{minor_match.group(1)}.{patch_match.group(1)}"
-            print(f"  C++ (version.h): {cpp_version}")
-        else:
-            print(f"  C++ (version.h): Unable to parse")
-    else:
-        print(f"  C++ (version.h): File not found")
+    cpp_version = get_cpp_version(repo_root)
+    python_version = get_python_version(repo_root)
     
-    # Python version
-    pyproject_path = repo_root / "python" / "pyproject.toml"
-    if pyproject_path.exists():
-        with open(pyproject_path, 'r') as f:
-            content = f.read()
-        
-        version_match = re.search(r'version = "([^"]*)"', content)
-        if version_match:
-            python_version = version_match.group(1)
-            print(f"  Python (pyproject.toml): {python_version}")
-        else:
-            print(f"  Python (pyproject.toml): No version field found")
+    if cpp_version:
+        print(f"  C++ (version.h): {cpp_version}")
     else:
-        print(f"  Python (pyproject.toml): File not found")
+        print(f"  C++ (version.h): Unable to parse or file not found")
+    
+    if python_version:
+        print(f"  Python (pyproject.toml): {python_version}")
+    else:
+        print(f"  Python (pyproject.toml): No version field found or file not found")
+    
+    return cpp_version, python_version
+
+def check_version_consistency(repo_root):
+    """Check if versions are consistent across files"""
+    cpp_version, python_version = show_current_versions(repo_root)
+    print()
+    
+    if not cpp_version:
+        print("❌ Could not read C++ version from include/sparseir/version.h")
+        return False
+    
+    if not python_version:
+        print("❌ Could not read Python version from python/pyproject.toml")
+        return False
+    
+    if cpp_version == python_version:
+        print(f"✅ Versions are consistent: {cpp_version}")
+        return True
+    else:
+        print(f"❌ Version mismatch:")
+        print(f"   C++: {cpp_version}")
+        print(f"   Python: {python_version}")
+        print()
+        print(f"To fix this, run: python update_version.py {cpp_version}")
+        return False
 
 def main():
+    repo_root = Path(__file__).parent
+    
+    if len(sys.argv) == 1:
+        # No arguments - check version consistency
+        print("Version Consistency Check")
+        print("=" * 30)
+        print()
+        
+        if check_version_consistency(repo_root):
+            print()
+            print("\U0001F44D All versions are in sync!")
+        else:
+            print()
+            print("\U0001F6A8 Version inconsistency detected.")
+            sys.exit(1)
+        return
+    
     if len(sys.argv) != 2:
-        print("Usage: python update_version.py <version>")
-        print("Example: python update_version.py 0.4.3")
+        print("Usage:")
+        print("  python update_version.py           # Check version consistency")
+        print("  python update_version.py <version> # Update all versions")
+        print()
+        print("Examples:")
+        print("  python update_version.py           # Check current versions")
+        print("  python update_version.py 0.4.3     # Update to version 0.4.3")
         print()
         
         # Show current versions
-        repo_root = Path(__file__).parent
         show_current_versions(repo_root)
         sys.exit(1)
     
@@ -172,6 +232,11 @@ def main():
     if success:
         print()
         print(f"✅ Successfully updated all versions to {version_string}")
+        print()
+        print("Updated files:")
+        print("  - include/sparseir/version.h (C++ library)")
+        print("  - python/pyproject.toml (Python package)")
+        print("  - Conda recipe will automatically use version.h")
         print()
         print("Next steps:")
         print("1. Review the changes: git diff")

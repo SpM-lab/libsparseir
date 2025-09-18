@@ -9,6 +9,21 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Check version consistency
+      run: |
+        echo "Checking version consistency across components..."
+        python update_version.py
+        if [ $? -ne 0 ]; then
+          echo "❌ Version inconsistency detected. Please run 'python update_version.py <version>' to fix."
+          exit 1
+        fi
+        echo "✅ All versions are consistent"
+
     - name: Extract version from header
       id: version
       run: |

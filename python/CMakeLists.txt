@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.15)
 # This is the Python package CMakeLists.txt
 # It builds the shared library and installs it for Python use
 
+message(STATUS "CMakeLists.txt invoked")
+
 if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "No build type specified, defaulting to Release")
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
@@ -17,25 +19,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules")
 # Provides CMAKE_INSTALL_* directories
 include(GNUInstallDirs)
 
-# Extract version information from header file
-if (NOT SPARSEIR_VERSION)
-    include("VersionFromHeader")
-    version_from_header(SPARSEIR_VERSION
-        HEADER "../include/sparseir/version.h"
-        MACROS SPARSEIR_VERSION_MAJOR SPARSEIR_VERSION_MINOR SPARSEIR_VERSION_PATCH
-        )
-    message(STATUS "Extracted package version: ${SPARSEIR_VERSION}")
-
-    set(SPARSEIR_VERSION "${SPARSEIR_VERSION}"
-        CACHE STRING "version of the sparseir package")
-    mark_as_advanced(SPARSEIR_VERSION)
-endif()
-
 # Configure project for Python packaging
 project(
     pylibsparseir
     LANGUAGES CXX
-    VERSION "${SPARSEIR_VERSION}"
     DESCRIPTION "Python bindings for SparseIR library"
     )
 
@@ -56,28 +43,17 @@ endif()
 # BLAS/LAPACK options
 option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
 
-# BLAS/LAPACK search and configuration
-if(SPARSEIR_USE_BLAS)
-    add_compile_definitions(SPARSEIR_USE_BLAS)
-    message(STATUS "BLAS support enabled")
-    
-    # Find BLAS package
-    find_package(BLAS REQUIRED)
-    if(BLAS_FOUND)
-        message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
-    else()
-        message(FATAL_ERROR "BLAS not found")
-    endif()
-    
-    # CMake's find_package(BLAS) should provide include directories
-    #if(BLAS_INCLUDE_DIRS)
-        #include_directories(${BLAS_INCLUDE_DIRS})
-        #message(STATUS "BLAS include directories: ${BLAS_INCLUDE_DIRS}")
-    #else()
-        #message(FATAL_ERROR "BLAS include directories not found")
-    #endif()
-endif()
+# Use BLAS/LAPACK by default
+add_compile_definitions(SPARSEIR_USE_BLAS)
+message(STATUS "BLAS support enabled")
 
+# Find BLAS package
+find_package(BLAS REQUIRED)
+if(BLAS_FOUND)
+    message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
+else()
+    message(FATAL_ERROR "BLAS not found")
+endif()
 
 set(EIGEN3_REQUIRED_VERSION "3.4.0")
 find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
@@ -145,30 +121,15 @@ target_include_directories(sparseir
         $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
 )
 set_target_properties(sparseir PROPERTIES
-    VERSION ${PROJECT_VERSION}
-    SOVERSION ${PROJECT_VERSION_MAJOR}
     CXX_STANDARD 11
     CXX_STANDARD_REQUIRED ON
     )
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
-# Add BLAS/LAPACK linking
-if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
-    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
-else()
-    message(STATUS "BLAS linking disabled or BLAS not found")
-endif()
-
-if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
-    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
-endif()
-
-# macOS-specific configuration
-if(APPLE AND ACCELERATE_FRAMEWORK)
-    target_link_libraries(sparseir PRIVATE ${ACCELERATE_FRAMEWORK})
-endif()
+# Add BLAS linking
+target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)

@@ -16,10 +16,9 @@ build:
   script: |
     export SPARSEIR_USE_BLAS=1
     
-    # Build and install the Python package using wheel to ensure libraries are included
+    # Build and install the Python package using scikit-build-core
     cd ${SRC_DIR}/python
-    ${PYTHON} setup.py bdist_wheel
-    ${PYTHON} -m pip install dist/*.whl --no-deps --ignore-installed
+    ${PYTHON} -m pip install . --no-deps --ignore-installed -v
     
     # Verify what was installed
     echo "Python package contents:"
@@ -49,16 +48,14 @@ build:
 requirements:
   build:
     - python >=3.10
-    - setuptools >=77.0.0
-    - wheel
-    - packaging >=24.2
+    - scikit-build-core  # conda-forge
     - cmake >=3.25
-    - scikit-build
     - ninja
     - make
     - {{ compiler('cxx') }}
   host:
     - python >=3.10
+    - scikit-build-core  # conda-forge
     - numpy
     - scipy
     - eigen

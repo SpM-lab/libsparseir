@@ -159,16 +159,48 @@ This project uses GitHub Actions for continuous integration and automated releas
 
 The release process is fully automated:
 
-1. Update version numbers in `include/sparseir/version.h` by modifying:
-   - `SPARSEIR_VERSION_MAJOR`
-   - `SPARSEIR_VERSION_MINOR`
-   - `SPARSEIR_VERSION_PATCH`
+1. Update version numbers using the provided script:
+   ```bash
+   python update_version.py 0.4.3
+   ```
+   This automatically updates:
+   - `include/sparseir/version.h` (C++ library version)
+   - `python/pyproject.toml` (Python package version)
 
-2. Push changes to the main branch
+2. Review and commit the changes:
+   ```bash
+   git diff  # Review changes
+   git add -A
+   git commit -m "Bump version to 0.4.3"
+   ```
 
-3. The GitHub Action will automatically:
+3. Push changes to the main branch
+
+4. The GitHub Action will automatically:
    - Extract the version from the header file
    - Check if a tag with that version already exists
    - Create a new tag and release if the version is new
    - Generate release notes automatically
+   - Build and publish Python packages to PyPI
+
+#### Version Update Script Usage
+
+The `update_version.py` script provides a convenient way to update versions across all components:
+
+```bash
+# Show current versions
+python update_version.py
+
+# Update to a new version
+python update_version.py 1.0.0
+
+# The script validates version format (x.y.z)
+python update_version.py 1.0  # Error: Invalid format
+```
+
+**Note**: Always test the build after version updates:
+```bash
+cd python
+pip wheel .  # Test Python package build
+```
 
