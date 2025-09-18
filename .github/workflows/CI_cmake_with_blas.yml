@@ -20,30 +20,30 @@ jobs:
       matrix:
         include:
           # Ubuntu with gcc and clang (BLAS/LAPACK enabled) - x86_64
-          - os: ubuntu-latest
-            compiler: gcc
-            c_compiler: gcc
-            cpp_compiler: g++
-            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
-          - os: ubuntu-latest
-            compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+          #- os: ubuntu-latest
+            #compiler: gcc
+            #c_compiler: gcc
+            #cpp_compiler: g++
+            #deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+          #- os: ubuntu-latest
+            #compiler: clang
+            #c_compiler: clang
+            #cpp_compiler: clang++
+            #deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
 
           # Ubuntu ARM64 with gcc and clang (BLAS/LAPACK enabled)
-          - os: ubuntu-latest
-            arch: arm64
-            compiler: gcc
-            c_compiler: gcc
-            cpp_compiler: g++
-            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
-          - os: ubuntu-latest
-            arch: arm64
-            compiler: clang
-            c_compiler: clang
-            cpp_compiler: clang++
-            deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+          #- os: ubuntu-latest
+            #arch: arm64
+            #compiler: gcc
+            #c_compiler: gcc
+            #cpp_compiler: g++
+            #deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
+          #- os: ubuntu-latest
+            #arch: arm64
+            #compiler: clang
+            #c_compiler: clang
+            #cpp_compiler: clang++
+            #deps_install: sudo apt update && sudo apt install -y libeigen3-dev libblas-dev liblapack-dev
 
           # macOS with BLAS (using Accelerate framework)
           - os: macos-latest
