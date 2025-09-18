@@ -473,6 +473,17 @@ ext_modules = [
 
 print(f"Extension modules: {ext_modules}", flush=True)
 
+# Run setup_build.py before setup() to ensure source files are available
+# This runs in the original directory before any temporary directories are created
+print("Running setup_build.py to prepare source files...", flush=True)
+try:
+    import subprocess
+    subprocess.check_call([sys.executable, 'setup_build.py'])
+    print("setup_build.py completed successfully", flush=True)
+except Exception as e:
+    print(f"Warning: setup_build.py failed: {e}", flush=True)
+    # Continue anyway - files might already be available
+
 setup(
     package_dir={'': './'},
     packages=['pylibsparseir'],

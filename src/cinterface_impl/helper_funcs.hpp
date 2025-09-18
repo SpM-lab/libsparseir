@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iostream>
 #include "_util.hpp"
+#include "sparseir/sparseir.h"
 
 inline bool is_dlr_basis(const spir_basis *b) {
     return std::dynamic_pointer_cast<DLRAdapter<sparseir::Fermionic>>(get_impl_basis(b)) != nullptr ||

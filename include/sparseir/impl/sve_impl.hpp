@@ -481,7 +481,7 @@ SVEResult compute_sve(const K &kernel, double epsilon, double cutoff, int lmax,
     std::string Twork_actual;
     std::string svd_strategy_actual;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
-        sparseir::auto_choose_accuracy(epsilon, Twork);
+        sparseir::auto_choose_accuracy(epsilon, Twork, "auto");
 
     if (Twork_actual == "Float64") {
         return std::get<0>(pre_postprocess<K, double>(kernel, safe_epsilon,

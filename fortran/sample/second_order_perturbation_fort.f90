@@ -44,23 +44,23 @@ CONTAINS
     nk_lin = 256
     hubbardu = 2.0E0_DP
     !
-    READ(5,NML=input,IOSTAT=ios)
-    IF(ios.NE.0) THEN 
-      PRINT*, 'ERROR in read_input: reading namelist input'
-      STOP
-    ENDIF
+    !READ(5,NML=input,IOSTAT=ios)
+    !IF(ios.NE.0) THEN 
+      !PRINT*, 'ERROR in read_input: reading namelist input'
+      !STOP
+    !ENDIF
     !
-    rdum = LOG(lambda) / LOG(1.0E1_DP)
-    IF ( ABS(rdum - NINT(rdum)) >  1.0E-8_DP ) THEN
-      PRINT*, 'ERROR in read_input: lambda is not a positive integer power of 10.'
-      STOP
-    ENDIF
+    !rdum = LOG(lambda) / LOG(1.0E1_DP)
+    !IF ( ABS(rdum - NINT(rdum)) >  1.0E-8_DP ) THEN
+      !PRINT*, 'ERROR in read_input: lambda is not a positive integer power of 10.'
+      !!STOP
+    !ENDIF
     !
-    rdum = LOG(eps) / LOG(1.0E-1_DP)
-    IF ( ABS(rdum - NINT(rdum)) >  1.0E-8_DP ) THEN
-      PRINT*, 'ERROR in read_input: eps is not a positive integer power of 0.1.'
-      STOP
-    ENDIF
+    !rdum = LOG(eps) / LOG(1.0E-1_DP)
+    !IF ( ABS(rdum - NINT(rdum)) >  1.0E-8_DP ) THEN
+      !PRINT*, 'ERROR in read_input: eps is not a positive integer power of 0.1.'
+      !STOP
+    !ENDIF
     !
   END SUBROUTINE read_input
   !
