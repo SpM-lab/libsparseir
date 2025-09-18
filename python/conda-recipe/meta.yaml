@@ -24,26 +24,12 @@ build:
     echo "Python package contents:"
     find ${SP_DIR}/pylibsparseir -name "*" -type f
     
-    # Copy shared libraries to system lib directory for other packages to use
-    echo "Copying shared libraries to system lib directory..."
-    if [ -d "${SP_DIR}/pylibsparseir" ]; then
-      for lib in ${SP_DIR}/pylibsparseir/libsparseir*; do
-        if [ -f "$lib" ]; then
-          echo "Copying $lib to ${PREFIX}/lib/"
-          cp "$lib" "${PREFIX}/lib/"
-        fi
-      done
-    fi
-    
     # Final verification
-    echo "Final verification - libraries in ${PREFIX}/lib:"
-    find ${PREFIX}/lib -name "*sparseir*" -type f
     echo "Python package files:"
     find ${SP_DIR}/pylibsparseir -name "*" -type f
   files:
     - lib/python3.*/site-packages/pylibsparseir/
     - lib/python3.*/site-packages/pylibsparseir-*.egg-info/
-    - lib/libsparseir.*
 
 requirements:
   build:

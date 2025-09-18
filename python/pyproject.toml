@@ -54,7 +54,6 @@ cmake.args = [
 cmake.source-dir = "."
 
 # Install rules for the Python package
-wheel.install-dir = "pylibsparseir"
 
 
 
