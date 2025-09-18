@@ -1,0 +1,203 @@
+# Windows MinGW-w64 CI workflow for libsparseir using MSYS2
+# Tests Windows with MinGW-w64 compiler via MSYS2
+name: Windows MinGW-w64 CI (MSYS2)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  INSTALL_PREFIX: ${{github.workspace}}/install
+
+jobs:
+  build-mingw64:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # MinGW-w64 with GCC (64-bit)
+          - os: windows-latest
+            compiler: mingw64-gcc
+            msystem: MINGW64
+            generator: "MinGW Makefiles"
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.compiler }}-${{ matrix.msystem }}
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        update: true
+        install: >
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-fc
+          make
+          mingw-w64-x86_64-eigen3
+          mingw-w64-x86_64-fftw
+          mingw-w64-x86_64-pkg-config
+
+    - name: Debug compiler setup
+      shell: msys2 {0}
+      run: |
+        echo "=== Compiler Information ==="
+        gcc --version
+        g++ --version
+        gfortran --version
+        cmake --version
+        make --version
+        echo "=== PATH ==="
+        echo $PATH
+        echo "=== Available compilers ==="
+        which gcc g++ gfortran cmake make
+
+    - name: Configure CMake
+      shell: msys2 {0}
+      run: |
+        cmake -B build \
+          -G "${{ matrix.generator }}" \
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+          -DSPARSEIR_BUILD_FORTRAN=ON \
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
+          -DSPARSEIR_USE_BLAS=OFF \
+          -DCMAKE_C_COMPILER=gcc \
+          -DCMAKE_CXX_COMPILER=g++ \
+          -DSPARSEIR_BUILD_TESTING=ON \
+          -DCMAKE_Fortran_COMPILER=gfortran
+
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        cmake --build build --config ${{env.BUILD_TYPE}}
+        
+        echo "=== Checking built executables and their dependencies ==="
+        # Check test executables
+        find build -name "*.exe" | head -5 | while read exe; do
+          echo "Checking: $exe"
+          ldd "$exe" | head -10 || echo "ldd failed for $exe"
+        done
+
+    - name: Install
+      shell: msys2 {0}
+      run: cmake --install build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      shell: msys2 {0}
+      working-directory: build
+      run: |
+        # Simple PATH setup: MinGW64 + build dir + installed DLLs
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        export PATH="/mingw64/bin:$(pwd):$INSTALL_DIR/lib:$PATH"
+        echo "Updated PATH for tests with installed DLLs"
+        
+        # Run tests
+        ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Verify Installation
+      shell: msys2 {0}
+      run: |
+        echo "=== Searching for installed files ==="
+        # Search for the actual install location
+        find /d/a/libsparseir/libsparseir -name "libsparseir.dll" -o -name "libsparseir.dll.a" 2>/dev/null | head -5
+        find /d/a/libsparseir/libsparseir -name "sparseir.h" 2>/dev/null | head -3
+        
+        echo "=== Checking expected install directory ==="
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        echo "Expected install directory: $INSTALL_DIR"
+        ls -la "$INSTALL_DIR" 2>/dev/null || echo "Expected directory not found"
+        
+        echo "=== Checking actual install locations ==="
+        # Check common install locations
+        for dir in "/d/a/libsparseir/libsparseir/install" "/d/a/libsparseir/libsparseir/alibsparseirlibsparseir/install"; do
+          if [ -d "$dir" ]; then
+            echo "Found install directory: $dir"
+            ls -la "$dir/include/sparseir/" 2>/dev/null || echo "  No include/sparseir/ in $dir"
+            ls -la "$dir/lib/" 2>/dev/null || echo "  No lib/ in $dir"
+          fi
+        done
+
+    - name: Build and Run Fortran Sample
+      shell: msys2 {0}
+      run: |
+        # Set PATH for DLL resolution at the beginning
+        export PATH="/mingw64/bin:$PATH"
+        echo "PATH set for Fortran sample: $PATH"
+        
+        echo "=== Building Fortran Sample ==="
+        cd fortran/sample
+        
+        # Use the environment variable for install prefix
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        echo "Expected install directory: $INSTALL_DIR"
+        
+        # Check if CMake config exists at expected location
+        if [ -d "$INSTALL_DIR/share/cmake/SparseIR" ]; then
+          SPARSEIR_DIR="$INSTALL_DIR/share/cmake/SparseIR"
+          echo "Found SparseIR CMake config at: $SPARSEIR_DIR"
+        else
+          echo "CMake config not found at expected location, searching..."
+          # Fallback: search for actual location
+          SPARSEIR_DIR=$(find /d/a/libsparseir/libsparseir -name "SparseIRConfig.cmake" -exec dirname {} \; | head -1)
+          if [ -n "$SPARSEIR_DIR" ]; then
+            echo "Found SparseIR CMake config at: $SPARSEIR_DIR"
+          else
+            echo "ERROR: SparseIR CMake config not found"
+            exit 1
+          fi
+        fi
+        
+        # Clean and build
+        rm -rf build
+        cmake -B build \
+          -G "MinGW Makefiles" \
+          -DSparseIR_DIR="$SPARSEIR_DIR" \
+          -DUSE_SYSTEM_LIBSPARSEIR=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DFFTW3_INCLUDE_DIR=/mingw64/include \
+          -DFFTW3_LIB=/mingw64/lib/libfftw3.dll.a
+        
+        cmake --build build
+        
+        echo "=== Running Fortran Sample ==="
+        
+        # Check what was built
+        echo "Files in build directory:"
+        ls -la build/
+        
+        # Check executable
+        if [ -f "build/second_order_perturbation_fort.exe" ]; then
+          EXEC="build/second_order_perturbation_fort.exe"
+        elif [ -f "build/second_order_perturbation_fort" ]; then
+          EXEC="build/second_order_perturbation_fort"
+        else
+          echo "ERROR: Executable not found"
+          exit 1
+        fi
+        
+        echo "Found executable: $EXEC"
+        
+        # Check DLL dependencies
+        echo "Checking DLL dependencies:"
+        ldd "$EXEC" || echo "ldd failed"
+        
+        # Add installed DLLs to PATH before running
+        INSTALL_DIR=$(cygpath "${{env.INSTALL_PREFIX}}")
+        export PATH="/mingw64/bin:$INSTALL_DIR/lib:$PATH"
+        echo "Updated PATH for Fortran execution: $PATH"
+        
+        # Try to run the executable
+        echo "Attempting to run: $EXEC"
+        ./$EXEC || {
+          echo "Execution failed with exit code: $?"
+          exit 1
+        }
+        
+        echo "=== Fortran Sample completed successfully ==="
