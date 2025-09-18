@@ -1,0 +1,223 @@
+cmake_minimum_required(VERSION 3.15)
+
+# This is the Python package CMakeLists.txt
+# It builds the shared library and installs it for Python use
+
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "No build type specified, defaulting to Release")
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add parent directory to module path for version extraction
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake/modules")
+
+# Provides CMAKE_INSTALL_* directories
+include(GNUInstallDirs)
+
+# Extract version information from header file
+if (NOT SPARSEIR_VERSION)
+    include("VersionFromHeader")
+    version_from_header(SPARSEIR_VERSION
+        HEADER "../include/sparseir/version.h"
+        MACROS SPARSEIR_VERSION_MAJOR SPARSEIR_VERSION_MINOR SPARSEIR_VERSION_PATCH
+        )
+    message(STATUS "Extracted package version: ${SPARSEIR_VERSION}")
+
+    set(SPARSEIR_VERSION "${SPARSEIR_VERSION}"
+        CACHE STRING "version of the sparseir package")
+    mark_as_advanced(SPARSEIR_VERSION)
+endif()
+
+# Configure project for Python packaging
+project(
+    pylibsparseir
+    LANGUAGES CXX
+    VERSION "${SPARSEIR_VERSION}"
+    DESCRIPTION "Python bindings for SparseIR library"
+    )
+
+# Set installation directories
+set(SPARSEIR_INSTALL_INCLUDEDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}"
+    CACHE PATH "directory into which to install sparseir include files" FORCE)
+set(SPARSEIR_INSTALL_LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}"
+    CACHE PATH "directory into which to install sparseir library files" FORCE)
+
+# Add Fortran language support if building Fortran bindings
+option(SPARSEIR_BUILD_FORTRAN "Build Fortran bindings" OFF)
+if(SPARSEIR_BUILD_FORTRAN)
+    enable_language(Fortran)
+    message(STATUS "Fortran support enabled for building Fortran bindings")
+endif()
+
+# Eigen3
+# BLAS/LAPACK options
+option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
+
+# BLAS/LAPACK search and configuration
+if(SPARSEIR_USE_BLAS)
+    add_compile_definitions(SPARSEIR_USE_BLAS)
+    message(STATUS "BLAS support enabled")
+    
+    # Find BLAS package
+    find_package(BLAS REQUIRED)
+    if(BLAS_FOUND)
+        message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
+    else()
+        message(FATAL_ERROR "BLAS not found")
+    endif()
+    
+    # CMake's find_package(BLAS) should provide include directories
+    #if(BLAS_INCLUDE_DIRS)
+        #include_directories(${BLAS_INCLUDE_DIRS})
+        #message(STATUS "BLAS include directories: ${BLAS_INCLUDE_DIRS}")
+    #else()
+        #message(FATAL_ERROR "BLAS include directories not found")
+    #endif()
+endif()
+
+
+set(EIGEN3_REQUIRED_VERSION "3.4.0")
+find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
+if(NOT Eigen3_FOUND)
+    message(STATUS "Eigen3 not found in system, fetching from GitHub...")
+    include(FetchContent)
+    FetchContent_Declare(Eigen3
+        GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+        GIT_TAG ${EIGEN3_REQUIRED_VERSION}
+    )
+    FetchContent_MakeAvailable(Eigen3)
+    message(STATUS "Eigen3 fetched from GitHub")
+else()
+    message(STATUS "Eigen3 found in system: ${Eigen3_VERSION}")
+endif()
+
+find_package(Threads REQUIRED)
+
+# libxprec - built only as a static dependency, not for installation
+include(FetchContent)
+FetchContent_Declare(XPrec
+    GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
+    GIT_TAG mainline
+)
+
+# Extract the content but don't process it through add_subdirectory
+FetchContent_GetProperties(XPrec)
+if(NOT xprec_POPULATED)
+    FetchContent_Populate(XPrec)
+    message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
+endif()
+
+# ---------------------------------
+# Building
+
+# Enable debug logging
+option(SPARSEIR_DEBUG "Enable debug logging output" OFF)
+if(SPARSEIR_DEBUG)
+    add_definitions(-DDEBUG_SPIR)
+    message(STATUS "Debug logging enabled")
+endif()
+
+# Set the default component name for installations
+set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
+
+# Recursively find all source files
+file(GLOB_RECURSE SPARSEIR_CPP_SOURCES "../src/*.cpp")
+file(GLOB_RECURSE SPARSEIR_HPP_SOURCES "../src/*.hpp")
+
+# Debug output
+message(STATUS "Found C++ source files: ${SPARSEIR_CPP_SOURCES}")
+message(STATUS "Found header files: ${SPARSEIR_HPP_SOURCES}")
+
+# Add all sources to the library (headers for dependency tracking)
+add_library(sparseir SHARED ${SPARSEIR_CPP_SOURCES} ${SPARSEIR_HPP_SOURCES})
+if(NOT MSVC)
+    target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
+endif()
+
+target_include_directories(sparseir
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
+)
+set_target_properties(sparseir PROPERTIES
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+    CXX_STANDARD 11
+    CXX_STANDARD_REQUIRED ON
+    )
+
+target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
+
+# Add BLAS/LAPACK linking
+if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
+    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
+else()
+    message(STATUS "BLAS linking disabled or BLAS not found")
+endif()
+
+if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
+    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
+endif()
+
+# macOS-specific configuration
+if(APPLE AND ACCELERATE_FRAMEWORK)
+    target_link_libraries(sparseir PRIVATE ${ACCELERATE_FRAMEWORK})
+endif()
+
+# Use library convention.
+add_library(SparseIR::sparseir ALIAS sparseir)
+
+# Build Fortran bindings if enabled
+if(SPARSEIR_BUILD_FORTRAN)
+    add_subdirectory(fortran)
+endif()
+
+# Add include paths from parent scope if available
+
+# -------------------------------------
+# Testing
+
+option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." OFF)
+
+if (SPARSEIR_BUILD_TESTING)
+    enable_testing()
+
+    # Download and configure Catch2 for testing
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG v3.4.0
+    )
+    FetchContent_MakeAvailable(Catch2)
+
+    # Add test directory
+    add_subdirectory("test")
+endif()
+
+# -------------------------------------
+# Installation
+
+# Install the shared library to the Python package directory
+install(TARGETS sparseir
+    LIBRARY DESTINATION pylibsparseir
+    ARCHIVE DESTINATION pylibsparseir
+    RUNTIME DESTINATION pylibsparseir
+    COMPONENT sparseir
+)
+
+# Install Python source files
+install(FILES
+    pylibsparseir/__init__.py
+    pylibsparseir/core.py
+    pylibsparseir/constants.py
+    pylibsparseir/ctypes_wrapper.py
+    pylibsparseir/clean_build_artifacts.py
+    DESTINATION pylibsparseir
+    COMPONENT sparseir
+)
