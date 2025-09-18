@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import re
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from setuptools.command.build_py import build_py
@@ -12,6 +13,44 @@ print(f"Current working directory: {os.getcwd()}", flush=True)
 print(f"Directory contents: {os.listdir('.')}", flush=True)
 print("=" * 100, flush=True)
 sys.stdout.flush()
+
+def read_version_from_header():
+    """Read version from include/sparseir/version.h"""
+    version_h_paths = [
+        'include/sparseir/version.h',
+        '../include/sparseir/version.h',
+        '../../include/sparseir/version.h'
+    ]
+    
+    for path in version_h_paths:
+        if os.path.exists(path):
+            print(f"Reading version from: {path}", flush=True)
+            with open(path, 'r') as f:
+                content = f.read()
+                
+            # Extract version numbers using regex
+            major_match = re.search(r'#define SPARSEIR_VERSION_MAJOR (\d+)', content)
+            minor_match = re.search(r'#define SPARSEIR_VERSION_MINOR (\d+)', content)
+            patch_match = re.search(r'#define SPARSEIR_VERSION_PATCH (\d+)', content)
+            
+            if major_match and minor_match and patch_match:
+                major = major_match.group(1)
+                minor = minor_match.group(1)
+                patch = patch_match.group(1)
+                version = f"{major}.{minor}.{patch}"
+                print(f"Extracted version: {version}", flush=True)
+                return version
+            else:
+                print("Could not extract version numbers from version.h", flush=True)
+                break
+    
+    # error
+    raise RuntimeError("Could not extract version numbers from version.h")
+
+
+# Read version dynamically
+VERSION = read_version_from_header()
+print(f"Using version: {VERSION}", flush=True)
 
 class CMakeBuild(build_ext):
     def run(self):
@@ -117,92 +156,72 @@ class CMakeBuild(build_ext):
         # Import platform module here before using it
         import platform
 
-        # Only enable BLAS if we can find it or if explicitly requested
-        enable_blas = os.environ.get('SPARSEIR_USE_BLAS', '').lower() in ('1', 'on', 'true', 'yes')
-        if not enable_blas:
-            # Try to detect if BLAS is available
-            blas_paths = [
+        # Always enable BLAS support
+        cmake_args.append('-DSPARSEIR_USE_BLAS=ON')
+        print("BLAS support enabled", flush=True)
+        
+        # Try to detect BLAS libraries in common locations
+        blas_found = False
+        
+        # Common BLAS library paths
+        blas_paths = []
+        
+        # macOS specific paths (including Accelerate)
+        if platform.system() == 'Darwin':
+            blas_paths.extend([
+                '/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A',  # Accelerate
+                '/opt/homebrew/opt/openblas/lib',
+                '/usr/local/opt/openblas/lib',
+                '/opt/homebrew/lib',  # Homebrew default
+                '/usr/local/lib',     # macOS default
+            ])
+        else:  # Linux and others
+            blas_paths.extend([
                 '/usr/lib64/openblas',
                 '/usr/lib/openblas',
                 '/usr/local/lib64/openblas',
                 '/usr/local/lib/openblas',
-                '/opt/homebrew/opt/openblas/lib',
-                '/usr/local/opt/openblas/lib'
-            ]
-
-            for path in blas_paths:
-                if os.path.exists(path):
-                    enable_blas = True
-                    print(f"Found BLAS library path: {path}", flush=True)
-                    break
-
-        if enable_blas:
-            cmake_args.append('-DSPARSEIR_USE_BLAS=ON')
-            print("BLAS support enabled", flush=True)
-
-            # Try to detect and prefer OpenBLAS
-            openblas_found = False
-
-            # Check common OpenBLAS installation paths
-            openblas_paths = []
-            if platform.system() == 'Darwin':
-                openblas_paths = [
-                    '/opt/homebrew/opt/openblas',
-                    '/usr/local/opt/openblas',
-                    '/opt/local'  # MacPorts
-                ]
-            else:  # Linux and others
-                openblas_paths = [
-                    '/usr/local',
-                    '/usr',
-                    '/opt/openblas',
-                    '/usr/lib64/openblas',
-                    '/usr/lib/openblas'
-                ]
-
-            # Look for OpenBLAS
-            for path in openblas_paths:
-                if path.endswith('openblas'):
-                    # Direct path to OpenBLAS directory
-                    lib_path = path
-                    include_path = path.replace('lib', 'include').replace('openblas', '')
-                else:
-                    lib_path = os.path.join(path, 'lib')
-                    include_path = os.path.join(path, 'include')
-
-                # Check for OpenBLAS library
-                possible_libs = [
-                    os.path.join(lib_path, 'libopenblas.dylib'),  # macOS
-                    os.path.join(lib_path, 'libopenblas.so'),     # Linux
-                    os.path.join(lib_path, 'libopenblas.a'),      # Static
-                ]
-
-                if any(os.path.exists(lib) for lib in possible_libs):
-                    print(f"Found OpenBLAS at: {path}", flush=True)
-                    cmake_args.extend([
-                        f'-DCMAKE_PREFIX_PATH={path}',
-                        f'-DBLAS_ROOT={path}',
-                    ])
-                    openblas_found = True
-                    break
-
-            if not openblas_found:
-                print("OpenBLAS not found in standard locations, using system BLAS", flush=True)
-        else:
-            print("BLAS support disabled - no BLAS libraries found", flush=True)
-            openblas_found = False
-
-        # Add architecture-specific flags for macOS
-        if platform.system() == 'Darwin':
-            # Get the target architecture from environment or system
-            target_arch = os.environ.get('ARCHFLAGS', '').replace('-arch ', '')
-            if not target_arch:
-                target_arch = platform.machine()
-
-            cmake_args.extend([
-                f'-DCMAKE_OSX_ARCHITECTURES={target_arch}',
-                '-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0',
+                '/usr/local/lib',     # Linux default
+                '/usr/lib',           # System default
             ])
+
+        for path in blas_paths:
+            if os.path.exists(path):
+                # Check for BLAS libraries in this path
+                possible_libs = []
+                if platform.system() == 'Darwin':
+                    possible_libs.extend([
+                        os.path.join(path, 'libBLAS.dylib'),     # Accelerate
+                        os.path.join(path, 'libLAPACK.dylib'),   # Accelerate
+                        os.path.join(path, 'libopenblas.dylib'), # OpenBLAS
+                        os.path.join(path, 'libopenblas.a'),     # Static OpenBLAS
+                    ])
+                else:  # Linux and others
+                    possible_libs.extend([
+                        os.path.join(path, 'libopenblas.so'),    # OpenBLAS
+                        os.path.join(path, 'libblas.so'),        # System BLAS
+                        os.path.join(path, 'libopenblas.a'),     # Static
+                    ])
+                
+                if any(os.path.exists(lib) for lib in possible_libs):
+                    print(f"Found BLAS library path: {path}", flush=True)
+                    cmake_args.append(f'-DCMAKE_LIBRARY_PATH={path}')
+                    blas_found = True
+                    break
+        
+        if not blas_found:
+            print("No BLAS found in standard locations, CMake will search system paths", flush=True)
+
+        # Add architecture-specific flags for macOS (only if explicitly specified)
+        #if platform.system() == 'Darwin':
+            # Only set architecture if explicitly specified via environment
+            #target_arch = os.environ.get('ARCHFLAGS', '').replace('-arch ', '')
+            #if target_arch:
+                #cmake_args.append(f'-DCMAKE_OSX_ARCHITECTURES={target_arch}')
+                #print(f"Using explicit architecture: {target_arch}", flush=True)
+            #
+            # Set deployment target for compatibility
+            #cmake_args.append('-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0')
 
         print(f"Running CMake with args: {cmake_args}")
         print(f"CMake working directory: {build_dir}")
@@ -485,6 +504,7 @@ except Exception as e:
     # Continue anyway - files might already be available
 
 setup(
+    version=VERSION,
     package_dir={'': './'},
     packages=['pylibsparseir'],
     cmdclass={'build_ext': CMakeBuild, 'build_py': CustomBuildPy},

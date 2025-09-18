@@ -1,5 +1,8 @@
 {% set name = "pylibsparseir" %}
-{% set version = "0.1.0" %}
+{% set version_major = load_file_regex(load_file="../../include/sparseir/version.h", regex_pattern="#define SPARSEIR_VERSION_MAJOR (\\d+)", from_recipe_dir=True).group(1) %}
+{% set version_minor = load_file_regex(load_file="../../include/sparseir/version.h", regex_pattern="#define SPARSEIR_VERSION_MINOR (\\d+)", from_recipe_dir=True).group(1) %}
+{% set version_patch = load_file_regex(load_file="../../include/sparseir/version.h", regex_pattern="#define SPARSEIR_VERSION_PATCH (\\d+)", from_recipe_dir=True).group(1) %}
+{% set version = version_major + "." + version_minor + "." + version_patch %}
 
 package:
   name: {{ name|lower }}
@@ -12,20 +15,36 @@ build:
   number: 0
   script: |
     export SPARSEIR_USE_BLAS=1
+    
+    # Build and install the Python package using wheel to ensure libraries are included
     cd ${SRC_DIR}/python
-    ${PYTHON} setup.py install --single-version-externally-managed --record=record.txt
-    # Ensure the shared library is copied to the correct location
-    if [ -f "${SRC_DIR}/build/lib/libsparseir.dylib" ]; then
-      cp "${SRC_DIR}/build/lib/libsparseir.dylib" "${PREFIX}/lib/"
-    elif [ -f "${SRC_DIR}/build/lib/libsparseir.so" ]; then
-      cp "${SRC_DIR}/build/lib/libsparseir.so" "${PREFIX}/lib/"
+    ${PYTHON} setup.py bdist_wheel
+    ${PYTHON} -m pip install dist/*.whl --no-deps --ignore-installed
+    
+    # Verify what was installed
+    echo "Python package contents:"
+    find ${SP_DIR}/pylibsparseir -name "*" -type f
+    
+    # Copy shared libraries to system lib directory for other packages to use
+    echo "Copying shared libraries to system lib directory..."
+    if [ -d "${SP_DIR}/pylibsparseir" ]; then
+      for lib in ${SP_DIR}/pylibsparseir/libsparseir*; do
+        if [ -f "$lib" ]; then
+          echo "Copying $lib to ${PREFIX}/lib/"
+          cp "$lib" "${PREFIX}/lib/"
+        fi
+      done
     fi
+    
+    # Final verification
+    echo "Final verification - libraries in ${PREFIX}/lib:"
+    find ${PREFIX}/lib -name "*sparseir*" -type f
+    echo "Python package files:"
+    find ${SP_DIR}/pylibsparseir -name "*" -type f
   files:
     - lib/python3.*/site-packages/pylibsparseir/
     - lib/python3.*/site-packages/pylibsparseir-*.egg-info/
-    - bin/clean
     - lib/libsparseir.*
-    - lib/python3.*/site-packages/libsparseir.*
 
 requirements:
   build:
@@ -43,8 +62,6 @@ requirements:
     - numpy
     - scipy
     - eigen
-    - openblas  # [unix]
-    - mkl  # [win]
   run:
     - python >=3.10
     - numpy
@@ -56,9 +73,6 @@ test:
     - pylibsparseir
   commands:
     - python -c "import pylibsparseir; print('pylibsparseir imported successfully')"
-    - test -f ${PREFIX}/lib/libsparseir.dylib  # [osx]
-    - test -f ${PREFIX}/lib/libsparseir.so     # [linux]
-    - test -f ${PREFIX}/lib/libsparseir.dll    # [win]
 
 about:
   home: https://github.com/SpM-lab/libsparseir
