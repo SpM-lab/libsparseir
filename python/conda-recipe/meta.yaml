@@ -5,8 +5,8 @@
 {% set version = version_major + "." + version_minor + "." + version_patch %}
 
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
 
 source:
   path: ../..
@@ -47,23 +47,23 @@ build:
 
 requirements:
   build:
-    - python >=3.10
-    - scikit-build-core  # conda-forge
+    - python {{ python }}
+    - numpy {{ numpy }}
+    - {{ compiler('cxx') }}
     - cmake >=3.25
     - ninja
     - make
-    - {{ compiler('cxx') }}
   host:
-    - python >=3.10
-    - scikit-build-core  # conda-forge
-    - numpy
+    - python {{ python }}
+    - numpy {{ numpy }}
     - scipy
     - eigen
+    - scikit-build-core
   run:
-    - python >=3.10
-    - numpy
+    - python {{ python }}
+    - numpy {{ numpy }}
     - scipy
-    - {{ pin_compatible('eigen') }}
+    - eigen
 
 test:
   imports:
@@ -72,7 +72,7 @@ test:
     - python -c "import pylibsparseir; print('pylibsparseir imported successfully')"
 
 about:
-  home: https://github.com/SpM-lab/libsparseir
+  home: "https://github.com/SpM-lab/libsparseir"
   license: MIT
   license_file: LICENSE
   summary: Python bindings for the libsparseir library, providing efficient sparse intermediate representation for many-body physics calculations
