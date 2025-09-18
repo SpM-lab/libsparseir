@@ -20,6 +20,10 @@ build:
     cd ${SRC_DIR}/python
     ${PYTHON} -m pip install . --no-deps --ignore-installed -v
     
+    # Run tests during build
+    echo "Running tests..."
+    ${PYTHON} -m pytest ${SRC_DIR}/python/tests -v
+    
     # Verify what was installed
     echo "Python package contents:"
     find ${SP_DIR}/pylibsparseir -name "*" -type f
@@ -39,6 +43,7 @@ requirements:
     - cmake >=3.25
     - ninja
     - make
+    - pytest
   host:
     - python {{ python }}
     - numpy {{ numpy }}
@@ -50,6 +55,8 @@ requirements:
     - numpy {{ numpy }}
     - scipy
     - eigen
+  test:
+    - pytest
 
 test:
   imports:
