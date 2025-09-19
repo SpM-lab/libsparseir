@@ -142,6 +142,7 @@ add_library(sparseir SHARED
     src/sve.cpp
     src/poly.cpp
     src/kernel.cpp
+    src/gemm.cpp
     src/cinterface.cpp
     )
 if(NOT MSVC)
