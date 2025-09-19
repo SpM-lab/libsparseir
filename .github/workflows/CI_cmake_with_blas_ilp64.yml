@@ -28,15 +28,36 @@ jobs:
       run: |
         echo "=== Checking OpenBLAS ILP64 installation ==="
         dpkg -l | grep openblas64 || echo "No openblas64 packages found"
-        ls -la /usr/lib/x86_64-linux-gnu/*openblas64* || echo "No openblas64 libraries found"
-        ls -la /usr/include/*openblas64* || echo "No openblas64 headers found"
+        
+        # Check for ILP64 libraries in common locations
+        echo "=== Checking for ILP64 libraries ==="
+        find /usr/lib -name "*openblas64*" -type f 2>/dev/null || echo "No openblas64 libraries found"
         
         # Check if ILP64 symbols are available
         echo "=== Checking for ILP64 symbols ==="
-        nm -D /usr/lib/x86_64-linux-gnu/libopenblas64.so.0 2>/dev/null | grep -E "dgemm_|zgemm_" | head -5 || echo "Could not check symbols"
+        for lib in /usr/lib/x86_64-linux-gnu/libopenblas64*.so*; do
+          if [ -f "$lib" ]; then
+            echo "Checking symbols in $lib:"
+            nm -D "$lib" 2>/dev/null | grep -E "dgemm_|zgemm_" | head -3 || echo "No BLAS symbols found"
+            break
+          fi
+        done
 
     - name: Configure CMake with ILP64
       run: |
+        # Set environment variables to help CMake find ILP64 BLAS
+        export BLA_VENDOR=OpenBLAS
+        export BLA_PREFER_PKGCONFIG=ON
+        
+        # Find the actual OpenBLAS64 library path
+        OPENBLAS64_LIB=$(find /usr/lib -name "libopenblas64*.so*" -type f | head -1)
+        if [ -z "$OPENBLAS64_LIB" ]; then
+          echo "Error: libopenblas64 not found"
+          exit 1
+        fi
+        echo "Found OpenBLAS64 library: $OPENBLAS64_LIB"
+        
+        # Configure CMake with explicit library hint
         cmake -B ${{github.workspace}}/build \
           -DCMAKE_C_COMPILER=gcc \
           -DCMAKE_CXX_COMPILER=g++ \
@@ -45,7 +66,8 @@ jobs:
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
           -DSPARSEIR_BUILD_TESTING=ON \
           -DSPARSEIR_USE_BLAS=ON \
-          -DSPARSEIR_USE_ILP64=ON
+          -DSPARSEIR_USE_ILP64=ON \
+          -DBLAS_LIBRARIES="$OPENBLAS64_LIB"
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
