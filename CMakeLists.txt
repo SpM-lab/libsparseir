@@ -50,18 +50,53 @@ endif()
 # Eigen3
 # BLAS/LAPACK options
 option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
+option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface (requires SPARSEIR_USE_BLAS=ON)" OFF)
 
 # BLAS/LAPACK search and configuration
 if(SPARSEIR_USE_BLAS)
     add_compile_definitions(SPARSEIR_USE_BLAS)
     message(STATUS "BLAS support enabled")
     
-    # Find BLAS package
-    find_package(BLAS REQUIRED)
-    if(BLAS_FOUND)
-        message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
+    # ILP64 support
+    if(SPARSEIR_USE_ILP64)
+        add_compile_definitions(SPARSEIR_USE_ILP64)
+        message(STATUS "ILP64 BLAS interface enabled")
     else()
-        message(FATAL_ERROR "BLAS not found")
+        message(STATUS "LP64 BLAS interface enabled (default)")
+    endif()
+    
+    # Find BLAS package
+    if(SPARSEIR_USE_ILP64)
+        # For ILP64, check if BLAS_LIBRARIES is already set by user
+        if(BLAS_LIBRARIES)
+            message(STATUS "ILP64 BLAS library specified: ${BLAS_LIBRARIES}")
+            # Verify the library exists
+            if(NOT EXISTS "${BLAS_LIBRARIES}")
+                message(FATAL_ERROR "Specified ILP64 BLAS library not found: ${BLAS_LIBRARIES}")
+            endif()
+            set(BLAS_FOUND TRUE)
+        else()
+            # Try to find ILP64 BLAS automatically
+            find_library(BLAS_LIBRARIES 
+                NAMES openblas64
+                PATHS /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib
+                NO_DEFAULT_PATH
+            )
+            if(BLAS_LIBRARIES)
+                message(STATUS "ILP64 BLAS found automatically: ${BLAS_LIBRARIES}")
+                set(BLAS_FOUND TRUE)
+            else()
+                message(FATAL_ERROR "ILP64 BLAS (libopenblas64) not found. You can specify it with -DBLAS_LIBRARIES=/path/to/libopenblas64.so")
+            endif()
+        endif()
+    else()
+        # For LP64, use standard CMake BLAS finder
+        find_package(BLAS REQUIRED)
+        if(BLAS_FOUND)
+            message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
+        else()
+            message(FATAL_ERROR "BLAS not found")
+        endif()
     endif()
     
     # CMake's find_package(BLAS) should provide include directories
@@ -71,6 +106,8 @@ if(SPARSEIR_USE_BLAS)
     #else()
         #message(FATAL_ERROR "BLAS include directories not found")
     #endif()
+elseif(SPARSEIR_USE_ILP64)
+    message(FATAL_ERROR "SPARSEIR_USE_ILP64 requires SPARSEIR_USE_BLAS=ON")
 endif()
 
 
@@ -127,6 +164,7 @@ add_library(sparseir SHARED
     src/sve.cpp
     src/poly.cpp
     src/kernel.cpp
+    src/gemm.cpp
     src/cinterface.cpp
     )
 if(NOT MSVC)
@@ -150,11 +188,15 @@ set_target_properties(sparseir PROPERTIES
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
 # Add BLAS/LAPACK linking
-if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
-    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
+if(SPARSEIR_USE_BLAS)
+    if(SPARSEIR_USE_ILP64 OR BLAS_FOUND)
+        target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+        message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
+    else()
+        message(FATAL_ERROR "BLAS libraries not found")
+    endif()
 else()
-    message(STATUS "BLAS linking disabled or BLAS not found")
+    message(STATUS "BLAS linking disabled")
 endif()
 
 if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)

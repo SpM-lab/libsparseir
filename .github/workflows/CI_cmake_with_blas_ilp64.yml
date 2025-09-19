@@ -1,0 +1,134 @@
+# Multi-platform CMake CI workflow for libsparseir (with ILP64 BLAS/OpenBLAS)
+# Tests ILP64 support with OpenBLAS 64-bit integer interface
+name: CMake Multi-Platform CI (With ILP64 BLAS)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  INSTALL_PREFIX: ${{github.workspace}}/install
+
+jobs:
+  build-with-ilp64-blas:
+    runs-on: ubuntu-latest
+    name: ubuntu-gcc-ilp64-blas
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install dependencies
+      run: sudo apt update && sudo apt install -y libeigen3-dev libopenblas64-0 libopenblas64-dev
+
+    - name: Verify OpenBLAS ILP64 installation
+      run: |
+        echo "=== Checking OpenBLAS ILP64 installation ==="
+        dpkg -l | grep openblas64 || echo "No openblas64 packages found"
+        
+        # Check for ILP64 libraries in common locations
+        echo "=== Checking for ILP64 libraries ==="
+        find /usr/lib -name "*openblas64*" -type f 2>/dev/null || echo "No openblas64 libraries found"
+        
+        # Check if ILP64 symbols are available
+        echo "=== Checking for ILP64 symbols ==="
+        for lib in /usr/lib/x86_64-linux-gnu/libopenblas64*.so*; do
+          if [ -f "$lib" ]; then
+            echo "Checking symbols in $lib:"
+            nm -D "$lib" 2>/dev/null | grep -E "dgemm_|zgemm_" | head -3 || echo "No BLAS symbols found"
+            break
+          fi
+        done
+
+    - name: Configure CMake with ILP64
+      run: |
+        # Set environment variables to help CMake find ILP64 BLAS
+        export BLA_VENDOR=OpenBLAS
+        export BLA_PREFER_PKGCONFIG=ON
+        
+        # Find the actual OpenBLAS64 library path
+        OPENBLAS64_LIB=$(find /usr/lib -name "libopenblas64*.so*" -type f | head -1)
+        if [ -z "$OPENBLAS64_LIB" ]; then
+          echo "Error: libopenblas64 not found"
+          exit 1
+        fi
+        echo "Found OpenBLAS64 library: $OPENBLAS64_LIB"
+        
+        # Configure CMake with explicit library hint
+        cmake -B ${{github.workspace}}/build \
+          -DCMAKE_C_COMPILER=gcc \
+          -DCMAKE_CXX_COMPILER=g++ \
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+          -DSPARSEIR_BUILD_FORTRAN=ON \
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
+          -DSPARSEIR_BUILD_TESTING=ON \
+          -DSPARSEIR_USE_BLAS=ON \
+          -DSPARSEIR_USE_ILP64=ON \
+          -DBLAS_LIBRARIES="$OPENBLAS64_LIB"
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Install
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Verify Installation
+      run: |
+        ls -la ${{env.INSTALL_PREFIX}}/include/sparseir/
+        ls -la ${{env.INSTALL_PREFIX}}/lib/
+
+    - name: Check ILP64 BLAS linking
+      run: |
+        echo "=== Checking ILP64 BLAS linking ==="
+        ldd ${{env.INSTALL_PREFIX}}/lib/libsparseir.so | grep -E "(openblas64|blas)" || echo "No BLAS library found in linking"
+        
+        # Verify that the library links to OpenBLAS 64-bit
+        if ldd ${{env.INSTALL_PREFIX}}/lib/libsparseir.so | grep -q "openblas64"; then
+          echo "✓ Successfully linked to OpenBLAS ILP64"
+        else
+          echo "✗ Failed to link to OpenBLAS ILP64"
+          exit 1
+        fi
+
+    - name: Build and Run Fortran Sample with ILP64
+      run: |
+        echo "=== Building Fortran Sample with ILP64 ==="
+        cd fortran/sample
+        
+        # Find SparseIR CMake config
+        SPARSEIR_DIR="${{env.INSTALL_PREFIX}}/share/cmake/SparseIR"
+        if [ ! -d "$SPARSEIR_DIR" ]; then
+          echo "ERROR: SparseIR CMake config not found at $SPARSEIR_DIR"
+          exit 1
+        fi
+        
+        # Install FFTW3 if needed
+        sudo apt-get update && sudo apt-get install -y libfftw3-dev
+        
+        # Clean and build
+        rm -rf build
+        
+        cmake -B build \
+          -DSparseIR_DIR="$SPARSEIR_DIR" \
+          -DUSE_SYSTEM_LIBSPARSEIR=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_Fortran_COMPILER="gfortran"
+        
+        cmake --build build
+        
+        echo "=== Running Fortran Sample with ILP64 ==="
+        
+        export LD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$LD_LIBRARY_PATH"
+        echo "Set library paths:"
+        echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+        
+        ./build/second_order_perturbation_fort
+        
+        echo "=== Fortran Sample with ILP64 completed successfully ==="
