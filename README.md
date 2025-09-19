@@ -141,6 +141,28 @@ sudo apt install libopenblas64-0 libopenblas64-dev
 cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON
 ```
 
+#### Manual BLAS Library Specification
+
+If CMake cannot automatically find the ILP64 BLAS library, you can specify it manually:
+
+```bash
+# Specify the exact library path
+cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON \
+  -DBLAS_LIBRARIES=/usr/lib/x86_64-linux-gnu/libopenblas64.so.0
+
+# Or use environment variables to help CMake find it
+export BLA_VENDOR=OpenBLAS
+cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON
+```
+
+#### Troubleshooting ILP64 BLAS
+
+If you encounter linking errors like "undefined reference to `dgemm_`", ensure:
+
+1. **ILP64 BLAS is installed**: Check with `find /usr/lib -name "*openblas64*"`
+2. **Library contains ILP64 symbols**: Verify with `nm -D /path/to/libopenblas64.so | grep dgemm_`
+3. **CMake finds the library**: Check the CMake output for "ILP64 BLAS found" messages
+
 **Note**: ILP64 support requires `SPARSEIR_USE_BLAS=ON`.
 
 ### Debug Logging at runtime
