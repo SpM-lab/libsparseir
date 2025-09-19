@@ -1,34 +1,73 @@
+[build-system]
+requires = ["scikit-build-core", "cmake>=3.25", "ninja"]
+build-backend = "scikit_build_core.build"
+
 [project]
 name = "pylibsparseir"
-version = "0.1.0"
-description = "Python bindings for the libsparseir library, providing efficient sparse intermediate representation for many-body physics calculations"
+version = "0.4.2"
+description = "Python bindings for the libsparseir library"
 readme = "README.md"
+license = {file = "LICENSE"}
+maintainers = [
+    {name = "SpM-lab"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: C++",
+    "Topic :: Scientific/Engineering :: Physics",
+]
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "scipy",
 ]
-authors = [
-    {name = "SpM-lab"}
-]
-license = "MIT"
-keywords = ["physics", "many-body", "green-functions", "sparse-ir"]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Physics",
-]
 
 [project.urls]
 Homepage = "https://github.com/SpM-lab/libsparseir"
+Documentation = "https://github.com/SpM-lab/libsparseir"
 Repository = "https://github.com/SpM-lab/libsparseir"
-"Bug Tracker" = "https://github.com/SpM-lab/libsparseir/issues"
+Issues = "https://github.com/SpM-lab/libsparseir/issues"
 
-[build-system]
-requires = ["setuptools>=77.0.0", "wheel", "packaging>=24.2", "cmake>=3.25", "scikit-build", "ninja"]
-build-backend = "setuptools.build_meta"
+[tool.scikit-build]
+cmake.version = ">=3.25"
+cmake.build-type = "Release"
+build.verbose = true
+wheel.expand-macos-universal-tags = true
+
+# CMake arguments
+cmake.args = [
+    "-DSPARSEIR_USE_BLAS=ON",
+    "-DBUILD_SHARED_LIBS=ON",
+    "-DCMAKE_CXX_STANDARD=11",
+    "-DCMAKE_CXX_STANDARD_REQUIRED=ON",
+]
+
+# Source directory (relative to pyproject.toml)
+cmake.source-dir = "."
+
+# Install rules for the Python package
+
+
+
+[tool.scikit-build.cmake.define]
+SPARSEIR_USE_BLAS = "ON"
+BUILD_SHARED_LIBS = "ON"
+CMAKE_CXX_STANDARD = "11"
+CMAKE_CXX_STANDARD_REQUIRED = "ON"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 
 [dependency-groups]
 dev = [
@@ -38,15 +77,3 @@ dev = [
     "matplotlib>=3.10.3",
     "pytest>=8.4.1",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_tests.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-
-[project.scripts]
-# Remove files/directories copied in by setup_build.py and included via MANIFEST.in,
-# plus common build artifacts produced in this package directory.
-clean = "pylibsparseir.clean_build_artifacts:clean_build_artifacts"
-
