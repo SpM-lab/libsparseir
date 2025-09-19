@@ -122,6 +122,27 @@ set(SPARSEIR_USE_BLAS ON)
 
 Note: When enabling BLAS, ensure that the appropriate libraries (such as OpenBLAS, Intel MKL, or Apple Accelerate) can be found by CMake.
 
+#### ILP64 BLAS Support
+
+For applications requiring large matrix operations (matrices larger than 2^31 elements), you can enable ILP64 BLAS support by setting both `SPARSEIR_USE_BLAS` and `SPARSEIR_USE_ILP64` to `ON`:
+
+```bash
+cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON
+```
+
+This option:
+- Uses 64-bit integers for matrix dimensions and leading dimensions
+- Directly calls Fortran BLAS interfaces instead of CBLAS
+- Requires ILP64-compatible BLAS libraries (e.g., `libopenblas64-0` on Ubuntu)
+
+Example with ILP64 OpenBLAS on Ubuntu:
+```bash
+sudo apt install libopenblas64-0 libopenblas64-dev
+cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON
+```
+
+**Note**: ILP64 support requires `SPARSEIR_USE_BLAS=ON`.
+
 ### Debug Logging at runtime
 
 You can also control debug output at runtime using the `SPARSEIR_DEBUG` environment variable:
