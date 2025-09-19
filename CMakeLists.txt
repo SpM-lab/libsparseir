@@ -50,11 +50,24 @@ endif()
 # Eigen3
 # BLAS/LAPACK options
 option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
+option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface (requires SPARSEIR_USE_BLAS=ON)" OFF)
 
 # BLAS/LAPACK search and configuration
 if(SPARSEIR_USE_BLAS)
     add_compile_definitions(SPARSEIR_USE_BLAS)
     message(STATUS "BLAS support enabled")
+    
+    # ILP64 support
+    if(SPARSEIR_USE_ILP64)
+        add_compile_definitions(SPARSEIR_USE_ILP64)
+        if(NOT SPARSEIR_BUILD_FORTRAN)
+            enable_language(Fortran)
+            message(STATUS "Fortran support enabled for ILP64 BLAS interface")
+        endif()
+        message(STATUS "ILP64 BLAS interface enabled")
+    else()
+        message(STATUS "LP64 BLAS interface enabled (default)")
+    endif()
     
     # Find BLAS package
     find_package(BLAS REQUIRED)
@@ -71,6 +84,8 @@ if(SPARSEIR_USE_BLAS)
     #else()
         #message(FATAL_ERROR "BLAS include directories not found")
     #endif()
+elseif(SPARSEIR_USE_ILP64)
+    message(FATAL_ERROR "SPARSEIR_USE_ILP64 requires SPARSEIR_USE_BLAS=ON")
 endif()
 
 
