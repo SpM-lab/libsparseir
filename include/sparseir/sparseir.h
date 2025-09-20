@@ -3,8 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__cplusplus)
 // MSVC doesn't support C99 complex types by default
+// For C++ compilation, use std::complex to avoid C99 extension warnings
 #include <complex>
 typedef std::complex<double> c_complex;
 #else

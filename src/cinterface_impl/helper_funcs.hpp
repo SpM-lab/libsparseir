@@ -17,21 +17,6 @@ inline bool is_ir_basis(const spir_basis *b) {
 }
 
 
-static std::array<int, 3> collapse_to_3d_old(int ndim, const int *dims,
-    int target_dim)
-{
-    std::array<int, 3> dims_3d = {1, dims[target_dim], 1};
-    // Multiply all dimensions before target_dim into first dimension
-    for (int i = 0; i < target_dim; ++i) {
-        dims_3d[0] *= dims[i];
-    }
-    // Multiply all dimensions after target_dim into last dimension
-    for (int i = target_dim + 1; i < ndim; ++i) {
-        dims_3d[2] *= dims[i];
-    }
-    return dims_3d;
-}
-
 // Template function to handle all evaluation cases - moved outside extern "C"
 // block
 template <typename InputScalar, typename OutputScalar>

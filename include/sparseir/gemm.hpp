@@ -365,6 +365,7 @@ _gemm(const Eigen::Matrix<U, Eigen::Dynamic, Eigen::Dynamic> &A,
     _gemm_blas_impl<U, V, ResultType>(A.data(), B.data(), result.data(), M, N,
                                       K);
 #else
+    (void)K; // Suppress unused variable warning
     result.noalias() = A * B;
 #endif
 
@@ -390,6 +391,7 @@ _gemm(
     _gemm_blas_impl<U, V, ResultType>(A.data(), B.data(), result.data(), M, N,
                                       K);
 #else
+    (void)K; // Suppress unused variable warning
     result.noalias() = A * B;
 #endif
 
