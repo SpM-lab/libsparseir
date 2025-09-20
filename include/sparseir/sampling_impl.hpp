@@ -80,7 +80,7 @@ int evaluate_inplace_dim3(
     const auto basis_size = matrix.cols();
     const auto n_sampling_points = matrix.rows();
 
-    if (basis_size != static_cast<std::size_t>(input.dimension(dim))) {
+    if (static_cast<std::size_t>(basis_size) != static_cast<std::size_t>(input.dimension(dim))) {
         // Dimension mismatch
         return SPIR_INPUT_DIMENSION_MISMATCH;
     }
@@ -199,8 +199,8 @@ void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
                     const InputMatrixType &input,
                     OutputMatrixType &output)
 {
-    using InputScalar = typename InputMatrixType::Scalar;
     using OutputScalar = typename OutputMatrixType::Scalar;
+    (void)sizeof(typename InputMatrixType::Scalar); // Suppress unused typedef warning
 
     // equivalent to UHB = U.adjoint() * input
     auto UHB = Eigen::MatrixX<OutputScalar>(svd.matrixU().cols(), input.cols());
@@ -210,9 +210,8 @@ void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
     // Apply inverse singular values to the rows of UHB
     {
         const int num_singular_values = svd.singularValues().size();
-        const int num_rows = UHB.rows();
         const int num_cols = UHB.cols();
-        OutputScalar* UHB_data = UHB.data();
+        (void)UHB; // UHB_data and num_rows are unused in optimized code
         
         for (int i = 0; i < num_singular_values; ++i) {
             const OutputScalar inv_sigma = OutputScalar(1.0) / OutputScalar(svd.singularValues()(i));
@@ -221,7 +220,7 @@ void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
             }
         }
     }
-    auto t3 = std::chrono::high_resolution_clock::now();
+    // auto t3 = std::chrono::high_resolution_clock::now(); // Unused timing variable
 
     _gemm_inplace(svd.matrixV().data(), UHB.data(), output.data(), svd.matrixV().rows(), output.cols(), svd.matrixV().cols());
 }
@@ -266,7 +265,7 @@ fit_inplace_dim2_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
     {
         const int num_singular_values = svd.singularValues().size();
         const int num_cols = UHB.cols();
-        double* UHB_data = UHB.data();
+        (void)UHB; // UHB_data is unused in optimized code
         
         for (int i = 0; i < num_singular_values; ++i) {
             const double inv_sigma = 1.0 / svd.singularValues()(i);
@@ -294,6 +293,7 @@ int fit_inplace_dim3(
     bool split_svd = false
 )
 {
+    (void)split_svd; // Unused parameter
     using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
     using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
 

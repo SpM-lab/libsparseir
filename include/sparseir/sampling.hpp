@@ -201,7 +201,7 @@ public:
     TauSampling(const Eigen::MatrixXd& matrix, const Eigen::VectorXd& sampling_points) 
         : sampling_points_(sampling_points), matrix_(matrix)
     {
-        if (sampling_points.size() == 0 || matrix_.rows() != sampling_points.size()) {
+        if (sampling_points.size() == 0 || matrix_.rows() != static_cast<Eigen::Index>(sampling_points.size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
@@ -574,7 +574,7 @@ public:
         : sampling_points_(sampling_points), matrix_(matrix), 
           positive_only_(positive_only), has_zero_(false)
     {
-        if (sampling_points.size() == 0 || matrix_.rows() != sampling_points.size()) {
+        if (sampling_points.size() == 0 || matrix_.rows() != static_cast<Eigen::Index>(sampling_points.size())) {
             throw std::runtime_error("Matrix dimensions mismatch: got " +
                                      std::to_string(matrix_.rows()) + "x" +
                                      std::to_string(matrix_.cols()) +
