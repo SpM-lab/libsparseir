@@ -28,7 +28,7 @@ if platform.system() == "Linux":
         raise RuntimeError("Could not find any OpenBLAS/libblas shared library")
 
     libpath = candidates[0]
-    ctypes.CDLL(libpath, mode=ctypes.RTLD_LOCAL)
+    ctypes.CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
     print(f"[conftest] Loaded BLAS from {libpath}")
 
     # Load the dgemm wrapper library
