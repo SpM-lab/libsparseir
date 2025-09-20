@@ -20,37 +20,56 @@ This is a low-level binding for the [libsparseir](https://github.com/SpM-lab/lib
 
 ### Install Dependencies and Build
 
+**Option 1: Automatic build (recommended)**
 ```bash
-uv sync
+# Build will automatically run prepare_build.py if needed
+uv build
+```
+
+**Option 2: Manual preparation**
+```bash
+# First, prepare the build by copying necessary files from parent directory
+python3 prepare_build.py
+
+# Then build the package
+uv build
 ```
 
 This will:
-- Install Python dependencies (numpy)
-- Build the C++ libsparseir library using CMake
-- Install the Python package in development mode
+- Copy source files (`src/`, `include/`, `cmake/`) from the parent libsparseir directory
+- Build the C++ libsparseir library using CMake with BLAS support
+- Create both source distribution (sdist) and wheel packages
+
+### Development Build
+
+For development:
+
+```bash
+# Install in development mode (will auto-prepare if needed)
+uv sync
+```
+
+**Note for CI/CD**: In CI environments, you must run `prepare_build.py` before building:
+
+```bash
+# In CI/CD scripts
+cd python
+python3 prepare_build.py
+uv build
+```
+
+See `.github-workflows-example.yml` for a complete GitHub Actions example.
 
 ### Build with OpenBLAS Support
 
-To enable OpenBLAS support for improved performance:
+OpenBLAS support is enabled by default in the build configuration. The build system will automatically detect OpenBLAS if it's installed in standard locations.
 
-```bash
-# Set environment variable to enable BLAS
-export SPARSEIR_USE_BLAS=1
-uv sync
-```
-
-Or for a single build:
-
-```bash
-SPARSEIR_USE_BLAS=1 uv sync
-```
-
-The build system will automatically detect OpenBLAS if it's installed in standard locations. If OpenBLAS is installed in a custom location, you may need to set additional environment variables:
+If OpenBLAS is installed in a custom location, you may need to set additional environment variables:
 
 ```bash
 export CMAKE_PREFIX_PATH="/path/to/openblas"
-export SPARSEIR_USE_BLAS=1
-uv sync
+python3 prepare_build.py
+uv build
 ```
 
 ### Clean Build Artifacts
@@ -63,9 +82,30 @@ uv run clean
 
 This will remove:
 - Build directories: `build/`, `dist/`, `*.egg-info`
-- Copied source files: `include/`, `src/`, `fortran/`, `cmake/`, `CMakeLists.txt`
+- Copied source files: `include/`, `src/`, `cmake/` (copied by `prepare_build.py`)
 - Compiled libraries: `pylibsparseir/*.so`, `pylibsparseir/*.dylib`, `pylibsparseir/*.dll`
 - Cache directories: `pylibsparseir/__pycache__`
+
+### Build Process Overview
+
+The build process works as follows:
+
+1. **File Preparation**: `prepare_build.py` copies necessary files from the parent libsparseir directory:
+   - Source files (`../src/` → `src/`)
+   - Header files (`../include/` → `include/`)
+   - CMake configuration (`../cmake/` → `cmake/`)
+
+2. **Package Building**: `uv build` or `uv sync` uses scikit-build-core to:
+   - Configure CMake with BLAS support enabled
+   - Compile the C++ library with dynamic BLAS symbol lookup (for NumPy compatibility)
+   - Package everything into distributable wheels and source distributions
+
+3. **Installation**: The built package includes the compiled shared library and Python bindings
+
+**Why File Copying?**: The `prepare_build.py` script copies files from the parent directory instead of using symbolic links to ensure:
+- Cross-platform compatibility (Windows doesn't handle symlinks well)
+- Proper inclusion in source distributions (sdist)
+- Clean separation between the main C++ library and Python bindings
 
 ## Performance Notes
 
@@ -85,26 +125,44 @@ Found OpenBLAS at: /opt/homebrew/opt/openblas
 
 ### Troubleshooting
 
+**Build fails with missing source files:**
+```bash
+# Make sure to run prepare_build.py first
+python3 prepare_build.py
+uv build
+```
+
 **Build fails with "Could NOT find BLAS":**
 ```bash
 # Install OpenBLAS first
 brew install openblas  # macOS
 sudo apt install libopenblas-dev  # Ubuntu
 
-# Then force BLAS detection
-SPARSEIR_USE_BLAS=1 uv sync
+# Then build with proper CMake path
+export CMAKE_PREFIX_PATH="/path/to/openblas"
+python3 prepare_build.py
+uv build
 ```
 
 **OpenBLAS not detected automatically:**
 ```bash
 # Set CMake prefix path manually
 export CMAKE_PREFIX_PATH="/usr/local/opt/openblas"  # or your OpenBLAS path
-export SPARSEIR_USE_BLAS=1
-uv sync
+python3 prepare_build.py
+uv build
+```
+
+**Clean rebuild:**
+```bash
+# Remove all copied files and build artifacts
+uv run clean
+python3 prepare_build.py
+uv build
 ```
 
 **Verify BLAS support in built package:**
 ```python
 import pylibsparseir
-# Check build logs or library dependencies to confirm BLAS linking
+# Check build logs for "BLAS support enabled" message
+# BLAS symbols are resolved dynamically through NumPy at runtime
 ```

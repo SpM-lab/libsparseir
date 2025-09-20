@@ -37,6 +37,9 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+      - name: Run prepare_build.py
+        run: python3 prepare_build.py
+        working-directory: python
 
       - name: Run uv sync
         run: uv sync
