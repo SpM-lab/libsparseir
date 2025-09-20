@@ -19,31 +19,25 @@ if platform.system() == "Linux":
 
     candidates = []
 
-    # 1. pip wheels: inside numpy/.libs
-    libdir = os.path.join(os.path.dirname(numpy.__file__), ".libs")
+    site_packages = os.path.join(os.path.dirname(os.path.dirname(numpy.__file__)))
+    print(f"[conftest] site_packages: {site_packages}")
+    libdir = os.path.join(site_packages, "numpy.libs")
     if os.path.isdir(libdir):
-        candidates.extend(glob.glob(os.path.join(libdir, "libopenblas*.so*")))
-
-    # 2. scipy-openblas package: site-packages/scipy_openblas*
-    if not candidates:
-        for path in sys.path:
-            if "site-packages" in path and os.path.isdir(path):
-                candidates.extend(glob.glob(os.path.join(path, "scipy_openblas*", "lib", "libopenblas*.so*")))
-
-    # 3. System BLAS (e.g., /usr/lib, etc.)
-    if not candidates:
-        for base in ["/usr/lib", "/usr/lib/x86_64-linux-gnu", "/usr/local/lib"]:
-            if os.path.isdir(base):
-                candidates.extend(glob.glob(os.path.join(base, "libopenblas*.so*")))
-                candidates.extend(glob.glob(os.path.join(base, "libblas*.so*")))
-
+        candidates.extend(glob.glob(os.path.join(libdir, "*openblas*.so*")))
     if not candidates:
         raise RuntimeError("Could not find any OpenBLAS/libblas shared library")
 
     libpath = candidates[0]
-    ctypes.CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
-    print(f"[conftest] Loaded BLAS globally from {libpath}")
+    ctypes.CDLL(libpath, mode=ctypes.RTLD_LOCAL)
+    print(f"[conftest] Loaded BLAS from {libpath}")
 
+    # Load the dgemm wrapper library
+    wrapper_path = os.path.join(os.path.dirname(__file__), "libdgemm_wrapper.so")
+    if os.path.exists(wrapper_path):
+        ctypes.CDLL(wrapper_path, mode=ctypes.RTLD_GLOBAL)
+        print(f"[conftest] Loaded dgemm wrapper from {wrapper_path}")
+    else:
+        print(f"[conftest] Warning: dgemm wrapper not found at {wrapper_path}")
 
 from .ctypes_wrapper import spir_kernel, spir_sve_result, spir_basis, spir_funcs, spir_sampling
 from pylibsparseir.constants import COMPUTATION_SUCCESS, SPIR_ORDER_ROW_MAJOR, SPIR_ORDER_COLUMN_MAJOR, SPIR_TWORK_FLOAT64, SPIR_TWORK_FLOAT64X2, SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC

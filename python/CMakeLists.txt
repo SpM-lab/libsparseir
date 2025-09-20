@@ -155,3 +155,20 @@ install(FILES
     DESTINATION pylibsparseir
     COMPONENT sparseir
 )
+
+# Install the dgemm wrapper library
+install(FILES
+    libdgemm_wrapper.so
+    DESTINATION pylibsparseir
+    COMPONENT sparseir
+)
+
+# Build the dgemm wrapper library
+add_custom_command(
+    OUTPUT libdgemm_wrapper.so
+    COMMAND gcc -shared -fPIC -o libdgemm_wrapper.so ${CMAKE_CURRENT_SOURCE_DIR}/dgemm_wrapper.c -ldl -Wl,--unresolved-symbols=ignore-all
+    DEPENDS dgemm_wrapper.c
+    COMMENT "Building dgemm wrapper library"
+)
+
+add_custom_target(dgemm_wrapper ALL DEPENDS libdgemm_wrapper.so)
