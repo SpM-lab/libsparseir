@@ -99,18 +99,8 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp")
 endif()
 
 # Explicitly list source files from copied directories
-add_library(sparseir SHARED
-    src/utils.cpp
-    src/linalg.cpp
-    src/root.cpp
-    src/specfuncs.cpp
-    src/svd.cpp
-    src/sve.cpp
-    src/poly.cpp
-    src/kernel.cpp
-    src/gemm.cpp
-    src/cinterface.cpp
-    )
+file(GLOB SPARSEIR_SOURCES "src/*.cpp")
+add_library(sparseir SHARED ${SPARSEIR_SOURCES})
 if(NOT MSVC)
     target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
 endif()
@@ -143,33 +133,6 @@ target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
-
-# Build Fortran bindings if enabled
-if(SPARSEIR_BUILD_FORTRAN)
-    add_subdirectory(fortran)
-endif()
-
-# Add include paths from parent scope if available
-
-# -------------------------------------
-# Testing
-
-option(SPARSEIR_BUILD_TESTING "Enable creation of SparseIR tests." OFF)
-
-if (SPARSEIR_BUILD_TESTING)
-    enable_testing()
-
-    # Download and configure Catch2 for testing
-    FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG v3.4.0
-    )
-    FetchContent_MakeAvailable(Catch2)
-
-    # Add test directory
-    add_subdirectory("test")
-endif()
 
 # -------------------------------------
 # Installation
