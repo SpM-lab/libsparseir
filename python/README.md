@@ -20,6 +20,13 @@ This is a low-level binding for the [libsparseir](https://github.com/SpM-lab/lib
 
 ### Install Dependencies and Build
 
+**Option 1: Automatic build (recommended)**
+```bash
+# Build will automatically run prepare_build.py if needed
+uv build
+```
+
+**Option 2: Manual preparation**
 ```bash
 # First, prepare the build by copying necessary files from parent directory
 python3 prepare_build.py
@@ -35,15 +42,23 @@ This will:
 
 ### Development Build
 
-For development, you can also use:
+For development:
 
 ```bash
-# Prepare build files
-python3 prepare_build.py
-
-# Install in development mode
+# Install in development mode (will auto-prepare if needed)
 uv sync
 ```
+
+**Note for CI/CD**: In CI environments, you must run `prepare_build.py` before building:
+
+```bash
+# In CI/CD scripts
+cd python
+python3 prepare_build.py
+uv build
+```
+
+See `.github-workflows-example.yml` for a complete GitHub Actions example.
 
 ### Build with OpenBLAS Support
 
