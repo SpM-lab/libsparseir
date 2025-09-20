@@ -10,54 +10,40 @@ from ctypes import CDLL
 import numpy as np
 import platform
 
-def _load_blas_library():
-    """Load BLAS library globally to avoid conflicts with SparseIR library."""
+# Enable only on Linux
+if platform.system() == "Linux":
+    # Linux only
+    # Search for the BLAS library used by NumPy.
+
     import ctypes, numpy, os, glob
-    
-    # Check if user specified a custom BLAS library path
-    if os.environ.get("SPARSEIR_BLAS_SHARED_LIBRARY"):
-        libpath = os.environ.get("SPARSEIR_BLAS_SHARED_LIBRARY")
-        ctypes.CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
-        if os.environ.get("SPARSEIR_DEBUG") == "1":
-            print(f"[conftest] Loaded BLAS globally from {libpath}")
-        return
 
     candidates = []
 
-    # Search for the BLAS library used by NumPy in the .libs directory
-    libdir = os.path.dirname(numpy.__file__) + ".libs"
+    # 1. pip wheels: inside numpy/.libs
+    libdir = os.path.join(os.path.dirname(numpy.__file__), ".libs")
     if os.path.isdir(libdir):
-        candidates.extend(glob.glob(os.path.join(libdir, "lib*blas*.so*")))
-        candidates.extend(glob.glob(os.path.join(libdir, "lib*blas*.dylib*")))
-        candidates.extend(glob.glob(os.path.join(libdir, "lib*blas*.dll*")))
-        candidates.extend(glob.glob(os.path.join(libdir, "libmkl_rt*.so*")))
-        candidates.extend(glob.glob(os.path.join(libdir, "libmkl_rt*.dylib*")))
-        candidates.extend(glob.glob(os.path.join(libdir, "libmkl_rt*.dll*")))
-    
+        candidates.extend(glob.glob(os.path.join(libdir, "libopenblas*.so*")))
+
+    # 2. scipy-openblas package: site-packages/scipy_openblas*
     if not candidates:
-        raise RuntimeError("Could not find the BLAS shared library used by NumPy. Please specify the path of the BLAS shared library using the SPARSEIR_BLAS_SHARED_LIBRARY environment variable.")
+        for path in sys.path:
+            if "site-packages" in path and os.path.isdir(path):
+                candidates.extend(glob.glob(os.path.join(path, "scipy_openblas*", "lib", "libopenblas*.so*")))
+
+    # 3. System BLAS (e.g., /usr/lib, etc.)
+    if not candidates:
+        for base in ["/usr/lib", "/usr/lib/x86_64-linux-gnu", "/usr/local/lib"]:
+            if os.path.isdir(base):
+                candidates.extend(glob.glob(os.path.join(base, "libopenblas*.so*")))
+                candidates.extend(glob.glob(os.path.join(base, "libblas*.so*")))
+
+    if not candidates:
+        raise RuntimeError("Could not find any OpenBLAS/libblas shared library")
 
     libpath = candidates[0]
     ctypes.CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
-    if os.environ.get("SPARSEIR_DEBUG") == "1":
-        print(f"[conftest] Loaded BLAS globally from {libpath}")
+    print(f"[conftest] Loaded BLAS globally from {libpath}")
 
-def _is_dgemm_available():
-    """Check if dgemm_ symbol is available in the current process."""
-    try:
-        import ctypes
-        # Try to get the dgemm_ symbol from the current process
-        ctypes.CDLL(None).dgemm_
-        return True
-    except (AttributeError, OSError):
-        return False
-
-# Only load BLAS library if dgemm_ symbol is not already available
-if not _is_dgemm_available():
-    _load_blas_library()
-else:
-    if os.environ.get("SPARSEIR_DEBUG") == "1":
-        print("[conftest] dgemm_ symbol already available, skipping BLAS library loading")
 
 from .ctypes_wrapper import spir_kernel, spir_sve_result, spir_basis, spir_funcs, spir_sampling
 from pylibsparseir.constants import COMPUTATION_SUCCESS, SPIR_ORDER_ROW_MAJOR, SPIR_ORDER_COLUMN_MAJOR, SPIR_TWORK_FLOAT64, SPIR_TWORK_FLOAT64X2, SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC
