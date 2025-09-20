@@ -20,7 +20,6 @@ def clean_build_artifacts():
         'src',
         'fortran',
         'cmake',
-        'CMakeLists.txt'
     ]
 
     # Files in pylibsparseir to remove
