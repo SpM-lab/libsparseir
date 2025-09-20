@@ -8,6 +8,42 @@ import ctypes
 from ctypes import c_int, c_double, c_int64, c_size_t, c_bool, POINTER, byref
 from ctypes import CDLL
 import numpy as np
+import platform
+
+# Enable only on Linux
+if platform.system() == "Linux":
+    # Linux only
+    # Search for the BLAS library used by NumPy.
+
+    import ctypes, numpy, os, glob
+
+    candidates = []
+
+    # 1. pip wheels: inside numpy/.libs
+    libdir = os.path.join(os.path.dirname(numpy.__file__), ".libs")
+    if os.path.isdir(libdir):
+        candidates.extend(glob.glob(os.path.join(libdir, "libopenblas*.so*")))
+
+    # 2. scipy-openblas package: site-packages/scipy_openblas*
+    if not candidates:
+        for path in sys.path:
+            if "site-packages" in path and os.path.isdir(path):
+                candidates.extend(glob.glob(os.path.join(path, "scipy_openblas*", "lib", "libopenblas*.so*")))
+
+    # 3. System BLAS (e.g., /usr/lib, etc.)
+    if not candidates:
+        for base in ["/usr/lib", "/usr/lib/x86_64-linux-gnu", "/usr/local/lib"]:
+            if os.path.isdir(base):
+                candidates.extend(glob.glob(os.path.join(base, "libopenblas*.so*")))
+                candidates.extend(glob.glob(os.path.join(base, "libblas*.so*")))
+
+    if not candidates:
+        raise RuntimeError("Could not find any OpenBLAS/libblas shared library")
+
+    libpath = candidates[0]
+    ctypes.CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
+    print(f"[conftest] Loaded BLAS globally from {libpath}")
+
 
 from .ctypes_wrapper import spir_kernel, spir_sve_result, spir_basis, spir_funcs, spir_sampling
 from pylibsparseir.constants import COMPUTATION_SUCCESS, SPIR_ORDER_ROW_MAJOR, SPIR_ORDER_COLUMN_MAJOR, SPIR_TWORK_FLOAT64, SPIR_TWORK_FLOAT64X2, SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC
