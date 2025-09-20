@@ -41,18 +41,12 @@ endif()
 
 # Eigen3
 # BLAS/LAPACK options
-option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
+if(SPARSEIR_USE_BLAS)
+    add_compile_definitions(SPARSEIR_USE_BLAS)
+    message(STATUS "BLAS support enabled")
 
-# Use BLAS/LAPACK by default
-add_compile_definitions(SPARSEIR_USE_BLAS)
-message(STATUS "BLAS support enabled")
-
-# Find BLAS package
-find_package(BLAS REQUIRED)
-if(BLAS_FOUND)
-    message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
-else()
-    message(FATAL_ERROR "BLAS not found")
+    # Do not resolve BLAS library symbols (assume sharing with NumPy)
+    # Do not call find_package(BLAS) or, if called, do not pass to target_link_libraries
 endif()
 
 set(EIGEN3_REQUIRED_VERSION "3.4.0")
@@ -99,23 +93,38 @@ endif()
 # Set the default component name for installations
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
-# Recursively find all source files
-file(GLOB_RECURSE SPARSEIR_CPP_SOURCES "../src/*.cpp")
-file(GLOB_RECURSE SPARSEIR_HPP_SOURCES "../src/*.hpp")
-
-# Debug output
-message(STATUS "Found C++ source files: ${SPARSEIR_CPP_SOURCES}")
-message(STATUS "Found header files: ${SPARSEIR_HPP_SOURCES}")
-
-# Add all sources to the library (headers for dependency tracking)
-add_library(sparseir SHARED ${SPARSEIR_CPP_SOURCES} ${SPARSEIR_HPP_SOURCES})
+# Explicitly list source files from copied directories
+add_library(sparseir SHARED
+    src/utils.cpp
+    src/linalg.cpp
+    src/root.cpp
+    src/specfuncs.cpp
+    src/svd.cpp
+    src/sve.cpp
+    src/poly.cpp
+    src/kernel.cpp
+    src/gemm.cpp
+    src/cinterface.cpp
+    )
 if(NOT MSVC)
     target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
 endif()
 
+if(APPLE)
+    # macOS: Resolve undefined symbols at runtime (BLAS/OpenBLAS)
+    set_target_properties(sparseir PROPERTIES
+        LINK_FLAGS "-undefined dynamic_lookup"
+    )
+elseif(UNIX)
+    # Linux: Allow unresolved symbols
+    set_target_properties(sparseir PROPERTIES
+        LINK_FLAGS "-Wl,--unresolved-symbols=ignore-all"
+    )
+endif()
+
 target_include_directories(sparseir
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
     PRIVATE
         $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
@@ -126,10 +135,6 @@ set_target_properties(sparseir PROPERTIES
     )
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
-
-# Add BLAS linking
-target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
