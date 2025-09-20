@@ -93,6 +93,11 @@ endif()
 # Set the default component name for installations
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
+# Check if source files exist and provide helpful error message
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp")
+    message(FATAL_ERROR "Source files not found. Please run: python3 prepare_build.py")
+endif()
+
 # Explicitly list source files from copied directories
 add_library(sparseir SHARED
     src/utils.cpp
