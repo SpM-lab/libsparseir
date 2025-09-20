@@ -1,5 +1,5 @@
 #include "sparseir/svd.hpp"
-#include "sparseir/impl/svd_impl.hpp"
+#include "sparseir/impl/svd_impl.ipp"
 
 namespace sparseir {
 

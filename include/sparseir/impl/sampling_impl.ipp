@@ -39,9 +39,11 @@ collapse_to_3d(int ndim, const int *dims, int target_dim)
 template <typename Scalar, typename InputScalar, typename OutputScalar>
 void evaluate_inplace_dim2(
     const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &matrix,
-    const Eigen::Map<const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al,
+    const Eigen::Map<
+        const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al,
     int dim,
-    Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>> &output)
+    Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>>
+        &output)
 {
     // dim should be 0 or 1
     if (dim != 0 && dim != 1) {
@@ -68,8 +70,10 @@ int evaluate_inplace_dim3(
     const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input, int dim,
     Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output)
 {
-    using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
-    using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using InputMatrix =
+        Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using OutputMatrix =
+        Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
     const int Dim = 3;
 
     if (dim < 0 || dim >= Dim) {
@@ -80,7 +84,8 @@ int evaluate_inplace_dim3(
     const auto basis_size = matrix.cols();
     const auto n_sampling_points = matrix.rows();
 
-    if (static_cast<std::size_t>(basis_size) != static_cast<std::size_t>(input.dimension(dim))) {
+    if (static_cast<std::size_t>(basis_size) !=
+        static_cast<std::size_t>(input.dimension(dim))) {
         // Dimension mismatch
         return SPIR_INPUT_DIMENSION_MISMATCH;
     }
@@ -159,27 +164,33 @@ int evaluate_inplace_dim3(
     return SPIR_COMPUTATION_SUCCESS; // Success
 }
 
-
 template <typename T1, typename T2, int N2, typename InputTensorType>
-Eigen::Tensor<decltype(T1() * T2()), N2> evaluate_dimx(
-    const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
-    const InputTensorType &tensor2, int dim)
+Eigen::Tensor<decltype(T1() * T2()), N2>
+evaluate_dimx(const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+              const InputTensorType &tensor2, int dim)
 {
-    //static check if InputTensorType is Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
-    static_assert(std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value, "InputTensorType must be Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
+    // static check if InputTensorType is Eigen::Tensor<T2, N2> or
+    // Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
+    static_assert(
+        std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value ||
+            std::is_same<InputTensorType,
+                         Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value,
+        "InputTensorType must be Eigen::Tensor<T2, N2> or "
+        "Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
 
     int target_dim_3d;
     std::array<int, 3> dims_3d;
-    
+
     // Convert dimensions to int array for collapse_to_3d
     std::array<int, N2> int_dims;
     for (int i = 0; i < N2; ++i) {
         int_dims[i] = static_cast<int>(tensor2.dimension(i));
     }
-    
+
     std::tie(target_dim_3d, dims_3d) = collapse_to_3d(N2, int_dims.data(), dim);
 
-    Eigen::TensorMap<const Eigen::Tensor<T2, 3>> tensor2_map(tensor2.data(), dims_3d);
+    Eigen::TensorMap<const Eigen::Tensor<T2, 3>> tensor2_map(tensor2.data(),
+                                                             dims_3d);
 
     auto result_dimensions = tensor2.dimensions();
     result_dimensions[dim] = matrix.rows();
@@ -187,49 +198,54 @@ Eigen::Tensor<decltype(T1() * T2()), N2> evaluate_dimx(
     {
         auto result_dimensions_3d = dims_3d;
         result_dimensions_3d[target_dim_3d] = matrix.rows();
-        auto result_map = Eigen::TensorMap<Eigen::Tensor<decltype(T1() * T2()), 3>>(result.data(), result_dimensions_3d);
+        auto result_map =
+            Eigen::TensorMap<Eigen::Tensor<decltype(T1() * T2()), 3>>(
+                result.data(), result_dimensions_3d);
         evaluate_inplace_dim3(matrix, tensor2_map, target_dim_3d, result_map);
     }
     return result;
 }
 
-
 template <typename Scalar, typename InputMatrixType, typename OutputMatrixType>
-void fit_inplace_dim2(const JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
-                    const InputMatrixType &input,
-                    OutputMatrixType &output)
+void fit_inplace_dim2(
+    const JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+    const InputMatrixType &input, OutputMatrixType &output)
 {
     using OutputScalar = typename OutputMatrixType::Scalar;
-    (void)sizeof(typename InputMatrixType::Scalar); // Suppress unused typedef warning
+    (void)sizeof(
+        typename InputMatrixType::Scalar); // Suppress unused typedef warning
 
     // equivalent to UHB = U.adjoint() * input
     auto UHB = Eigen::MatrixX<OutputScalar>(svd.matrixU().cols(), input.cols());
-    _gemm_inplace_conj(
-        svd.matrixU().data(), input.data(), UHB.data(), svd.matrixU().cols(), input.cols(), svd.matrixU().rows());
+    _gemm_inplace_conj(svd.matrixU().data(), input.data(), UHB.data(),
+                       svd.matrixU().cols(), input.cols(),
+                       svd.matrixU().rows());
 
     // Apply inverse singular values to the rows of UHB
     {
         const int num_singular_values = svd.singularValues().size();
         const int num_cols = UHB.cols();
         (void)UHB; // UHB_data and num_rows are unused in optimized code
-        
+
         for (int i = 0; i < num_singular_values; ++i) {
-            const OutputScalar inv_sigma = OutputScalar(1.0) / OutputScalar(svd.singularValues()(i));
+            const OutputScalar inv_sigma =
+                OutputScalar(1.0) / OutputScalar(svd.singularValues()(i));
             for (int j = 0; j < num_cols; ++j) {
                 UHB(i, j) *= inv_sigma;
             }
         }
     }
-    // auto t3 = std::chrono::high_resolution_clock::now(); // Unused timing variable
+    // auto t3 = std::chrono::high_resolution_clock::now(); // Unused timing
+    // variable
 
-    _gemm_inplace(svd.matrixV().data(), UHB.data(), output.data(), svd.matrixV().rows(), output.cols(), svd.matrixV().cols());
+    _gemm_inplace(svd.matrixV().data(), UHB.data(), output.data(),
+                  svd.matrixV().rows(), output.cols(), svd.matrixV().cols());
 }
 
-
-inline void
-fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
-                              const Eigen::MatrixXcd &B, 
-                              Eigen::Map<Eigen::MatrixXcd> &output, bool has_zero)
+inline void fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
+                                       const Eigen::MatrixXcd &B,
+                                       Eigen::Map<Eigen::MatrixXcd> &output,
+                                       bool has_zero)
 {
     Eigen::MatrixXd U = svd.matrixU().real();
 
@@ -266,7 +282,7 @@ fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
         const int num_singular_values = svd.singularValues().size();
         const int num_cols = UHB.cols();
         (void)UHB; // UHB_data is unused in optimized code
-        
+
         for (int i = 0; i < num_singular_values; ++i) {
             const double inv_sigma = 1.0 / svd.singularValues()(i);
             for (int j = 0; j < num_cols; ++j) {
@@ -280,22 +296,20 @@ fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
     output = result.cast<std::complex<double>>();
 }
 
-
-
-template <typename Scalar, typename InputScalar, typename OutputScalar, typename Func>
+template <typename Scalar, typename InputScalar, typename OutputScalar,
+          typename Func>
 int fit_inplace_dim3(
-    int n_sampling_points,
-    int basis_size,
+    int n_sampling_points, int basis_size,
     const JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
-    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
-    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output,
-    Func &&fit_inplace_dim2_func,
-    bool split_svd
-)
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input, int dim,
+    Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output,
+    Func &&fit_inplace_dim2_func, bool split_svd)
 {
     (void)split_svd; // Unused parameter
-    using InputMatrix = Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
-    using OutputMatrix = Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using InputMatrix =
+        Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>;
+    using OutputMatrix =
+        Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>;
 
     const int Dim = 3;
 
@@ -304,8 +318,7 @@ int fit_inplace_dim3(
         return SPIR_INVALID_DIMENSION;
     }
 
-    if (n_sampling_points !=
-        static_cast<int32_t>(input.dimension(dim))) {
+    if (n_sampling_points != static_cast<int32_t>(input.dimension(dim))) {
         // Dimension mismatch
         return SPIR_INPUT_DIMENSION_MISMATCH;
     }
@@ -327,42 +340,51 @@ int fit_inplace_dim3(
     auto input_dimensions_transposed = input_transposed.dimensions();
     auto output_dimensions_transposed = input_dimensions_transposed;
     output_dimensions_transposed[0] = basis_size;
-    Eigen::Tensor<OutputScalar, 3> output_transposed = Eigen::Tensor<OutputScalar, 3>(output_dimensions_transposed);
+    Eigen::Tensor<OutputScalar, 3> output_transposed =
+        Eigen::Tensor<OutputScalar, 3>(output_dimensions_transposed);
 
     // Calculate result using the existing fit method
-    auto input_tranposed_matrix = Eigen::Map<const InputMatrix>(input_transposed.data(), n_sampling_points, extra_size);
-    auto output_tranposed_matrix = Eigen::Map<OutputMatrix>(output_transposed.data(), basis_size, extra_size);
+    auto input_tranposed_matrix = Eigen::Map<const InputMatrix>(
+        input_transposed.data(), n_sampling_points, extra_size);
+    auto output_tranposed_matrix = Eigen::Map<OutputMatrix>(
+        output_transposed.data(), basis_size, extra_size);
     fit_inplace_dim2_func(svd, input_tranposed_matrix, output_tranposed_matrix);
 
-    // Transpose back: (basis_size, n_sampling_points, dim2) -> (n_sampling_points, basis_size, dim2)
+    // Transpose back: (basis_size, n_sampling_points, dim2) ->
+    // (n_sampling_points, basis_size, dim2)
     output = movedim(output_transposed, 0, dim);
 
     return SPIR_COMPUTATION_SUCCESS;
 }
 
-
 template <typename T1, typename T2, int N2, typename InputTensorType>
 Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
-    int n_sampling_points,
-    int basis_size,
+    int n_sampling_points, int basis_size,
     const JacobiSVD<Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> &svd,
     const InputTensorType &tensor2, int dim)
 {
-    //static check if InputTensorType is Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
-    static_assert(std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value, "InputTensorType must be Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
+    // static check if InputTensorType is Eigen::Tensor<T2, N2> or
+    // Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
+    static_assert(
+        std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value ||
+            std::is_same<InputTensorType,
+                         Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value,
+        "InputTensorType must be Eigen::Tensor<T2, N2> or "
+        "Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
 
     int target_dim_3d;
     std::array<int, 3> dims_3d;
-    
+
     // Convert dimensions to int array for collapse_to_3d
     std::array<int, N2> int_dims;
     for (int i = 0; i < N2; ++i) {
         int_dims[i] = static_cast<int>(tensor2.dimension(i));
     }
-    
+
     std::tie(target_dim_3d, dims_3d) = collapse_to_3d(N2, int_dims.data(), dim);
 
-    Eigen::TensorMap<const Eigen::Tensor<T2, 3>> tensor2_map(tensor2.data(), dims_3d);
+    Eigen::TensorMap<const Eigen::Tensor<T2, 3>> tensor2_map(tensor2.data(),
+                                                             dims_3d);
 
     auto result_dimensions = tensor2.dimensions();
     result_dimensions[dim] = basis_size;
@@ -370,22 +392,29 @@ Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
     {
         auto result_dimensions_3d = dims_3d;
         result_dimensions_3d[target_dim_3d] = basis_size;
-        auto result_map = Eigen::TensorMap<Eigen::Tensor<decltype(T1() * T2()), 3>>(result.data(), result_dimensions_3d);
-        auto fit_inplace_dim2_func = [](const JacobiSVD<Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> &svd,
-                                       const Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> &input,
-                                       Eigen::Map<Eigen::Matrix<decltype(T1() * T2()), Eigen::Dynamic, Eigen::Dynamic>> &output) {
-                                       fit_inplace_dim2(svd, input, output);
-                                   };
-        fit_inplace_dim3(n_sampling_points, basis_size, svd, tensor2_map, target_dim_3d, result_map, fit_inplace_dim2_func);
+        auto result_map =
+            Eigen::TensorMap<Eigen::Tensor<decltype(T1() * T2()), 3>>(
+                result.data(), result_dimensions_3d);
+        auto fit_inplace_dim2_func =
+            [](const JacobiSVD<
+                   Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+               const Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic,
+                                                    Eigen::Dynamic>> &input,
+               Eigen::Map<Eigen::Matrix<decltype(T1() * T2()), Eigen::Dynamic,
+                                        Eigen::Dynamic>> &output) {
+                fit_inplace_dim2(svd, input, output);
+            };
+        fit_inplace_dim3(n_sampling_points, basis_size, svd, tensor2_map,
+                         target_dim_3d, result_map, fit_inplace_dim2_func);
     }
     return result;
 }
 
-
 template <typename T, typename S, int N>
 Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
-_fit_impl_first_dim(const JacobiSVD<Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> &svd,
-                    const Eigen::MatrixX<T> &B)
+_fit_impl_first_dim(
+    const JacobiSVD<Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+    const Eigen::MatrixX<T> &B)
 {
     using ResultType = decltype(T() * S());
 

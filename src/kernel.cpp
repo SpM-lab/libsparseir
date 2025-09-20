@@ -1,5 +1,5 @@
 #include "sparseir/kernel.hpp"
-#include "sparseir/impl/kernel_impl.hpp"
+#include "sparseir/impl/kernel_impl.ipp"
 
 namespace sparseir {
 

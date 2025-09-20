@@ -1,5 +1,5 @@
 #include "sparseir/poly.hpp"
-#include "sparseir/impl/poly_impl.hpp"
+#include "sparseir/impl/poly_impl.ipp"
 
 namespace sparseir {
 

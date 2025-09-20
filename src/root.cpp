@@ -1,7 +1,7 @@
 #include <Eigen/Dense>
 #include "sparseir/root.hpp"
-#include "sparseir/impl/root_impl.hpp"
-#include "sparseir/impl/poly_impl.hpp"
+#include "sparseir/impl/root_impl.ipp"
+#include "sparseir/impl/poly_impl.ipp"
 #include <functional>
 
 // Explicit template instantiations for commonly used types

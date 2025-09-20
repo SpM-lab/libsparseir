@@ -6,7 +6,7 @@
 // #include <utility>
 
 #include "sparseir/specfuncs.hpp"
-#include "sparseir/impl/specfuncs_impl.hpp"
+#include "sparseir/impl/specfuncs_impl.ipp"
 
 namespace sparseir {
 

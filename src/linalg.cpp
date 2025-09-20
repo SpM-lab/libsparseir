@@ -1,7 +1,7 @@
 #include <Eigen/Dense>
 
 #include "sparseir/linalg.hpp"
-#include "sparseir/impl/linalg_impl.hpp"
+#include "sparseir/impl/linalg_impl.ipp"
 
 namespace sparseir {
 
