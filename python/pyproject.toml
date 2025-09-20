@@ -55,6 +55,14 @@ cmake.source-dir = "."
 
 # Install rules for the Python package
 
+# SDIST configuration - include copied directories
+sdist.include = [
+    "src/",
+    "include/",
+    "cmake/",
+    "fortran/",
+]
+
 
 
 [tool.scikit-build.cmake.define]
