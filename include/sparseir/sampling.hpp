@@ -17,6 +17,62 @@ template <typename S>
 class FiniteTempBasis;
 template <typename S>
 class DiscreteLehmannRepresentation;
+
+// Template function declarations from sampling_impl.hpp
+template <typename Scalar, typename InputScalar, typename OutputScalar>
+void evaluate_inplace_dim2(
+    const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+    const Eigen::Map<const Eigen::Matrix<InputScalar, Eigen::Dynamic, Eigen::Dynamic>> &al,
+    int dim,
+    Eigen::Map<Eigen::Matrix<OutputScalar, Eigen::Dynamic, Eigen::Dynamic>> &output);
+
+template <typename Scalar, typename InputScalar, typename OutputScalar>
+int evaluate_inplace_dim3(
+    const Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input, int dim,
+    Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output);
+
+template <typename T1, typename T2, int N2, typename InputTensorType>
+Eigen::Tensor<decltype(T1() * T2()), N2> evaluate_dimx(
+    const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
+    const InputTensorType &tensor2, int dim = 0);
+
+template <typename Scalar, typename InputMatrixType, typename OutputMatrixType>
+void fit_inplace_dim2(const JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+                      const InputMatrixType &input,
+                      OutputMatrixType &output);
+
+void fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
+                                const Eigen::MatrixXcd &B, 
+                                Eigen::Map<Eigen::MatrixXcd> &output, bool has_zero);
+
+template <typename Scalar, typename InputScalar, typename OutputScalar, typename Func>
+int fit_inplace_dim3(
+    int n_sampling_points,
+    int basis_size,
+    const JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+    const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
+    int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output,
+    Func &&fit_inplace_dim2_func,
+    bool split_svd = false);
+
+template <typename T1, typename T2, int N2, typename InputTensorType>
+Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
+    int n_sampling_points,
+    int basis_size,
+    const JacobiSVD<Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+    const InputTensorType &tensor2, int dim = 0);
+
+template <typename T, typename S, int N>
+Eigen::Tensor<decltype(T() * S()), N>
+fit_impl(const JacobiSVD<Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+         const Eigen::Tensor<T, N> &arr, int dim);
+
+template <int N>
+Eigen::Tensor<std::complex<double>, N>
+fit_impl_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
+                   const Eigen::Tensor<std::complex<double>, N> &arr, int dim,
+                   bool has_zero);
 class AbstractSampling {
 public:
     virtual ~AbstractSampling() = default;
@@ -669,3 +725,6 @@ public:
 };
 
 } // namespace sparseir
+
+// Include template implementations
+#include "impl/sampling_impl.ipp"

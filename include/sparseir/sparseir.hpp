@@ -17,7 +17,6 @@
 #include "./basis.hpp"
 #include "./augment.hpp"
 #include "./gemm.hpp"
-#include "./sampling_impl.hpp"
 #include "./sampling.hpp"
 #include "./dlr.hpp"
 #include "./basis_set.hpp"

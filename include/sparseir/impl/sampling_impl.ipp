@@ -163,7 +163,7 @@ int evaluate_inplace_dim3(
 template <typename T1, typename T2, int N2, typename InputTensorType>
 Eigen::Tensor<decltype(T1() * T2()), N2> evaluate_dimx(
     const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
-    const InputTensorType &tensor2, int dim = 0)
+    const InputTensorType &tensor2, int dim)
 {
     //static check if InputTensorType is Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
     static_assert(std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value, "InputTensorType must be Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
@@ -195,7 +195,7 @@ Eigen::Tensor<decltype(T1() * T2()), N2> evaluate_dimx(
 
 
 template <typename Scalar, typename InputMatrixType, typename OutputMatrixType>
-void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
+void fit_inplace_dim2(const JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
                     const InputMatrixType &input,
                     OutputMatrixType &output)
 {
@@ -227,7 +227,7 @@ void fit_inplace_dim2(const sparseir::JacobiSVD<Eigen::MatrixX<Scalar>> &svd,
 
 
 inline void
-fit_inplace_dim2_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
                               const Eigen::MatrixXcd &B, 
                               Eigen::Map<Eigen::MatrixXcd> &output, bool has_zero)
 {
@@ -286,11 +286,11 @@ template <typename Scalar, typename InputScalar, typename OutputScalar, typename
 int fit_inplace_dim3(
     int n_sampling_points,
     int basis_size,
-    const sparseir::JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+    const JacobiSVD<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>> &svd,
     const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input,
     int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output,
     Func &&fit_inplace_dim2_func,
-    bool split_svd = false
+    bool split_svd
 )
 {
     (void)split_svd; // Unused parameter
@@ -345,8 +345,8 @@ template <typename T1, typename T2, int N2, typename InputTensorType>
 Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
     int n_sampling_points,
     int basis_size,
-    const sparseir::JacobiSVD<Eigen::MatrixX<T1>> &svd,
-    const InputTensorType &tensor2, int dim = 0)
+    const JacobiSVD<Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> &svd,
+    const InputTensorType &tensor2, int dim)
 {
     //static check if InputTensorType is Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>
     static_assert(std::is_same<InputTensorType, Eigen::Tensor<T2, N2>>::value || std::is_same<InputTensorType, Eigen::TensorMap<const Eigen::Tensor<T2, N2>>>::value, "InputTensorType must be Eigen::Tensor<T2, N2> or Eigen::TensorMap<const Eigen::Tensor<T2, N2>>");
@@ -371,7 +371,7 @@ Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
         auto result_dimensions_3d = dims_3d;
         result_dimensions_3d[target_dim_3d] = basis_size;
         auto result_map = Eigen::TensorMap<Eigen::Tensor<decltype(T1() * T2()), 3>>(result.data(), result_dimensions_3d);
-        auto fit_inplace_dim2_func = [](const sparseir::JacobiSVD<Eigen::MatrixX<T1>> &svd,
+        auto fit_inplace_dim2_func = [](const JacobiSVD<Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic>> &svd,
                                        const Eigen::Map<const Eigen::Matrix<T2, Eigen::Dynamic, Eigen::Dynamic>> &input,
                                        Eigen::Map<Eigen::Matrix<decltype(T1() * T2()), Eigen::Dynamic, Eigen::Dynamic>> &output) {
                                        fit_inplace_dim2(svd, input, output);
@@ -384,7 +384,7 @@ Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
 
 template <typename T, typename S, int N>
 Eigen::Matrix<decltype(T() * S()), Eigen::Dynamic, Eigen::Dynamic>
-_fit_impl_first_dim(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
+_fit_impl_first_dim(const JacobiSVD<Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> &svd,
                     const Eigen::MatrixX<T> &B)
 {
     using ResultType = decltype(T() * S());
@@ -400,7 +400,7 @@ _fit_impl_first_dim(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
 }
 
 inline Eigen::MatrixXcd
-_fit_impl_first_dim_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+_fit_impl_first_dim_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
                               const Eigen::MatrixXcd &B, bool has_zero)
 {
     Eigen::MatrixXd U = svd.matrixU().real();
@@ -444,7 +444,7 @@ _fit_impl_first_dim_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
 
 template <typename T, typename S, int N>
 Eigen::Tensor<decltype(T() * S()), N>
-fit_impl(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
+fit_impl(const JacobiSVD<Eigen::Matrix<S, Eigen::Dynamic, Eigen::Dynamic>> &svd,
          const Eigen::Tensor<T, N> &arr, int dim)
 {
     if (dim < 0 || dim >= N) {
@@ -457,7 +457,7 @@ fit_impl(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
     Eigen::MatrixX<T> arr_view = Eigen::Map<Eigen::MatrixX<T>>(
         arr_.data(), arr_.dimension(0), arr_.size() / arr_.dimension(0));
     // output matrix size
-    Eigen::MatrixX<T> result = _fit_impl_first_dim<T, S, N>(svd, arr_view);
+    auto result = _fit_impl_first_dim<T, S, N>(svd, arr_view);
     // Copy the result to a tensor
     Eigen::array<Eigen::Index, N> dims;
     dims[0] = result.rows();
@@ -473,7 +473,7 @@ fit_impl(const sparseir::JacobiSVD<Eigen::MatrixX<S>> &svd,
 
 template <int N>
 Eigen::Tensor<std::complex<double>, N>
-fit_impl_split_svd(const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+fit_impl_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
                    const Eigen::Tensor<std::complex<double>, N> &arr, int dim,
                    bool has_zero)
 {
