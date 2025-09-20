@@ -463,9 +463,9 @@ void test_tau_sampling_evaluation_4d_row_major_complex()
             // store output data to output_tensor
             // to std::complex<double>
             output_tensor.data()[i] = (std::complex<double>){
-                __real__ evaluate_output[i], __imag__ evaluate_output[i]};
+                evaluate_output[i].real(), evaluate_output[i].imag()};
             fit_tensor.data()[i] = (std::complex<double>){
-                __real__ fit_output[i], __imag__ fit_output[i]};
+                fit_output[i].real(), fit_output[i].imag()};
         }
         // Compare results
         for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -682,10 +682,10 @@ void test_tau_sampling_evaluation_4d_column_major_complex()
 
         // Compare with C++ implementation
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
-            REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
-            REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
-            REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
+            REQUIRE(evaluate_output[i].real() == Approx(gtau_cpp(i).real()));
+            REQUIRE(evaluate_output[i].imag() == Approx(gtau_cpp(i).imag()));
+            REQUIRE(fit_output[i].real() == Approx(gl_cpp_fit(i).real()));
+            REQUIRE(fit_output[i].imag() == Approx(gl_cpp_fit(i).imag()));
         }
         free(evaluate_input);
     }
@@ -1037,12 +1037,12 @@ void test_matsubara_sampling_evaluation_4d_column_major(bool positive_only)
 
         // Compare with C++ implementation
         for (int i = 0; i < n_points * d1 * d2 * d3; ++i) {
-            REQUIRE(std::abs(__real__ evaluate_output[i] - gtau_cpp(i).real()) < 1e-10);
-            REQUIRE(std::abs(__imag__ evaluate_output[i] - gtau_cpp(i).imag()) < 1e-10);
+            REQUIRE(std::abs(evaluate_output[i].real() - gtau_cpp(i).real()) < 1e-10);
+            REQUIRE(std::abs(evaluate_output[i].imag() - gtau_cpp(i).imag()) < 1e-10);
         }
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(std::abs(__real__ fit_output[i] - gl_cpp_fit(i).real()) < 1e-10);
-            REQUIRE(std::abs(__imag__ fit_output[i] - gl_cpp_fit(i).imag()) < 1e-10);
+            REQUIRE(std::abs(fit_output[i].real() - gl_cpp_fit(i).real()) < 1e-10);
+            REQUIRE(std::abs(fit_output[i].imag() - gl_cpp_fit(i).imag()) < 1e-10);
         }
         
     }
@@ -1143,10 +1143,10 @@ void test_matsubara_sampling_evaluation_4d_column_major_complex()
 
         // Compare with C++ implementation
         for (int i = 0; i < basis_size * d1 * d2 * d3; ++i) {
-            REQUIRE(__real__ evaluate_output[i] == Approx(gtau_cpp(i).real()));
-            REQUIRE(__imag__ evaluate_output[i] == Approx(gtau_cpp(i).imag()));
-            REQUIRE(__real__ fit_output[i] == Approx(gl_cpp_fit(i).real()));
-            REQUIRE(__imag__ fit_output[i] == Approx(gl_cpp_fit(i).imag()));
+            REQUIRE(evaluate_output[i].real() == Approx(gtau_cpp(i).real()));
+            REQUIRE(evaluate_output[i].imag() == Approx(gtau_cpp(i).imag()));
+            REQUIRE(fit_output[i].real() == Approx(gl_cpp_fit(i).real()));
+            REQUIRE(fit_output[i].imag() == Approx(gl_cpp_fit(i).imag()));
         }
         free(evaluate_input);
     }
@@ -1262,9 +1262,9 @@ void test_matsubara_sampling_evaluation_4d_row_major()
         for (int i = 0; i < output_tensor.size(); ++i) {
             // store output data to output_tensor
             output_tensor.data()[i] = std::complex<double>(
-                __real__ evaluate_output[i], __imag__ evaluate_output[i]);
-            fit_tensor.data()[i] = std::complex<double>(__real__ fit_output[i],
-                                                        __imag__ fit_output[i]);
+                evaluate_output[i].real(), evaluate_output[i].imag());
+            fit_tensor.data()[i] = std::complex<double>(fit_output[i].real(),
+                                                        fit_output[i].imag());
         }
         // Compare results
         for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
@@ -1402,9 +1402,9 @@ void test_matsubara_sampling_evaluation_4d_row_major_complex()
         for (int i = 0; i < output_tensor.size(); ++i) {
             // store output data to output_tensor
             output_tensor.data()[i] = std::complex<double>(
-                __real__ evaluate_output[i], __imag__ evaluate_output[i]);
-            fit_tensor.data()[i] = std::complex<double>(__real__ fit_output[i],
-                                                        __imag__ fit_output[i]);
+                evaluate_output[i].real(), evaluate_output[i].imag());
+            fit_tensor.data()[i] = std::complex<double>(fit_output[i].real(),
+                                                        fit_output[i].imag());
         }
         // Compare results
         for (int i = 0; i < gtau_cpp.dimension(0); ++i) {
