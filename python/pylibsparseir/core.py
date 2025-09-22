@@ -51,11 +51,13 @@ def _find_library():
 try:
     if platform.system() == "Linux":
         import scipy.linalg.cython_blas as blas
-
-        # dgemm capsule から C ポインタを取得
+        # dgemm capsule
         capsule = blas.__pyx_capi__["dgemm"]
+
+        # ポインタを取得（第二引数は固定文字列）
         ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
         ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
+
         ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, b"__Pyx_CFunc_void_ptr")
 
         # ライブラリを一度ロードし、ポインタを登録
