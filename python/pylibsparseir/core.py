@@ -54,16 +54,16 @@ def _find_library():
 try:
     import scipy.linalg.cython_blas as blas
     # dgemm capsule
-    # PyCapsuleオブジェクトを取得
+    # Get the PyCapsule objects for dgemm and zgemm
     capsule = blas.__pyx_capi__["dgemm"]
     capsule_z = blas.__pyx_capi__["zgemm"]
 
-    # PyCapsuleの名前を取得（省略可能だが、明示すると安全）
+    # Get the name of the PyCapsule (optional, but safer to be explicit)
     ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
     ctypes.pythonapi.PyCapsule_GetName.argtypes = [ctypes.py_object]
     name = ctypes.pythonapi.PyCapsule_GetName(capsule)
     name_z = ctypes.pythonapi.PyCapsule_GetName(capsule_z)
-    # PyCapsuleからポインタを取り出す
+    # Extract the pointer from the PyCapsule
     ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
     ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [
         ctypes.py_object, ctypes.c_char_p]
