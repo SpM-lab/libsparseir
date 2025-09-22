@@ -39,6 +39,12 @@ typedef double _Complex c_complex;
 #define SPIR_TWORK_FLOAT64X2 1
 #define SPIR_TWORK_AUTO -1
 
+// SVD strategy constants
+#define SPIR_SVDSTRAT_FAST 0
+#define SPIR_SVDSTRAT_ACCURATE 1
+#define SPIR_SVDSTRAT_AUTO -1
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -162,9 +168,10 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
  *
  * @param k Pointer to the kernel object for which to compute SVE
  * @param epsilon Accuracy target for the basis. Determines:
- *               - The relative magnitude of included singular values
+ *               - The relative magnitude for truncation of singular values
  *               - The accuracy of computed singular values and vectors
- * @param cutoff Cutoff value for singular values
+ * @param cutoff Cutoff value for singular values. Set to -1 to use default value, i.e., 2 * √ε,
+ *               where ε is the machine epsilon of the working type.
  * @param lmax Maximum number of Legendre polynomials to use
  * @param n_gauss Number of Gauss points for numerical integration
  * @param Twork Working data type for computations (sve). Must be one of:
@@ -210,6 +217,19 @@ spir_sve_result *spir_sve_result_new(
  *         - A non-zero error code on failure
  */
 int spir_sve_result_get_size(const spir_sve_result *sve, int *size);
+
+/**
+ * @brief Truncates an SVE result.
+ *
+ * This function truncates an SVE result to keep only the singular values greater than epsilon * s(0).
+ *
+ * @param sve Pointer to the SVE result object
+ * @param epsilon Accuracy target ε (must be positive)
+ * @param max_size Maximum number of basis functions to include. If -1, all
+ * @param status Pointer to store the status code
+ * @return Pointer to the newly created SVE result, or NULL if creation fails
+ */
+spir_sve_result* spir_sve_result_truncate(const spir_sve_result *sve, double epsilon, int max_size, int *status);
 
 /**
  * @brief Gets the singular values from an SVE result.
@@ -404,6 +424,8 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
  * SPIR_STATISTICS_BOSONIC)
  * @param beta Inverse temperature β (must be positive)
  * @param omega_max Frequency cutoff ωmax (must be non-negative)
+ * @param epsilon Accuracy target ε (must be positive).
+ *                This parameter is used to truncate the SVE result to keep only the singular values greater than ε * s(0).
  * @param k Pointer to the kernel object used for the basis construction
  * @param sve Pointer to a pre-computed SVE result for the kernel
  * @param max_size Maximum number of basis functions to include. If -1, all
@@ -416,6 +438,7 @@ int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
  * @see spir_release_finite_temp_basis
  */
 spir_basis *spir_basis_new(int statistics, double beta, double omega_max,
+                           double epsilon,
                            const spir_kernel *k, const spir_sve_result *sve,
                            int max_size,
                            int *status);
@@ -629,9 +652,10 @@ int spir_basis_get_default_ws(const spir_basis *b, double *points);
 
 
 /***
- * @brief Gets the default tau sampling points for ann IR basis.
+ * @brief Gets the default tau sampling points for an IR basis.
  *
  * This function returns default tau sampling points for an IR basis object.
+ * This function is used to get more sampling points than `spir_basis_get_n_default_taus`.
  *
  * @param b Pointer to the basis object
  * @param n_points Number of requested sampling points.

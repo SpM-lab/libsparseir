@@ -115,7 +115,7 @@ def _setup_prototypes():
 
     # Basis functions
     _lib.spir_basis_new.argtypes = [
-        c_int, c_double, c_double, spir_kernel, spir_sve_result, c_int, POINTER(c_int)
+        c_int, c_double, c_double, c_double, spir_kernel, spir_sve_result, c_int, POINTER(c_int)
     ]
     _lib.spir_basis_new.restype = spir_basis
 
@@ -351,6 +351,14 @@ def sve_result_get_size(sve):
         raise RuntimeError(f"Failed to get SVE result size: {status}")
     return size.value
 
+def sve_result_truncate(sve, epsilon, max_size):
+    """Truncate an SVE result."""
+    status = c_int()
+    sve = _lib.spir_sve_result_truncate(sve, epsilon, max_size, byref(status))
+    if status.value != COMPUTATION_SUCCESS:
+        raise RuntimeError(f"Failed to truncate SVE result: {status.value}")
+    return sve
+
 def sve_result_get_svals(sve):
     """Get the singular values from an SVE result."""
     size = sve_result_get_size(sve)
@@ -360,11 +368,11 @@ def sve_result_get_svals(sve):
         raise RuntimeError(f"Failed to get singular values: {status}")
     return svals
 
-def basis_new(statistics, beta, omega_max, kernel, sve, max_size):
+def basis_new(statistics, beta, omega_max, epsilon, kernel, sve, max_size):
     """Create a new basis."""
     status = c_int()
     basis = _lib.spir_basis_new(
-        statistics, beta, omega_max, kernel, sve, max_size, byref(status)
+        statistics, beta, omega_max, epsilon, kernel, sve, max_size, byref(status)
     )
     if status.value != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to create basis: {status.value}")

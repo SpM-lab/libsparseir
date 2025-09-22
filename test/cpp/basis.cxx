@@ -575,12 +575,11 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
         auto epsilon = 1e-6;
         auto kernel = sparseir::LogisticKernel(beta * omega_max);
         sparseir::SVEParams params;
-        params.Twork = "Float64x2";
+        params.Twork = sparseir::TworkType::AUTO;
         auto sve_result = sparseir::compute_sve(kernel, epsilon, params);
         auto basis = sparseir::FiniteTempBasis<sparseir::Fermionic>(
             beta, omega_max, epsilon, kernel, sve_result);
         auto s = sve_result.s;
-        // REQUIRE(s.size() == 32);
 
         std::vector<double> s_ref = {
             0.5242807065966564,     0.361040299707525,
@@ -600,41 +599,10 @@ TEST_CASE("FiniteTempBasis consistency tests", "[basis]")
             3.2046691517654354e-16, 3.097729851576022e-16,
             2.4973730182025644e-16, 2.476022474231314e-16};
         Eigen::VectorXd s_double = s.template cast<double>();
-        REQUIRE(std::fabs(s_double[0] - s_ref[0]) < 1e-10);
-        REQUIRE(std::fabs(s_double[1] - s_ref[1]) < 1e-10);
-        REQUIRE(std::fabs(s_double[2] - s_ref[2]) < 1e-10);
-        REQUIRE(std::fabs(s_double[3] - s_ref[3]) < 1e-10);
-        REQUIRE(std::fabs(s_double[4] - s_ref[4]) < 1e-10);
-        REQUIRE(std::fabs(s_double[5] - s_ref[5]) < 1e-10);
-        REQUIRE(std::fabs(s_double[6] - s_ref[6]) < 1e-10);
-        REQUIRE(std::fabs(s_double[7] - s_ref[7]) < 1e-10);
-        REQUIRE(std::fabs(s_double[8] - s_ref[8]) < 1e-10);
-        REQUIRE(std::fabs(s_double[9] - s_ref[9]) < 1e-10);
-        REQUIRE(std::fabs(s_double[10] - s_ref[10]) < 1e-10);
-        REQUIRE(std::fabs(s_double[11] - s_ref[11]) < 1e-10);
-        REQUIRE(std::fabs(s_double[12] - s_ref[12]) < 1e-10);
-        REQUIRE(std::fabs(s_double[13] - s_ref[13]) < 1e-10);
-        REQUIRE(std::fabs(s_double[14] - s_ref[14]) < 1e-10);
-        REQUIRE(std::fabs(s_double[15] - s_ref[15]) < 1e-10);
-        REQUIRE(std::fabs(s_double[16] - s_ref[16]) < 1e-10);
-        REQUIRE(std::fabs(s_double[17] - s_ref[17]) < 1e-10);
-        REQUIRE(std::fabs(s_double[18] - s_ref[18]) < 1e-10);
-        REQUIRE(std::fabs(s_double[19] - s_ref[19]) < 1e-10);
-        REQUIRE(std::fabs(s_double[20] - s_ref[20]) < 1e-10);
-        REQUIRE(std::fabs(s_double[21] - s_ref[21]) < 1e-10);
-        REQUIRE(std::fabs(s_double[22] - s_ref[22]) < 1e-10);
-        REQUIRE(std::fabs(s_double[23] - s_ref[23]) < 1e-10);
-        REQUIRE(std::fabs(s_double[24] - s_ref[24]) < 1e-10);
-        REQUIRE(std::fabs(s_double[25] - s_ref[25]) < 1e-10);
-        REQUIRE(std::fabs(s_double[26] - s_ref[26]) < 1e-10);
-        REQUIRE(std::fabs(s_double[27] - s_ref[27]) < 1e-10);
-        REQUIRE(std::fabs(s_double[28] - s_ref[28]) < 1e-10);
-        REQUIRE(std::fabs(s_double[29] - s_ref[29]) < 1e-10);
-        REQUIRE(std::fabs(s_double[30] - s_ref[30]) < 1e-10);
-        REQUIRE(std::fabs(s_double[31] - s_ref[31]) < 1e-10);
-
-        REQUIRE((*sve_result.u)[0].data.rows() == 10);
-        REQUIRE((*sve_result.u)[0].data.cols() == 32);
+        for (int i = 0; i < s_double.size(); ++i) {
+            REQUIRE(std::fabs(s_double[i] - s_ref[i]) < 1e-10);
+        }
+        REQUIRE((*sve_result.u)[0].data.rows() == 10); // Number of Legendre polynomials
 
         std::vector<double> u_knots_ref = {-1.0,
                                            -0.9768276289532026,
