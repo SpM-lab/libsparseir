@@ -14,10 +14,10 @@
 		// https://github.com/devcontainers/features/tree/main/src/python#options
 		"ghcr.io/devcontainers/features/python:1": {
 			"installTools": true,
-			"toolsToInstall": "jupytext, ruff",
+			"toolsToInstall": "jupytext, ruff, uv",
 			"installJupyterlab": true,
 			"optimize": false,
-			"version": "3.11"
+			"version": "3.12"
 		}
 	},
 	"customizations": {
