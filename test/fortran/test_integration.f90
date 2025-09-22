@@ -104,7 +104,7 @@ contains
       ! Create a finite temperature basis
       print *, "Creating finite temperature basis"
       max_size = -1  ! Use default max size
-      basis_ptr = c_spir_basis_new(statistics, beta, omega_max, k_ptr, sve_ptr, max_size, c_loc(status))
+      basis_ptr = c_spir_basis_new(statistics, beta, omega_max, epsilon, k_ptr, sve_ptr, max_size, c_loc(status))
       if (status /= 0) then
          print *, "Error creating finite temperature basis"
          stop

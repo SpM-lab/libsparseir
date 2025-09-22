@@ -850,9 +850,7 @@ public:
     }
     int ngauss() const override
     {
-        return epsilon_ >= std::sqrt(std::numeric_limits<double>::epsilon())
-                   ? 10
-                   : 16;
+        return epsilon_ >= 1e-8 ? 10 : 16;
     };
 
 private:
@@ -949,9 +947,7 @@ public:
     }
     int ngauss() const override
     {
-        return epsilon_ >= std::sqrt(std::numeric_limits<double>::epsilon())
-                   ? 10
-                   : 16;
+        return epsilon_ >= 1e-8 ? 10 : 16;
     };
 
 private:

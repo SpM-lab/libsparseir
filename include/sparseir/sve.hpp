@@ -19,6 +19,20 @@
 #include "sparseir/svd.hpp"
 namespace sparseir {
 
+// Twork type enum to match C API constants
+enum class TworkType {
+    FLOAT64 = 0,     // SPIR_TWORK_FLOAT64
+    FLOAT64X2 = 1,   // SPIR_TWORK_FLOAT64X2
+    AUTO = -1        // SPIR_TWORK_AUTO
+};
+
+
+enum class SVDStrategy {
+    FAST = 0,   // SPIR_SVDSTRAT_FAST
+    ACCURATE = 1,  // SPIR_SVDSTRAT_ACCURATE
+    AUTO = -1     // SPIR_SVDSTRAT_AUTO
+};
+
 class SVEResult {
 public:
     std::shared_ptr<PiecewiseLegendrePolyVector> u;
@@ -36,21 +50,12 @@ public:
          int max_size = -1) const;
 };
 
-std::tuple<double, std::string, std::string>
-choose_accuracy(double epsilon, const std::string &Twork);
-
-std::tuple<double, std::string, std::string> choose_accuracy(double epsilon,
-                                                             std::nullptr_t);
-
-std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t,
-                                                             std::string Twork);
-
-std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t,
-                                                             std::nullptr_t);
-
-std::tuple<double, std::string, std::string>
-auto_choose_accuracy(double epsilon, std::string Twork,
-                     std::string svd_strat = "auto");
+std::tuple<double, TworkType, SVDStrategy>
+safe_epsilon(
+    double epsilon = std::numeric_limits<double>::quiet_NaN(),
+    TworkType Twork = TworkType::AUTO,
+    SVDStrategy svd_strat = SVDStrategy::AUTO
+);
 
 void canonicalize(PiecewiseLegendrePolyVector &u,
                   PiecewiseLegendrePolyVector &v);
@@ -147,20 +152,20 @@ struct SVEParams {
     double cutoff = std::numeric_limits<double>::quiet_NaN();
     int lmax = std::numeric_limits<int>::max();
     int n_gauss = -1;
-    std::string Twork = "auto";
+    TworkType Twork = TworkType::AUTO;
     
     // Default constructor with default values
     SVEParams() = default;
     
     // Constructor with custom values
-    SVEParams(double cutoff_, int lmax_, int n_gauss_, const std::string& Twork_)
+    SVEParams(double cutoff_, int lmax_, int n_gauss_, TworkType Twork_)
         : cutoff(cutoff_), lmax(lmax_), n_gauss(n_gauss_), Twork(Twork_) {}
     
     // Constructor with custom cutoff only
     explicit SVEParams(double cutoff_) : cutoff(cutoff_) {}
     
     // Constructor with custom Twork only
-    explicit SVEParams(const std::string& Twork_) : Twork(Twork_) {}
+    explicit SVEParams(TworkType Twork_) : Twork(Twork_) {}
 };
 
 // Restrict compute_sve to concrete kernel types only
@@ -168,7 +173,7 @@ template <typename K>
 SVEResult compute_sve(const K &kernel, double epsilon,
             double cutoff = std::numeric_limits<double>::quiet_NaN(),
             int lmax = std::numeric_limits<int>::max(),
-            int n_gauss = -1, std::string Twork = "auto");
+            int n_gauss = -1, TworkType Twork = TworkType::AUTO);
 
 // New overload using SVEParams struct
 template <typename K>
