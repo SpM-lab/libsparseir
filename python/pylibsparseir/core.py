@@ -60,12 +60,12 @@ try:
         ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
         ctypes.pythonapi.PyCapsule_GetName.argtypes = [ctypes.py_object]
         name = ctypes.pythonapi.PyCapsule_GetName(capsule)
-
+        name_z = ctypes.pythonapi.PyCapsule_GetName(capsule_z)
         # PyCapsuleからポインタを取り出す
         ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
         ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
         ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, name)
-        ptr_z = ctypes.pythonapi.PyCapsule_GetPointer(capsule_z, name)
+        ptr_z = ctypes.pythonapi.PyCapsule_GetPointer(capsule_z, name_z)
 
         # ライブラリを一度ロードし、ポインタを登録
         libpath = os.path.join(os.path.dirname(__file__), "libsparseir.so")
