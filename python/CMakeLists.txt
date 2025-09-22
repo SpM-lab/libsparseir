@@ -49,6 +49,12 @@ if(SPARSEIR_USE_BLAS)
     # Do not call find_package(BLAS) or, if called, do not pass to target_link_libraries
 endif()
 
+# External FBLAS pointer option
+if(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    add_compile_definitions(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    message(STATUS "External FBLAS pointer support enabled")
+endif()
+
 set(EIGEN3_REQUIRED_VERSION "3.4.0")
 find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
 if(NOT Eigen3_FOUND)
