@@ -54,6 +54,7 @@ try:
         # dgemm capsule
         # PyCapsuleオブジェクトを取得
         capsule = blas.__pyx_capi__["dgemm"]
+        capsule_z = blas.__pyx_capi__["zgemm"]
 
         # PyCapsuleの名前を取得（省略可能だが、明示すると安全）
         ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
@@ -64,6 +65,7 @@ try:
         ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
         ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
         ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, name)
+        ptr_z = ctypes.pythonapi.PyCapsule_GetPointer(capsule_z, name)
 
         # ライブラリを一度ロードし、ポインタを登録
         libpath = os.path.join(os.path.dirname(__file__), "libsparseir.so")
@@ -73,8 +75,10 @@ try:
         _lib = ctypes.CDLL(libpath, mode=os.RTLD_GLOBAL | os.RTLD_LAZY)
         _lib.spir_register_dgemm.argtypes = [ctypes.c_void_p]
         _lib.spir_register_dgemm(ptr)
-
+        _lib.spir_register_zgemm.argtypes = [ctypes.c_void_p]
+        _lib.spir_register_zgemm(ptr_z)
         print(f"[core.py] Registered SciPy BLAS dgemm @ {hex(ptr)}")
+        print(f"[core.py] Registered SciPy BLAS zgemm @ {hex(ptr_z)}")
     else:
         # Linux 以外（macOS, Windows）
         _lib = CDLL(_find_library())
