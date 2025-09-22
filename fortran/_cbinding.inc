@@ -126,7 +126,7 @@ function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) &
   integer(c_int) :: c_spir_kernel_domain
 end function
 
-function c_spir_sve_result_new(k, epsilon, cutoff, lmax, n_gauss, work_dtype, status) &
+function c_spir_sve_result_new(k, epsilon, cutoff, lmax, n_gauss, Twork, status) &
     bind(c, name="spir_sve_result_new") result(c_spir_sve_result_new)
   use iso_c_binding
   type(c_ptr), value :: k
@@ -134,7 +134,7 @@ function c_spir_sve_result_new(k, epsilon, cutoff, lmax, n_gauss, work_dtype, st
   real(c_double), value :: cutoff
   integer(c_int), value :: lmax
   integer(c_int), value :: n_gauss
-  integer(c_int), value :: work_dtype
+  integer(c_int), value :: Twork
   type(c_ptr), value :: status
   type(c_ptr) :: c_spir_sve_result_new
 end function
@@ -145,6 +145,16 @@ function c_spir_sve_result_get_size(sve, size) &
   type(c_ptr), value :: sve
   type(c_ptr), value :: size
   integer(c_int) :: c_spir_sve_result_get_size
+end function
+
+function c_spir_sve_result_truncate(sve, epsilon, max_size, status) &
+    bind(c, name="spir_sve_result_truncate") result(c_spir_sve_result_truncate)
+  use iso_c_binding
+  type(c_ptr), value :: sve
+  real(c_double), value :: epsilon
+  integer(c_int), value :: max_size
+  type(c_ptr), value :: status
+  type(c_ptr) :: c_spir_sve_result_truncate
 end function
 
 function c_spir_sve_result_get_svals(sve, svals) &
@@ -229,12 +239,13 @@ function c_spir_funcs_get_roots(funcs, roots) &
   integer(c_int) :: c_spir_funcs_get_roots
 end function
 
-function c_spir_basis_new(statistics, beta, omega_max, k, sve, max_size, status) &
+function c_spir_basis_new(statistics, beta, omega_max, epsilon, k, sve, max_size, status) &
     bind(c, name="spir_basis_new") result(c_spir_basis_new)
   use iso_c_binding
   integer(c_int), value :: statistics
   real(c_double), value :: beta
   real(c_double), value :: omega_max
+  real(c_double), value :: epsilon
   type(c_ptr), value :: k
   type(c_ptr), value :: sve
   integer(c_int), value :: max_size

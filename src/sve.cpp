@@ -39,123 +39,70 @@ SVEResult::part(double eps, int max_size) const
     return std::make_tuple(u_part, s_part, v_part);
 }
 
-std::tuple<double, std::string, std::string>
-choose_accuracy(double epsilon, const std::string &Twork)
+std::tuple<double, TworkType, SVDStrategy>
+safe_epsilon(double eps_required, TworkType work_dtype, SVDStrategy svd_strat)
 {
     using std::sqrt;
 
-    if (Twork != "Float64" && Twork != "Float64x2" && Twork != "auto") {
-        throw std::invalid_argument(
-            "Twork must be either 'Float64', 'Float64x2', or 'auto'");
+    if (eps_required < 0.0) {
+        throw std::runtime_error("eps_required must be non-negative");
     }
-    if (Twork == "Float64") {
-        if (epsilon >= sqrt(std::numeric_limits<double>::epsilon())) {
-            return std::make_tuple(epsilon, Twork, "default");
+    
+    // First, choose the working dtype based on the eps required
+    std::cout << "eps_required: " << eps_required << std::endl;
+    std::cout << "work_dtype: " << static_cast<int>(work_dtype) << std::endl;
+    std::cout << "svd_strat: " << static_cast<int>(svd_strat) << std::endl;
+    TworkType actual_work_dtype;
+    if (work_dtype == TworkType::AUTO) {
+        if (std::isnan(eps_required) || eps_required < 1e-8) {
+            actual_work_dtype = TworkType::FLOAT64X2;  // MAX_DTYPE equivalent
+            std::cout << "actual_work_dtype: " << static_cast<int>(actual_work_dtype) << std::endl;
         } else {
-            std::cerr << "Warning: Basis cutoff is " << epsilon
-                      << ", which is below sqrt(ε) with numerical precision of double ε = "
-                      << std::numeric_limits<double>::epsilon() << ".\n"
-                      << "Expect singular values and basis functions for large "
-                         "l to have lower precision than the cutoff.\n";
-            return std::make_tuple(epsilon, Twork, "accurate");
+            actual_work_dtype = TworkType::FLOAT64;
+            std::cout << "actual_work_dtype: " << static_cast<int>(actual_work_dtype) << std::endl;
         }
-    } else if (Twork == "Float64x2") {
-        if (epsilon >= sqrt(std::numeric_limits<xprec::DDouble>::epsilon())) {
-            return std::make_tuple(epsilon, Twork, "default");
+    } else {
+        actual_work_dtype = work_dtype;
+        std::cout << "actual_work_dtype: " << static_cast<int>(actual_work_dtype) << std::endl;
+    }
+
+    // Next, work out the actual epsilon
+    double safe_eps;
+    if (actual_work_dtype == TworkType::FLOAT64) {
+        // This is technically a bit too low (the true value is about 1.5e-8),
+        // but it's not too far off and easier to remember for the user.
+        safe_eps = 1e-8;
+    } else {
+        safe_eps = static_cast<double>(sqrt(std::numeric_limits<xprec::DDouble>::epsilon()));
+    }
+
+    // Work out the SVD strategy to be used. If the user sets this, we
+    // assume they know what they are doing and do not warn if they compute
+    // the basis.
+    bool warn_acc = false;
+    SVDStrategy actual_svd_strat;
+    if (svd_strat == SVDStrategy::AUTO) {
+        if (!std::isnan(eps_required) && eps_required < safe_eps) {
+            actual_svd_strat = SVDStrategy::ACCURATE;
+            warn_acc = true;
         } else {
-            std::cerr << "Warning: Basis cutoff is " << epsilon
-                      << ", which is below sqrt(ε) with numerical precision of double-double ε = "
-                      << std::numeric_limits<xprec::DDouble>::epsilon() << ".\n"
-                      << "Expect singular values and basis functions for large "
-                         "l to have lower precision than the cutoff.\n";
-            return std::make_tuple(epsilon, Twork, "accurate");
+            actual_svd_strat = SVDStrategy::FAST;
         }
-    } else { // Twork == "auto"
-        // Auto-select precision based on epsilon
-        if (epsilon >= sqrt(std::numeric_limits<double>::epsilon())) {
-            return std::make_tuple(epsilon, "Float64", "default");
-        } else {
-            std::cerr << "Warning: Basis cutoff is " << epsilon
-                      << ", which is below sqrt(ε) with numerical precision of double-double ε = "
-                      << std::numeric_limits<xprec::DDouble>::epsilon() << ".\n"
-                      << "However, no higher precision arithmetic is available in the C API.\n";
-            return std::make_tuple(epsilon, "Float64x2", "default");
-        }
-    }
-}
-
-std::tuple<double, std::string, std::string> choose_accuracy(double epsilon,
-                                                             std::nullptr_t)
-{
-    if (epsilon >= std::sqrt(std::numeric_limits<double>::epsilon())) {
-        return std::make_tuple(epsilon, "Float64", "default");
     } else {
-        if (epsilon < std::sqrt(std::numeric_limits<double>::epsilon())) {
-            std::cerr
-                << "Warning: Basis cutoff is " << epsilon << ", which is"
-                << " below sqrt(ε) with ε = "
-                << std::numeric_limits<double>::epsilon() << ".\n"
-                << "Expect singular values and basis functions for large l"
-                << " to have lower precision than the cutoff.\n";
-        }
-        return std::make_tuple(epsilon, "Float64x2", "default");
+        actual_svd_strat = svd_strat;
     }
-}
 
-std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t,
-                                                             std::string Twork)
-{
-    if (Twork == "Float64x2") {
-        const double epsilon = 2.220446049250313e-16;
-        return std::make_tuple(epsilon, Twork, "default");
-    } else {
-        return std::make_tuple(
-            std::sqrt(std::numeric_limits<double>::epsilon()), Twork,
-            "default");
+    if (warn_acc) {
+        std::cerr << "\nRequested accuracy is " << eps_required
+                  << ", which is below the\naccuracy " << safe_eps
+                  << " for the work data type " << (actual_work_dtype == TworkType::FLOAT64 ? "float64" : "float64x2")
+                  << ".\nExpect singular values and basis functions for large l to\n"
+                  << "have lower precision than the cutoff.\n";
     }
+
+    return std::make_tuple(safe_eps, actual_work_dtype, actual_svd_strat);
 }
 
-std::tuple<double, std::string, std::string>
-choose_accuracy_epsilon_nan(std::string Twork)
-{
-    if (Twork == "Float64x2") {
-        const double epsilon = 2.220446049250313e-16;
-        return std::make_tuple(epsilon, Twork, "default");
-    } else {
-        return std::make_tuple(
-            std::sqrt(std::numeric_limits<double>::epsilon()), Twork,
-            "default");
-    }
-}
-
-std::tuple<double, std::string, std::string> choose_accuracy(std::nullptr_t,
-                                                             std::nullptr_t)
-{
-    const double epsilon = 2.220446049250313e-16;
-    return std::make_tuple(epsilon, "Float64x2", "default");
-}
-
-std::tuple<double, std::string, std::string>
-auto_choose_accuracy(double epsilon, std::string Twork, std::string svd_strat)
-{
-    std::string auto_svd_strat;
-    if (std::isnan(epsilon)) {
-        std::tie(epsilon, Twork, auto_svd_strat) =
-            choose_accuracy_epsilon_nan(Twork);
-    } else {
-        std::tie(epsilon, Twork, auto_svd_strat) =
-            choose_accuracy(epsilon, Twork);
-    }
-    std::string final_svd_strat =
-        (svd_strat == "auto") ? auto_svd_strat : svd_strat;
-    return std::make_tuple(epsilon, Twork, final_svd_strat);
-}
-
-std::tuple<double, std::string, std::string>
-auto_choose_accuracy(double epsilon, std::string Twork)
-{
-    return auto_choose_accuracy(epsilon, Twork, "auto");
-}
 
 void canonicalize(PiecewiseLegendrePolyVector &u,
                   PiecewiseLegendrePolyVector &v)
@@ -169,9 +116,9 @@ void canonicalize(PiecewiseLegendrePolyVector &u,
 
 // Explicit template instantiations
 template SVEResult compute_sve(const LogisticKernel &, double, double, int, int,
-                               std::string);
+                               TworkType);
 template SVEResult compute_sve(const RegularizedBoseKernel &, double, double,
-                               int, int, std::string);
+                               int, int, TworkType);
 
 template class SamplingSVE<LogisticKernel, double>;
 template class SamplingSVE<LogisticKernel, DDouble>;
@@ -187,7 +134,7 @@ template <typename K>
 SVEResult compute_sve(const K &kernel, double epsilon)
 {
     return compute_sve(kernel, epsilon, std::numeric_limits<double>::quiet_NaN(),
-                      std::numeric_limits<int>::max(), -1, "Float64x2");
+                      std::numeric_limits<int>::max(), -1, TworkType::FLOAT64X2);
 }
 
 // SVEParams version of compute_sve

@@ -157,10 +157,11 @@ MODULE sparseir_ext
     ENDIF
   END FUNCTION create_sve_result
 
-  FUNCTION create_basis(statistics, beta, wmax, k_ptr, sve_ptr) RESULT(basis_ptr)
+  FUNCTION create_basis(statistics, beta, wmax, eps, k_ptr, sve_ptr) RESULT(basis_ptr)
     INTEGER, INTENT(IN) :: statistics
     REAL(KIND=DP), INTENT(IN) :: beta
     REAL(KIND=DP), INTENT(IN) :: wmax
+    REAL(KIND=DP), INTENT(IN) :: eps
     TYPE(c_ptr), INTENT(IN) :: k_ptr, sve_ptr
 
     ! Function result type declaration
@@ -170,14 +171,15 @@ MODULE sparseir_ext
     INTEGER(KIND=c_int), TARGET :: max_size
     INTEGER(KIND=c_int), TARGET :: status_c
     INTEGER(KIND=c_int) :: statistics_c
-    REAL(KIND=DP) :: beta_c, wmax_c
+    REAL(KIND=DP) :: beta_c, wmax_c, eps_c
 
     ! Executable statements
     max_size = -1
     statistics_c = statistics
     beta_c = beta
     wmax_c = wmax
-    basis_ptr = c_spir_basis_new(statistics_c, beta_c, wmax_c, k_ptr, sve_ptr, max_size, c_loc(status_c))
+    eps_c = eps
+    basis_ptr = c_spir_basis_new(statistics_c, beta_c, wmax_c, eps_c, k_ptr, sve_ptr, max_size, c_loc(status_c))
     IF (status_c /= 0) THEN
        CALL errore('create_basis', 'Error creating basis', status_c)
     ENDIF
@@ -356,12 +358,12 @@ MODULE sparseir_ext
        CALL errore('init_ir', 'SVE result is not assigned', 1)
     ENDIF
     !
-    basis_f_ptr = create_basis(SPIR_STATISTICS_FERMIONIC, beta, wmax, k_ptr, sve_ptr)
+    basis_f_ptr = create_basis(SPIR_STATISTICS_FERMIONIC, beta, wmax, eps, k_ptr, sve_ptr)
     IF (.NOT. c_associated(basis_f_ptr)) THEN
        CALL errore('init_ir', 'Fermionic basis is not assigned', 1)
     ENDIF
     !
-    basis_b_ptr = create_basis(SPIR_STATISTICS_BOSONIC, beta, wmax, k_ptr, sve_ptr)
+    basis_b_ptr = create_basis(SPIR_STATISTICS_BOSONIC, beta, wmax, eps, k_ptr, sve_ptr)
     IF (.NOT. c_associated(basis_b_ptr)) THEN
        CALL errore('init_ir', 'Bosonic basis is not assigned', 1)
     ENDIF

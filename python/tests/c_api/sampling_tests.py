@@ -34,7 +34,7 @@ def _spir_basis_new(stat, beta, wmax, epsilon):
 
     # Create basis
     max_size = -1
-    basis = basis_new(stat, beta, wmax, kernel, sve, max_size)
+    basis = basis_new(stat, beta, wmax, epsilon, kernel, sve, max_size)
 
     return basis
 

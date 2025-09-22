@@ -128,12 +128,6 @@ spir_sve_result* spir_sve_result_new(
             return nullptr;
         }
 
-        if (Twork != SPIR_TWORK_FLOAT64 && Twork != SPIR_TWORK_FLOAT64X2 && Twork != SPIR_TWORK_AUTO) {
-            DEBUG_LOG("Error: Invalid Twork");
-            *status = SPIR_INVALID_ARGUMENT;
-            return nullptr;
-        }
-
         if (cutoff < 0) {
             cutoff = std::numeric_limits<double>::quiet_NaN();
         }
@@ -142,24 +136,28 @@ spir_sve_result* spir_sve_result_new(
             lmax = std::numeric_limits<int>::max();
         }
 
-        std::string Twork_str;
+        sparseir::TworkType Twork_type;
         if (Twork == SPIR_TWORK_FLOAT64) {
-            Twork_str = "Float64";
+            Twork_type = sparseir::TworkType::FLOAT64;
         } else if (Twork == SPIR_TWORK_FLOAT64X2) {
-            Twork_str = "Float64x2";
+            Twork_type = sparseir::TworkType::FLOAT64X2;
         } else if (Twork == SPIR_TWORK_AUTO) {
-            Twork_str = "auto";
+            Twork_type = sparseir::TworkType::AUTO;
+        } else {
+            DEBUG_LOG("Error: Invalid Twork");
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
         }
 
         std::shared_ptr<sparseir::SVEResult> sve_result;
 
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
             sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(
-                *logistic, epsilon, cutoff, lmax, n_gauss, Twork_str
+                *logistic, epsilon, cutoff, lmax, n_gauss, Twork_type
             ));
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
             sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(
-                *bose, epsilon, cutoff, lmax, n_gauss, Twork_str
+                *bose, epsilon, cutoff, lmax, n_gauss, Twork_type
             ));
         } else {
             DEBUG_LOG("Unknown kernel type");
@@ -181,7 +179,7 @@ spir_sve_result* spir_sve_result_new(
 }
 
 spir_basis* spir_basis_new(
-    int statistics, double beta, double omega_max,
+    int statistics, double beta, double omega_max, double epsilon,
     const spir_kernel *k, const spir_sve_result *sve, int max_size, int* status)
 {
     try {
@@ -201,24 +199,38 @@ spir_basis* spir_basis_new(
             return nullptr;
         }
 
+        // Use the C-API to truncate the SVE result
+        int truncate_status;
+        spir_sve_result* sve_result_trunc_ptr = spir_sve_result_truncate(sve, epsilon, max_size, &truncate_status);
+        if (truncate_status != SPIR_COMPUTATION_SUCCESS || !sve_result_trunc_ptr) {
+            DEBUG_LOG("Failed to truncate SVE result");
+            *status = truncate_status;
+            return nullptr;
+        }
+        
         // switch on kernel type
         spir_basis* result = nullptr;
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
-            result = _spir_basis_new(statistics, beta, omega_max, *logistic, sve, max_size);
+            result = _spir_basis_new(statistics, beta, omega_max, *logistic, sve_result_trunc_ptr, max_size);
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
-            result = _spir_basis_new(statistics, beta, omega_max, *bose, sve, max_size);
+            result = _spir_basis_new(statistics, beta, omega_max, *bose, sve_result_trunc_ptr, max_size);
         } else {
             DEBUG_LOG("Unknown kernel type");
+            spir_sve_result_release(sve_result_trunc_ptr);
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
 
         if (!result) {
             DEBUG_LOG("Failed to create finite temperature basis");
+            spir_sve_result_release(sve_result_trunc_ptr);
             *status = SPIR_INTERNAL_ERROR;
             return nullptr;
         }
 
+        // Clean up the temporary truncated SVE result
+        spir_sve_result_release(sve_result_trunc_ptr);
+        
         *status = SPIR_COMPUTATION_SUCCESS;
         return result;
     } catch (const std::exception& e) {
@@ -1590,6 +1602,47 @@ int spir_sve_result_get_svals(const spir_sve_result *sve, double *svals)
     } catch (...) {
         DEBUG_LOG("Unknown exception in spir_sve_result_get_svals");
         return SPIR_INTERNAL_ERROR;
+    }
+}
+
+spir_sve_result* spir_sve_result_truncate(const spir_sve_result *sve, double epsilon, int max_size, int *status)
+{
+    if (!sve || !status) {
+        if (status) *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    auto impl = get_impl_sve_result(sve);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+
+    try {
+        // Use the part method to truncate the SVE result
+        auto part_result = impl->part(epsilon, max_size);
+        
+        // Extract the truncated components
+        sparseir::PiecewiseLegendrePolyVector u_truncated = std::get<0>(part_result);
+        Eigen::VectorXd s_truncated = std::get<1>(part_result);
+        sparseir::PiecewiseLegendrePolyVector v_truncated = std::get<2>(part_result);
+        
+        // Create a new SVEResult with the truncated components
+        // Use the original epsilon or the provided one if it's not NaN
+        double result_epsilon = std::isnan(epsilon) ? impl->epsilon : epsilon;
+        auto truncated_sve_result = std::make_shared<sparseir::SVEResult>(
+            u_truncated, s_truncated, v_truncated, result_epsilon);
+        
+        *status = SPIR_COMPUTATION_SUCCESS;
+        return create_sve_result(truncated_sve_result);
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_sve_result_truncate: " + std::string(e.what()));
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_sve_result_truncate");
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
     }
 }
 

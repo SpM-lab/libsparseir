@@ -127,7 +127,7 @@ void test_finite_temp_basis_constructor_with_sve()
     int basis_status;
     int max_size = -1;
     spir_basis *basis = spir_basis_new(
-        stat, beta, wmax, kernel, sve_result, max_size, &basis_status);
+        stat, beta, wmax, epsilon, kernel, sve_result, max_size, &basis_status);
     REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis != nullptr);
 
@@ -189,7 +189,7 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         int basis_status;
         int max_size = -1;
         spir_basis *basis = spir_basis_new(
-            SPIR_STATISTICS_BOSONIC, beta, wmax, kernel, sve_result, max_size, &basis_status);
+            SPIR_STATISTICS_BOSONIC, beta, wmax, epsilon, kernel, sve_result, max_size, &basis_status);
         REQUIRE(basis_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(basis != nullptr);
 
