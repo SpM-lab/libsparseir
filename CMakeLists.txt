@@ -65,6 +65,11 @@ if(SPARSEIR_USE_BLAS)
         message(STATUS "LP64 BLAS interface enabled (default)")
     endif()
 
+    if(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+        add_compile_definitions(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+        message(STATUS "External FBLAS pointer support enabled")
+    endif()
+
     # Find BLAS package
     if(SPARSEIR_USE_ILP64)
         # For ILP64, check if BLAS_LIBRARIES is already set by user
@@ -108,6 +113,8 @@ if(SPARSEIR_USE_BLAS)
     #endif()
 elseif(SPARSEIR_USE_ILP64)
     message(FATAL_ERROR "SPARSEIR_USE_ILP64 requires SPARSEIR_USE_BLAS=ON")
+elseif(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    message(FATAL_ERROR "SPARSEIR_USE_EXTERN_FBLAS_PTR requires SPARSEIR_USE_BLAS=ON")
 endif()
 
 
