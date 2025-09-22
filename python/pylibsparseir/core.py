@@ -72,7 +72,7 @@ try:
         if not os.path.exists(libpath):
             raise RuntimeError(f"libsparseir.so not found at {libpath}")
 
-        _lib = ctypes.CDLL(libpath, mode=os.RTLD_GLOBAL | os.RTLD_LAZY)
+        _lib = ctypes.CDLL(libpath, mode=os.RTLD_LOCAL | os.RTLD_LAZY)
         _lib.spir_register_dgemm.argtypes = [ctypes.c_void_p]
         _lib.spir_register_dgemm(ptr)
         _lib.spir_register_zgemm.argtypes = [ctypes.c_void_p]
