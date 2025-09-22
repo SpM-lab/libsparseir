@@ -106,7 +106,7 @@ class TestCAPICoreFixed:
             # Create basis
             max_size = -1
             basis = _lib.spir_basis_new(c_int(stats_val), c_double(beta), c_double(wmax),
-                                      kernel, sve, max_size, byref(status))
+                                      c_double(1e-10), kernel, sve, max_size, byref(status))
             assert status.value == COMPUTATION_SUCCESS
             assert basis is not None
 
@@ -147,7 +147,7 @@ class TestCAPICoreFixed:
         max_size = -1
         sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(beta),
-                                   c_double(wmax), kernel, sve, max_size, byref(status))
+                                   c_double(wmax), c_double(1e-10), kernel, sve, max_size, byref(status))
 
         # Get default tau points
         n_tau = c_int()
@@ -192,7 +192,7 @@ class TestCAPICoreFixed:
         Twork = SPIR_TWORK_FLOAT64X2
         sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(beta),
-                                   c_double(wmax), kernel, sve, max_size, byref(status))
+                                   c_double(wmax), c_double(1e-10), kernel, sve, max_size, byref(status))
 
         # Get default Matsubara points
         n_matsu = c_int()
@@ -233,7 +233,7 @@ class TestCAPICoreFixed:
         max_size = -1
         sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(beta),
-                                   c_double(wmax), kernel, sve, max_size, byref(status))
+                                   c_double(wmax), c_double(1e-10), kernel, sve, max_size, byref(status))
 
         # Get u functions
         u_funcs = _lib.spir_basis_get_u(basis, byref(status))
@@ -264,7 +264,7 @@ class TestCAPICoreFixed:
         Twork = SPIR_TWORK_FLOAT64X2
         sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(10.0),
-                                   c_double(1.0), kernel, sve, -1, byref(status))
+                                   c_double(1.0), c_double(1e-10), kernel, sve, -1, byref(status))
 
         u_funcs = _lib.spir_basis_get_u(basis, byref(status))
 
@@ -311,7 +311,7 @@ class TestBasisFunctionEvaluation:
 
         # Create basis
         basis = _lib.spir_basis_new(c_int(statistics), c_double(beta), c_double(wmax),
-                                   kernel, sve, max_size, byref(status))
+                                   c_double(epsilon), kernel, sve, max_size, byref(status))
         if status.value != COMPUTATION_SUCCESS or basis is None:
             _lib.spir_sve_result_release(sve)
             _lib.spir_kernel_release(kernel)
@@ -489,7 +489,7 @@ class TestBasisFunctionEvaluation:
                 max_size = -1
                 basis_status = c_int()
                 basis = _lib.spir_basis_new(c_int(statistics), c_double(beta), c_double(wmax),
-                                          kernel, sve_result, max_size, byref(basis_status))
+                                          c_double(epsilon), kernel, sve_result, max_size, byref(basis_status))
                 assert basis_status.value == COMPUTATION_SUCCESS
                 assert basis is not None
 
