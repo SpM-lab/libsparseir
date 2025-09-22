@@ -52,13 +52,18 @@ try:
     if platform.system() == "Linux":
         import scipy.linalg.cython_blas as blas
         # dgemm capsule
+        # PyCapsuleオブジェクトを取得
         capsule = blas.__pyx_capi__["dgemm"]
 
-        # ポインタを取得（第二引数は固定文字列）
+        # PyCapsuleの名前を取得（省略可能だが、明示すると安全）
+        ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
+        ctypes.pythonapi.PyCapsule_GetName.argtypes = [ctypes.py_object]
+        name = ctypes.pythonapi.PyCapsule_GetName(capsule)
+
+        # PyCapsuleからポインタを取り出す
         ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
         ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
-
-        ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, b"__Pyx_CFunc_void_ptr")
+        ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, name)
 
         # ライブラリを一度ロードし、ポインタを登録
         libpath = os.path.join(os.path.dirname(__file__), "libsparseir.so")
