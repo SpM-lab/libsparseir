@@ -56,7 +56,7 @@ option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface (requires SPARSEIR_USE_BL
 if(SPARSEIR_USE_BLAS)
     add_compile_definitions(SPARSEIR_USE_BLAS)
     message(STATUS "BLAS support enabled")
-    
+
     # ILP64 support
     if(SPARSEIR_USE_ILP64)
         add_compile_definitions(SPARSEIR_USE_ILP64)
@@ -64,7 +64,7 @@ if(SPARSEIR_USE_BLAS)
     else()
         message(STATUS "LP64 BLAS interface enabled (default)")
     endif()
-    
+
     # Find BLAS package
     if(SPARSEIR_USE_ILP64)
         # For ILP64, check if BLAS_LIBRARIES is already set by user
@@ -77,7 +77,7 @@ if(SPARSEIR_USE_BLAS)
             set(BLAS_FOUND TRUE)
         else()
             # Try to find ILP64 BLAS automatically
-            find_library(BLAS_LIBRARIES 
+            find_library(BLAS_LIBRARIES
                 NAMES openblas64
                 PATHS /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib
                 NO_DEFAULT_PATH
@@ -98,7 +98,7 @@ if(SPARSEIR_USE_BLAS)
             message(FATAL_ERROR "BLAS not found")
         endif()
     endif()
-    
+
     # CMake's find_package(BLAS) should provide include directories
     #if(BLAS_INCLUDE_DIRS)
         #include_directories(${BLAS_INCLUDE_DIRS})
@@ -165,6 +165,7 @@ add_library(sparseir SHARED
     src/poly.cpp
     src/kernel.cpp
     src/gemm.cpp
+    src/blas_wrapper.cpp
     src/cinterface.cpp
     )
 if(NOT MSVC)
