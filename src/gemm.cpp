@@ -9,25 +9,25 @@ namespace sparseir {
 
 // Fortran dgemm function pointer type
 #ifdef SPARSEIR_USE_ILP64
-using dgemm_fptr = void(*)(const char*, const char*, const int64_t*,
-                           const int64_t*, const int64_t*, const double*,
-                           const double*, const int64_t*, const double*,
-                           const int64_t*, const double*, double*, const int64_t*);
+using dgemm_fptr = void(*)(const char*, const char*, const long long*,
+                           const long long*, const long long*, const double*,
+                           const double*, const long long*, const double*,
+                           const long long*, const double*, double*, const long long*);
 
-using zgemm_fptr = void(*)(const char*, const char*, const int64_t*,
-                           const int64_t*, const int64_t*, const void*,
-                           const void*, const int64_t*, const void*,
-                           const int64_t*, const void*, void*, const int64_t*);
+using zgemm_fptr = void(*)(const char*, const char*, const long long*,
+                           const long long*, const long long*, const void*,
+                           const void*, const long long*, const void*,
+                           const long long*, const void*, void*, const long long*);
 #else
 using dgemm_fptr = void(*)(const char*, const char*, const int*,
-                           const int32_t*, const int32_t*, const double*,
-                           const double*, const int32_t*, const double*,
-                           const int32_t*, const double*, double*, const int32_t*);
+                           const int*, const int*, const double*,
+                           const double*, const int*, const double*,
+                           const int*, const double*, double*, const int*);
 
-using zgemm_fptr = void(*)(const char*, const char*, const int32_t*,
-                           const int32_t*, const int32_t*, const void*,
-                           const void*, const int32_t*, const void*,
-                           const int32_t*, const void*, void*, const int32_t*);
+using zgemm_fptr = void(*)(const char*, const char*, const int*,
+                           const int*, const int*, const void*,
+                           const void*, const int*, const void*,
+                           const int*, const void*, void*, const int*);
 #endif
 
 
