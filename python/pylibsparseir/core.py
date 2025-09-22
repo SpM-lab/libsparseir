@@ -19,10 +19,10 @@ import platform
 import os
 import sys
 import ctypes
-import platform
 
 from .ctypes_wrapper import spir_kernel, spir_sve_result, spir_basis, spir_funcs, spir_sampling
 from pylibsparseir.constants import COMPUTATION_SUCCESS, SPIR_ORDER_ROW_MAJOR, SPIR_ORDER_COLUMN_MAJOR, SPIR_TWORK_FLOAT64, SPIR_TWORK_FLOAT64X2, SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC
+
 
 def _find_library():
     """Find the SparseIR shared library."""
@@ -36,8 +36,10 @@ def _find_library():
     # Try to find the library in common locations
     search_paths = [
         os.path.dirname(os.path.abspath(__file__)),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "build"),
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "build"),
+        os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), "..", "build"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "..", "..", "build"),
     ]
 
     for path in search_paths:
@@ -47,43 +49,37 @@ def _find_library():
 
     raise RuntimeError(f"Could not find {libname} in {search_paths}")
 
+
 # Load the library
 try:
-    if platform.system() == "Linux":
-        import scipy.linalg.cython_blas as blas
-        # dgemm capsule
-        # PyCapsuleオブジェクトを取得
-        capsule = blas.__pyx_capi__["dgemm"]
-        capsule_z = blas.__pyx_capi__["zgemm"]
+    import scipy.linalg.cython_blas as blas
+    # dgemm capsule
+    # PyCapsuleオブジェクトを取得
+    capsule = blas.__pyx_capi__["dgemm"]
+    capsule_z = blas.__pyx_capi__["zgemm"]
 
-        # PyCapsuleの名前を取得（省略可能だが、明示すると安全）
-        ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
-        ctypes.pythonapi.PyCapsule_GetName.argtypes = [ctypes.py_object]
-        name = ctypes.pythonapi.PyCapsule_GetName(capsule)
-        name_z = ctypes.pythonapi.PyCapsule_GetName(capsule_z)
-        # PyCapsuleからポインタを取り出す
-        ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
-        ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
-        ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, name)
-        ptr_z = ctypes.pythonapi.PyCapsule_GetPointer(capsule_z, name_z)
+    # PyCapsuleの名前を取得（省略可能だが、明示すると安全）
+    ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
+    ctypes.pythonapi.PyCapsule_GetName.argtypes = [ctypes.py_object]
+    name = ctypes.pythonapi.PyCapsule_GetName(capsule)
+    name_z = ctypes.pythonapi.PyCapsule_GetName(capsule_z)
+    # PyCapsuleからポインタを取り出す
+    ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
+    ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [
+        ctypes.py_object, ctypes.c_char_p]
+    ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, name)
+    ptr_z = ctypes.pythonapi.PyCapsule_GetPointer(capsule_z, name_z)
 
-        # ライブラリを一度ロードし、ポインタを登録
-        libpath = os.path.join(os.path.dirname(__file__), "libsparseir.so")
-        if not os.path.exists(libpath):
-            raise RuntimeError(f"libsparseir.so not found at {libpath}")
-
-        _lib = ctypes.CDLL(libpath, mode=os.RTLD_LOCAL | os.RTLD_LAZY)
-        _lib.spir_register_dgemm.argtypes = [ctypes.c_void_p]
-        _lib.spir_register_dgemm(ptr)
-        _lib.spir_register_zgemm.argtypes = [ctypes.c_void_p]
-        _lib.spir_register_zgemm(ptr_z)
-        print(f"[core.py] Registered SciPy BLAS dgemm @ {hex(ptr)}")
-        print(f"[core.py] Registered SciPy BLAS zgemm @ {hex(ptr_z)}")
-    else:
-        # Linux 以外（macOS, Windows）
-        _lib = CDLL(_find_library())
+    _lib = ctypes.CDLL(_find_library())
+    _lib.spir_register_dgemm.argtypes = [ctypes.c_void_p]
+    _lib.spir_register_dgemm(ptr)
+    _lib.spir_register_zgemm.argtypes = [ctypes.c_void_p]
+    _lib.spir_register_zgemm(ptr_z)
+    print(f"[core.py] Registered SciPy BLAS dgemm @ {hex(ptr)}")
+    print(f"[core.py] Registered SciPy BLAS zgemm @ {hex(ptr_z)}")
 except Exception as e:
     raise RuntimeError(f"Failed to load SparseIR library: {e}")
+
 
 class c_double_complex(ctypes.Structure):
     """complex is a c structure
@@ -91,12 +87,15 @@ class c_double_complex(ctypes.Structure):
     to use ctypes.Structure to pass structures (and, therefore, complex)
     See: https://stackoverflow.com/questions/13373291/complex-number-in-ctypes
     """
-    _fields_ = [("real", ctypes.c_double),("imag", ctypes.c_double)]
+    _fields_ = [("real", ctypes.c_double), ("imag", ctypes.c_double)]
+
     @property
     def value(self):
-        return self.real+1j*self.imag # fields declared above
+        return self.real+1j*self.imag  # fields declared above
 
 # Set up function prototypes
+
+
 def _setup_prototypes():
     # Kernel functions
     _lib.spir_logistic_kernel_new.argtypes = [c_double, POINTER(c_int)]
@@ -112,18 +111,21 @@ def _setup_prototypes():
     _lib.spir_kernel_domain.restype = c_int
 
     # SVE result functions
-    _lib.spir_sve_result_new.argtypes = [spir_kernel, c_double, c_double, c_int, c_int, c_int, POINTER(c_int)]
+    _lib.spir_sve_result_new.argtypes = [
+        spir_kernel, c_double, c_double, c_int, c_int, c_int, POINTER(c_int)]
     _lib.spir_sve_result_new.restype = spir_sve_result
 
     _lib.spir_sve_result_get_size.argtypes = [spir_sve_result, POINTER(c_int)]
     _lib.spir_sve_result_get_size.restype = c_int
 
-    _lib.spir_sve_result_get_svals.argtypes = [spir_sve_result, POINTER(c_double)]
+    _lib.spir_sve_result_get_svals.argtypes = [
+        spir_sve_result, POINTER(c_double)]
     _lib.spir_sve_result_get_svals.restype = c_int
 
     # Basis functions
     _lib.spir_basis_new.argtypes = [
-        c_int, c_double, c_double, spir_kernel, spir_sve_result, c_int, POINTER(c_int)
+        c_int, c_double, c_double, spir_kernel, spir_sve_result, c_int, POINTER(
+            c_int)
     ]
     _lib.spir_basis_new.restype = spir_basis
 
@@ -146,7 +148,8 @@ def _setup_prototypes():
     _lib.spir_basis_get_uhat.argtypes = [spir_basis, POINTER(c_int)]
     _lib.spir_basis_get_uhat.restype = spir_funcs
 
-    _lib.spir_funcs_get_slice.argtypes = [spir_funcs, c_int, POINTER(c_int), POINTER(c_int)]
+    _lib.spir_funcs_get_slice.argtypes = [
+        spir_funcs, c_int, POINTER(c_int), POINTER(c_int)]
     _lib.spir_funcs_get_slice.restype = spir_funcs
 
     # Function evaluation
@@ -156,7 +159,8 @@ def _setup_prototypes():
     _lib.spir_funcs_eval.argtypes = [spir_funcs, c_double, POINTER(c_double)]
     _lib.spir_funcs_eval.restype = c_int
 
-    _lib.spir_funcs_eval_matsu.argtypes = [spir_funcs, c_int64, POINTER(c_double_complex)]
+    _lib.spir_funcs_eval_matsu.argtypes = [
+        spir_funcs, c_int64, POINTER(c_double_complex)]
     _lib.spir_funcs_eval_matsu.restype = c_int
 
     _lib.spir_funcs_batch_eval.argtypes = [
@@ -182,7 +186,8 @@ def _setup_prototypes():
     _lib.spir_basis_get_default_taus.argtypes = [spir_basis, POINTER(c_double)]
     _lib.spir_basis_get_default_taus.restype = c_int
 
-    _lib.spir_basis_get_default_taus_ext.argtypes = [spir_basis, c_int, POINTER(c_double), POINTER(c_int)]
+    _lib.spir_basis_get_default_taus_ext.argtypes = [
+        spir_basis, c_int, POINTER(c_double), POINTER(c_int)]
     _lib.spir_basis_get_default_taus_ext.restype = c_int
 
     _lib.spir_basis_get_n_default_ws.argtypes = [spir_basis, POINTER(c_int)]
@@ -191,26 +196,33 @@ def _setup_prototypes():
     _lib.spir_basis_get_default_ws.argtypes = [spir_basis, POINTER(c_double)]
     _lib.spir_basis_get_default_ws.restype = c_int
 
-    _lib.spir_basis_get_n_default_matsus.argtypes = [spir_basis, c_bool, POINTER(c_int)]
+    _lib.spir_basis_get_n_default_matsus.argtypes = [
+        spir_basis, c_bool, POINTER(c_int)]
     _lib.spir_basis_get_n_default_matsus.restype = c_int
 
-    _lib.spir_basis_get_n_default_matsus_ext.argtypes = [spir_basis, c_bool, c_int, POINTER(c_int)]
+    _lib.spir_basis_get_n_default_matsus_ext.argtypes = [
+        spir_basis, c_bool, c_int, POINTER(c_int)]
     _lib.spir_basis_get_n_default_matsus_ext.restype = c_int
 
-    _lib.spir_basis_get_default_matsus.argtypes = [spir_basis, c_bool, POINTER(c_int64)]
+    _lib.spir_basis_get_default_matsus.argtypes = [
+        spir_basis, c_bool, POINTER(c_int64)]
     _lib.spir_basis_get_default_matsus.restype = c_int
 
-    _lib.spir_basis_get_default_matsus_ext.argtypes = [spir_basis, c_bool, c_int, POINTER(c_int64), POINTER(c_int)]
+    _lib.spir_basis_get_default_matsus_ext.argtypes = [
+        spir_basis, c_bool, c_int, POINTER(c_int64), POINTER(c_int)]
     _lib.spir_basis_get_default_matsus_ext.restype = c_int
 
     # Sampling objects
-    _lib.spir_tau_sampling_new.argtypes = [spir_basis, c_int, POINTER(c_double), POINTER(c_int)]
+    _lib.spir_tau_sampling_new.argtypes = [
+        spir_basis, c_int, POINTER(c_double), POINTER(c_int)]
     _lib.spir_tau_sampling_new.restype = spir_sampling
 
-    _lib.spir_tau_sampling_new_with_matrix.argtypes = [c_int, c_int, c_int, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_int)]
+    _lib.spir_tau_sampling_new_with_matrix.argtypes = [
+        c_int, c_int, c_int, c_int, POINTER(c_double), POINTER(c_double), POINTER(c_int)]
     _lib.spir_tau_sampling_new_with_matrix.restype = spir_sampling
 
-    _lib.spir_matsu_sampling_new.argtypes = [spir_basis, c_bool, c_int, POINTER(c_int64), POINTER(c_int)]
+    _lib.spir_matsu_sampling_new.argtypes = [
+        spir_basis, c_bool, c_int, POINTER(c_int64), POINTER(c_int)]
     _lib.spir_matsu_sampling_new.restype = spir_sampling
 
     _lib.spir_matsu_sampling_new_with_matrix.argtypes = [
@@ -248,7 +260,8 @@ def _setup_prototypes():
     _lib.spir_sampling_get_matsus.argtypes = [spir_sampling, POINTER(c_int64)]
     _lib.spir_sampling_get_matsus.restype = c_int
 
-    _lib.spir_sampling_get_cond_num.argtypes = [spir_sampling, POINTER(c_double)]
+    _lib.spir_sampling_get_cond_num.argtypes = [
+        spir_sampling, POINTER(c_double)]
     _lib.spir_sampling_get_cond_num.restype = c_int
 
     # Multi-dimensional sampling evaluation functions
@@ -274,7 +287,8 @@ def _setup_prototypes():
     _lib.spir_dlr_new.argtypes = [spir_basis, POINTER(c_int)]
     _lib.spir_dlr_new.restype = spir_basis
 
-    _lib.spir_dlr_new_with_poles.argtypes = [spir_basis, c_int, POINTER(c_double), POINTER(c_int)]
+    _lib.spir_dlr_new_with_poles.argtypes = [
+        spir_basis, c_int, POINTER(c_double), POINTER(c_int)]
     _lib.spir_dlr_new_with_poles.restype = spir_basis
 
     _lib.spir_dlr_get_npoles.argtypes = [spir_basis, POINTER(c_int)]
@@ -311,9 +325,12 @@ def _setup_prototypes():
     _lib.spir_sampling_release.argtypes = [spir_sampling]
     _lib.spir_sampling_release.restype = None
 
+
 _setup_prototypes()
 
 # Python wrapper functions
+
+
 def logistic_kernel_new(lambda_val):
     """Create a new logistic kernel."""
     status = c_int()
@@ -322,19 +339,23 @@ def logistic_kernel_new(lambda_val):
         raise RuntimeError(f"Failed to create logistic kernel: {status.value}")
     return kernel
 
+
 def reg_bose_kernel_new(lambda_val):
     """Create a new regularized bosonic kernel."""
     status = c_int()
     kernel = _lib.spir_reg_bose_kernel_new(lambda_val, byref(status))
     if status.value != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to create regularized bosonic kernel: {status.value}")
+        raise RuntimeError(
+            f"Failed to create regularized bosonic kernel: {status.value}")
     return kernel
+
 
 def sve_result_new(kernel, epsilon, cutoff=None, lmax=None, n_gauss=None, Twork=None):
     """Create a new SVE result."""
     # Validate epsilon
     if epsilon <= 0:
-        raise RuntimeError(f"Failed to create SVE result: epsilon must be positive, got {epsilon}")
+        raise RuntimeError(
+            f"Failed to create SVE result: epsilon must be positive, got {epsilon}")
 
     if cutoff is None:
         cutoff = -1.0
@@ -346,10 +367,12 @@ def sve_result_new(kernel, epsilon, cutoff=None, lmax=None, n_gauss=None, Twork=
         Twork = SPIR_TWORK_FLOAT64X2
 
     status = c_int()
-    sve = _lib.spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, byref(status))
+    sve = _lib.spir_sve_result_new(
+        kernel, epsilon, cutoff, lmax, n_gauss, Twork, byref(status))
     if status.value != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to create SVE result: {status.value}")
     return sve
+
 
 def sve_result_get_size(sve):
     """Get the size of an SVE result."""
@@ -359,14 +382,17 @@ def sve_result_get_size(sve):
         raise RuntimeError(f"Failed to get SVE result size: {status}")
     return size.value
 
+
 def sve_result_get_svals(sve):
     """Get the singular values from an SVE result."""
     size = sve_result_get_size(sve)
     svals = np.zeros(size, dtype=np.float64)
-    status = _lib.spir_sve_result_get_svals(sve, svals.ctypes.data_as(POINTER(c_double)))
+    status = _lib.spir_sve_result_get_svals(
+        sve, svals.ctypes.data_as(POINTER(c_double)))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get singular values: {status}")
     return svals
+
 
 def basis_new(statistics, beta, omega_max, kernel, sve, max_size):
     """Create a new basis."""
@@ -378,6 +404,7 @@ def basis_new(statistics, beta, omega_max, kernel, sve, max_size):
         raise RuntimeError(f"Failed to create basis: {status.value}")
     return basis
 
+
 def basis_get_size(basis):
     """Get the size of a basis."""
     size = c_int()
@@ -386,11 +413,13 @@ def basis_get_size(basis):
         raise RuntimeError(f"Failed to get basis size: {status}")
     return size.value
 
+
 def basis_get_svals(basis):
     """Get the singular values of a basis."""
     size = basis_get_size(basis)
     svals = np.zeros(size, dtype=np.float64)
-    status = _lib.spir_basis_get_svals(basis, svals.ctypes.data_as(POINTER(c_double)))
+    status = _lib.spir_basis_get_svals(
+        basis, svals.ctypes.data_as(POINTER(c_double)))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get singular values: {status}")
     return svals
@@ -404,6 +433,7 @@ def basis_get_stats(basis):
         raise RuntimeError(f"Failed to get basis statistics: {status}")
     return stats.value
 
+
 def basis_get_u(basis):
     """Get the imaginary-time basis functions."""
     status = c_int()
@@ -411,6 +441,7 @@ def basis_get_u(basis):
     if status.value != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get u basis functions: {status.value}")
     return funcs
+
 
 def basis_get_v(basis):
     """Get the real-frequency basis functions."""
@@ -420,13 +451,16 @@ def basis_get_v(basis):
         raise RuntimeError(f"Failed to get v basis functions: {status.value}")
     return funcs
 
+
 def basis_get_uhat(basis):
     """Get the Matsubara frequency basis functions."""
     status = c_int()
     funcs = _lib.spir_basis_get_uhat(basis, byref(status))
     if status.value != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to get uhat basis functions: {status.value}")
+        raise RuntimeError(
+            f"Failed to get uhat basis functions: {status.value}")
     return funcs
+
 
 def funcs_get_size(funcs):
     """Get the size of a basis function set."""
@@ -437,6 +471,8 @@ def funcs_get_size(funcs):
     return size.value
 
 # TODO: Rename funcs_eval_single
+
+
 def funcs_eval_single_float64(funcs, x):
     """Evaluate basis functions at a single point."""
     # Get number of functions
@@ -459,6 +495,8 @@ def funcs_eval_single_float64(funcs, x):
     return out
 
 # TODO: Rename to funcs_eval_matsu_single
+
+
 def funcs_eval_single_complex128(funcs, x):
     """Evaluate basis functions at a single point."""
     # Get number of functions
@@ -480,6 +518,7 @@ def funcs_eval_single_complex128(funcs, x):
 
     return out
 
+
 def funcs_get_n_roots(funcs):
     """Get the number of roots of the basis functions."""
     n_roots = c_int()
@@ -488,14 +527,17 @@ def funcs_get_n_roots(funcs):
         raise RuntimeError(f"Failed to get number of roots: {status}")
     return n_roots.value
 
+
 def funcs_get_roots(funcs):
     """Get the roots of the basis functions."""
     n_roots = funcs_get_n_roots(funcs)
     roots = np.zeros(n_roots, dtype=np.float64)
-    status = _lib.spir_funcs_get_roots(funcs, roots.ctypes.data_as(POINTER(c_double)))
+    status = _lib.spir_funcs_get_roots(
+        funcs, roots.ctypes.data_as(POINTER(c_double)))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get roots: {status}")
     return roots
+
 
 def basis_get_default_tau_sampling_points(basis):
     """Get default tau sampling points for a basis."""
@@ -503,24 +545,29 @@ def basis_get_default_tau_sampling_points(basis):
     n_points = c_int()
     status = _lib.spir_basis_get_n_default_taus(basis, byref(n_points))
     if status != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to get number of default tau points: {status}")
+        raise RuntimeError(
+            f"Failed to get number of default tau points: {status}")
 
     # Get the points
     points = np.zeros(n_points.value, dtype=np.float64)
-    status = _lib.spir_basis_get_default_taus(basis, points.ctypes.data_as(POINTER(c_double)))
+    status = _lib.spir_basis_get_default_taus(
+        basis, points.ctypes.data_as(POINTER(c_double)))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get default tau points: {status}")
 
     return points
+
 
 def basis_get_default_tau_sampling_points_ext(basis, n_points):
     """Get default tau sampling points for a basis."""
     points = np.zeros(n_points, dtype=np.float64)
     n_points_returned = c_int()
-    status = _lib.spir_basis_get_default_taus_ext(basis, n_points, points.ctypes.data_as(POINTER(c_double)), byref(n_points_returned))
+    status = _lib.spir_basis_get_default_taus_ext(
+        basis, n_points, points.ctypes.data_as(POINTER(c_double)), byref(n_points_returned))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get default tau points: {status}")
     return points
+
 
 def basis_get_default_omega_sampling_points(basis):
     """Get default omega (real frequency) sampling points for a basis."""
@@ -528,47 +575,59 @@ def basis_get_default_omega_sampling_points(basis):
     n_points = c_int()
     status = _lib.spir_basis_get_n_default_ws(basis, byref(n_points))
     if status != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to get number of default omega points: {status}")
+        raise RuntimeError(
+            f"Failed to get number of default omega points: {status}")
 
     # Get the points
     points = np.zeros(n_points.value, dtype=np.float64)
-    status = _lib.spir_basis_get_default_ws(basis, points.ctypes.data_as(POINTER(c_double)))
+    status = _lib.spir_basis_get_default_ws(
+        basis, points.ctypes.data_as(POINTER(c_double)))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get default omega points: {status}")
 
     return points
 
+
 def basis_get_default_matsubara_sampling_points(basis, positive_only=False):
     """Get default Matsubara sampling points for a basis."""
     # Get number of points
     n_points = c_int()
-    status = _lib.spir_basis_get_n_default_matsus(basis, c_bool(positive_only), byref(n_points))
+    status = _lib.spir_basis_get_n_default_matsus(
+        basis, c_bool(positive_only), byref(n_points))
     if status != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to get number of default Matsubara points: {status}")
+        raise RuntimeError(
+            f"Failed to get number of default Matsubara points: {status}")
 
     # Get the points
     points = np.zeros(n_points.value, dtype=np.int64)
-    status = _lib.spir_basis_get_default_matsus(basis, c_bool(positive_only), points.ctypes.data_as(POINTER(c_int64)))
+    status = _lib.spir_basis_get_default_matsus(basis, c_bool(
+        positive_only), points.ctypes.data_as(POINTER(c_int64)))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get default Matsubara points: {status}")
 
     return points
+
 
 def basis_get_n_default_matsus_ext(basis, n_points, positive_only):
     """Get the number of default Matsubara sampling points for a basis."""
     n_points_returned = c_int()
-    status = _lib.spir_basis_get_n_default_matsus_ext(basis, c_bool(positive_only), n_points, byref(n_points_returned))
+    status = _lib.spir_basis_get_n_default_matsus_ext(
+        basis, c_bool(positive_only), n_points, byref(n_points_returned))
     if status != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to get number of default Matsubara points: {status}")
+        raise RuntimeError(
+            f"Failed to get number of default Matsubara points: {status}")
     return n_points_returned.value
+
 
 def basis_get_default_matsus_ext(basis, positive_only, points):
     n_points = len(points)
     n_points_returned = c_int()
-    status = _lib.spir_basis_get_default_matsus_ext(basis, c_bool(positive_only), n_points, points.ctypes.data_as(POINTER(c_int64)), byref(n_points_returned))
+    status = _lib.spir_basis_get_default_matsus_ext(basis, c_bool(
+        positive_only), n_points, points.ctypes.data_as(POINTER(c_int64)), byref(n_points_returned))
     if status != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to get default Matsubara points: {status}")
     return points
+
 
 def tau_sampling_new(basis, sampling_points=None):
     """Create a new tau sampling object."""
@@ -589,6 +648,7 @@ def tau_sampling_new(basis, sampling_points=None):
 
     return sampling
 
+
 def _statistics_to_c(statistics):
     """Convert statistics to c type."""
     if statistics == "F":
@@ -597,6 +657,7 @@ def _statistics_to_c(statistics):
         return SPIR_STATISTICS_BOSONIC
     else:
         raise ValueError(f"Invalid statistics: {statistics}")
+
 
 def tau_sampling_new_with_matrix(basis, statistics, sampling_points, matrix):
     """Create a new tau sampling object with a matrix."""
@@ -615,10 +676,12 @@ def tau_sampling_new_with_matrix(basis, statistics, sampling_points, matrix):
 
     return sampling
 
+
 def matsubara_sampling_new(basis, positive_only=False, sampling_points=None):
     """Create a new Matsubara sampling object."""
     if sampling_points is None:
-        sampling_points = basis_get_default_matsubara_sampling_points(basis, positive_only)
+        sampling_points = basis_get_default_matsubara_sampling_points(
+            basis, positive_only)
 
     sampling_points = np.asarray(sampling_points, dtype=np.int64)
     n_points = len(sampling_points)
@@ -630,9 +693,11 @@ def matsubara_sampling_new(basis, positive_only=False, sampling_points=None):
         byref(status)
     )
     if status.value != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to create Matsubara sampling: {status.value}")
+        raise RuntimeError(
+            f"Failed to create Matsubara sampling: {status.value}")
 
     return sampling
+
 
 def matsubara_sampling_new_with_matrix(statistics, basis_size, positive_only, sampling_points, matrix):
     """Create a new Matsubara sampling object with a matrix."""
@@ -643,11 +708,12 @@ def matsubara_sampling_new_with_matrix(statistics, basis_size, positive_only, sa
         c_int(basis_size),                              # basis_size
         c_bool(positive_only),                          # positive_only
         c_int(len(sampling_points)),                    # num_points
-        sampling_points.ctypes.data_as(POINTER(c_int64)), # points
-        matrix.ctypes.data_as(POINTER(c_double_complex)), # matrix
+        sampling_points.ctypes.data_as(POINTER(c_int64)),  # points
+        matrix.ctypes.data_as(POINTER(c_double_complex)),  # matrix
         byref(status)                                   # status
     )
     if status.value != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to create Matsubara sampling: {status.value}")
+        raise RuntimeError(
+            f"Failed to create Matsubara sampling: {status.value}")
 
     return sampling
