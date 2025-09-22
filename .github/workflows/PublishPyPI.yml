@@ -1,10 +1,9 @@
 name: Build & Publish
 
 on:
-  workflow_run:
-    workflows: ["Create Tag & Release from Version Header"]
-    types:
-      - completed
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
   build-wheels:
