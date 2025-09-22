@@ -35,6 +35,11 @@ jobs:
         shell: bash
         run: |
           rm -f python/.gitignore
+      - name: prepare build
+        shell: bash
+        run: |
+          cd python
+          python prepare_build.py
       - uses: pypa/cibuildwheel@v3.1.4
         env:
           CIBW_DEPENDENCY_VERSIONS: "latest"
