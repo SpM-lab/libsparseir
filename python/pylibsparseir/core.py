@@ -21,43 +21,6 @@ import sys
 import ctypes
 import platform
 
-# --- Linux only: BLAS 関数ポインタを libsparseir に登録 ---
-if platform.system() == "Linux":
-    try:
-        import scipy.linalg.cython_blas as blas
-
-        # PyCapsule → void* ポインタ変換のための ctypes 設定
-        ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
-        ctypes.pythonapi.PyCapsule_GetName.argtypes = [ctypes.py_object]
-
-        ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
-        ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
-
-        # dgemm のアドレスを取得
-        capsule = blas.__pyx_capi__["dgemm"]
-        name = ctypes.pythonapi.PyCapsule_GetName(capsule)
-        ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, name)
-
-        # libsparseir.so を RTLD_GLOBAL で一度ロード
-        lib_candidate = os.path.join(os.path.dirname(__file__), "libsparseir.so")
-        if not os.path.exists(lib_candidate):
-            raise RuntimeError(f"libsparseir.so not found at {lib_candidate}")
-
-        _lib_tmp = ctypes.CDLL(lib_candidate, mode=ctypes.RTLD_GLOBAL)
-
-        # C++ 側のエクスポート関数を呼び出し (事前に実装が必要)
-        # extern "C" void spir_register_dgemm(void* fn);
-        _lib_tmp.spir_register_dgemm.argtypes = [ctypes.c_void_p]
-        _lib_tmp.spir_register_dgemm(ptr)
-
-        print(f"[core.py] Registered dgemm() from SciPy BLAS @ {hex(ptr)}")
-
-    except Exception as e:
-        # Import 時に必ず実行するが、失敗したら RuntimeError で明示的に落とす
-        raise RuntimeError(f"[core.py] Failed to register BLAS dgemm pointer: {e}")
-
-
-
 from .ctypes_wrapper import spir_kernel, spir_sve_result, spir_basis, spir_funcs, spir_sampling
 from pylibsparseir.constants import COMPUTATION_SUCCESS, SPIR_ORDER_ROW_MAJOR, SPIR_ORDER_COLUMN_MAJOR, SPIR_TWORK_FLOAT64, SPIR_TWORK_FLOAT64X2, SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC
 
@@ -86,7 +49,28 @@ def _find_library():
 
 # Load the library
 try:
-    _lib = CDLL(_find_library())
+    if platform.system() == "Linux":
+        import scipy.linalg.cython_blas as blas
+
+        # dgemm capsule から C ポインタを取得
+        capsule = blas.__pyx_capi__["dgemm"]
+        ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
+        ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
+        ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, b"__Pyx_CFunc_void_ptr")
+
+        # ライブラリを一度ロードし、ポインタを登録
+        libpath = os.path.join(os.path.dirname(__file__), "libsparseir.so")
+        if not os.path.exists(libpath):
+            raise RuntimeError(f"libsparseir.so not found at {libpath}")
+
+        _lib = ctypes.CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
+        _lib.spir_register_dgemm.argtypes = [ctypes.c_void_p]
+        _lib.spir_register_dgemm(ptr)
+
+        print(f"[core.py] Registered SciPy BLAS dgemm @ {hex(ptr)}")
+    else:
+        # Linux 以外（macOS, Windows）
+        _lib = CDLL(_find_library())
 except Exception as e:
     raise RuntimeError(f"Failed to load SparseIR library: {e}")
 
