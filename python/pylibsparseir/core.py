@@ -11,38 +11,51 @@ import numpy as np
 import platform
 
 # Enable only on Linux
+import os
+import sys
+import ctypes
+import platform
+
+import os
+import sys
+import ctypes
+import platform
+
+# --- Linux only: BLAS 関数ポインタを libsparseir に登録 ---
 if platform.system() == "Linux":
-    # Linux only
-    # Search for the BLAS library used by NumPy.
+    try:
+        import scipy.linalg.cython_blas as blas
 
-    import ctypes, numpy, os, glob
+        # PyCapsule → void* ポインタ変換のための ctypes 設定
+        ctypes.pythonapi.PyCapsule_GetName.restype = ctypes.c_char_p
+        ctypes.pythonapi.PyCapsule_GetName.argtypes = [ctypes.py_object]
 
-    candidates = []
+        ctypes.pythonapi.PyCapsule_GetPointer.restype = ctypes.c_void_p
+        ctypes.pythonapi.PyCapsule_GetPointer.argtypes = [ctypes.py_object, ctypes.c_char_p]
 
-    # 1. pip wheels: inside numpy/.libs
-    libdir = os.path.join(os.path.dirname(numpy.__file__), ".libs")
-    if os.path.isdir(libdir):
-        candidates.extend(glob.glob(os.path.join(libdir, "libopenblas*.so*")))
+        # dgemm のアドレスを取得
+        capsule = blas.__pyx_capi__["dgemm"]
+        name = ctypes.pythonapi.PyCapsule_GetName(capsule)
+        ptr = ctypes.pythonapi.PyCapsule_GetPointer(capsule, name)
 
-    # 2. scipy-openblas package: site-packages/scipy_openblas*
-    if not candidates:
-        for path in sys.path:
-            if "site-packages" in path and os.path.isdir(path):
-                candidates.extend(glob.glob(os.path.join(path, "scipy_openblas*", "lib", "libopenblas*.so*")))
+        # libsparseir.so を RTLD_GLOBAL で一度ロード
+        lib_candidate = os.path.join(os.path.dirname(__file__), "libsparseir.so")
+        if not os.path.exists(lib_candidate):
+            raise RuntimeError(f"libsparseir.so not found at {lib_candidate}")
 
-    # 3. System BLAS (e.g., /usr/lib, etc.)
-    if not candidates:
-        for base in ["/usr/lib", "/usr/lib/x86_64-linux-gnu", "/usr/local/lib"]:
-            if os.path.isdir(base):
-                candidates.extend(glob.glob(os.path.join(base, "libopenblas*.so*")))
-                candidates.extend(glob.glob(os.path.join(base, "libblas*.so*")))
+        _lib_tmp = ctypes.CDLL(lib_candidate, mode=ctypes.RTLD_GLOBAL)
 
-    if not candidates:
-        raise RuntimeError("Could not find any OpenBLAS/libblas shared library")
+        # C++ 側のエクスポート関数を呼び出し (事前に実装が必要)
+        # extern "C" void spir_register_dgemm(void* fn);
+        _lib_tmp.spir_register_dgemm.argtypes = [ctypes.c_void_p]
+        _lib_tmp.spir_register_dgemm(ptr)
 
-    libpath = candidates[0]
-    ctypes.CDLL(libpath, mode=ctypes.RTLD_GLOBAL)
-    print(f"[conftest] Loaded BLAS globally from {libpath}")
+        print(f"[core.py] Registered dgemm() from SciPy BLAS @ {hex(ptr)}")
+
+    except Exception as e:
+        # Import 時に必ず実行するが、失敗したら RuntimeError で明示的に落とす
+        raise RuntimeError(f"[core.py] Failed to register BLAS dgemm pointer: {e}")
+
 
 
 from .ctypes_wrapper import spir_kernel, spir_sve_result, spir_basis, spir_funcs, spir_sampling
