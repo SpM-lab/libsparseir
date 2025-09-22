@@ -100,12 +100,12 @@ endif()
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
 # Check if source files exist and provide helpful error message
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp")
-    message(FATAL_ERROR "Source files not found. Please run: python3 prepare_build.py")
-endif()
+#if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../src/utils.cpp")
+    #message(FATAL_ERROR "Source files not found. Please run: python3 prepare_build.py")
+#endif()
 
 # Explicitly list source files from copied directories
-file(GLOB SPARSEIR_SOURCES "src/*.cpp")
+file(GLOB SPARSEIR_SOURCES "../src/*.cpp")
 add_library(sparseir SHARED ${SPARSEIR_SOURCES})
 if(NOT MSVC)
     target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
@@ -125,7 +125,7 @@ endif()
 
 target_include_directories(sparseir
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
         $<INSTALL_INTERFACE:include>
     PRIVATE
         $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>

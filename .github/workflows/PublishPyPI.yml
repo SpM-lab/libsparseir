@@ -1,9 +1,10 @@
-name: Python Build & Publish (Trusted)
+name: Build & Publish
 
 on:
-  push:
-    tags: ["v*"]     # Example: triggers on push of v0.1.0
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Create Tag & Release from Version Header"]
+    types:
+      - completed
 
 jobs:
   build-wheels:
@@ -80,6 +81,11 @@ jobs:
         shell: bash
         run: |
           rm -f python/.gitignore
+      - name: prepare build
+        shell: bash
+        run: |
+          cd python
+          python prepare_build.py
       - uses: pypa/cibuildwheel@v3.1.4
         env:
           CIBW_DEPENDENCY_VERSIONS: "latest"
