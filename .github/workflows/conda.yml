@@ -9,19 +9,14 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix .os }}
+    runs-on: ${{ matrix.runner_label }}
     strategy:
       matrix:
-        # https://github.com/s-weigand/setup-conda/issues/432
         include:
-          - os: ubuntu-latest
-            arch: x64
-          - os: ubuntu-latest
-            arch: arm64
-          - os: macos-latest
-            arch: x64
-          - os: macos-latest
-            arch: arm64
+          - name: ubuntu-x64
+            runner_label: ubuntu-latest
+          - name: macos-arm64
+            runner_label: macos-latest
 
     steps:
     - uses: actions/checkout@v5
