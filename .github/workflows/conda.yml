@@ -13,7 +13,15 @@ jobs:
     strategy:
       matrix:
         # https://github.com/s-weigand/setup-conda/issues/432
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            arch: x64
+          - os: ubuntu-latest
+            arch: arm64
+          - os: macos-latest
+            arch: x64
+          - os: macos-latest
+            arch: arm64
 
     steps:
     - uses: actions/checkout@v5
@@ -34,4 +42,4 @@ jobs:
       run: |
         python3 --version
         conda config --set anaconda_upload yes
-        conda build conda-recipe --user SpM-lab
+        conda build conda-recipe --user SpM-lab --output-folder conda-bld
