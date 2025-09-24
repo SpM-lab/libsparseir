@@ -203,6 +203,19 @@ if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
     target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
 endif()
 
+# Option to statically link C++ standard library
+option(SPARSEIR_STATIC_LINK_LIBCXX "Statically link C++ standard library to reduce dependencies" OFF)
+
+# Static linking for Linux to reduce libc++ dependency
+if(SPARSEIR_STATIC_LINK_LIBCXX AND APPLE)
+    message(ERROR "Static linking of libc++ is not supported on macOS!")
+endif()
+
+if(SPARSEIR_STATIC_LINK_LIBCXX AND UNIX AND NOT APPLE)
+    target_link_options(sparseir PRIVATE "-static-libstdc++" "-static-libgcc")
+    message(STATUS "Static linking enabled (libstdc++ and libgcc)")
+endif()
+
 # macOS-specific configuration
 if(APPLE AND ACCELERATE_FRAMEWORK)
     target_link_libraries(sparseir PRIVATE ${ACCELERATE_FRAMEWORK})
