@@ -70,6 +70,7 @@ else()
     message(STATUS "Eigen3 found in system: ${Eigen3_VERSION}")
 endif()
 
+
 find_package(Threads REQUIRED)
 
 # libxprec - built only as a static dependency, not for installation
@@ -136,6 +137,12 @@ set_target_properties(sparseir PROPERTIES
     )
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
+
+set(SPARSEIR_STATIC_LINK_LIBCXX ON)
+if(SPARSEIR_STATIC_LINK_LIBCXX AND UNIX AND NOT APPLE)
+    target_link_options(sparseir PRIVATE "-static-libstdc++" "-static-libgcc")
+    message(STATUS "Static linking enabled (libstdc++ and libgcc)")
+endif()
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
