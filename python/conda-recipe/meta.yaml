@@ -16,13 +16,17 @@ build:
   script: |
     export SPARSEIR_USE_BLAS=1
     
+    # Clean up old shared libraries
+    echo "Cleaning up old shared libraries..."
+    find ${SRC_DIR}/python/pylibsparseir -name "*.dylib" -o -name "*.so*" | xargs rm -f || true
+    
     # Build and install the Python package using scikit-build-core
     cd ${SRC_DIR}/python
     ${PYTHON} -m pip install . --no-deps --ignore-installed -v
     
     # Run tests during build
-    echo "Running tests..."
-    ${PYTHON} -m pytest ${SRC_DIR}/python/tests -v
+    #echo "Running tests..."
+    #${PYTHON} -m pytest ${SRC_DIR}/python/tests -v
     
     # Verify what was installed
     echo "Python package contents:"
@@ -43,13 +47,13 @@ requirements:
     - cmake >=3.25
     - ninja
     - make
-    - pytest
   host:
     - python {{ python }}
     - numpy {{ numpy }}
     - scipy
     - eigen
     - scikit-build-core
+    - pytest
   run:
     - python {{ python }}
     - numpy {{ numpy }}

@@ -7,26 +7,17 @@ This is a low-level binding for the [libsparseir](https://github.com/SpM-lab/lib
 - Python >= 3.10
 - CMake (for building the C++ library)
 - C++11 compatible compiler
-- numpy
+- numpy >= 1.26.4
+- scipy
 
-### Optional Dependencies
+### BLAS Support
 
-- **OpenBLAS** (recommended for better performance)
-  - macOS: `brew install openblas`
-  - Ubuntu/Debian: `sudo apt install libopenblas-dev`
-  - CentOS/RHEL: `sudo yum install openblas-devel`
+This package automatically uses SciPy's BLAS backend for optimal performance. No additional BLAS installation is required - SciPy will provide the necessary BLAS functionality.
 
 ## Build
 
 ### Install Dependencies and Build
 
-**Option 1: Automatic build (recommended)**
-```bash
-# Build will automatically run prepare_build.py if needed
-uv build
-```
-
-**Option 2: Manual preparation**
 ```bash
 # First, prepare the build by copying necessary files from parent directory
 python3 prepare_build.py
@@ -37,7 +28,7 @@ uv build
 
 This will:
 - Copy source files (`src/`, `include/`, `cmake/`) from the parent libsparseir directory
-- Build the C++ libsparseir library using CMake with BLAS support
+- Build the C++ libsparseir library using CMake with automatic BLAS support via SciPy
 - Create both source distribution (sdist) and wheel packages
 
 ### Development Build
@@ -60,17 +51,9 @@ uv build
 
 See `.github-workflows-example.yml` for a complete GitHub Actions example.
 
-### Build with OpenBLAS Support
+### BLAS Configuration
 
-OpenBLAS support is enabled by default in the build configuration. The build system will automatically detect OpenBLAS if it's installed in standard locations.
-
-If OpenBLAS is installed in a custom location, you may need to set additional environment variables:
-
-```bash
-export CMAKE_PREFIX_PATH="/path/to/openblas"
-python3 prepare_build.py
-uv build
-```
+The package automatically uses SciPy's BLAS backend, which provides optimized BLAS operations without requiring separate BLAS installation. The build system is configured to use SciPy's BLAS functions directly.
 
 ### Clean Build Artifacts
 
@@ -96,8 +79,8 @@ The build process works as follows:
    - CMake configuration (`../cmake/` → `cmake/`)
 
 2. **Package Building**: `uv build` or `uv sync` uses scikit-build-core to:
-   - Configure CMake with BLAS support enabled
-   - Compile the C++ library with dynamic BLAS symbol lookup (for NumPy compatibility)
+   - Configure CMake with automatic BLAS support via SciPy
+   - Compile the C++ library with dynamic BLAS symbol lookup (for SciPy compatibility)
    - Package everything into distributable wheels and source distributions
 
 3. **Installation**: The built package includes the compiled shared library and Python bindings
@@ -107,20 +90,62 @@ The build process works as follows:
 - Proper inclusion in source distributions (sdist)
 - Clean separation between the main C++ library and Python bindings
 
+### Conda Build
+
+This package can also be built and distributed via conda-forge. The conda recipe is located in `conda-recipe/` and supports multiple platforms and Python versions.
+
+**Building conda packages locally:**
+
+```bash
+# Install conda-build
+conda install conda-build
+
+# Build the conda package
+cd python
+conda build conda-recipe
+
+# Build for specific platforms
+conda build conda-recipe --platform linux-64
+conda build conda-recipe --platform osx-64
+conda build conda-recipe --platform osx-arm64
+```
+
+**Supported platforms:**
+- Linux x86_64
+- macOS Intel (x86_64)
+- macOS Apple Silicon (ARM64)
+
+**Supported Python versions:**
+- Python 3.11, 3.12, 3.13
+
+**Supported NumPy versions:**
+- NumPy 2.1, 2.2, 2.3
+
+The conda build automatically:
+- Uses SciPy's BLAS backend for optimal performance
+- Cleans up old shared libraries before building
+- Builds platform-specific packages with proper dependencies
+
 ## Performance Notes
 
 ### BLAS Support
 
-This package supports BLAS libraries for improved linear algebra performance:
+This package automatically uses SciPy's optimized BLAS backend for improved linear algebra performance:
 
-- **With OpenBLAS**: Significant performance improvements for matrix operations
-- **Without BLAS**: Uses Eigen's built-in implementations (still efficient, but slower for large matrices)
+- **Automatic BLAS**: Uses SciPy's BLAS functions for optimal performance
+- **No additional setup**: SciPy provides all necessary BLAS functionality
 
-The build system will automatically detect and use OpenBLAS if available. You can verify BLAS support by checking the build output for messages like:
+The build system automatically configures BLAS support through SciPy. You can verify BLAS support by checking the build output for messages like:
 
+```bash
+export SPARSEIR_DEBUG=1
+python -c "import pylibsparseir"
+```
+
+This will show:
 ```
 BLAS support enabled
-Found OpenBLAS at: /opt/homebrew/opt/openblas
+Registered SciPy BLAS dgemm @ 0x...
 ```
 
 ### Troubleshooting
@@ -132,37 +157,10 @@ python3 prepare_build.py
 uv build
 ```
 
-**Build fails with "Could NOT find BLAS":**
-```bash
-# Install OpenBLAS first
-brew install openblas  # macOS
-sudo apt install libopenblas-dev  # Ubuntu
-
-# Then build with proper CMake path
-export CMAKE_PREFIX_PATH="/path/to/openblas"
-python3 prepare_build.py
-uv build
-```
-
-**OpenBLAS not detected automatically:**
-```bash
-# Set CMake prefix path manually
-export CMAKE_PREFIX_PATH="/usr/local/opt/openblas"  # or your OpenBLAS path
-python3 prepare_build.py
-uv build
-```
-
 **Clean rebuild:**
 ```bash
 # Remove all copied files and build artifacts
 uv run clean
 python3 prepare_build.py
 uv build
-```
-
-**Verify BLAS support in built package:**
-```python
-import pylibsparseir
-# Check build logs for "BLAS support enabled" message
-# BLAS symbols are resolved dynamically through NumPy at runtime
 ```

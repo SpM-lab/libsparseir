@@ -7,6 +7,7 @@ This avoids the need for symbolic links while ensuring all files are included in
 import os
 import shutil
 import sys
+import glob
 from pathlib import Path
 
 def copy_directory_contents(src_dir, dst_dir, patterns=None):
@@ -31,12 +32,27 @@ def copy_directory_contents(src_dir, dst_dir, patterns=None):
             shutil.copy2(item, dst_file)
             print(f"Copied: {item} -> {dst_file}")
 
+def clean_old_libraries():
+    """Remove old shared libraries from pylibsparseir directory."""
+    script_dir = Path(__file__).parent
+    pylibsparseir_dir = script_dir / "pylibsparseir"
+    
+    if pylibsparseir_dir.exists():
+        # Remove old .dylib files
+        for pattern in ["*.dylib", "*.so*"]:
+            for old_lib in pylibsparseir_dir.glob(pattern):
+                print(f"Removing old library: {old_lib}")
+                old_lib.unlink()
+
 def main():
     """Main function to prepare build files."""
     script_dir = Path(__file__).parent
     parent_dir = script_dir.parent
 
     print("Preparing build files...")
+    
+    # Clean up old shared libraries first
+    clean_old_libraries()
 
     # Copy source files
     copy_directory_contents(
