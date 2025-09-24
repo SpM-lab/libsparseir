@@ -138,12 +138,6 @@ set_target_properties(sparseir PROPERTIES
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
-set(SPARSEIR_STATIC_LINK_LIBCXX ON)
-if(SPARSEIR_STATIC_LINK_LIBCXX AND UNIX AND NOT APPLE)
-    target_link_options(sparseir PRIVATE "-static-libstdc++" "-static-libgcc")
-    message(STATUS "Static linking enabled (libstdc++ and libgcc)")
-endif()
-
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)
 
