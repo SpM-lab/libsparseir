@@ -110,9 +110,9 @@
         return obj->ptr;                                                       \
     }
 
-IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel);
-IMPLEMENT_OPAQUE_TYPE(funcs, _AbstractFuncs);
-IMPLEMENT_OPAQUE_TYPE(basis, AbstractFiniteTempBasis);
-IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling);
-IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult);
-IMPLEMENT_OPAQUE_TYPE(dlr, AbstractFiniteTempBasis);
+IMPLEMENT_OPAQUE_TYPE(kernel, sparseir::AbstractKernel)
+IMPLEMENT_OPAQUE_TYPE(funcs, _AbstractFuncs)
+IMPLEMENT_OPAQUE_TYPE(basis, AbstractFiniteTempBasis)
+IMPLEMENT_OPAQUE_TYPE(sampling, sparseir::AbstractSampling)
+IMPLEMENT_OPAQUE_TYPE(sve_result, sparseir::SVEResult)
+IMPLEMENT_OPAQUE_TYPE(dlr, AbstractFiniteTempBasis)
