@@ -69,11 +69,11 @@ extern "C" {
 /* Declare opaque types */
 struct _spir_kernel;
 
-DECLARE_OPAQUE_TYPE(kernel);
-DECLARE_OPAQUE_TYPE(funcs);
-DECLARE_OPAQUE_TYPE(basis);
-DECLARE_OPAQUE_TYPE(sampling);
-DECLARE_OPAQUE_TYPE(sve_result);
+DECLARE_OPAQUE_TYPE(kernel)
+DECLARE_OPAQUE_TYPE(funcs)
+DECLARE_OPAQUE_TYPE(basis)
+DECLARE_OPAQUE_TYPE(sampling)
+DECLARE_OPAQUE_TYPE(sve_result)
 
 /**
  * @brief Creates a new logistic kernel for fermionic/bosonic analytical
