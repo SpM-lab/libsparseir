@@ -36,43 +36,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    - name: Install Fortran compiler (macOS)
-      if: matrix.os == 'macos-latest'
-      run: brew install gfortran
-
     - name: Install dependencies
       run: ${{ matrix.deps_install }}
 
-    - name: Debug Fortran compilers (macOS)
-      if: matrix.os == 'macos-latest'
-      run: |
-        echo "Available Fortran compilers:"
-        ls -la /opt/homebrew/bin/*fortran* || echo "No *fortran* found in /opt/homebrew/bin/"
-        ls -la /usr/local/bin/*fortran* || echo "No *fortran* found in /usr/local/bin/"
-        which gfortran || echo "gfortran not in PATH"
-        which gfortran-13 || echo "gfortran-13 not in PATH"
-
     - name: Configure CMake
       run: |
-        if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
-          # Use the full path to gfortran from Homebrew gcc
-          FORTRAN_COMPILER="/opt/homebrew/bin/gfortran-13"
-          
-          # Set OpenBLAS paths for macOS if using OpenBLAS
-          if [[ "${{ matrix.blas_type }}" == "openblas" ]]; then
-            OPENBLAS_ROOT="/opt/homebrew/opt/openblas"
-            export LDFLAGS="-L${OPENBLAS_ROOT}/lib"
-            export CPPFLAGS="-I${OPENBLAS_ROOT}/include"
-            export PKG_CONFIG_PATH="${OPENBLAS_ROOT}/lib/pkgconfig"
-          fi
-        else
-          FORTRAN_COMPILER="gfortran"
-        fi
-
         cmake -B ${{github.workspace}}/build \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
-          -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER" \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
           -DSPARSEIR_BUILD_FORTRAN=OFF \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
@@ -82,3 +53,11 @@ jobs:
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Check library dependencies (Linux)
+      run: |
+        echo "=== Checking libsparseir.so dependencies ==="
+        find ${{github.workspace}}/build -name "libsparseir*.so*" -exec ldd {} \;
+        echo ""
+        echo "=== Checking for C++ standard library dependencies ==="
+        find ${{github.workspace}}/build -name "libsparseir*.so*" -exec sh -c 'echo "File: $1"; ldd "$1" | grep -E "(libstdc\+\+|libc\+\+|libgcc)" || echo "No C++ standard library dependencies found"' _ {} \;
