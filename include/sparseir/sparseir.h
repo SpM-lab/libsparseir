@@ -385,31 +385,32 @@ int spir_funcs_batch_eval_matsu(const spir_funcs *funcs, int order,
                                 c_complex *out);
 
 /**
- * @brief Gets the number of roots of a funcs object.
+ * @brief Gets the number of knots of the underlying piecewise Legendre polynomial.
  *
- * This function returns the number of roots of the specified funcs object.
+ * This function returns the number of knots of the underlying piecewise Legendre polynomial.
+ * Duplicate knots are counted as one.
  * This function is only available for continuous functions.
  *
  * @param funcs Pointer to the funcs object
- * @param n_roots Pointer to store the number of roots
+ * @param n_knots Pointer to store the number of knots
  * @return An integer status code:
  */
-int spir_funcs_get_n_roots(const spir_funcs *funcs, int *n_roots);
+int spir_funcs_get_n_knots(const spir_funcs *funcs, int *n_knots);
 
 /**
- * @brief Gets the roots of a funcs object.
+ * @brief Gets the knots of the underlying piecewise Legendre polynomial.
  *
- * This function returns the roots of the specified funcs object in the
- * non-ascending order. If the size of the funcs object is greater than 1, the
- * roots for all the functions are returned. This function is only available for
- * continuous functions.
+ * This function returns the knots of the specified funcs object in the
+ * non-decreasing order.
+ * Duplicate knots are counted as one.
+ * The knots are returned in the non-decreasing order.
  *
  * @param funcs Pointer to the funcs object
- * @param n_roots Pointer to store the number of roots
+ * @param n_knots Pointer to store the number of knots
  * @param roots Pointer to store the roots
  * @return An integer status code:
  */
-int spir_funcs_get_roots(const spir_funcs *funcs, double *roots);
+int spir_funcs_get_knots(const spir_funcs *funcs, double *knots);
 
 /**
  * @brief Creates a new finite temperature IR basis using a
