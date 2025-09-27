@@ -215,7 +215,30 @@ TEST_CASE("sparseir::PiecewiseLegendrePolyVector", "[poly]")
     // Test properties
     REQUIRE(polys.xmin() == pwlp1.xmin);
     REQUIRE(polys.xmax() == pwlp1.xmax);
-    REQUIRE(polys.get_knots().isApprox(pwlp1.knots));
+    
+    // Test knots: should be unique knots from all functions in non-ascending order
+    auto merged_knots = polys.get_knots();
+    
+    // Manually merge and sort knots from all three functions
+    std::set<double> all_knots;
+    for (int i = 0; i < pwlp1.knots.size(); ++i) {
+        all_knots.insert(pwlp1.knots[i]);
+    }
+    for (int i = 0; i < pwlp2.knots.size(); ++i) {
+        all_knots.insert(pwlp2.knots[i]);
+    }
+    for (int i = 0; i < pwlp3.knots.size(); ++i) {
+        all_knots.insert(pwlp3.knots[i]);
+    }
+    
+    // Convert to vector in non-decreasing order (ascending order)
+    std::vector<double> expected_knots(all_knots.begin(), all_knots.end());
+    
+    REQUIRE(merged_knots.size() == expected_knots.size());
+    for (int i = 0; i < merged_knots.size(); ++i) {
+        REQUIRE(merged_knots(i) == expected_knots[i]);
+    }
+    
     REQUIRE(polys.get_delta_x() == pwlp1.delta_x);
     REQUIRE(polys.get_polyorder() == pwlp1.polyorder);
     REQUIRE(polys.get_norms().isApprox(pwlp1.norms));

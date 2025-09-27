@@ -223,20 +223,20 @@ function c_spir_funcs_batch_eval_matsu(funcs, order, num_freqs, matsubara_freq_i
   integer(c_int) :: c_spir_funcs_batch_eval_matsu
 end function
 
-function c_spir_funcs_get_n_roots(funcs, n_roots) &
-    bind(c, name="spir_funcs_get_n_roots") result(c_spir_funcs_get_n_roots)
+function c_spir_funcs_get_n_knots(funcs, n_knots) &
+    bind(c, name="spir_funcs_get_n_knots") result(c_spir_funcs_get_n_knots)
   use iso_c_binding
   type(c_ptr), value :: funcs
-  type(c_ptr), value :: n_roots
-  integer(c_int) :: c_spir_funcs_get_n_roots
+  type(c_ptr), value :: n_knots
+  integer(c_int) :: c_spir_funcs_get_n_knots
 end function
 
-function c_spir_funcs_get_roots(funcs, roots) &
-    bind(c, name="spir_funcs_get_roots") result(c_spir_funcs_get_roots)
+function c_spir_funcs_get_knots(funcs, knots) &
+    bind(c, name="spir_funcs_get_knots") result(c_spir_funcs_get_knots)
   use iso_c_binding
   type(c_ptr), value :: funcs
-  type(c_ptr), value :: roots
-  integer(c_int) :: c_spir_funcs_get_roots
+  type(c_ptr), value :: knots
+  integer(c_int) :: c_spir_funcs_get_knots
 end function
 
 function c_spir_basis_new(statistics, beta, omega_max, epsilon, k, sve, max_size, status) &

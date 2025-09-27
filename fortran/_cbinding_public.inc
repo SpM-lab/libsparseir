@@ -27,8 +27,8 @@
   public :: c_spir_funcs_eval_matsu
   public :: c_spir_funcs_batch_eval
   public :: c_spir_funcs_batch_eval_matsu
-  public :: c_spir_funcs_get_n_roots
-  public :: c_spir_funcs_get_roots
+  public :: c_spir_funcs_get_n_knots
+  public :: c_spir_funcs_get_knots
   public :: c_spir_basis_new
   public :: c_spir_basis_get_size
   public :: c_spir_basis_get_svals

@@ -94,6 +94,11 @@ public:
     virtual Eigen::VectorXd roots() const override {
         return impl->roots();
     }
+
+    // Getter for the underlying implementation
+    std::shared_ptr<sparseir::PiecewiseLegendrePolyVector> get_impl() const {
+        return impl;
+    }
 };
 
 template <typename S>
@@ -201,6 +206,11 @@ public:
 
     virtual Eigen::VectorXd roots() const override {
         return impl->roots();
+    }
+
+    // Getter for the underlying implementation
+    std::shared_ptr<ImplType> get_impl() const {
+        return impl;
     }
 };
 
