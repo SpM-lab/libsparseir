@@ -77,7 +77,7 @@ try:
     _lib.spir_register_zgemm(ptr_z)
     if os.environ.get("SPARSEIR_DEBUG", "").lower() in ("1", "true", "yes", "on"):
         print(f"[core.py] Registered SciPy BLAS dgemm @ {hex(ptr)}")
-        orint(f"[core.py] Registered SciPy BLAS zgemm @ {hex(ptr_z)}")
+        print(f"[core.py] Registered SciPy BLAS zgemm @ {hex(ptr_z)}")
 except Exception as e:
     raise RuntimeError(f"Failed to load SparseIR library: {e}")
 

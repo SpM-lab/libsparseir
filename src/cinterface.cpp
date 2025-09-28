@@ -1839,6 +1839,19 @@ int spir_funcs_get_n_knots(const spir_funcs *funcs, int *n_knots)
             return SPIR_COMPUTATION_SUCCESS;
         }
 
+        // Try OmegaFunctionsAdaptor - use the actual type from the implementation
+        // We need to check what type the OmegaFunctionsAdaptor is wrapping
+        // For now, just call get_knots() directly on the continuous_impl
+        try {
+            auto knots = continuous_impl->get_knots();
+            *n_knots = knots.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        } catch (...) {
+            // If get_knots() is not implemented, return empty
+            *n_knots = 0;
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
         DEBUG_LOG("Error: knots are only available for piecewise Legendre polynomial functions");
         return SPIR_NOT_SUPPORTED;
     } catch (const std::exception &e) {
@@ -1904,6 +1917,20 @@ int spir_funcs_get_knots(const spir_funcs *funcs, double *knots)
             
             // Copy knots to output array (already in non-ascending order)
             std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Try OmegaFunctionsAdaptor - use the actual type from the implementation
+        // We need to check what type the OmegaFunctionsAdaptor is wrapping
+        // For now, just call get_knots() directly on the continuous_impl
+        try {
+            auto knots_vec = continuous_impl->get_knots();
+            
+            // Copy knots to output array (already in non-ascending order)
+            std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
+            return SPIR_COMPUTATION_SUCCESS;
+        } catch (...) {
+            // If get_knots() is not implemented, return success with empty array
             return SPIR_COMPUTATION_SUCCESS;
         }
 

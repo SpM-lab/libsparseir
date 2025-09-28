@@ -56,6 +56,9 @@ public:
 
     // Returns the roots of the functions in non-ascending order
     virtual Eigen::VectorXd roots() const = 0;
+
+    // Returns the knots of the underlying piecewise Legendre polynomial
+    virtual Eigen::VectorXd get_knots() const = 0;
 };
 
 class PiecewiseLegendrePolyFunctions : public AbstractContinuousFunctions {
@@ -93,6 +96,10 @@ public:
 
     virtual Eigen::VectorXd roots() const override {
         return impl->roots();
+    }
+
+    virtual Eigen::VectorXd get_knots() const override {
+        return impl->get_knots();
     }
 
     // Getter for the underlying implementation
@@ -160,6 +167,10 @@ public:
     virtual Eigen::VectorXd roots() const override {
         return impl->roots();
     }
+
+    virtual Eigen::VectorXd get_knots() const override {
+        return impl->get_knots();
+    }
 };
 
 
@@ -206,6 +217,11 @@ public:
 
     virtual Eigen::VectorXd roots() const override {
         return impl->roots();
+    }
+
+    virtual Eigen::VectorXd get_knots() const override {
+        // Return empty vector - DLR functions don't have knots
+        return Eigen::VectorXd();
     }
 
     // Getter for the underlying implementation

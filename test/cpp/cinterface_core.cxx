@@ -131,6 +131,17 @@ void test_finite_temp_basis_constructor()
     }
 
     spir_funcs_release(u);
+
+    int v_status;
+    spir_funcs *v = spir_basis_get_v(basis, &v_status);
+    REQUIRE(v_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(v != nullptr);
+
+    // Get knots from C API
+    int n_knots_v;
+    int n_knots_v_status = spir_funcs_get_n_knots(v, &n_knots_v);
+    REQUIRE(n_knots_v_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_knots_v > 0);
 }
 
 template <typename S>

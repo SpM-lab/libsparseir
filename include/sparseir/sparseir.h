@@ -412,6 +412,7 @@ int spir_funcs_get_n_knots(const spir_funcs *funcs, int *n_knots);
  */
 int spir_funcs_get_knots(const spir_funcs *funcs, double *knots);
 
+
 /**
  * @brief Creates a new finite temperature IR basis using a
  * pre-computed SVE result.
