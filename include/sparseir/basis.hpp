@@ -289,6 +289,8 @@ default_sampling_points(const PiecewiseLegendrePolyVector &u, int L)
     if (u.xmin() != -1.0 || u.xmax() != 1.0)
         throw std::runtime_error("Expecting unscaled functions here.");
 
+    std::cout << "default_sampling_points" << u.size() << std::endl;
+
     if (static_cast<std::size_t>(L) < u.size()) {
         return u.polyvec[L].roots();
     } else {
@@ -305,7 +307,7 @@ default_sampling_points(const PiecewiseLegendrePolyVector &u, int L)
         x0[x0.size() - 1] = right;
 
         if (x0.size() != L) {
-            std::cerr << "Warning: Expected " << L << " sampling points, got "
+            std::cerr << "Warning: Expected " << L << " tau sampling points, got "
                       << x0.size() << ".\n";
         }
 

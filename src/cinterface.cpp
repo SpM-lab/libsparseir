@@ -191,46 +191,24 @@ spir_basis* spir_basis_new(
             return nullptr;
         }
 
-        // Get the SVE result implementation
-        auto sve_impl = get_impl_sve_result(sve);
-        if (!sve_impl) {
-            DEBUG_LOG("Failed to get a basis implementation");
-            *status = SPIR_GET_IMPL_FAILED;
-            return nullptr;
-        }
-
-        // Use the C-API to truncate the SVE result
-        int truncate_status;
-        spir_sve_result* sve_result_trunc_ptr = spir_sve_result_truncate(sve, epsilon, max_size, &truncate_status);
-        if (truncate_status != SPIR_COMPUTATION_SUCCESS || !sve_result_trunc_ptr) {
-            DEBUG_LOG("Failed to truncate SVE result");
-            *status = truncate_status;
-            return nullptr;
-        }
-        
         // switch on kernel type
         spir_basis* result = nullptr;
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
-            result = _spir_basis_new(statistics, beta, omega_max, *logistic, sve_result_trunc_ptr, max_size);
+            result = _spir_basis_new(statistics, beta, omega_max, epsilon, *logistic, sve, max_size);
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
-            result = _spir_basis_new(statistics, beta, omega_max, *bose, sve_result_trunc_ptr, max_size);
+            result = _spir_basis_new(statistics, beta, omega_max, epsilon, *bose, sve, max_size);
         } else {
             DEBUG_LOG("Unknown kernel type");
-            spir_sve_result_release(sve_result_trunc_ptr);
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
 
         if (!result) {
             DEBUG_LOG("Failed to create finite temperature basis");
-            spir_sve_result_release(sve_result_trunc_ptr);
             *status = SPIR_INTERNAL_ERROR;
             return nullptr;
         }
 
-        // Clean up the temporary truncated SVE result
-        spir_sve_result_release(sve_result_trunc_ptr);
-        
         *status = SPIR_COMPUTATION_SUCCESS;
         return result;
     } catch (const std::exception& e) {
@@ -1065,6 +1043,7 @@ int spir_basis_get_default_taus_ext(
             *n_points_returned = tau_points.size();
         } else {
             auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            std::cout << "debug " << ir_basis->get_impl()->sve_result->u->size() << std::endl;
             tau_points = sparseir::default_sampling_points(
                 *(ir_basis->get_impl()->sve_result->u), n_points
             );
