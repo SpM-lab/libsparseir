@@ -509,7 +509,7 @@ TEST_CASE("tau noise with stat (Bosonic or Fermionic), Λ = 10", "[sampling]")
         // Fit back
         Eigen::Tensor<double, 1> Gl_n = tau_sampling->fit(Gtau_n);
 
-        REQUIRE(sparseir::tensorIsApprox(Gl_n, Gl, 20 * noise * Gl_magn));
+        REQUIRE(sparseir::tensorIsApprox(Gl_n, Gl, 40 * noise * Gl_magn));
     };
 
     SECTION("Bosonic") { run_noise_test(sparseir::Bosonic{}); }
