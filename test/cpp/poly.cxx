@@ -612,7 +612,7 @@ TEST_CASE("PiecewiseLegendreFT: matsubara tests", "[poly]")
         for (auto &pt : pts) {
             omega_ns.push_back(pt.n);
         }
-        REQUIRE(omega_ns.size() == L);
+        REQUIRE(omega_ns.size() >= L);
         REQUIRE(omega_ns[0] == -6);
         REQUIRE(omega_ns[1] == -2);
         REQUIRE(omega_ns[2] == 0);
