@@ -49,21 +49,15 @@ safe_epsilon(double eps_required, TworkType work_dtype, SVDStrategy svd_strat)
     }
     
     // First, choose the working dtype based on the eps required
-    std::cout << "eps_required: " << eps_required << std::endl;
-    std::cout << "work_dtype: " << static_cast<int>(work_dtype) << std::endl;
-    std::cout << "svd_strat: " << static_cast<int>(svd_strat) << std::endl;
     TworkType actual_work_dtype;
     if (work_dtype == TworkType::AUTO) {
         if (std::isnan(eps_required) || eps_required < 1e-8) {
             actual_work_dtype = TworkType::FLOAT64X2;  // MAX_DTYPE equivalent
-            std::cout << "actual_work_dtype: " << static_cast<int>(actual_work_dtype) << std::endl;
         } else {
             actual_work_dtype = TworkType::FLOAT64;
-            std::cout << "actual_work_dtype: " << static_cast<int>(actual_work_dtype) << std::endl;
         }
     } else {
         actual_work_dtype = work_dtype;
-        std::cout << "actual_work_dtype: " << static_cast<int>(actual_work_dtype) << std::endl;
     }
 
     // Next, work out the actual epsilon

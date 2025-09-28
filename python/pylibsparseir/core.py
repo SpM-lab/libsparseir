@@ -173,11 +173,11 @@ def _setup_prototypes():
     ]
     _lib.spir_funcs_batch_eval_matsu.restype = c_int
 
-    _lib.spir_funcs_get_n_roots.argtypes = [spir_funcs, POINTER(c_int)]
-    _lib.spir_funcs_get_n_roots.restype = c_int
+    _lib.spir_funcs_get_n_knots.argtypes = [spir_funcs, POINTER(c_int)]
+    _lib.spir_funcs_get_n_knots.restype = c_int
 
-    _lib.spir_funcs_get_roots.argtypes = [spir_funcs, POINTER(c_double)]
-    _lib.spir_funcs_get_roots.restype = c_int
+    _lib.spir_funcs_get_knots.argtypes = [spir_funcs, POINTER(c_double)]
+    _lib.spir_funcs_get_knots.restype = c_int
 
     # Default sampling points
     _lib.spir_basis_get_n_default_taus.argtypes = [spir_basis, POINTER(c_int)]
@@ -525,24 +525,24 @@ def funcs_eval_single_complex128(funcs, x):
     return out
 
 
-def funcs_get_n_roots(funcs):
-    """Get the number of roots of the basis functions."""
-    n_roots = c_int()
-    status = _lib.spir_funcs_get_n_roots(funcs, byref(n_roots))
+def funcs_get_n_knots(funcs):
+    """Get the number of knots of the underlying piecewise Legendre polynomial."""
+    n_knots = c_int()
+    status = _lib.spir_funcs_get_n_knots(funcs, byref(n_knots))
     if status != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to get number of roots: {status}")
-    return n_roots.value
+        raise RuntimeError(f"Failed to get number of knots: {status}")
+    return n_knots.value
 
 
-def funcs_get_roots(funcs):
-    """Get the roots of the basis functions."""
-    n_roots = funcs_get_n_roots(funcs)
-    roots = np.zeros(n_roots, dtype=np.float64)
-    status = _lib.spir_funcs_get_roots(
-        funcs, roots.ctypes.data_as(POINTER(c_double)))
+def funcs_get_knots(funcs):
+    """Get the knots of the underlying piecewise Legendre polynomial."""
+    n_knots = funcs_get_n_knots(funcs)
+    knots = np.zeros(n_knots, dtype=np.float64)
+    status = _lib.spir_funcs_get_knots(
+        funcs, knots.ctypes.data_as(POINTER(c_double)))
     if status != COMPUTATION_SUCCESS:
-        raise RuntimeError(f"Failed to get roots: {status}")
-    return roots
+        raise RuntimeError(f"Failed to get knots: {status}")
+    return knots
 
 
 def basis_get_default_tau_sampling_points(basis):

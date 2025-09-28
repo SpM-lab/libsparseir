@@ -442,7 +442,6 @@ pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
         svds;
     for (const auto &mat : matrices) {
         auto svd = sparseir::compute_svd(mat);
-        std::cout << "singular values: " << std::get<1>(svd).size() << std::endl;
         svds.push_back(svd);
     }
 
@@ -478,17 +477,12 @@ template <typename K>
 SVEResult compute_sve(const K &kernel, double epsilon, double cutoff, int lmax,
                       int n_gauss, TworkType Twork)
 {
-    std::cout << "##### compute_sve #####" << std::endl;
     double safe_epsilon;
     TworkType Twork_actual;
     SVDStrategy svd_strategy_actual;
-    std::cout << "epsilon: " << epsilon << std::endl;
     std::tie(safe_epsilon, Twork_actual, svd_strategy_actual) =
         sparseir::safe_epsilon(epsilon, Twork, SVDStrategy::AUTO);
 
-    std::cout << "safe_epsilon: " << safe_epsilon << std::endl;
-    std::cout << "Twork_actual: " << static_cast<int>(Twork_actual) << std::endl;
-    std::cout << "svd_strategy_actual: " << static_cast<int>(svd_strategy_actual) << std::endl;
     if (Twork_actual == TworkType::FLOAT64) {
         return std::get<0>(pre_postprocess<K, double>(kernel, safe_epsilon,
                                                       n_gauss, cutoff, lmax));

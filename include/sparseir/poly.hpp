@@ -341,7 +341,25 @@ public:
     double xmax() const { return polyvec.empty() ? 0.0 : polyvec[0].xmax; }
     Eigen::VectorXd get_knots() const
     {
-        return polyvec.empty() ? Eigen::VectorXd() : polyvec[0].knots;
+        if (polyvec.empty()) {
+            return Eigen::VectorXd();
+        }
+        
+        // Collect all knots from all functions
+        std::set<double> all_knots;
+        for (const auto& poly : polyvec) {
+            for (int i = 0; i < poly.knots.size(); ++i) {
+                all_knots.insert(poly.knots[i]);
+            }
+        }
+        
+        // Convert to vector and sort in non-decreasing order (ascending order)
+        Eigen::VectorXd result(all_knots.size());
+        int i = 0;
+        for (auto it = all_knots.begin(); it != all_knots.end(); ++it) {
+            result[i++] = *it;
+        }
+        return result;
     }
     Eigen::VectorXd get_delta_x() const
     {

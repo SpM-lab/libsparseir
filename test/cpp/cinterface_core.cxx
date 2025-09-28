@@ -98,6 +98,50 @@ void test_finite_temp_basis_constructor()
     int size_status = spir_basis_get_size(basis, &basis_size);
     REQUIRE(size_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(basis_size == cpp_basis.size());
+
+    // Test u basis knots consistency between C++ and C API
+    int u_status;
+    spir_funcs *u = spir_basis_get_u(basis, &u_status);
+    REQUIRE(u_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(u != nullptr);
+
+    // Get knots from C API
+    int n_knots;
+    int n_knots_status = spir_funcs_get_n_knots(u, &n_knots);
+    REQUIRE(n_knots_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_knots > 0);
+
+    std::vector<double> c_api_knots(n_knots);
+    int knots_status = spir_funcs_get_knots(u, c_api_knots.data());
+    REQUIRE(knots_status == SPIR_COMPUTATION_SUCCESS);
+
+    // Get knots from C++ implementation
+    auto cpp_knots = cpp_basis.u->get_obj().get_knots();
+    REQUIRE(cpp_knots.size() == static_cast<size_t>(n_knots));
+
+    // Compare knots (both should be in non-decreasing order)
+    for (int i = 0; i < n_knots; ++i) {
+        REQUIRE(c_api_knots[i] == Approx(cpp_knots[i]));
+    }
+
+    // Check non-decreasing order for both C API and C++ knots
+    for (int i = 1; i < n_knots; ++i) {
+        REQUIRE(c_api_knots[i] >= c_api_knots[i-1]);
+        REQUIRE(cpp_knots[i] >= cpp_knots[i-1]);
+    }
+
+    spir_funcs_release(u);
+
+    int v_status;
+    spir_funcs *v = spir_basis_get_v(basis, &v_status);
+    REQUIRE(v_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(v != nullptr);
+
+    // Get knots from C API
+    int n_knots_v;
+    int n_knots_v_status = spir_funcs_get_n_knots(v, &n_knots_v);
+    REQUIRE(n_knots_v_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(n_knots_v > 0);
 }
 
 template <typename S>
@@ -261,38 +305,11 @@ void test_finite_temp_basis_basis_functions()
         REQUIRE(out_vec[i] == Approx(cpp_result(i)));
     }
 
-    // Test roots
-    int nroots;
-    int nroots_status = spir_funcs_get_n_roots(u, &nroots);
-    REQUIRE(nroots_status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(nroots == cpp_basis.u->nroots());
-    std::vector<double> roots(nroots);
-    int roots_status = spir_funcs_get_roots(u, roots.data());
-    REQUIRE(roots_status == SPIR_COMPUTATION_SUCCESS);
-    Eigen::VectorXd cpp_roots = cpp_basis.u->roots();
-    for (int i = 0; i < nroots; ++i) {
-        REQUIRE(roots[i] == cpp_roots(i));
-    }
-    int npositive_roots = std::count_if(cpp_roots.data(), cpp_roots.data() + nroots, [](double x) { return x > 0; });
-    REQUIRE(npositive_roots == nroots/2);
-
     // Test v basis functions
     int v_status;
     spir_funcs *v = spir_basis_get_v(basis, &v_status);
     REQUIRE(v_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(v != nullptr);
-
-    // Test roots
-    nroots_status = spir_funcs_get_n_roots(v, &nroots);
-    REQUIRE(nroots_status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(nroots == cpp_basis.v->nroots());
-    roots.resize(nroots);
-    roots_status = spir_funcs_get_roots(v, roots.data());
-    REQUIRE(roots_status == SPIR_COMPUTATION_SUCCESS);
-    cpp_roots = cpp_basis.v->roots();
-    for (int i = 0; i < nroots; ++i) {
-        REQUIRE(roots[i] == cpp_roots(i));
-    }
 
     // Test v basis function evaluation
     eval_status = spir_funcs_eval(v, y, out_vec.data());
