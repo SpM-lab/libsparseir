@@ -315,6 +315,9 @@ TEST_CASE("Conditioning Tests", "[sampling]")
         make_shared<sparseir::TauSampling<sparseir::Bosonic>>(basis);
     auto matsu_sampling =
         make_shared<sparseir::MatsubaraSampling<sparseir::Bosonic>>(basis);
+    
+    // The number of Matsubara sampling points should be odd for bosonic basis.
+    REQUIRE(matsu_sampling->sampling_points().size() % 2 == 1);
 
     // Calculate condition number as the ratio of largest to smallest singular
     // value

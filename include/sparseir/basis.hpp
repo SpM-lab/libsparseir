@@ -358,6 +358,16 @@ std::vector<MatsubaraFreq<S>> default_matsubara_sampling_points_impl(
         omega_n = find_extrema(u_hat[u_hat.size() - 1], positive_only);
     }
 
+    // For boson, we include the zero frequency explicitly.
+    // Otherwise, the condition number blows up.
+    if (std::is_same<S, Bosonic>::value) {
+        omega_n.push_back(MatsubaraFreq<S>(0));
+    }
+    
+    // Sort the frequencies in place and take unique
+    std::set<MatsubaraFreq<S>> omega_n_set(omega_n.begin(), omega_n.end());
+    omega_n.assign(omega_n_set.begin(), omega_n_set.end());
+
     std::size_t expected_size = l_requested;
     if (positive_only)
         expected_size = (expected_size + 1) / 2;
