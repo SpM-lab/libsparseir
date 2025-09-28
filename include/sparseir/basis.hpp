@@ -229,32 +229,44 @@ public:
     Eigen::VectorXd default_tau_sampling_points() const override
     {
         int sz = size();
-        auto x = default_sampling_points(*(this->sve_result->u), sz);
-        Eigen::VectorXd smpl_taus = (this->beta / 2.0) * (x.array() + 1.0);
+
+        // Sampling points in the interval [-1, 1]
+        Eigen::VectorXd x = default_sampling_points(*(this->sve_result->u), sz);
+        
+        std::vector<double> unique_x;
+        if (x.size() % 2 == 0) {
+            for (auto i = 0; i < x.size() / 2; ++i) {
+                unique_x.push_back(x(i));
+            }
+        } else {
+            for (auto i = 0; i < x.size() / 2; ++i) {
+                unique_x.push_back(x(i));
+            }
+            // Avoid x = 0.5 (τ = 0.0) to prevent confusion with discontinuity
+            auto x_new = 0.5 * (unique_x.back() + 0.5);
+            unique_x.push_back(x_new);
+        }
+
+        Eigen::VectorXd smpl_taus(2 * unique_x.size());
+        for (auto i = 0; i < unique_x.size(); ++i) {
+            smpl_taus(i) = (this->beta / 2.0) * (unique_x[i] + 1.0);
+            smpl_taus(unique_x.size() + i) = - smpl_taus(i);
+        }
         std::sort(smpl_taus.data(), smpl_taus.data() + smpl_taus.size());
 
-        // Check if the distribution is symmetric
-        Eigen::VectorXd smpl_taus_reverse = Eigen::VectorXd::Constant(smpl_taus.size(), beta) - smpl_taus;
-        std::sort(smpl_taus_reverse.data(), smpl_taus_reverse.data() + smpl_taus_reverse.size());
-        Eigen::VectorXd diff = (smpl_taus - smpl_taus_reverse).array().abs();
-        auto max_diff = diff.maxCoeff();
-        if (max_diff > beta * 1e-5) {
-            std::cerr << "Warning: The distribution of tau sampling points is not symmetric with respect to the center of the interval [0, beta]." << std::endl;
-            std::cerr << "smpl_taus: " << smpl_taus << std::endl;
-            std::cerr << "max_diff: " << max_diff << std::endl;
+        // Check if the number of sampling points is even
+        if (smpl_taus.size() % 2 != 0) {
+            throw std::runtime_error("The number of tau sampling points is odd !");
         }
 
-        auto smpl_taus_symm = smpl_taus;
-        if (smpl_taus.size() % 2 == 0) {
-            auto halfN = smpl_taus.size() / 2;
-            smpl_taus_symm.segment(halfN, halfN) = -smpl_taus.segment(0, halfN);
-        } else {
-            auto halfN = (smpl_taus.size() - 1) / 2;
-            smpl_taus_symm.segment(halfN + 1, halfN) = -smpl_taus.segment(0, halfN);
+        // Check if tau = 0 is not in the sampling points
+        for (auto i = 0; i < smpl_taus.size(); ++i) {
+            if (std::abs(smpl_taus(i)) < 1e-10) {
+                std::cerr << "Warning: tau = 0 is in the sampling points (absolute error: " << std::abs(smpl_taus(i)) << ")" << std::endl;
+            }
         }
 
-        std::sort(smpl_taus_symm.data(), smpl_taus_symm.data() + smpl_taus_symm.size());
-        return smpl_taus_symm;
+        return smpl_taus;
     }
 
     std::vector<MatsubaraFreq<S>>
