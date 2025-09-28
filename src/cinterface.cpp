@@ -1788,4 +1788,161 @@ int spir_sampling_get_cond_num(const spir_sampling *s, double *cond_num)
     }
 }
 
+int spir_funcs_get_n_knots(const spir_funcs *funcs, int *n_knots)
+{
+    if (!funcs) {
+        DEBUG_LOG("Error in spir_funcs_get_n_knots: invalid pointer funcs");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!n_knots) {
+        DEBUG_LOG("Error in spir_funcs_get_n_knots: invalid pointer n_knots");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_funcs(funcs);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (!impl->is_continuous_funcs()) {
+            DEBUG_LOG("Error: the function is not defined for continuous variables");
+            return SPIR_NOT_SUPPORTED;
+        }
+
+        auto continuous_impl = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl);
+        if (!continuous_impl) {
+            return SPIR_INTERNAL_ERROR;
+        }
+
+        // Check if this is a PiecewiseLegendrePolyFunctions or TauFunctionsAdaptor
+        auto piecewise_impl = std::dynamic_pointer_cast<PiecewiseLegendrePolyFunctions>(continuous_impl);
+        if (piecewise_impl) {
+            // Get knots from the underlying PiecewiseLegendrePolyVector
+            auto knots = piecewise_impl->get_impl()->get_knots();
+            *n_knots = knots.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Try TauFunctionsAdaptor
+        auto tau_adaptor = std::dynamic_pointer_cast<TauFunctionsAdaptor<sparseir::IRTauFuncsType<sparseir::Fermionic>>>(continuous_impl);
+        if (tau_adaptor) {
+            auto knots = tau_adaptor->get_impl()->get_obj().get_knots();
+            *n_knots = knots.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        auto tau_adaptor_boson = std::dynamic_pointer_cast<TauFunctionsAdaptor<sparseir::IRTauFuncsType<sparseir::Bosonic>>>(continuous_impl);
+        if (tau_adaptor_boson) {
+            auto knots = tau_adaptor_boson->get_impl()->get_obj().get_knots();
+            *n_knots = knots.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Try OmegaFunctionsAdaptor - use the actual type from the implementation
+        // We need to check what type the OmegaFunctionsAdaptor is wrapping
+        // For now, just call get_knots() directly on the continuous_impl
+        try {
+            auto knots = continuous_impl->get_knots();
+            *n_knots = knots.size();
+            return SPIR_COMPUTATION_SUCCESS;
+        } catch (...) {
+            // If get_knots() is not implemented, return empty
+            *n_knots = 0;
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        DEBUG_LOG("Error: knots are only available for piecewise Legendre polynomial functions");
+        return SPIR_NOT_SUPPORTED;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_get_n_knots: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_funcs_get_n_knots");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_funcs_get_knots(const spir_funcs *funcs, double *knots)
+{
+    if (!funcs) {
+        DEBUG_LOG("Error in spir_funcs_get_knots: invalid pointer funcs");
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (!knots) {
+        DEBUG_LOG("Error in spir_funcs_get_knots: invalid pointer knots");
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_funcs(funcs);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (!impl->is_continuous_funcs()) {
+            DEBUG_LOG("Error: the function is not defined for continuous variables");
+            return SPIR_NOT_SUPPORTED;
+        }
+
+        auto continuous_impl = std::dynamic_pointer_cast<AbstractContinuousFunctions>(impl);
+        if (!continuous_impl) {
+            return SPIR_INTERNAL_ERROR;
+        }
+
+        // Check if this is a PiecewiseLegendrePolyFunctions or TauFunctionsAdaptor
+        auto piecewise_impl = std::dynamic_pointer_cast<PiecewiseLegendrePolyFunctions>(continuous_impl);
+        if (piecewise_impl) {
+            // Get knots from the underlying PiecewiseLegendrePolyVector
+            auto knots_vec = piecewise_impl->get_impl()->get_knots();
+            
+            // Copy knots to output array (already in non-ascending order)
+            std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Try TauFunctionsAdaptor
+        auto tau_adaptor = std::dynamic_pointer_cast<TauFunctionsAdaptor<sparseir::IRTauFuncsType<sparseir::Fermionic>>>(continuous_impl);
+        if (tau_adaptor) {
+            auto knots_vec = tau_adaptor->get_impl()->get_obj().get_knots();
+            
+            // Copy knots to output array (already in non-ascending order)
+            std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        auto tau_adaptor_boson = std::dynamic_pointer_cast<TauFunctionsAdaptor<sparseir::IRTauFuncsType<sparseir::Bosonic>>>(continuous_impl);
+        if (tau_adaptor_boson) {
+            auto knots_vec = tau_adaptor_boson->get_impl()->get_obj().get_knots();
+            
+            // Copy knots to output array (already in non-ascending order)
+            std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Try OmegaFunctionsAdaptor - use the actual type from the implementation
+        // We need to check what type the OmegaFunctionsAdaptor is wrapping
+        // For now, just call get_knots() directly on the continuous_impl
+        try {
+            auto knots_vec = continuous_impl->get_knots();
+            
+            // Copy knots to output array (already in non-ascending order)
+            std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
+            return SPIR_COMPUTATION_SUCCESS;
+        } catch (...) {
+            // If get_knots() is not implemented, return success with empty array
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        DEBUG_LOG("Error: knots are only available for piecewise Legendre polynomial functions");
+        return SPIR_NOT_SUPPORTED;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_get_knots: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_funcs_get_knots");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 } // extern "C"
