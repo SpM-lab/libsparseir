@@ -36,5 +36,6 @@ jobs:
         ANACONDA_API_TOKEN: ${{secrets.ANACONDA_TOKEN}}
       run: |
         python3 --version
+        python3 prepare_build.py
         conda config --set anaconda_upload yes
         conda build conda-recipe --user SpM-lab --output-folder conda-bld
