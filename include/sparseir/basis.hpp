@@ -305,7 +305,7 @@ default_sampling_points(const PiecewiseLegendrePolyVector &u, int L)
         x0[x0.size() - 1] = right;
 
         if (x0.size() != L) {
-            std::cerr << "Warning: Expected " << L << " sampling points, got "
+            std::cerr << "Warning: Expected " << L << " tau sampling points, got "
                       << x0.size() << ".\n";
         }
 
