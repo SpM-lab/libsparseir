@@ -7,7 +7,7 @@ SUBROUTINE NAME(obj, statistics, target_dim, arr, res)
   REAL(KIND=DP), INTENT(OUT) :: res SHAPE_
   REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:)
 #else
-  COMPLEX(KIND=DP), INTENT(INOUT), TARGET :: res SHAPE_
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res SHAPE_
 #endif
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(NDIM), output_dims_c(NDIM)
