@@ -118,6 +118,7 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
           -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER" \
+          -DCMAKE_Fortran_FLAGS="-std=f2008 -pedantic -Wall -Wextra" \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
           -DSPARSEIR_BUILD_FORTRAN=ON \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
@@ -181,7 +182,8 @@ jobs:
           -DSparseIR_DIR="$SPARSEIR_DIR" \
           -DUSE_SYSTEM_LIBSPARSEIR=ON \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER"
+          -DCMAKE_Fortran_COMPILER="$FORTRAN_COMPILER" \
+          -DCMAKE_Fortran_FLAGS="-std=f2008 -pedantic -Wall -Wextra"
         
         cmake --build build
         
