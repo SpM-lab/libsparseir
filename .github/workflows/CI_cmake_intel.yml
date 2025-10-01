@@ -1,0 +1,123 @@
+# CMake CI workflow for libsparseir with Intel oneAPI compilers
+# Tests on Ubuntu-latest (x86_64) with Intel C++/Fortran compilers
+name: CMake Intel oneAPI CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  INSTALL_PREFIX: ${{github.workspace}}/install
+
+jobs:
+  build-intel:
+    runs-on: ubuntu-latest
+    name: ubuntu-latest-intel-x86_64
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install Intel oneAPI Base Toolkit
+      run: |
+        # Download Intel oneAPI GPG public key
+        wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+        
+        # Add Intel oneAPI repository
+        echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+        
+        # Update package list
+        sudo apt-get update
+        
+        # Install Intel oneAPI compilers
+        sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp intel-oneapi-compiler-fortran intel-oneapi-mkl-devel
+
+    - name: Install Eigen
+      run: sudo apt-get install -y libeigen3-dev
+
+    - name: Setup Intel oneAPI environment
+      run: |
+        source /opt/intel/oneapi/setvars.sh
+        echo "Intel C++ compiler: $(which icpx)"
+        echo "Intel Fortran compiler: $(which ifx)"
+        icpx --version
+        ifx --version
+
+    - name: Configure CMake
+      run: |
+        source /opt/intel/oneapi/setvars.sh
+        
+        cmake -B ${{github.workspace}}/build \
+          -DCMAKE_C_COMPILER=icx \
+          -DCMAKE_CXX_COMPILER=icpx \
+          -DCMAKE_Fortran_COMPILER=ifx \
+          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all" \
+          -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+          -DSPARSEIR_BUILD_FORTRAN=ON \
+          -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
+          -DSPARSEIR_BUILD_TESTING=ON \
+          -DSPARSEIR_USE_BLAS=OFF
+
+    - name: Build
+      run: |
+        source /opt/intel/oneapi/setvars.sh
+        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: |
+        source /opt/intel/oneapi/setvars.sh
+        ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
+
+    - name: Install
+      run: |
+        source /opt/intel/oneapi/setvars.sh
+        cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Verify Installation
+      run: |
+        ls -la ${{env.INSTALL_PREFIX}}/include/sparseir/
+        ls -la ${{env.INSTALL_PREFIX}}/lib/
+
+    - name: Build and Run Fortran Sample
+      run: |
+        source /opt/intel/oneapi/setvars.sh
+        
+        echo "=== Building Fortran Sample ==="
+        cd fortran/sample
+        
+        # Find SparseIR CMake config
+        SPARSEIR_DIR="${{env.INSTALL_PREFIX}}/share/cmake/SparseIR"
+        if [ ! -d "$SPARSEIR_DIR" ]; then
+          echo "ERROR: SparseIR CMake config not found at $SPARSEIR_DIR"
+          exit 1
+        fi
+        
+        # Install FFTW3
+        sudo apt-get update && sudo apt-get install -y libfftw3-dev
+        
+        # Clean and build
+        rm -rf build
+        
+        cmake -B build \
+          -DSparseIR_DIR="$SPARSEIR_DIR" \
+          -DUSE_SYSTEM_LIBSPARSEIR=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_Fortran_COMPILER=ifx \
+          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all"
+        
+        cmake --build build
+        
+        echo "=== Running Fortran Sample ==="
+        
+        export LD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$LD_LIBRARY_PATH"
+        echo "Set library paths:"
+        echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+        
+        ./build/second_order_perturbation_fort
+        
+        echo "=== Fortran Sample completed successfully ==="
+
