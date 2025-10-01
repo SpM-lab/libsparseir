@@ -1318,7 +1318,7 @@ MODULE sparseir_ext
 #define NDIM 1
 #define SHAPE_ (:)
 #define FLAT CMPLX(arr, kind=c_double)
-#define RESHAPE_RES REAL(res_c, KIND=DP)
+#define RESHAPE_RES res_c
 #define ZD
 #include "fit_matsubara_impl.fh"
 #undef NAME
@@ -1332,48 +1332,69 @@ MODULE sparseir_ext
 #define NDIM 2
 #define SHAPE_ (:,:)
 #define FLAT RESHAPE(CMPLX(arr, kind=c_double), [size(arr)])
-#define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
+#define RESHAPE_RES RESHAPE(res_c, shape(res))
 #define ZD
 #include "fit_matsubara_impl.fh"
 #undef NAME
 #undef NDIM
 #undef SHAPE_
+#undef FLAT
+#undef RESHAPE_RES
+#undef ZD
 !
 #define NAME fit_matsubara_zd_3d
 #define NDIM 3
 #define SHAPE_ (:,:,:)
+#define RESHAPE_RES RESHAPE(res_c, shape(res))
+#define ZD
 #include "fit_matsubara_impl.fh"
 #undef NAME
 #undef NDIM
 #undef SHAPE_
+#undef RESHAPE_RES
+#undef ZD
 !
 #define NAME fit_matsubara_zd_4d
 #define NDIM 4
 #define SHAPE_ (:,:,:,:)
+#define RESHAPE_RES RESHAPE(res_c, shape(res))
+#define ZD
 #include "fit_matsubara_impl.fh"
 #undef NAME
 #undef NDIM
 #undef SHAPE_
+#undef RESHAPE_RES
+#undef ZD
 !
 #define NAME fit_matsubara_zd_5d
 #define NDIM 5
 #define SHAPE_ (:,:,:,:,:)
+#define RESHAPE_RES RESHAPE(res_c, shape(res))
+#define ZD
 #include "fit_matsubara_impl.fh"
 #undef NAME
 #undef NDIM
 #undef SHAPE_
+#undef RESHAPE_RES
+#undef ZD
 !
 #define NAME fit_matsubara_zd_6d
 #define NDIM 6
 #define SHAPE_ (:,:,:,:,:,:)
+#define RESHAPE_RES RESHAPE(res_c, shape(res))
+#define ZD
 #include "fit_matsubara_impl.fh"
 #undef NAME
 #undef NDIM
 #undef SHAPE_
+#undef RESHAPE_RES
+#undef ZD
 !
 #define NAME fit_matsubara_zd_7d
 #define NDIM 7
 #define SHAPE_ (:,:,:,:,:,:,:)
+#define RESHAPE_RES RESHAPE(res_c, shape(res))
+#define ZD
 #include "fit_matsubara_impl.fh"
 #undef NAME
 #undef NDIM
