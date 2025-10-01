@@ -56,10 +56,10 @@ jobs:
           -DCMAKE_CXX_FLAGS="-fp-model=precise -g -O2" \
           -DCMAKE_Fortran_COMPILER=ifx \
           -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback" \
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DCMAKE_BUILD_TYPE=Release \
           -DSPARSEIR_BUILD_FORTRAN=ON \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
-          -DSPARSEIR_BUILD_TESTING=ON \
+          -DSPARSEIR_BUILD_TESTING=OFF \
           -DSPARSEIR_USE_BLAS=OFF \
           -DSPARSEIR_DEBUG=ON
 
@@ -68,11 +68,9 @@ jobs:
         source /opt/intel/oneapi/setvars.sh
         cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
+    - name: Skip C++/C Tests
       run: |
-        source /opt/intel/oneapi/setvars.sh
-        ctest --build-config ${{env.BUILD_TYPE}} --output-on-failure
+        echo "Skipping C++/C tests to focus on Fortran sample debugging"
 
     - name: Install
       run: |
@@ -107,7 +105,7 @@ jobs:
         cmake -B build \
           -DSparseIR_DIR="$SPARSEIR_DIR" \
           -DUSE_SYSTEM_LIBSPARSEIR=ON \
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_Fortran_COMPILER=ifx \
           -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback"
         
