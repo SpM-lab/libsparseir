@@ -53,10 +53,10 @@ jobs:
         cmake -B ${{github.workspace}}/build \
           -DCMAKE_C_COMPILER=icx \
           -DCMAKE_CXX_COMPILER=icpx \
-          -DCMAKE_CXX_FLAGS="-fp-model=precise -g -O0" \
+          -DCMAKE_CXX_FLAGS="-fp-model=precise -g -O2" \
           -DCMAKE_Fortran_COMPILER=ifx \
-          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O0 -check all -traceback" \
-          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback" \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DSPARSEIR_BUILD_FORTRAN=ON \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
           -DSPARSEIR_BUILD_TESTING=ON \
@@ -107,39 +107,13 @@ jobs:
         cmake -B build \
           -DSparseIR_DIR="$SPARSEIR_DIR" \
           -DUSE_SYSTEM_LIBSPARSEIR=ON \
-          -DCMAKE_BUILD_TYPE=Debug \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_Fortran_COMPILER=ifx \
-          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O0 -check all -traceback -fpe0 -fp-stack-check"
+          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback"
         
         cmake --build build
         
-        echo "=== Adding debug output to Fortran code ==="
-        
-        # Create a debug version of the Fortran source with additional output
-        cp second_order_perturbation_fort.f90 second_order_perturbation_fort_debug.f90
-        
-        # Add debug output to the init_ir call
-        sed -i 's/CALL init_ir(ir_obj, beta, lambda, eps, .false.)/WRITE(*,*) "DEBUG: About to call init_ir with beta=", beta, "lambda=", lambda, "eps=", eps\n        CALL init_ir(ir_obj, beta, lambda, eps, .false.)\n        WRITE(*,*) "DEBUG: init_ir completed successfully"/' second_order_perturbation_fort_debug.f90
-        
-        # Rebuild with debug version
-        cmake -B build \
-          -DSparseIR_DIR="$SPARSEIR_DIR" \
-          -DUSE_SYSTEM_LIBSPARSEIR=ON \
-          -DCMAKE_BUILD_TYPE=Debug \
-          -DCMAKE_Fortran_COMPILER=ifx \
-          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O0 -check all -traceback -fpe0 -fp-stack-check"
-        
-        # Replace the source file temporarily
-        mv second_order_perturbation_fort.f90 second_order_perturbation_fort_original.f90
-        mv second_order_perturbation_fort_debug.f90 second_order_perturbation_fort.f90
-        
-        cmake --build build
-        
-        # Restore original source
-        mv second_order_perturbation_fort.f90 second_order_perturbation_fort_debug.f90
-        mv second_order_perturbation_fort_original.f90 second_order_perturbation_fort.f90
-        
-        echo "=== Running Fortran Sample with Debug Info ==="
+        echo "=== Running Fortran Sample ==="
         
         export LD_LIBRARY_PATH="${{env.INSTALL_PREFIX}}/lib:$LD_LIBRARY_PATH"
         export SPARSEIR_DEBUG=1
@@ -147,27 +121,23 @@ jobs:
         echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
         echo "SPARSEIR_DEBUG: $SPARSEIR_DEBUG"
         
-        # Run with debug output and error handling
-        echo "=== Attempting to run Fortran sample ==="
+        # Run with error handling and debug tools
         if ./build/second_order_perturbation_fort; then
           echo "=== Fortran Sample completed successfully ==="
         else
           echo "=== Fortran Sample failed with exit code $? ==="
-          echo "=== Attempting to run with gdb for debugging ==="
+          echo "=== Running with debug tools ==="
           
-          # Install gdb if not available
-          sudo apt-get install -y gdb
+          # Install debug tools
+          sudo apt-get install -y gdb valgrind
           
-          # Run with gdb to get detailed stack trace
-          echo "=== Running with gdb ==="
-          gdb -batch -ex "run" -ex "bt" -ex "info registers" -ex "quit" ./build/second_order_perturbation_fort || true
-          
-          echo "=== Attempting to run with valgrind for memory debugging ==="
-          # Install valgrind if not available
-          sudo apt-get install -y valgrind
+          # Run with gdb for stack trace
+          echo "=== GDB Stack Trace ==="
+          gdb -batch -ex "run" -ex "bt" -ex "info registers" -ex "quit" ./build/second_order_perturbation_fort 2>&1 || true
           
           # Run with valgrind for memory debugging
-          valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./build/second_order_perturbation_fort || true
+          echo "=== Valgrind Memory Check ==="
+          valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./build/second_order_perturbation_fort 2>&1 || true
           
           exit 1
         fi
