@@ -44,6 +44,12 @@ find_path(FFTW3_INCLUDE_DIR fftw3.f)
 # Create a simple Fortran test
 add_executable(second_order_perturbation_fort second_order_perturbation_fort.f90)
 
+# Add compiler-specific flags for heap arrays
+if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    # Intel Fortran: Put all arrays on heap to avoid stack overflow
+    target_compile_options(second_order_perturbation_fort PRIVATE -heap-arrays 0)
+endif()
+
 # Set RPATH for both Linux and macOS
 set_target_properties(second_order_perturbation_fort PROPERTIES
     INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"

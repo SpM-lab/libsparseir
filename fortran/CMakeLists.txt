@@ -14,6 +14,12 @@ add_library(sparseir_fortran SHARED
     ${TYPE_FILES}
 )
 
+# Add compiler-specific flags for heap arrays
+if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    # Intel Fortran: Put all arrays on heap to avoid stack overflow
+    target_compile_options(sparseir_fortran PRIVATE -heap-arrays 0)
+endif()
+
 # Add include directory
 target_include_directories(sparseir_fortran PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
