@@ -55,7 +55,7 @@ jobs:
           -DCMAKE_CXX_COMPILER=icpx \
           -DCMAKE_CXX_FLAGS="-fp-model=precise -g -O2" \
           -DCMAKE_Fortran_COMPILER=ifx \
-          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback" \
+          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback -heap-arrays 0" \
           -DCMAKE_BUILD_TYPE=Release \
           -DSPARSEIR_BUILD_FORTRAN=ON \
           -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_PREFIX}} \
@@ -107,7 +107,7 @@ jobs:
           -DUSE_SYSTEM_LIBSPARSEIR=ON \
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_Fortran_COMPILER=ifx \
-          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback"
+          -DCMAKE_Fortran_FLAGS="-stand f08 -warn all -g -O2 -check bounds -traceback -heap-arrays 0"
         
         cmake --build build
         
