@@ -53,6 +53,7 @@ jobs:
         cmake -B ${{github.workspace}}/build \
           -DCMAKE_C_COMPILER=icx \
           -DCMAKE_CXX_COMPILER=icpx \
+          -DCMAKE_CXX_FLAGS="-fp-model=precise" \
           -DCMAKE_Fortran_COMPILER=ifx \
           -DCMAKE_Fortran_FLAGS="-stand f08 -warn all" \
           -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
