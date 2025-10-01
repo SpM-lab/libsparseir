@@ -132,7 +132,7 @@ find_package(Threads REQUIRED)
 include(FetchContent)
 FetchContent_Declare(XPrec
     GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
-    GIT_TAG v0.8
+    GIT_TAG v0.7
 )
 
 # Extract the content but don't process it through add_subdirectory
