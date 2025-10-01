@@ -1317,7 +1317,7 @@ MODULE sparseir_ext
 #define NAME fit_matsubara_zd_1d
 #define NDIM 1
 #define SHAPE_ (:)
-#define FLAT arr
+#define FLAT CMPLX(arr, kind=c_double)
 #define RESHAPE_RES REAL(res_c, KIND=DP)
 #define ZD
 #include "fit_matsubara_impl.fh"
@@ -1331,7 +1331,7 @@ MODULE sparseir_ext
 #define NAME fit_matsubara_zd_2d
 #define NDIM 2
 #define SHAPE_ (:,:)
-#define FLAT RESHAPE(arr, [size(arr)])
+#define FLAT RESHAPE(CMPLX(arr, kind=c_double), [size(arr)])
 #define RESHAPE_RES RESHAPE(REAL(res_c, KIND=DP), shape(res))
 #define ZD
 #include "fit_matsubara_impl.fh"

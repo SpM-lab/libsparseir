@@ -296,6 +296,61 @@ inline void fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
     output = result.cast<std::complex<double>>();
 }
 
+// Double version of fit_inplace_dim2_split_svd for zero-dominant case
+inline void fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
+                                       const Eigen::MatrixXcd &B,
+                                       Eigen::Map<Eigen::MatrixXd> &output,
+                                       bool has_zero)
+{
+    Eigen::MatrixXd U = svd.matrixU().real();
+
+    Eigen::Index U_halfsize =
+        U.rows() % 2 == 0 ? U.rows() / 2 : U.rows() / 2 + 1;
+
+    Eigen::MatrixXd U_realT;
+    U_realT = U.block(0, 0, U_halfsize, U.cols()).transpose();
+
+    // Create a properly sized matrix first
+    Eigen::MatrixXd U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
+
+    // Get the blocks we need
+    if (has_zero) {
+        U_imag = Eigen::MatrixXd::Zero(U_halfsize, U.cols());
+        auto U_imag_ = U.block(U_halfsize, 0, U_halfsize - 1, U.cols());
+        auto U_imag_1 = U.block(0, 0, 1, U.cols());
+
+        // Now do the assignments
+        U_imag.topRows(1) = U_imag_1;
+        U_imag.bottomRows(U_imag_.rows()) = U_imag_;
+    } else {
+        U_imag = U.block(U_halfsize, 0, U_halfsize, U.cols());
+    }
+
+    Eigen::MatrixXd U_imagT = U_imag.transpose();
+    Eigen::MatrixXd B_real = B.real();
+    Eigen::MatrixXd B_imag = B.imag();
+    Eigen::MatrixXd UHB = _gemm(U_realT, B_real);
+    UHB += _gemm(U_imagT, B_imag);
+
+    // Apply inverse singular values to the rows of UHB
+    {
+        const int num_singular_values = svd.singularValues().size();
+        const int num_cols = UHB.cols();
+        (void)UHB; // UHB_data is unused in optimized code
+
+        for (int i = 0; i < num_singular_values; ++i) {
+            const double inv_sigma = 1.0 / svd.singularValues()(i);
+            for (int j = 0; j < num_cols; ++j) {
+                UHB(i, j) *= inv_sigma;
+            }
+        }
+    }
+
+    Eigen::MatrixXd matrixV = svd.matrixV().real();
+    auto result = _gemm(matrixV, UHB);
+    output = result; // Keep as real
+}
+
 template <typename Scalar, typename InputScalar, typename OutputScalar,
           typename Func>
 int fit_inplace_dim3(
@@ -529,5 +584,10 @@ fit_impl_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
 
     return movedim(result_tensor, 0, dim);
 }
+
+
+// Force instantiation for both Fermionic and Bosonic
+template class MatsubaraSampling<Fermionic>;
+template class MatsubaraSampling<Bosonic>;
 
 } // namespace sparseir
