@@ -621,3 +621,16 @@ function c_spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, o
   integer(c_int) :: c_spir_sampling_fit_zz
 end function
 
+function c_spir_sampling_fit_zd(s, order, ndim, input_dims, target_dim, input, out) &
+    bind(c, name="spir_sampling_fit_zd")
+  use iso_c_binding
+  type(c_ptr), value :: s
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
+  type(c_ptr), value :: input_dims
+  integer(c_int), value :: target_dim
+  type(c_ptr), value :: input
+  type(c_ptr), value :: out
+  integer(c_int) :: c_spir_sampling_fit_zd
+end function
+

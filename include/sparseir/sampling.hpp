@@ -541,15 +541,17 @@ public:
         const override
     {
         if (positive_only_) {
-            return fit_inplace_dim3(
-                n_sampling_points(), basis_size(),
-                get_matrix_svd(), input, dim, output,
-                [this](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
-                   const Eigen::Map<const Eigen::MatrixXcd> &input,
-                   Eigen::Map<Eigen::MatrixXcd> &output) {
-                    fit_inplace_dim2_split_svd(svd, input, output, this->has_zero_);
-                }
-            );
+            // Create temporary real output tensor
+            auto output_dims = output.dimensions();
+            Eigen::Tensor<double, 3> real_output(output_dims[0], output_dims[1], output_dims[2]);
+            Eigen::TensorMap<Eigen::Tensor<double, 3>> real_output_map(real_output.data(), output_dims[0], output_dims[1], output_dims[2]);
+            
+            int result = fit_inplace_zd(input, dim, real_output_map);
+            if (result != SPIR_COMPUTATION_SUCCESS) return result;
+            
+            // Convert real result to complex
+            output = real_output.cast<std::complex<double>>();
+            return SPIR_COMPUTATION_SUCCESS;
         } else {
             return fit_inplace_dim3(
                 n_sampling_points(), basis_size(),

@@ -43,11 +43,21 @@ SUBROUTINE NAME(obj, statistics, target_dim, arr, res)
   ALLOCATE(res_c(PRODUCT(output_dims_c)))
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
+#ifdef ZD
+    status_c = c_spir_sampling_fit_zd(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+#else
     status_c = c_spir_sampling_fit_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
       ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+#endif
   CASE (SPIR_STATISTICS_BOSONIC)
+#ifdef ZD
+    status_c = c_spir_sampling_fit_zd(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+#else
     status_c = c_spir_sampling_fit_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
       ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+#endif
   END SELECT
   IF (status_c /= 0) THEN
     CALL errore('NAME', 'Error fitting on Matsubara frequencies', status_c)

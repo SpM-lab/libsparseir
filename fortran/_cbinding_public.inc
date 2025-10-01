@@ -67,3 +67,4 @@
   public :: c_spir_sampling_eval_zz
   public :: c_spir_sampling_fit_dd
   public :: c_spir_sampling_fit_zz
+  public :: c_spir_sampling_fit_zd
