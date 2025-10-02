@@ -1,0 +1,40 @@
+name: Build and upload conda packages
+
+# Triggered a new tag starting with "v" is pushed
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.runner_label }}
+    strategy:
+      matrix:
+        include:
+          - name: ubuntu-x64
+            runner_label: ubuntu-latest
+          - name: macos-arm64
+            runner_label: macos-latest
+
+    steps:
+    - uses: actions/checkout@v5
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        auto-update-conda: true
+    - name: Conda info
+      shell: bash -el {0}
+      run: conda info
+    - name: Install dependencies
+      run: |
+        conda install conda-build anaconda-client -y
+
+    - name: Bulid and upload
+      working-directory: python
+      env:
+        ANACONDA_API_TOKEN: ${{secrets.ANACONDA_TOKEN}}
+      run: |
+        python3 --version
+        conda config --set anaconda_upload yes
+        conda build conda-recipe --user SpM-lab --output-folder conda-bld
