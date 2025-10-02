@@ -6,7 +6,7 @@
 #include <cmath>
 #include <limits>
 #include <utility>
-#include <xprec/ddouble-header-only.hpp>
+#include <xprec/ddouble.hpp>
 
 namespace sparseir {
 

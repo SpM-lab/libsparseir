@@ -73,19 +73,14 @@ endif()
 
 find_package(Threads REQUIRED)
 
-# libxprec - built only as a static dependency, not for installation
+# libxprec - use official FetchContent method
 include(FetchContent)
 FetchContent_Declare(XPrec
     GIT_REPOSITORY https://github.com/tuwien-cms/libxprec
     GIT_TAG v0.8
+    FIND_PACKAGE_ARGS 0.8
 )
-
-# Extract the content but don't process it through add_subdirectory
-FetchContent_GetProperties(XPrec)
-if(NOT xprec_POPULATED)
-    FetchContent_Populate(XPrec)
-    message(STATUS "XPrec source directory: ${xprec_SOURCE_DIR}")
-endif()
+FetchContent_MakeAvailable(XPrec)
 
 # ---------------------------------
 # Building
@@ -136,7 +131,7 @@ set_target_properties(sparseir PROPERTIES
     CXX_STANDARD_REQUIRED ON
     )
 
-target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
+target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads XPrec::xprec)
 
 # Use library convention.
 add_library(SparseIR::sparseir ALIAS sparseir)

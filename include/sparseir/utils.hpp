@@ -7,7 +7,7 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
 #include <memory>
-#include "xprec/ddouble-header-only.hpp"
+#include "xprec/ddouble.hpp"
 
 namespace sparseir {
 

@@ -6,7 +6,7 @@
 #include <iostream>
 #include <sparseir/sparseir.hpp>
 #include <vector>
-#include <xprec/ddouble-header-only.hpp>
+#include <xprec/ddouble.hpp>
 
 using Catch::Approx;
 using xprec::DDouble;

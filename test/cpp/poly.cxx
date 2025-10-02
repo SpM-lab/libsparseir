@@ -11,7 +11,7 @@
 
 #include "sve_cache.hpp"
 #include <sparseir/sparseir.hpp>
-#include <xprec/ddouble-header-only.hpp>
+#include <xprec/ddouble.hpp>
 
 #include <Eigen/Dense>
 #include <catch2/catch_test_macros.hpp>

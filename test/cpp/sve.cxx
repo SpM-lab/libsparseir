@@ -11,7 +11,7 @@
 #include "sve_cache.hpp"
 #include <sparseir/sparseir.hpp>
 #include <sparseir/sparseir.h>
-#include <xprec/ddouble-header-only.hpp>
+#include <xprec/ddouble.hpp>
 
 using std::invalid_argument;
 
