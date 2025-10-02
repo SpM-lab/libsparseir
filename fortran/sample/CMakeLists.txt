@@ -47,7 +47,7 @@ add_executable(second_order_perturbation_fort second_order_perturbation_fort.f90
 # Add compiler-specific flags for heap arrays
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
     # Intel Fortran: Put all arrays on heap to avoid stack overflow
-    target_compile_options(second_order_perturbation_fort PRIVATE -heap-arrays 0)
+    #target_compile_options(second_order_perturbation_fort PRIVATE -heap-arrays 0)
 endif()
 
 # Set RPATH for both Linux and macOS
