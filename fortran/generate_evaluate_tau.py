@@ -27,20 +27,47 @@ def generate_shape_string(ndim):
     else:
         raise ValueError(f"Unsupported dimension: {ndim}")
 
-def generate_evaluate_tau_function(ndim):
-    """Generate evaluate_tau_zz function for given dimension."""
+def generate_evaluate_tau_function(ndim, input_type, output_type):
+    """Generate evaluate_tau function for given dimension and type combination."""
     shape_str = generate_shape_string(ndim)
     
     # Generate dimension array declaration
     dim_array_decl = f"INTEGER(KIND=c_int), TARGET :: input_dims_c({ndim}), output_dims_c({ndim})"
     
+    # Determine types and C function
+    func_suffix = f"{input_type}{output_type}"
+    
+    # Input type
+    if input_type == 'z':
+        input_fortran_type = "COMPLEX(KIND=DP)"
+        input_c_type = "COMPLEX(KIND=c_double)"
+    elif input_type == 'd':
+        input_fortran_type = "REAL(KIND=DP)"
+        input_c_type = "REAL(KIND=c_double)"
+    else:
+        raise ValueError(f"Unsupported input type: {input_type}")
+    
+    # Output type
+    if output_type == 'z':
+        output_fortran_type = "COMPLEX(KIND=DP)"
+        output_c_type = "COMPLEX(KIND=c_double)"
+    elif output_type == 'd':
+        output_fortran_type = "REAL(KIND=DP)"
+        output_c_type = "REAL(KIND=c_double)"
+    else:
+        raise ValueError(f"Unsupported output type: {output_type}")
+    
+    # C function
+    c_function = f"c_spir_sampling_eval_{func_suffix}"
+    
     # Generate the function
-    function = f"""SUBROUTINE evaluate_tau_zz_{ndim}d(obj, target_dim, arr, res)
+    function = f"""SUBROUTINE evaluate_tau_{func_suffix}_{ndim}d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr {shape_str}
-  COMPLEX(KIND=DP), INTENT(OUT) :: res {shape_str}
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c{shape_str}, res_c{shape_str}
+  {input_fortran_type}, INTENT(IN) :: arr {shape_str}
+  {output_fortran_type}, INTENT(OUT) :: res {shape_str}
+  {input_c_type}, ALLOCATABLE, TARGET :: arr_c{shape_str}
+  {output_c_type}, ALLOCATABLE, TARGET :: res_c{shape_str}
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   {dim_array_decl}
@@ -48,16 +75,16 @@ def generate_evaluate_tau_function(ndim):
   output_dims_c = SHAPE(res)
   ndim_c = {ndim}
   IF (target_dim < 1 .or. target_dim > {ndim}) THEN
-    CALL errore('evaluate_tau_zz_{ndim}d', 'Target dimension is out of range', 1)
+    CALL errore('evaluate_tau_{func_suffix}_{ndim}d', 'Target dimension is out of range', 1)
   ENDIF
   IF (input_dims_c(target_dim) /= obj%size) THEN
-    CALL errore('evaluate_tau_zz_{ndim}d', 'Target dimension is not the same as the basis size', 1)
+    CALL errore('evaluate_tau_{func_suffix}_{ndim}d', 'Target dimension is not the same as the basis size', 1)
   ENDIF
   IF (output_dims_c(target_dim) /= obj%ntau) THEN
-    CALL errore('evaluate_tau_zz_{ndim}d', 'Target dimension is not the same as the number of tau sampling points', 1)
+    CALL errore('evaluate_tau_{func_suffix}_{ndim}d', 'Target dimension is not the same as the number of tau sampling points', 1)
   ENDIF
   IF (.NOT. check_output_dims(target_dim, input_dims_c, output_dims_c)) THEN
-    CALL errore('evaluate_tau_zz_{ndim}d', &
+    CALL errore('evaluate_tau_{func_suffix}_{ndim}d', &
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
@@ -65,10 +92,10 @@ def generate_evaluate_tau_function(ndim):
   ALLOCATE(arr_c, MOLD=arr)
   arr_c = arr
   ALLOCATE(res_c, MOLD=res)
-  status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
+  status_c = {c_function}(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
     ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
   IF (status_c /= 0) THEN
-    CALL errore('evaluate_tau_zz_{ndim}d', 'Error evaluating on tau sampling points', status_c)
+    CALL errore('evaluate_tau_{func_suffix}_{ndim}d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
   res = res_c
   DEALLOCATE(arr_c, res_c)
@@ -78,7 +105,7 @@ END SUBROUTINE"""
     return function
 
 def generate_all_functions():
-    """Generate all evaluate_tau functions for 1d to 7d."""
+    """Generate all evaluate_tau functions for 1d to 7d with different type combinations."""
     content = []
     
     # Header comment
@@ -87,11 +114,15 @@ def generate_all_functions():
     content.append("! Based on template from tmp.f90")
     content.append("")
     
-    # Generate functions for each dimension
-    for ndim in range(1, 8):  # 1d to 7d
-        function = generate_evaluate_tau_function(ndim)
-        content.append(function)
-        content.append("")
+    # Type combinations: (input_type, output_type)
+    input_output_types = [('z', 'z'), ('d', 'd')]
+    
+    # Generate functions for each type combination and dimension
+    for input_type, output_type in input_output_types:
+        for ndim in range(1, 8):  # 1d to 7d
+            function = generate_evaluate_tau_function(ndim, input_type, output_type)
+            content.append(function)
+            content.append("")
     
     return "\n".join(content)
 
@@ -110,6 +141,7 @@ def main():
     print(f"Successfully generated {output_file}")
     print(f"Total lines: {len(content.splitlines())}")
     print(f"Generated functions for dimensions: 1d to 7d")
+    print(f"Type combinations: (z,z) and (d,d)")
 
 if __name__ == "__main__":
     main()
