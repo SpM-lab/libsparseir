@@ -566,77 +566,7 @@ MODULE sparseir_ext
     is_valid = .true.
   END FUNCTION check_output_dims
 !
-#define NAME evaluate_tau_zz_1d
-#define NDIM 1
-#define SHAPE_ (:)
-#define FLAT REAL(arr, kind=c_double)
-#define FLAT2 CMPLX(arr, kind=c_double)
-#define RESHAPE_RES CMPLX(res_c, 0.0_DP, KIND=DP)
-#define RESHAPE_RES2 CMPLX(res_cz, KIND=DP)
-#include "evaluate_tau_impl.fh"
-#undef NAME
-#undef NDIM
-#undef SHAPE_
-#undef FLAT
-#undef FLAT2
-#undef RESHAPE_RES
-#undef RESHAPE_RES2
-!
-#define NAME evaluate_tau_zz_2d
-#define NDIM 2
-#define SHAPE_ (:,:)
-#define FLAT RESHAPE(REAL(arr, kind=c_double), [size(arr)])
-#define FLAT2 RESHAPE(arr, [size(arr)])
-#define RESHAPE_RES RESHAPE(CMPLX(res_c, 0.0_DP, KIND=DP), shape(res))
-#define RESHAPE_RES2 RESHAPE(CMPLX(res_cz, KIND=DP), shape(res))
-#include "evaluate_tau_impl.fh"
-#undef NAME
-#undef NDIM
-#undef SHAPE_
-!
-#define NAME evaluate_tau_zz_3d
-#define NDIM 3
-#define SHAPE_ (:,:,:)
-#include "evaluate_tau_impl.fh"
-#undef NAME
-#undef NDIM
-#undef SHAPE_
-!
-#define NAME evaluate_tau_zz_4d
-#define NDIM 4
-#define SHAPE_ (:,:,:,:)
-#include "evaluate_tau_impl.fh"
-#undef NAME
-#undef NDIM
-#undef SHAPE_
-!
-#define NAME evaluate_tau_zz_5d
-#define NDIM 5
-#define SHAPE_ (:,:,:,:,:)
-#include "evaluate_tau_impl.fh"
-#undef NAME
-#undef NDIM
-#undef SHAPE_
-!
-#define NAME evaluate_tau_zz_6d
-#define NDIM 6
-#define SHAPE_ (:,:,:,:,:,:)
-#include "evaluate_tau_impl.fh"
-#undef NAME
-#undef NDIM
-#undef SHAPE_
-!
-#define NAME evaluate_tau_zz_7d
-#define NDIM 7
-#define SHAPE_ (:,:,:,:,:,:,:)
-#include "evaluate_tau_impl.fh"
-#undef NAME
-#undef NDIM
-#undef SHAPE_
-#undef FLAT
-#undef FLAT2
-#undef RESHAPE_RES
-#undef RESHAPE_RES2
+#include "evaluate_tau_impl.inc"
 !
 #define NAME evaluate_tau_dd_1d
 #define NDIM 1
