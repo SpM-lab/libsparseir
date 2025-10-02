@@ -22,6 +22,7 @@ foreach(TEST_FILE ${TEST_FILES})
     target_link_libraries(${TEST_NAME} PRIVATE Catch2::Catch2WithMain)
     target_link_libraries(${TEST_NAME} PRIVATE SparseIR::sparseir)
     target_link_libraries(${TEST_NAME} PRIVATE Eigen3::Eigen Threads::Threads)
+    target_link_libraries(${TEST_NAME} PRIVATE XPrec::xprec)
     
     # Add BLAS/LAPACK linking for tests if enabled
     if(SPARSEIR_USE_BLAS AND BLAS_FOUND)

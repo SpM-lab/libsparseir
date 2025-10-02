@@ -6,7 +6,7 @@
 #include "sve_cache.hpp"
 #include <catch2/catch_approx.hpp> // for Approx
 #include <sparseir/sparseir.hpp>
-#include <xprec/ddouble-header-only.hpp>
+#include <xprec/ddouble.hpp>
 
 #include <complex>
 #include <map>

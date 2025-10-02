@@ -6,7 +6,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <vector>
-#include "xprec/ddouble-header-only.hpp"
+#include "xprec/ddouble.hpp"
 
 #include "sparseir/specfuncs.hpp"
 

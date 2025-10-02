@@ -9,7 +9,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <sparseir/sparseir.hpp>
-#include <xprec/ddouble-header-only.hpp>
+#include <xprec/ddouble.hpp>
 
 // test_piecewise_legendre_poly.cpp
 

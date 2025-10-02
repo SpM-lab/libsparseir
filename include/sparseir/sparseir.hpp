@@ -1,4 +1,4 @@
-#include "xprec/ddouble-header-only.hpp"
+#include "xprec/ddouble.hpp"
 
 #include "sparseir-fwd.hpp"
 

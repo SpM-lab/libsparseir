@@ -6,7 +6,7 @@
 #include <memory>
 #include <random>
 #include <sparseir/sparseir.hpp>
-#include "xprec/ddouble-header-only.hpp"
+#include "xprec/ddouble.hpp"
 
 using Catch::Approx;
 
