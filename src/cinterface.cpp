@@ -546,6 +546,16 @@ int spir_sampling_fit_zz(const spir_sampling *s, int order,
                     &sparseir::AbstractSampling::fit_inplace_zz);
 }
 
+int spir_sampling_fit_zd(const spir_sampling *s, int order,
+                             int ndim, const int *input_dims,
+                             int target_dim, const c_complex *input,
+                             double *out)
+{
+    std::complex<double> *cpp_input = (std::complex<double> *)(input);
+    return fit_impl(s, order, ndim, input_dims, target_dim, cpp_input, out,
+                    &sparseir::AbstractSampling::fit_inplace_zd);
+}
+
 int spir_dlr2ir_dd(const spir_basis *dlr, int order, int ndim,
                        const int *input_dims, int target_dim,
                        const double *input, double *out)

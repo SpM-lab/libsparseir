@@ -1236,6 +1236,27 @@ int spir_sampling_fit_zz(const spir_sampling *s, int order, int ndim,
                          const int *input_dims, int target_dim,
                          const c_complex *input, c_complex *out);
 
+/**
+ * @brief Fit basis coefficients from Matsubara sampling points (complex input, real output)
+ *
+ * This function fits basis coefficients from Matsubara sampling points
+ * using complex input and real output (positive only case).
+ *
+ * @param s Pointer to the sampling object
+ * @param order Storage order (SPIR_ORDER_COLUMN_MAJOR or SPIR_ORDER_ROW_MAJOR)
+ * @param ndim Number of dimensions
+ * @param input_dims Array of input dimensions
+ * @param target_dim Target dimension (0-based)
+ * @param input Input array (complex)
+ * @param out Output array (real)
+ * @return SPIR_COMPUTATION_SUCCESS on success, error code otherwise
+ *
+ * @see spir_sampling_fit_zz
+ */
+int spir_sampling_fit_zd(const spir_sampling *s, int order, int ndim,
+                         const int *input_dims, int target_dim,
+                         const c_complex *input, double *out);
+
 #ifdef __cplusplus
 }
 #endif

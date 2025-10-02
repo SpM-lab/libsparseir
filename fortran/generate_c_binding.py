@@ -118,7 +118,7 @@ end subroutine
         result_decl = f"  {result_type.split(',')[0]} :: {fortran_func_name}"
         c_binding = f"""
 function {fortran_func_name}({arglist}) &
-    bind(c, name="{func_name}") result({fortran_func_name})
+    bind(c, name="{func_name}")
   use iso_c_binding
 {decl_lines}
 {result_decl}
@@ -138,7 +138,7 @@ end subroutine
 """.strip()
     else:
         fortran_interface = f"""
-function {fortran_name}({arglist}) result({fortran_name})
+function {fortran_name}({arglist})
   use iso_c_binding
 {fortran_decl_lines}
   {fortran_name} = {fortran_func_name}({fortran_body_lines})

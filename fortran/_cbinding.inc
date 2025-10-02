@@ -6,14 +6,14 @@ subroutine c_spir_kernel_release(obj) &
 end subroutine
 
 function c_spir_kernel_clone(src) &
-    bind(c, name="spir_kernel_clone") result(c_spir_kernel_clone)
+    bind(c, name="spir_kernel_clone")
   use iso_c_binding
   type(c_ptr), value :: src
   type(c_ptr) :: c_spir_kernel_clone
 end function
 
 function c_spir_kernel_is_assigned(obj) &
-    bind(c, name="spir_kernel_is_assigned") result(c_spir_kernel_is_assigned)
+    bind(c, name="spir_kernel_is_assigned")
   use iso_c_binding
   type(c_ptr), value :: obj
   integer(c_int) :: c_spir_kernel_is_assigned
@@ -26,14 +26,14 @@ subroutine c_spir_funcs_release(obj) &
 end subroutine
 
 function c_spir_funcs_clone(src) &
-    bind(c, name="spir_funcs_clone") result(c_spir_funcs_clone)
+    bind(c, name="spir_funcs_clone")
   use iso_c_binding
   type(c_ptr), value :: src
   type(c_ptr) :: c_spir_funcs_clone
 end function
 
 function c_spir_funcs_is_assigned(obj) &
-    bind(c, name="spir_funcs_is_assigned") result(c_spir_funcs_is_assigned)
+    bind(c, name="spir_funcs_is_assigned")
   use iso_c_binding
   type(c_ptr), value :: obj
   integer(c_int) :: c_spir_funcs_is_assigned
@@ -46,14 +46,14 @@ subroutine c_spir_basis_release(obj) &
 end subroutine
 
 function c_spir_basis_clone(src) &
-    bind(c, name="spir_basis_clone") result(c_spir_basis_clone)
+    bind(c, name="spir_basis_clone")
   use iso_c_binding
   type(c_ptr), value :: src
   type(c_ptr) :: c_spir_basis_clone
 end function
 
 function c_spir_basis_is_assigned(obj) &
-    bind(c, name="spir_basis_is_assigned") result(c_spir_basis_is_assigned)
+    bind(c, name="spir_basis_is_assigned")
   use iso_c_binding
   type(c_ptr), value :: obj
   integer(c_int) :: c_spir_basis_is_assigned
@@ -66,14 +66,14 @@ subroutine c_spir_sampling_release(obj) &
 end subroutine
 
 function c_spir_sampling_clone(src) &
-    bind(c, name="spir_sampling_clone") result(c_spir_sampling_clone)
+    bind(c, name="spir_sampling_clone")
   use iso_c_binding
   type(c_ptr), value :: src
   type(c_ptr) :: c_spir_sampling_clone
 end function
 
 function c_spir_sampling_is_assigned(obj) &
-    bind(c, name="spir_sampling_is_assigned") result(c_spir_sampling_is_assigned)
+    bind(c, name="spir_sampling_is_assigned")
   use iso_c_binding
   type(c_ptr), value :: obj
   integer(c_int) :: c_spir_sampling_is_assigned
@@ -86,21 +86,21 @@ subroutine c_spir_sve_result_release(obj) &
 end subroutine
 
 function c_spir_sve_result_clone(src) &
-    bind(c, name="spir_sve_result_clone") result(c_spir_sve_result_clone)
+    bind(c, name="spir_sve_result_clone")
   use iso_c_binding
   type(c_ptr), value :: src
   type(c_ptr) :: c_spir_sve_result_clone
 end function
 
 function c_spir_sve_result_is_assigned(obj) &
-    bind(c, name="spir_sve_result_is_assigned") result(c_spir_sve_result_is_assigned)
+    bind(c, name="spir_sve_result_is_assigned")
   use iso_c_binding
   type(c_ptr), value :: obj
   integer(c_int) :: c_spir_sve_result_is_assigned
 end function
 
 function c_spir_logistic_kernel_new(lambda, status) &
-    bind(c, name="spir_logistic_kernel_new") result(c_spir_logistic_kernel_new)
+    bind(c, name="spir_logistic_kernel_new")
   use iso_c_binding
   real(c_double), value :: lambda
   type(c_ptr), value :: status
@@ -108,7 +108,7 @@ function c_spir_logistic_kernel_new(lambda, status) &
 end function
 
 function c_spir_reg_bose_kernel_new(lambda, status) &
-    bind(c, name="spir_reg_bose_kernel_new") result(c_spir_reg_bose_kernel_new)
+    bind(c, name="spir_reg_bose_kernel_new")
   use iso_c_binding
   real(c_double), value :: lambda
   type(c_ptr), value :: status
@@ -116,7 +116,7 @@ function c_spir_reg_bose_kernel_new(lambda, status) &
 end function
 
 function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) &
-    bind(c, name="spir_kernel_domain") result(c_spir_kernel_domain)
+    bind(c, name="spir_kernel_domain")
   use iso_c_binding
   type(c_ptr), value :: k
   type(c_ptr), value :: xmin
@@ -127,7 +127,7 @@ function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) &
 end function
 
 function c_spir_sve_result_new(k, epsilon, cutoff, lmax, n_gauss, Twork, status) &
-    bind(c, name="spir_sve_result_new") result(c_spir_sve_result_new)
+    bind(c, name="spir_sve_result_new")
   use iso_c_binding
   type(c_ptr), value :: k
   real(c_double), value :: epsilon
@@ -140,7 +140,7 @@ function c_spir_sve_result_new(k, epsilon, cutoff, lmax, n_gauss, Twork, status)
 end function
 
 function c_spir_sve_result_get_size(sve, size) &
-    bind(c, name="spir_sve_result_get_size") result(c_spir_sve_result_get_size)
+    bind(c, name="spir_sve_result_get_size")
   use iso_c_binding
   type(c_ptr), value :: sve
   type(c_ptr), value :: size
@@ -148,7 +148,7 @@ function c_spir_sve_result_get_size(sve, size) &
 end function
 
 function c_spir_sve_result_truncate(sve, epsilon, max_size, status) &
-    bind(c, name="spir_sve_result_truncate") result(c_spir_sve_result_truncate)
+    bind(c, name="spir_sve_result_truncate")
   use iso_c_binding
   type(c_ptr), value :: sve
   real(c_double), value :: epsilon
@@ -158,7 +158,7 @@ function c_spir_sve_result_truncate(sve, epsilon, max_size, status) &
 end function
 
 function c_spir_sve_result_get_svals(sve, svals) &
-    bind(c, name="spir_sve_result_get_svals") result(c_spir_sve_result_get_svals)
+    bind(c, name="spir_sve_result_get_svals")
   use iso_c_binding
   type(c_ptr), value :: sve
   type(c_ptr), value :: svals
@@ -166,7 +166,7 @@ function c_spir_sve_result_get_svals(sve, svals) &
 end function
 
 function c_spir_funcs_get_size(funcs, size) &
-    bind(c, name="spir_funcs_get_size") result(c_spir_funcs_get_size)
+    bind(c, name="spir_funcs_get_size")
   use iso_c_binding
   type(c_ptr), value :: funcs
   type(c_ptr), value :: size
@@ -174,7 +174,7 @@ function c_spir_funcs_get_size(funcs, size) &
 end function
 
 function c_spir_funcs_get_slice(funcs, nslice, indices, status) &
-    bind(c, name="spir_funcs_get_slice") result(c_spir_funcs_get_slice)
+    bind(c, name="spir_funcs_get_slice")
   use iso_c_binding
   type(c_ptr), value :: funcs
   integer(c_int), value :: nslice
@@ -184,7 +184,7 @@ function c_spir_funcs_get_slice(funcs, nslice, indices, status) &
 end function
 
 function c_spir_funcs_eval(funcs, x, out) &
-    bind(c, name="spir_funcs_eval") result(c_spir_funcs_eval)
+    bind(c, name="spir_funcs_eval")
   use iso_c_binding
   type(c_ptr), value :: funcs
   real(c_double), value :: x
@@ -193,7 +193,7 @@ function c_spir_funcs_eval(funcs, x, out) &
 end function
 
 function c_spir_funcs_eval_matsu(funcs, x, out) &
-    bind(c, name="spir_funcs_eval_matsu") result(c_spir_funcs_eval_matsu)
+    bind(c, name="spir_funcs_eval_matsu")
   use iso_c_binding
   type(c_ptr), value :: funcs
   integer(c_int), value :: x
@@ -202,7 +202,7 @@ function c_spir_funcs_eval_matsu(funcs, x, out) &
 end function
 
 function c_spir_funcs_batch_eval(funcs, order, num_points, xs, out) &
-    bind(c, name="spir_funcs_batch_eval") result(c_spir_funcs_batch_eval)
+    bind(c, name="spir_funcs_batch_eval")
   use iso_c_binding
   type(c_ptr), value :: funcs
   integer(c_int), value :: order
@@ -213,7 +213,7 @@ function c_spir_funcs_batch_eval(funcs, order, num_points, xs, out) &
 end function
 
 function c_spir_funcs_batch_eval_matsu(funcs, order, num_freqs, matsubara_freq_indices, out) &
-    bind(c, name="spir_funcs_batch_eval_matsu") result(c_spir_funcs_batch_eval_matsu)
+    bind(c, name="spir_funcs_batch_eval_matsu")
   use iso_c_binding
   type(c_ptr), value :: funcs
   integer(c_int), value :: order
@@ -224,7 +224,7 @@ function c_spir_funcs_batch_eval_matsu(funcs, order, num_freqs, matsubara_freq_i
 end function
 
 function c_spir_funcs_get_n_knots(funcs, n_knots) &
-    bind(c, name="spir_funcs_get_n_knots") result(c_spir_funcs_get_n_knots)
+    bind(c, name="spir_funcs_get_n_knots")
   use iso_c_binding
   type(c_ptr), value :: funcs
   type(c_ptr), value :: n_knots
@@ -232,7 +232,7 @@ function c_spir_funcs_get_n_knots(funcs, n_knots) &
 end function
 
 function c_spir_funcs_get_knots(funcs, knots) &
-    bind(c, name="spir_funcs_get_knots") result(c_spir_funcs_get_knots)
+    bind(c, name="spir_funcs_get_knots")
   use iso_c_binding
   type(c_ptr), value :: funcs
   type(c_ptr), value :: knots
@@ -240,7 +240,7 @@ function c_spir_funcs_get_knots(funcs, knots) &
 end function
 
 function c_spir_basis_new(statistics, beta, omega_max, epsilon, k, sve, max_size, status) &
-    bind(c, name="spir_basis_new") result(c_spir_basis_new)
+    bind(c, name="spir_basis_new")
   use iso_c_binding
   integer(c_int), value :: statistics
   real(c_double), value :: beta
@@ -254,7 +254,7 @@ function c_spir_basis_new(statistics, beta, omega_max, epsilon, k, sve, max_size
 end function
 
 function c_spir_basis_get_size(b, size) &
-    bind(c, name="spir_basis_get_size") result(c_spir_basis_get_size)
+    bind(c, name="spir_basis_get_size")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: size
@@ -262,7 +262,7 @@ function c_spir_basis_get_size(b, size) &
 end function
 
 function c_spir_basis_get_svals(b, svals) &
-    bind(c, name="spir_basis_get_svals") result(c_spir_basis_get_svals)
+    bind(c, name="spir_basis_get_svals")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: svals
@@ -270,7 +270,7 @@ function c_spir_basis_get_svals(b, svals) &
 end function
 
 function c_spir_basis_get_stats(b, statistics) &
-    bind(c, name="spir_basis_get_stats") result(c_spir_basis_get_stats)
+    bind(c, name="spir_basis_get_stats")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: statistics
@@ -278,7 +278,7 @@ function c_spir_basis_get_stats(b, statistics) &
 end function
 
 function c_spir_basis_get_singular_values(b, svals) &
-    bind(c, name="spir_basis_get_singular_values") result(c_spir_basis_get_singular_values)
+    bind(c, name="spir_basis_get_singular_values")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: svals
@@ -286,7 +286,7 @@ function c_spir_basis_get_singular_values(b, svals) &
 end function
 
 function c_spir_basis_get_u(b, status) &
-    bind(c, name="spir_basis_get_u") result(c_spir_basis_get_u)
+    bind(c, name="spir_basis_get_u")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: status
@@ -294,7 +294,7 @@ function c_spir_basis_get_u(b, status) &
 end function
 
 function c_spir_basis_get_v(b, status) &
-    bind(c, name="spir_basis_get_v") result(c_spir_basis_get_v)
+    bind(c, name="spir_basis_get_v")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: status
@@ -302,7 +302,7 @@ function c_spir_basis_get_v(b, status) &
 end function
 
 function c_spir_basis_get_uhat(b, status) &
-    bind(c, name="spir_basis_get_uhat") result(c_spir_basis_get_uhat)
+    bind(c, name="spir_basis_get_uhat")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: status
@@ -310,7 +310,7 @@ function c_spir_basis_get_uhat(b, status) &
 end function
 
 function c_spir_basis_get_n_default_taus(b, num_points) &
-    bind(c, name="spir_basis_get_n_default_taus") result(c_spir_basis_get_n_default_taus)
+    bind(c, name="spir_basis_get_n_default_taus")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: num_points
@@ -318,7 +318,7 @@ function c_spir_basis_get_n_default_taus(b, num_points) &
 end function
 
 function c_spir_basis_get_default_taus(b, points) &
-    bind(c, name="spir_basis_get_default_taus") result(c_spir_basis_get_default_taus)
+    bind(c, name="spir_basis_get_default_taus")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: points
@@ -326,7 +326,7 @@ function c_spir_basis_get_default_taus(b, points) &
 end function
 
 function c_spir_basis_get_n_default_ws(b, num_points) &
-    bind(c, name="spir_basis_get_n_default_ws") result(c_spir_basis_get_n_default_ws)
+    bind(c, name="spir_basis_get_n_default_ws")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: num_points
@@ -334,7 +334,7 @@ function c_spir_basis_get_n_default_ws(b, num_points) &
 end function
 
 function c_spir_basis_get_default_ws(b, points) &
-    bind(c, name="spir_basis_get_default_ws") result(c_spir_basis_get_default_ws)
+    bind(c, name="spir_basis_get_default_ws")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: points
@@ -342,7 +342,7 @@ function c_spir_basis_get_default_ws(b, points) &
 end function
 
 function c_spir_basis_get_default_taus_ext(b, n_points, points, n_points_returned) &
-    bind(c, name="spir_basis_get_default_taus_ext") result(c_spir_basis_get_default_taus_ext)
+    bind(c, name="spir_basis_get_default_taus_ext")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: n_points
@@ -352,7 +352,7 @@ function c_spir_basis_get_default_taus_ext(b, n_points, points, n_points_returne
 end function
 
 function c_spir_basis_get_n_default_matsus(b, positive_only, num_points) &
-    bind(c, name="spir_basis_get_n_default_matsus") result(c_spir_basis_get_n_default_matsus)
+    bind(c, name="spir_basis_get_n_default_matsus")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
@@ -361,7 +361,7 @@ function c_spir_basis_get_n_default_matsus(b, positive_only, num_points) &
 end function
 
 function c_spir_basis_get_default_matsus(b, positive_only, points) &
-    bind(c, name="spir_basis_get_default_matsus") result(c_spir_basis_get_default_matsus)
+    bind(c, name="spir_basis_get_default_matsus")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
@@ -370,7 +370,7 @@ function c_spir_basis_get_default_matsus(b, positive_only, points) &
 end function
 
 function c_spir_basis_get_n_default_matsus_ext(b, positive_only, L, num_points_returned) &
-    bind(c, name="spir_basis_get_n_default_matsus_ext") result(c_spir_basis_get_n_default_matsus_ext)
+    bind(c, name="spir_basis_get_n_default_matsus_ext")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
@@ -380,7 +380,7 @@ function c_spir_basis_get_n_default_matsus_ext(b, positive_only, L, num_points_r
 end function
 
 function c_spir_basis_get_default_matsus_ext(b, positive_only, n_points, points, n_points_returned) &
-    bind(c, name="spir_basis_get_default_matsus_ext") result(c_spir_basis_get_default_matsus_ext)
+    bind(c, name="spir_basis_get_default_matsus_ext")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
@@ -391,7 +391,7 @@ function c_spir_basis_get_default_matsus_ext(b, positive_only, n_points, points,
 end function
 
 function c_spir_dlr_new(b, status) &
-    bind(c, name="spir_dlr_new") result(c_spir_dlr_new)
+    bind(c, name="spir_dlr_new")
   use iso_c_binding
   type(c_ptr), value :: b
   type(c_ptr), value :: status
@@ -399,7 +399,7 @@ function c_spir_dlr_new(b, status) &
 end function
 
 function c_spir_dlr_new_with_poles(b, npoles, poles, status) &
-    bind(c, name="spir_dlr_new_with_poles") result(c_spir_dlr_new_with_poles)
+    bind(c, name="spir_dlr_new_with_poles")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: npoles
@@ -409,7 +409,7 @@ function c_spir_dlr_new_with_poles(b, npoles, poles, status) &
 end function
 
 function c_spir_dlr_get_npoles(dlr, num_poles) &
-    bind(c, name="spir_dlr_get_npoles") result(c_spir_dlr_get_npoles)
+    bind(c, name="spir_dlr_get_npoles")
   use iso_c_binding
   type(c_ptr), value :: dlr
   type(c_ptr), value :: num_poles
@@ -417,7 +417,7 @@ function c_spir_dlr_get_npoles(dlr, num_poles) &
 end function
 
 function c_spir_dlr_get_poles(dlr, poles) &
-    bind(c, name="spir_dlr_get_poles") result(c_spir_dlr_get_poles)
+    bind(c, name="spir_dlr_get_poles")
   use iso_c_binding
   type(c_ptr), value :: dlr
   type(c_ptr), value :: poles
@@ -425,7 +425,7 @@ function c_spir_dlr_get_poles(dlr, poles) &
 end function
 
 function c_spir_ir2dlr_dd(dlr, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_ir2dlr_dd") result(c_spir_ir2dlr_dd)
+    bind(c, name="spir_ir2dlr_dd")
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -438,7 +438,7 @@ function c_spir_ir2dlr_dd(dlr, order, ndim, input_dims, target_dim, input, out) 
 end function
 
 function c_spir_ir2dlr_zz(dlr, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_ir2dlr_zz") result(c_spir_ir2dlr_zz)
+    bind(c, name="spir_ir2dlr_zz")
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -451,7 +451,7 @@ function c_spir_ir2dlr_zz(dlr, order, ndim, input_dims, target_dim, input, out) 
 end function
 
 function c_spir_dlr2ir_dd(dlr, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_dlr2ir_dd") result(c_spir_dlr2ir_dd)
+    bind(c, name="spir_dlr2ir_dd")
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -464,7 +464,7 @@ function c_spir_dlr2ir_dd(dlr, order, ndim, input_dims, target_dim, input, out) 
 end function
 
 function c_spir_dlr2ir_zz(dlr, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_dlr2ir_zz") result(c_spir_dlr2ir_zz)
+    bind(c, name="spir_dlr2ir_zz")
   use iso_c_binding
   type(c_ptr), value :: dlr
   integer(c_int), value :: order
@@ -477,7 +477,7 @@ function c_spir_dlr2ir_zz(dlr, order, ndim, input_dims, target_dim, input, out) 
 end function
 
 function c_spir_tau_sampling_new(b, num_points, points, status) &
-    bind(c, name="spir_tau_sampling_new") result(c_spir_tau_sampling_new)
+    bind(c, name="spir_tau_sampling_new")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: num_points
@@ -487,7 +487,7 @@ function c_spir_tau_sampling_new(b, num_points, points, status) &
 end function
 
 function c_spir_tau_sampling_new_with_matrix(order, statistics, basis_size, num_points, points, matrix, status) &
-    bind(c, name="spir_tau_sampling_new_with_matrix") result(c_spir_tau_sampling_new_with_matrix)
+    bind(c, name="spir_tau_sampling_new_with_matrix")
   use iso_c_binding
   integer(c_int), value :: order
   integer(c_int), value :: statistics
@@ -500,7 +500,7 @@ function c_spir_tau_sampling_new_with_matrix(order, statistics, basis_size, num_
 end function
 
 function c_spir_matsu_sampling_new(b, positive_only, num_points, points, status) &
-    bind(c, name="spir_matsu_sampling_new") result(c_spir_matsu_sampling_new)
+    bind(c, name="spir_matsu_sampling_new")
   use iso_c_binding
   type(c_ptr), value :: b
   integer(c_int), value :: positive_only
@@ -511,7 +511,7 @@ function c_spir_matsu_sampling_new(b, positive_only, num_points, points, status)
 end function
 
 function c_spir_matsu_sampling_new_with_matrix(order, statistics, basis_size, positive_only, num_points, points, matrix, status) &
-    bind(c, name="spir_matsu_sampling_new_with_matrix") result(c_spir_matsu_sampling_new_with_matrix)
+    bind(c, name="spir_matsu_sampling_new_with_matrix")
   use iso_c_binding
   integer(c_int), value :: order
   integer(c_int), value :: statistics
@@ -525,7 +525,7 @@ function c_spir_matsu_sampling_new_with_matrix(order, statistics, basis_size, po
 end function
 
 function c_spir_sampling_get_npoints(s, num_points) &
-    bind(c, name="spir_sampling_get_npoints") result(c_spir_sampling_get_npoints)
+    bind(c, name="spir_sampling_get_npoints")
   use iso_c_binding
   type(c_ptr), value :: s
   type(c_ptr), value :: num_points
@@ -533,7 +533,7 @@ function c_spir_sampling_get_npoints(s, num_points) &
 end function
 
 function c_spir_sampling_get_taus(s, points) &
-    bind(c, name="spir_sampling_get_taus") result(c_spir_sampling_get_taus)
+    bind(c, name="spir_sampling_get_taus")
   use iso_c_binding
   type(c_ptr), value :: s
   type(c_ptr), value :: points
@@ -541,7 +541,7 @@ function c_spir_sampling_get_taus(s, points) &
 end function
 
 function c_spir_sampling_get_matsus(s, points) &
-    bind(c, name="spir_sampling_get_matsus") result(c_spir_sampling_get_matsus)
+    bind(c, name="spir_sampling_get_matsus")
   use iso_c_binding
   type(c_ptr), value :: s
   type(c_ptr), value :: points
@@ -549,7 +549,7 @@ function c_spir_sampling_get_matsus(s, points) &
 end function
 
 function c_spir_sampling_get_cond_num(s, cond_num) &
-    bind(c, name="spir_sampling_get_cond_num") result(c_spir_sampling_get_cond_num)
+    bind(c, name="spir_sampling_get_cond_num")
   use iso_c_binding
   type(c_ptr), value :: s
   type(c_ptr), value :: cond_num
@@ -557,7 +557,7 @@ function c_spir_sampling_get_cond_num(s, cond_num) &
 end function
 
 function c_spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_sampling_eval_dd") result(c_spir_sampling_eval_dd)
+    bind(c, name="spir_sampling_eval_dd")
   use iso_c_binding
   type(c_ptr), value :: s
   integer(c_int), value :: order
@@ -570,7 +570,7 @@ function c_spir_sampling_eval_dd(s, order, ndim, input_dims, target_dim, input, 
 end function
 
 function c_spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_sampling_eval_dz") result(c_spir_sampling_eval_dz)
+    bind(c, name="spir_sampling_eval_dz")
   use iso_c_binding
   type(c_ptr), value :: s
   integer(c_int), value :: order
@@ -583,7 +583,7 @@ function c_spir_sampling_eval_dz(s, order, ndim, input_dims, target_dim, input, 
 end function
 
 function c_spir_sampling_eval_zz(s, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_sampling_eval_zz") result(c_spir_sampling_eval_zz)
+    bind(c, name="spir_sampling_eval_zz")
   use iso_c_binding
   type(c_ptr), value :: s
   integer(c_int), value :: order
@@ -596,7 +596,7 @@ function c_spir_sampling_eval_zz(s, order, ndim, input_dims, target_dim, input, 
 end function
 
 function c_spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_sampling_fit_dd") result(c_spir_sampling_fit_dd)
+    bind(c, name="spir_sampling_fit_dd")
   use iso_c_binding
   type(c_ptr), value :: s
   integer(c_int), value :: order
@@ -609,7 +609,7 @@ function c_spir_sampling_fit_dd(s, order, ndim, input_dims, target_dim, input, o
 end function
 
 function c_spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, out) &
-    bind(c, name="spir_sampling_fit_zz") result(c_spir_sampling_fit_zz)
+    bind(c, name="spir_sampling_fit_zz")
   use iso_c_binding
   type(c_ptr), value :: s
   integer(c_int), value :: order
@@ -619,5 +619,18 @@ function c_spir_sampling_fit_zz(s, order, ndim, input_dims, target_dim, input, o
   type(c_ptr), value :: input
   type(c_ptr), value :: out
   integer(c_int) :: c_spir_sampling_fit_zz
+end function
+
+function c_spir_sampling_fit_zd(s, order, ndim, input_dims, target_dim, input, out) &
+    bind(c, name="spir_sampling_fit_zd")
+  use iso_c_binding
+  type(c_ptr), value :: s
+  integer(c_int), value :: order
+  integer(c_int), value :: ndim
+  type(c_ptr), value :: input_dims
+  integer(c_int), value :: target_dim
+  type(c_ptr), value :: input
+  type(c_ptr), value :: out
+  integer(c_int) :: c_spir_sampling_fit_zd
 end function
 

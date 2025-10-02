@@ -100,9 +100,9 @@ contains
             call random_number(r)
             call random_number(r_imag)
             if (positive_only) then
-               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, 0.0_DP) * sqrt(abs(obj%s(i)))
+               coeffs(i,j) = cmplx(2.0_DP * r - 1.0_DP, 0.0_DP, kind=DP) * sqrt(abs(obj%s(i)))
             else
-               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, r_imag) * sqrt(abs(obj%s(i)))
+               coeffs(i,j) = cmplx(2.0_DP * r - 1.0_DP, r_imag, kind=DP) * sqrt(abs(obj%s(i)))
             end if
          end do
       end do
@@ -211,9 +211,9 @@ contains
             call random_number(r)
             call random_number(r_imag)
             if (positive_only) then
-               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, 0.0_DP) * sqrt(abs(obj%s(j)))
+               coeffs(i,j) = cmplx(2.0_DP * r - 1.0_DP, 0.0_DP, kind=DP) * sqrt(abs(obj%s(j)))
             else
-               coeffs(i,j) = dcmplx(2.0_DP * r - 1.0_DP, r_imag) * sqrt(abs(obj%s(j)))
+               coeffs(i,j) = cmplx(2.0_DP * r - 1.0_DP, r_imag, kind=DP) * sqrt(abs(obj%s(j)))
             end if
          end do
       end do

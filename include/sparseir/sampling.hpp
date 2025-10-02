@@ -9,6 +9,7 @@
 #include <vector>
 #include <complex>
 #include <tuple>
+#include <iostream>
 
 namespace sparseir {
 
@@ -32,6 +33,7 @@ int evaluate_inplace_dim3(
     const Eigen::TensorMap<const Eigen::Tensor<InputScalar, 3>> &input, int dim,
     Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output);
 
+
 template <typename T1, typename T2, int N2, typename InputTensorType>
 Eigen::Tensor<decltype(T1() * T2()), N2> evaluate_dimx(
     const Eigen::Matrix<T1, Eigen::Dynamic, Eigen::Dynamic> &matrix,
@@ -46,6 +48,11 @@ void fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
                                 const Eigen::MatrixXcd &B, 
                                 Eigen::Map<Eigen::MatrixXcd> &output, bool has_zero);
 
+void fit_inplace_dim2_split_svd(const JacobiSVD<Eigen::MatrixXcd> &svd,
+                                const Eigen::MatrixXcd &B, 
+                                Eigen::Map<Eigen::MatrixXd> &output, bool has_zero);
+
+
 template <typename Scalar, typename InputScalar, typename OutputScalar, typename Func>
 int fit_inplace_dim3(
     int n_sampling_points,
@@ -55,6 +62,7 @@ int fit_inplace_dim3(
     int dim, Eigen::TensorMap<Eigen::Tensor<OutputScalar, 3>> &output,
     Func &&fit_inplace_dim2_func,
     bool split_svd = false);
+
 
 template <typename T1, typename T2, int N2, typename InputTensorType>
 Eigen::Tensor<decltype(T1() * T2()), N2> fit_dimx(
@@ -103,6 +111,7 @@ public:
         return SPIR_NOT_SUPPORTED;
     }
 
+
     // Evaluate the basis functions at the sampling points with double input and
     // complex output
     virtual int evaluate_inplace_dz(
@@ -129,9 +138,19 @@ public:
         return SPIR_NOT_SUPPORTED;
     }
 
+
     // Fit basis coefficients from the sparse sampling points with complex input
     // and double output
     virtual int fit_inplace_dz(
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> & /*input*/,
+        int /*dim*/,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> & /*output*/) const
+    {
+        return SPIR_NOT_SUPPORTED;
+    }
+
+    // Fit basis coefficients from the sparse sampling points with complex input (zero-dominant)
+    virtual int fit_inplace_zd(
         const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>> & /*input*/,
         int /*dim*/,
         Eigen::TensorMap<Eigen::Tensor<double, 3>> & /*output*/) const
@@ -510,6 +529,7 @@ public:
         return evaluate_inplace_dim3(matrix_, input, dim, output);
     }
 
+
     // Implement fit_inplace_zz method using the common implementation
     // Error code: -1: invalid dimension, -2: dimension mismatch, -3: type not
     // supported
@@ -520,7 +540,19 @@ public:
         Eigen::TensorMap<Eigen::Tensor<std::complex<double>, 3>> &output)
         const override
     {
-        if (!positive_only_) {
+        if (positive_only_) {
+            // Create temporary real output tensor
+            auto output_dims = output.dimensions();
+            Eigen::Tensor<double, 3> real_output(output_dims[0], output_dims[1], output_dims[2]);
+            Eigen::TensorMap<Eigen::Tensor<double, 3>> real_output_map(real_output.data(), output_dims[0], output_dims[1], output_dims[2]);
+            
+            int result = fit_inplace_zd(input, dim, real_output_map);
+            if (result != SPIR_COMPUTATION_SUCCESS) return result;
+            
+            // Convert real result to complex
+            output = real_output.cast<std::complex<double>>();
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
             return fit_inplace_dim3(
                 n_sampling_points(), basis_size(),
                 get_matrix_svd(), input, dim, output,
@@ -530,17 +562,32 @@ public:
                     fit_inplace_dim2(svd, input, output);
                 }
             );
-        } else {
-            return fit_inplace_dim3(
-                n_sampling_points(), basis_size(),
-                get_matrix_svd(), input, dim, output,
-                [this](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
-                   const Eigen::Map<const Eigen::MatrixXcd> &input,
-                   Eigen::Map<Eigen::MatrixXcd> &output) {
-                    fit_inplace_dim2_split_svd(svd, input, output, this->has_zero_);
-                }
-            );
         }
+    }
+
+    // Implement fit_inplace_zd method for zero-dominant case
+    // Error code: -1: positive_only_ must be true, -2: dimension mismatch, -3: type not supported
+    int fit_inplace_zd(
+        const Eigen::TensorMap<const Eigen::Tensor<std::complex<double>, 3>>
+            &input,
+        int dim,
+        Eigen::TensorMap<Eigen::Tensor<double, 3>> &output)
+        const override
+    {
+        if (!positive_only_) {
+            std::cerr << "fit_inplace_zd: positive_only_ must be true" << std::endl;
+            return SPIR_NOT_SUPPORTED;
+        }
+        
+        return fit_inplace_dim3(
+            n_sampling_points(), basis_size(),
+            get_matrix_svd(), input, dim, output,
+            [this](const sparseir::JacobiSVD<Eigen::MatrixXcd> &svd,
+                   const Eigen::Map<const Eigen::MatrixXcd> &input,
+                   Eigen::Map<Eigen::MatrixXd> &output) {
+                fit_inplace_dim2_split_svd(svd, input, output, this->has_zero_);
+            }
+        );
     }
 
     template <typename Basis>
