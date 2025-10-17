@@ -504,7 +504,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // Convert IR coefficients to DLR coefficients
     Eigen::Tensor<T, ndim, ORDER> g_DLR_reconst(
-        _get_dims<ndim>(basis_size, extra_dims, target_dim));
+        _get_dims<ndim>(npoles, extra_dims, target_dim));
     status = dlr_from_IR(dlr, order, ndim,
                         _get_dims<ndim, int>(npoles, extra_dims, target_dim).data(), target_dim,
                         g_IR.data(), g_DLR_reconst.data());
