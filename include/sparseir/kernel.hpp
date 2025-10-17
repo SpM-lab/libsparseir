@@ -994,7 +994,7 @@ public:
         bool xy_small = xv_half < 1;
         bool sinh_range = 1e-200 < v_half && v_half < 85;
         if (xy_small && sinh_range) {
-            return y * sinh_impl(xv_half) / sinh_impl(v_half);
+            return - y * sinh_impl(xv_half) / sinh_impl(v_half);
         } else {
             return callreduced(*this, x, y, x_plus, x_minus);
         }
