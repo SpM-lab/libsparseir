@@ -73,7 +73,7 @@ jobs:
       id-token: write     # ← Trusted Publishing に必須
       contents: read
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           path: dist
           merge-multiple: true
