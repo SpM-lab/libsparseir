@@ -40,7 +40,7 @@ jobs:
         run: |
           cd python
           python prepare_build.py
-      - uses: pypa/cibuildwheel@v3.1.4
+      - uses: pypa/cibuildwheel@v3.2.1
         env:
           CIBW_DEPENDENCY_VERSIONS: "latest"
           CIBW_BUILD_VERBOSITY: 1
@@ -59,7 +59,7 @@ jobs:
         with:
           package-dir: ./python
           output-dir: dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: wheels-${{ matrix.os }}-${{ matrix.cibw_archs }}-${{ matrix.py_tag }}
           path: dist/*
