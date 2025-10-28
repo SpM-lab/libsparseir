@@ -1,0 +1,58 @@
+name: Test Fortran Bindings
+
+on:
+  push:
+    branches: [ "main", "459-restructure-directories" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test-fortran-gcc:
+    runs-on: ubuntu-latest
+    name: Fortran with GCC/gfortran
+    
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gfortran libopenblas-dev libeigen3-dev
+      
+      - name: Build and test Fortran bindings with GCC
+        working-directory: fortran
+        run: ./test_with_cxx_backend.sh
+
+  test-fortran-intel:
+    runs-on: ubuntu-latest
+    name: Fortran with Intel compilers
+    
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install Intel oneAPI
+        run: |
+          # Download Intel oneAPI GPG public key
+          wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | gpg --dearmor | sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg > /dev/null
+          
+          # Add Intel oneAPI repository
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          
+          # Update and install Intel oneAPI compilers and MKL
+          sudo apt-get update
+          sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp intel-oneapi-compiler-fortran intel-oneapi-mkl-devel
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y cmake libeigen3-dev
+      
+      - name: Build and test Fortran bindings with Intel
+        working-directory: fortran
+        run: |
+          source /opt/intel/oneapi/setvars.sh
+          export CC=icx
+          export CXX=icpx
+          export FC=ifx
+          ./test_with_cxx_backend.sh
+

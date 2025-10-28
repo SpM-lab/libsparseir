@@ -18,7 +18,7 @@ foreach(TEST ${TEST_FILES})
         ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
 
-    target_link_libraries(${TEST} PRIVATE sparseir_fortran sparseir)
+    target_link_libraries(${TEST} PRIVATE sparseir_fortran SparseIR::sparseir)
 
     set_target_properties(${TEST} PROPERTIES
         Fortran_MODULE_DIRECTORY ${SPARSEIR_FORTRAN_MODDIR}

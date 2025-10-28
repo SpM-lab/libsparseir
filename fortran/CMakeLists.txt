@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
-project(SparseIR_Fortran LANGUAGES Fortran)
 
-# Find dependencies
+# Find dependencies first to get version
 find_package(SparseIR REQUIRED)
+
+# Set project with version from SparseIR
+project(SparseIR_Fortran 
+    VERSION ${SparseIR_VERSION}
+    LANGUAGES Fortran
+)
 
 # Enable Fortran preprocessor
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
