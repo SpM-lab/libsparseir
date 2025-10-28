@@ -53,6 +53,9 @@ cmake "$SCRIPT_DIR" \
 echo -e "${YELLOW}Building Fortran bindings...${NC}"
 cmake --build . -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
+echo -e "${YELLOW}Installing Fortran bindings...${NC}"
+cmake --install . --prefix "$INSTALL_DIR"
+
 echo -e "${YELLOW}Running Fortran tests...${NC}"
 # Set library paths for test execution
 export DYLD_LIBRARY_PATH="$INSTALL_DIR/lib:$DYLD_LIBRARY_PATH"
