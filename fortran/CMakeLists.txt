@@ -74,9 +74,11 @@ install(TARGETS sparseir_fortran
 
 # Install Fortran module files
 install(
-    DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/fortran/
+    FILES
+    ${CMAKE_Fortran_MODULE_DIRECTORY}/sparseir.mod
+    ${CMAKE_Fortran_MODULE_DIRECTORY}/sparseir_ext.mod
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/sparseir"
-    FILES_MATCHING PATTERN "*.mod"
+    OPTIONAL
 )
 
 # CMake package config for Fortran bindings
