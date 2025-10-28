@@ -15,7 +15,7 @@ get_target_property(SPARSEIR_FORTRAN_MODDIR sparseir_fortran Fortran_MODULE_DIRE
 foreach(TEST ${TEST_FILES})
     target_include_directories(${TEST} PRIVATE
         ${SPARSEIR_FORTRAN_MODDIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/../../fortran
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../fortran
     )
 
     target_link_libraries(${TEST} PRIVATE sparseir_fortran sparseir)

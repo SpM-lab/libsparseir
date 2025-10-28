@@ -16,7 +16,7 @@ include(GNUInstallDirs)
 if (NOT SPARSEIR_VERSION)
     include("VersionFromHeader")
     version_from_header(SPARSEIR_VERSION
-        HEADER "include/sparseir/version.h"
+        HEADER "backend/cxx/include/sparseir/version.h"
         MACROS SPARSEIR_VERSION_MAJOR SPARSEIR_VERSION_MINOR SPARSEIR_VERSION_PATCH
         )
     message(STATUS "Extracted package version: ${SPARSEIR_VERSION}")
@@ -156,16 +156,16 @@ endif()
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME sparseir)
 
 add_library(sparseir SHARED
-    src/utils.cpp
-    src/linalg.cpp
-    src/root.cpp
-    src/specfuncs.cpp
-    src/svd.cpp
-    src/sve.cpp
-    src/poly.cpp
-    src/kernel.cpp
-    src/gemm.cpp
-    src/cinterface.cpp
+    backend/cxx/src/utils.cpp
+    backend/cxx/src/linalg.cpp
+    backend/cxx/src/root.cpp
+    backend/cxx/src/specfuncs.cpp
+    backend/cxx/src/svd.cpp
+    backend/cxx/src/sve.cpp
+    backend/cxx/src/poly.cpp
+    backend/cxx/src/kernel.cpp
+    backend/cxx/src/gemm.cpp
+    backend/cxx/src/cinterface.cpp
     )
 if(NOT MSVC)
     target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
@@ -173,7 +173,7 @@ endif()
 
 target_include_directories(sparseir
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/backend/cxx/include>
         $<INSTALL_INTERFACE:include>
     PRIVATE
         $<BUILD_INTERFACE:${xprec_SOURCE_DIR}/include>
@@ -236,7 +236,7 @@ if (SPARSEIR_BUILD_TESTING)
     FetchContent_MakeAvailable(Catch2)
 
     # Add test directory
-    add_subdirectory("test")
+    add_subdirectory("backend/cxx/test")
 endif()
 
 # -------------------------------------
@@ -253,9 +253,9 @@ install(TARGETS sparseir
 
 # Install only necessary header files (C API)
 install(FILES
-    include/sparseir/sparseir.h
-    include/sparseir/version.h
-    include/sparseir/spir_status.h
+    backend/cxx/include/sparseir/sparseir.h
+    backend/cxx/include/sparseir/version.h
+    backend/cxx/include/sparseir/spir_status.h
     DESTINATION "${SPARSEIR_INSTALL_INCLUDEDIR}/sparseir"
     COMPONENT sparseir
 )

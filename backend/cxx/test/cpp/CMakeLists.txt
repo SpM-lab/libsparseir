@@ -3,7 +3,7 @@ set(CMAKE_CXX_STANDARD 11)
 # Set include paths for tests
 set(TEST_INCLUDE_DIRS
     ${EIGEN3_INCLUDE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../backend/cxx/include
     ${xprec_SOURCE_DIR}/include
 )
 
