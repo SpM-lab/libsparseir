@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
+# Include GNUInstallDirs for standard install paths
+include(GNUInstallDirs)
+
 # Find dependencies first to get version
 find_package(SparseIR REQUIRED)
 
@@ -74,11 +77,9 @@ install(TARGETS sparseir_fortran
 
 # Install Fortran module files
 install(
-    FILES
-    ${CMAKE_Fortran_MODULE_DIRECTORY}/sparseir.mod
-    ${CMAKE_Fortran_MODULE_DIRECTORY}/sparseir_ext.mod
+    DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/sparseir"
-    OPTIONAL
+    FILES_MATCHING PATTERN "*.mod"
 )
 
 # CMake package config for Fortran bindings
