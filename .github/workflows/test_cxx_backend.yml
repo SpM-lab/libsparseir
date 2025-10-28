@@ -29,10 +29,10 @@ jobs:
           brew install cmake eigen openblas
       
       - name: Build and test C++ backend
-        working-directory: libsparseir/backend/cxx
+        working-directory: backend/cxx
         run: ./build_capi_with_tests.sh
       
       - name: Build and test capi_test against backend
-        working-directory: libsparseir/capi_test
+        working-directory: capi_test
         run: ./test_with_cxx_backend.sh
 
