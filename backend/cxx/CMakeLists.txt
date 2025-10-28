@@ -90,9 +90,9 @@ if(NOT MSVC)
 endif()
 
 # Intel Compiler: disable fastmath optimizations that break xprec's extended precision
-if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-    target_compile_options(sparseir PRIVATE -fp-model=precise)
-endif()
+#if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    #target_compile_options(sparseir PRIVATE -fp-model=precise)
+#endif()
 
 target_include_directories(sparseir
     PUBLIC
