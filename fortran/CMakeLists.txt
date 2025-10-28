@@ -47,6 +47,8 @@ set_target_properties(sparseir_fortran PROPERTIES
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
     POSITION_INDEPENDENT_CODE ON
+    BUILD_WITH_INSTALL_RPATH ON
+    INSTALL_RPATH_USE_LINK_PATH ON
 )
 
 target_link_libraries(sparseir_fortran PUBLIC SparseIR::sparseir)

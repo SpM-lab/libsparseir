@@ -22,6 +22,9 @@ foreach(TEST ${TEST_FILES})
 
     set_target_properties(${TEST} PROPERTIES
         Fortran_MODULE_DIRECTORY ${SPARSEIR_FORTRAN_MODDIR}
+        BUILD_WITH_INSTALL_RPATH ON
+        INSTALL_RPATH_USE_LINK_PATH ON
+        INSTALL_RPATH "$<TARGET_FILE_DIR:sparseir_fortran>;$<TARGET_FILE_DIR:SparseIR::sparseir>"
     )
 
     add_test(NAME fortran_${TEST}

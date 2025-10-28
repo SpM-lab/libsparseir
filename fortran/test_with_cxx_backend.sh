@@ -28,7 +28,7 @@ mkdir -p "$WORK_DIR/build_backend"
 cd "$WORK_DIR/build_backend"
 
 cmake "$BACKEND_DIR" \
-    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
     -DSPARSEIR_BUILD_TESTING=OFF \
     -DSPARSEIR_USE_BLAS=ON
@@ -57,6 +57,22 @@ echo -e "${YELLOW}Running Fortran tests...${NC}"
 # Set library paths for test execution
 export DYLD_LIBRARY_PATH="$INSTALL_DIR/lib:$DYLD_LIBRARY_PATH"
 export LD_LIBRARY_PATH="$INSTALL_DIR/lib:$LD_LIBRARY_PATH"
+
+# macOS: Update install_name for Fortran library to find C++ backend
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo -e "${YELLOW}Updating install_name for macOS...${NC}"
+    # Update install_name for Fortran library to point to installed location
+    install_name_tool -id "$INSTALL_DIR/lib/libsparseir_fortran.0.dylib" \
+        "$WORK_DIR/build_fortran/libsparseir_fortran.0.dylib" 2>/dev/null || true
+    
+    # Update rpath for test executables
+    for test_bin in "$WORK_DIR/build_fortran/test/"*.exe "$WORK_DIR/build_fortran/test/test_"* 2>/dev/null; do
+        if [ -f "$test_bin" ] && file "$test_bin" | grep -q "Mach-O"; then
+            install_name_tool -add_rpath "$INSTALL_DIR/lib" "$test_bin" 2>/dev/null || true
+        fi
+    done
+fi
+
 ctest --output-on-failure --verbose
 
 echo -e "${GREEN}=== All tests completed successfully ===${NC}"
