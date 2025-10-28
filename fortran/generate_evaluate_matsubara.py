@@ -66,11 +66,9 @@ def generate_evaluate_matsubara_function(ndim, input_type, output_type):
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  {input_fortran_type}, INTENT(IN) :: arr {shape_str}
-  {input_c_type}, ALLOCATABLE, TARGET :: arr_c{shape_str}
+  {input_fortran_type}, INTENT(IN), TARGET :: arr {shape_str}
 
-  {output_fortran_type}, INTENT(OUT) :: res {shape_str}
-  {output_c_type}, ALLOCATABLE, TARGET :: res_c{shape_str}
+  {output_fortran_type}, INTENT(OUT), TARGET :: res {shape_str}
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   {dim_array_decl}
   input_dims_c = SHAPE(arr)
@@ -97,15 +95,13 @@ def generate_evaluate_matsubara_function(ndim, input_type, output_type):
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = {c_function}(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = {c_function}(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_{func_suffix}_{ndim}d', 'Invalid statistics', 1)
     RETURN
@@ -113,8 +109,6 @@ def generate_evaluate_matsubara_function(ndim, input_type, output_type):
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_{func_suffix}_{ndim}d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE"""
     
     return function

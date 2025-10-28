@@ -81,7 +81,7 @@ contains
          nfreq = obj%nfreq_b
       else
          print *, "Error: Invalid statistics"
-         stop
+stop 1
       end if
 
       ! Allocate arrays
@@ -112,7 +112,7 @@ contains
       call dlr2ir(obj, target_dim, g_dlr, g_ir)
 
       ! Evaluate Green's function at Matsubara frequencies from IR
-      call evaluate_matsubara(obj, statistics, target_dim, g_dlr, giw)
+      call evaluate_matsubara(obj, statistics, target_dim, g_ir, giw)
 
       ! Convert Matsubara frequencies back to IR
       call fit_matsubara(obj, statistics, target_dim, giw, g_ir2_z)
@@ -120,7 +120,7 @@ contains
       ! Compare IR coefficients (using real part of g_ir2_z)
       if (.not. compare_with_relative_error_d(coeffs, real(g_ir2_z), 10.0_DP * obj%eps)) then
          print *, "Error: IR coefficients do not match after transformation cycle"
-         stop
+stop 1
       end if
 
       ! Evaluate Green's function at tau points
@@ -139,7 +139,7 @@ contains
       if (abs(imag_tmp(1) - gtau_z(1, 1)) / max(abs(imag_tmp(1)), abs(gtau_z(1, 1))) & 
          > 10.0_DP * obj%eps) then
          print *, "Error: Tau evaluation does not match direct calculation"
-         stop
+stop 1
       end if
       deallocate(u_tau)
       deallocate(imag_tmp)
@@ -153,7 +153,7 @@ contains
       ! Compare the original and reconstructed Matsubara frequencies
       if (.not. compare_with_relative_error_z(giw, giw_reconst, 10.0_DP * obj%eps)) then
          print *, "Error: Matsubara frequencies do not match after transformation cycle"
-         stop
+stop 1
       end if
 
       ! Deallocate arrays
@@ -192,7 +192,7 @@ contains
          nfreq = obj%nfreq_b
       else
          print *, "Error: Invalid statistics"
-         stop
+stop 1
       end if
 
       ! Allocate arrays with correct dimension order for target_dim=2
@@ -223,7 +223,7 @@ contains
       call dlr2ir(obj, target_dim, g_dlr, g_ir)
 
       ! Evaluate Green's function at Matsubara frequencies from IR
-      call evaluate_matsubara(obj, statistics, target_dim, g_dlr, giw)
+      call evaluate_matsubara(obj, statistics, target_dim, g_ir, giw)
 
       ! Convert Matsubara frequencies back to IR
       call fit_matsubara(obj, statistics, target_dim, giw, g_ir2_z)
@@ -231,7 +231,7 @@ contains
       ! Compare IR coefficients (using real part of g_ir2_z)
       if (.not. compare_with_relative_error_d(coeffs, real(g_ir2_z), 10.0_DP * obj%eps)) then
          print *, "Error: IR coefficients do not match after transformation cycle"
-         stop
+stop 1
       end if
 
       ! Evaluate Green's function at tau points
@@ -246,7 +246,7 @@ contains
       ! Compare the original and reconstructed Matsubara frequencies
       if (.not. compare_with_relative_error_z(giw, giw_reconst, 10.0_DP * obj%eps)) then
          print *, "Error: Matsubara frequencies do not match after transformation cycle"
-         stop
+stop 1
       end if
 
       ! Deallocate arrays
