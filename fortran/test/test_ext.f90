@@ -118,7 +118,7 @@ stop 1
       call fit_matsubara(obj, statistics, target_dim, giw, g_ir2_z)
 
       ! Compare IR coefficients (using real part of g_ir2_z)
-      if (.not. compare_with_relative_error_d(coeffs, real(g_ir2_z), 10.0_DP * obj%eps)) then
+      if (.not. compare_with_relative_error_z(g_ir, g_ir2_z, 10.0_DP * obj%eps)) then
          print *, "Error: IR coefficients do not match after transformation cycle"
 stop 1
       end if
@@ -229,7 +229,7 @@ stop 1
       call fit_matsubara(obj, statistics, target_dim, giw, g_ir2_z)
 
       ! Compare IR coefficients (using real part of g_ir2_z)
-      if (.not. compare_with_relative_error_d(coeffs, real(g_ir2_z), 10.0_DP * obj%eps)) then
+      if (.not. compare_with_relative_error_z(g_ir, g_ir2_z, 10.0_DP * obj%eps)) then
          print *, "Error: IR coefficients do not match after transformation cycle"
 stop 1
       end if
