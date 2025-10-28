@@ -237,7 +237,7 @@ if (SPARSEIR_BUILD_TESTING)
 
     # Add test directories
     add_subdirectory("backend/cxx/test")
-    add_subdirectory("backend/test")
+    add_subdirectory("backend/capi_test")
     
     # Add Fortran test directory if Fortran is enabled
     if(SPARSEIR_BUILD_FORTRAN)
