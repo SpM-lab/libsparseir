@@ -57,6 +57,11 @@ target_link_libraries(cinterface_integration PRIVATE
     Threads::Threads
 )
 
+# Intel Compiler: disable fastmath optimizations that break xprec's extended precision
+if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    target_compile_options(cinterface_integration PRIVATE -fp-model=precise)
+endif()
+
 # Optional BLAS linking
 find_package(BLAS QUIET)
 if(BLAS_FOUND)

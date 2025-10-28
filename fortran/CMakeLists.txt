@@ -23,10 +23,12 @@ add_library(sparseir_fortran SHARED
     ${TYPE_FILES}
 )
 
-# Add compiler-specific flags for heap arrays
+# Add compiler-specific flags for heap arrays and fastmath
 if(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
     # Intel Fortran: Put all arrays on heap to avoid stack overflow
     #target_compile_options(sparseir_fortran PRIVATE -heap-arrays 0)
+    # Intel C++ uses -fp-model=precise to disable fastmath for xprec compatibility
+    # This is handled in the C++ backend CMakeLists.txt
 endif()
 
 # Add include directory

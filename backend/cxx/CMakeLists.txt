@@ -89,6 +89,11 @@ if(NOT MSVC)
     target_compile_options(sparseir PRIVATE -Wall -Wextra -pedantic)
 endif()
 
+# Intel Compiler: disable fastmath optimizations that break xprec's extended precision
+if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    target_compile_options(sparseir PRIVATE -fp-model=precise)
+endif()
+
 target_include_directories(sparseir
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
