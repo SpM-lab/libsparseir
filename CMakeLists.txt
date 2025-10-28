@@ -235,8 +235,9 @@ if (SPARSEIR_BUILD_TESTING)
     )
     FetchContent_MakeAvailable(Catch2)
 
-    # Add test directory
+    # Add test directories
     add_subdirectory("backend/cxx/test")
+    add_subdirectory("backend/test")
     
     # Add Fortran test directory if Fortran is enabled
     if(SPARSEIR_BUILD_FORTRAN)
