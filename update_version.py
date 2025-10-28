@@ -17,8 +17,8 @@ import os
 from pathlib import Path
 
 def update_cpp_version(version_parts, repo_root):
-    """Update C++ version in include/sparseir/version.h"""
-    version_h_path = repo_root / "include" / "sparseir" / "version.h"
+    """Update C++ version in backend/cxx/include/sparseir/version.h"""
+    version_h_path = repo_root / "backend" / "cxx" / "include" / "sparseir" / "version.h"
     
     if not version_h_path.exists():
         print(f"Error: {version_h_path} not found")
@@ -103,7 +103,7 @@ def parse_version(version_string):
 
 def get_cpp_version(repo_root):
     """Get current C++ version from version.h"""
-    version_h_path = repo_root / "include" / "sparseir" / "version.h"
+    version_h_path = repo_root / "backend" / "cxx" / "include" / "sparseir" / "version.h"
     if not version_h_path.exists():
         return None
     
@@ -157,7 +157,7 @@ def check_version_consistency(repo_root):
     print()
     
     if not cpp_version:
-        print("❌ Could not read C++ version from include/sparseir/version.h")
+        print("❌ Could not read C++ version from backend/cxx/include/sparseir/version.h")
         return False
     
     if not python_version:
@@ -234,7 +234,7 @@ def main():
         print(f"✅ Successfully updated all versions to {version_string}")
         print()
         print("Updated files:")
-        print("  - include/sparseir/version.h (C++ library)")
+        print("  - backend/cxx/include/sparseir/version.h (C++ library)")
         print("  - python/pyproject.toml (Python package)")
         print("  - Conda recipe will automatically use version.h")
         print()

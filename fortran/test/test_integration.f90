@@ -52,17 +52,17 @@ contains
       k_ptr = c_spir_logistic_kernel_new(lambda, c_loc(status))
       if (status /= 0) then
          print *, "Error creating kernel"
-         stop
+stop 1
       end if
       if (.not. c_associated(k_ptr)) then
          print *, "Error: kernel is not assigned"
-         stop
+stop 1
       end if
 
       status = c_spir_kernel_domain(k_ptr, c_loc(xmin), c_loc(xmax), c_loc(ymin), c_loc(ymax))
       if (status /= 0) then
          print *, "Error: kernel domain is not assigned"
-         stop
+stop 1
       end if
       print *, "Kernel domain =", xmin, xmax, ymin, ymax
 
@@ -75,11 +75,11 @@ contains
       sve_ptr = c_spir_sve_result_new(k_ptr, epsilon, -1.0_c_double, -1_c_int, -1_c_int, SPIR_TWORK_AUTO, c_loc(status))
       if (status /= 0) then
          print *, "Error creating SVE result"
-         stop
+stop 1
       end if
       if (.not. c_associated(sve_ptr)) then
          print *, "Error: SVE result is not assigned"
-         stop
+stop 1
       end if
 
       ! Get the size of the SVE result
@@ -87,7 +87,7 @@ contains
       status = c_spir_sve_result_get_size(sve_ptr, c_loc(sve_size))
       if (status /= 0) then
          print *, "Error getting SVE result size"
-         stop
+stop 1
       end if
 
       ! Get the singular values of the SVE result
@@ -97,7 +97,7 @@ contains
       status = c_spir_sve_result_get_svals(sve_ptr, c_loc(svals))
       if (status /= 0) then
          print *, "Error getting SVE result singular values"
-         stop
+stop 1
       end if
       print *, "SVE result singular values =", svals
 
@@ -107,11 +107,11 @@ contains
       basis_ptr = c_spir_basis_new(statistics, beta, omega_max, epsilon, k_ptr, sve_ptr, max_size, c_loc(status))
       if (status /= 0) then
          print *, "Error creating finite temperature basis"
-         stop
+stop 1
       end if
       if (.not. c_associated(basis_ptr)) then
          print *, "Error: basis is not assigned"
-         stop
+stop 1
       end if
 
       ! Get the size of the basis
@@ -119,7 +119,7 @@ contains
       status = c_spir_basis_get_size(basis_ptr, c_loc(basis_size))
       if (status /= 0) then
          print *, "Error getting basis size"
-         stop
+stop 1
       end if
       print *, "Basis size =", basis_size
 
@@ -128,21 +128,21 @@ contains
       status = c_spir_basis_get_n_default_taus(basis_ptr, c_loc(ntaus))
       if (status /= 0) then
          print *, "Error getting number of tau points"
-         stop
+stop 1
       end if
       print *, "Number of tau points =", ntaus
       allocate(taus(ntaus))
       status = c_spir_basis_get_default_taus(basis_ptr, c_loc(taus))
       if (status /= 0) then
          print *, "Error getting tau points"
-         stop
+stop 1
       end if
       print *, "Tau =", taus
       tau_sampling_ptr = c_spir_tau_sampling_new( &
          basis_ptr, ntaus, c_loc(taus), c_loc(status))
       if (status /= 0) then
          print *, "Error sampling tau"
-         stop
+stop 1
       end if
 
       ! Matsubara sampling
@@ -150,21 +150,21 @@ contains
       status = c_spir_basis_get_n_default_matsus(basis_ptr, positive_only, c_loc(nmatsus))
       if (status /= 0) then
          print *, "Error getting number of matsubara points"
-         stop
+stop 1
       end if
       print *, "Number of matsubara points =", nmatsus
       allocate(matsus(nmatsus))
       status = c_spir_basis_get_default_matsus(basis_ptr, positive_only, c_loc(matsus))
       if (status /= 0) then
          print *, "Error getting matsubara points"
-         stop
+stop 1
       end if
       print *, "Matsubara =", matsus
       matsu_sampling_ptr = c_spir_matsu_sampling_new( &
          basis_ptr, positive_only, nmatsus, c_loc(matsus), c_loc(status))
       if (status /= 0) then
          print *, "Error sampling matsubara"
-         stop
+stop 1
       end if
 
       ! Create a new DLR
@@ -175,11 +175,11 @@ contains
       print *, "dlr_ptr is associated:", c_associated(dlr_ptr)
       if (status /= 0) then
          print *, "Error creating DLR"
-         stop
+stop 1
       end if
       if (.not. c_associated(dlr_ptr)) then
          print *, "Error: DLR is not assigned"
-         stop
+stop 1
       end if
 
       ! Get the number of poles
@@ -190,7 +190,7 @@ contains
       print *, "After get_npoles - npoles:", npoles
       if (status /= 0) then
          print *, "Error getting number of poles"
-         stop
+stop 1
       end if
 
       ! Get the poles
@@ -203,7 +203,7 @@ contains
       print *, "After get_poles - status:", status
       if (status /= 0) then
          print *, "Error getting poles"
-         stop
+stop 1
       end if
 
       ! Test 2D operations
@@ -264,7 +264,7 @@ contains
          c_loc(coeffs), c_loc(g_ir))
       if (status /= 0) then
          print *, "Error converting DLR to IR"
-         stop
+stop 1
       end if
 
       ! Evaluate Green's function at Matsubara frequencies from IR
@@ -274,7 +274,7 @@ contains
          c_loc(g_ir), c_loc(giw))
       if (status /= 0) then
          print *, "Error evaluating Green's function at Matsubara frequencies"
-         stop
+stop 1
       end if
 
       ! Convert Matsubara frequencies back to IR
@@ -283,13 +283,13 @@ contains
          c_loc(giw), c_loc(g_ir2_z))
       if (status /= 0) then
          print *, "Error converting Matsubara frequencies back to IR"
-         stop
+stop 1
       end if
 
       ! Compare IR coefficients (using real part of g_ir2_z)
       if (.not. compare_with_relative_error_d(g_ir, real(g_ir2_z), tol)) then
          print *, "Error: IR coefficients do not match after transformation cycle"
-         stop
+stop 1
       end if
 
       ! Evaluate Green's function at tau points
@@ -298,7 +298,7 @@ contains
          c_loc(g_ir2_z), c_loc(gtau_z))
       if (status /= 0) then
          print *, "Error evaluating Green's function at tau points"
-         stop
+stop 1
       end if
 
       ! Convert tau points back to IR
@@ -307,7 +307,7 @@ contains
          c_loc(gtau_z), c_loc(g_ir2_z))
       if (status /= 0) then
          print *, "Error converting tau points back to IR"
-         stop
+stop 1
       end if
 
       ! Evaluate Green's function at Matsubara frequencies again
@@ -316,13 +316,13 @@ contains
          c_loc(g_ir2_z), c_loc(giw_reconst))
       if (status /= 0) then
          print *, "Error evaluating Green's function at Matsubara frequencies again"
-         stop
+stop 1
       end if
 
       ! Compare the original and reconstructed Matsubara frequencies
       if (.not. compare_with_relative_error_z(giw, giw_reconst, tol)) then
          print *, "Error: Matsubara frequencies do not match after transformation cycle"
-         stop
+stop 1
       end if
 
       ! Deallocate arrays

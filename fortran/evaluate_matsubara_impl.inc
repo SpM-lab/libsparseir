@@ -7,11 +7,9 @@ SUBROUTINE evaluate_matsubara_zz_1d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(1), output_dims_c(1)
   input_dims_c = SHAPE(arr)
@@ -38,15 +36,13 @@ SUBROUTINE evaluate_matsubara_zz_1d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_zz_1d', 'Invalid statistics', 1)
     RETURN
@@ -54,8 +50,6 @@ SUBROUTINE evaluate_matsubara_zz_1d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_zz_1d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_zz_2d(obj, statistics, target_dim, arr, res)
@@ -63,11 +57,9 @@ SUBROUTINE evaluate_matsubara_zz_2d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(2), output_dims_c(2)
   input_dims_c = SHAPE(arr)
@@ -94,15 +86,13 @@ SUBROUTINE evaluate_matsubara_zz_2d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_zz_2d', 'Invalid statistics', 1)
     RETURN
@@ -110,8 +100,6 @@ SUBROUTINE evaluate_matsubara_zz_2d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_zz_2d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_zz_3d(obj, statistics, target_dim, arr, res)
@@ -119,11 +107,9 @@ SUBROUTINE evaluate_matsubara_zz_3d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(3), output_dims_c(3)
   input_dims_c = SHAPE(arr)
@@ -150,15 +136,13 @@ SUBROUTINE evaluate_matsubara_zz_3d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_zz_3d', 'Invalid statistics', 1)
     RETURN
@@ -166,8 +150,6 @@ SUBROUTINE evaluate_matsubara_zz_3d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_zz_3d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_zz_4d(obj, statistics, target_dim, arr, res)
@@ -175,11 +157,9 @@ SUBROUTINE evaluate_matsubara_zz_4d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(4), output_dims_c(4)
   input_dims_c = SHAPE(arr)
@@ -206,15 +186,13 @@ SUBROUTINE evaluate_matsubara_zz_4d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_zz_4d', 'Invalid statistics', 1)
     RETURN
@@ -222,8 +200,6 @@ SUBROUTINE evaluate_matsubara_zz_4d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_zz_4d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_zz_5d(obj, statistics, target_dim, arr, res)
@@ -231,11 +207,9 @@ SUBROUTINE evaluate_matsubara_zz_5d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(5), output_dims_c(5)
   input_dims_c = SHAPE(arr)
@@ -262,15 +236,13 @@ SUBROUTINE evaluate_matsubara_zz_5d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_zz_5d', 'Invalid statistics', 1)
     RETURN
@@ -278,8 +250,6 @@ SUBROUTINE evaluate_matsubara_zz_5d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_zz_5d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_zz_6d(obj, statistics, target_dim, arr, res)
@@ -287,11 +257,9 @@ SUBROUTINE evaluate_matsubara_zz_6d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(6), output_dims_c(6)
   input_dims_c = SHAPE(arr)
@@ -318,15 +286,13 @@ SUBROUTINE evaluate_matsubara_zz_6d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_zz_6d', 'Invalid statistics', 1)
     RETURN
@@ -334,8 +300,6 @@ SUBROUTINE evaluate_matsubara_zz_6d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_zz_6d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_zz_7d(obj, statistics, target_dim, arr, res)
@@ -343,11 +307,9 @@ SUBROUTINE evaluate_matsubara_zz_7d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(7), output_dims_c(7)
   input_dims_c = SHAPE(arr)
@@ -374,15 +336,13 @@ SUBROUTINE evaluate_matsubara_zz_7d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_zz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_zz_7d', 'Invalid statistics', 1)
     RETURN
@@ -390,8 +350,6 @@ SUBROUTINE evaluate_matsubara_zz_7d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_zz_7d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_dz_1d(obj, statistics, target_dim, arr, res)
@@ -399,11 +357,9 @@ SUBROUTINE evaluate_matsubara_dz_1d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  REAL(KIND=DP), INTENT(IN) :: arr (:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(1), output_dims_c(1)
   input_dims_c = SHAPE(arr)
@@ -430,15 +386,13 @@ SUBROUTINE evaluate_matsubara_dz_1d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_dz_1d', 'Invalid statistics', 1)
     RETURN
@@ -446,8 +400,6 @@ SUBROUTINE evaluate_matsubara_dz_1d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_dz_1d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_dz_2d(obj, statistics, target_dim, arr, res)
@@ -455,11 +407,9 @@ SUBROUTINE evaluate_matsubara_dz_2d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(2), output_dims_c(2)
   input_dims_c = SHAPE(arr)
@@ -486,15 +436,13 @@ SUBROUTINE evaluate_matsubara_dz_2d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_dz_2d', 'Invalid statistics', 1)
     RETURN
@@ -502,8 +450,6 @@ SUBROUTINE evaluate_matsubara_dz_2d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_dz_2d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_dz_3d(obj, statistics, target_dim, arr, res)
@@ -511,11 +457,9 @@ SUBROUTINE evaluate_matsubara_dz_3d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(3), output_dims_c(3)
   input_dims_c = SHAPE(arr)
@@ -542,15 +486,13 @@ SUBROUTINE evaluate_matsubara_dz_3d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_dz_3d', 'Invalid statistics', 1)
     RETURN
@@ -558,8 +500,6 @@ SUBROUTINE evaluate_matsubara_dz_3d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_dz_3d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_dz_4d(obj, statistics, target_dim, arr, res)
@@ -567,11 +507,9 @@ SUBROUTINE evaluate_matsubara_dz_4d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(4), output_dims_c(4)
   input_dims_c = SHAPE(arr)
@@ -598,15 +536,13 @@ SUBROUTINE evaluate_matsubara_dz_4d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_dz_4d', 'Invalid statistics', 1)
     RETURN
@@ -614,8 +550,6 @@ SUBROUTINE evaluate_matsubara_dz_4d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_dz_4d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_dz_5d(obj, statistics, target_dim, arr, res)
@@ -623,11 +557,9 @@ SUBROUTINE evaluate_matsubara_dz_5d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(5), output_dims_c(5)
   input_dims_c = SHAPE(arr)
@@ -654,15 +586,13 @@ SUBROUTINE evaluate_matsubara_dz_5d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_dz_5d', 'Invalid statistics', 1)
     RETURN
@@ -670,8 +600,6 @@ SUBROUTINE evaluate_matsubara_dz_5d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_dz_5d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_dz_6d(obj, statistics, target_dim, arr, res)
@@ -679,11 +607,9 @@ SUBROUTINE evaluate_matsubara_dz_6d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(6), output_dims_c(6)
   input_dims_c = SHAPE(arr)
@@ -710,15 +636,13 @@ SUBROUTINE evaluate_matsubara_dz_6d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_dz_6d', 'Invalid statistics', 1)
     RETURN
@@ -726,8 +650,6 @@ SUBROUTINE evaluate_matsubara_dz_6d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_dz_6d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE
 
 SUBROUTINE evaluate_matsubara_dz_7d(obj, statistics, target_dim, arr, res)
@@ -735,11 +657,9 @@ SUBROUTINE evaluate_matsubara_dz_7d(obj, statistics, target_dim, arr, res)
   INTEGER, INTENT(IN) :: statistics
   INTEGER, INTENT(IN) :: target_dim
 
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:,:)
 
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:,:)
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(7), output_dims_c(7)
   input_dims_c = SHAPE(arr)
@@ -766,15 +686,13 @@ SUBROUTINE evaluate_matsubara_dz_7d(obj, statistics, target_dim, arr, res)
         'Output dimensions are not the same as the input dimensions except for the TARGET dimension', 1)
   ENDIF
   target_dim_c = target_dim - 1
-  ALLOCATE(arr_c, MOLD=arr)
-  ALLOCATE(res_c, MOLD=res)
   SELECT CASE (statistics)
   CASE (SPIR_STATISTICS_FERMIONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_f_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE (SPIR_STATISTICS_BOSONIC)
     status_c = c_spir_sampling_eval_dz(obj%matsu_b_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+      ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   CASE DEFAULT
     CALL errore('evaluate_matsubara_dz_7d', 'Invalid statistics', 1)
     RETURN
@@ -782,6 +700,4 @@ SUBROUTINE evaluate_matsubara_dz_7d(obj, statistics, target_dim, arr, res)
   IF (status_c /= 0) THEN
     CALL errore('evaluate_matsubara_dz_7d', 'Error evaluating on Matsubara frequencies', status_c)
   ENDIF
-  res = CMPLX(res_c, KIND=DP)
-  DEALLOCATE(arr_c, res_c)
 END SUBROUTINE

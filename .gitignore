@@ -33,6 +33,7 @@
 
 # CMake
 build
+work_cxx
 
 .DS_Store
 .vscode/settings.json

@@ -5,10 +5,8 @@
 SUBROUTINE evaluate_tau_zz_1d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:)
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(1), output_dims_c(1)
@@ -30,26 +28,19 @@ SUBROUTINE evaluate_tau_zz_1d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_zz_1d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_zz_2d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:)
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(2), output_dims_c(2)
@@ -71,26 +62,19 @@ SUBROUTINE evaluate_tau_zz_2d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_zz_2d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_zz_3d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:)
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(3), output_dims_c(3)
@@ -112,26 +96,19 @@ SUBROUTINE evaluate_tau_zz_3d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_zz_3d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_zz_4d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:)
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(4), output_dims_c(4)
@@ -153,26 +130,19 @@ SUBROUTINE evaluate_tau_zz_4d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_zz_4d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_zz_5d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:)
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(5), output_dims_c(5)
@@ -194,26 +164,19 @@ SUBROUTINE evaluate_tau_zz_5d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_zz_5d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_zz_6d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:)
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(6), output_dims_c(6)
@@ -235,26 +198,19 @@ SUBROUTINE evaluate_tau_zz_6d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_zz_6d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_zz_7d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  COMPLEX(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:,:)
-  COMPLEX(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:,:)
-  COMPLEX(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:,:)
+  COMPLEX(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(7), output_dims_c(7)
@@ -276,26 +232,19 @@ SUBROUTINE evaluate_tau_zz_7d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_zz(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_zz_7d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_dd_1d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  REAL(KIND=DP), INTENT(IN) :: arr (:)
-  REAL(KIND=DP), INTENT(OUT) :: res (:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:)
+  REAL(KIND=DP), INTENT(OUT), TARGET :: res (:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(1), output_dims_c(1)
@@ -317,26 +266,19 @@ SUBROUTINE evaluate_tau_dd_1d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_dd_1d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_dd_2d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:)
-  REAL(KIND=DP), INTENT(OUT) :: res (:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:)
+  REAL(KIND=DP), INTENT(OUT), TARGET :: res (:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(2), output_dims_c(2)
@@ -358,26 +300,19 @@ SUBROUTINE evaluate_tau_dd_2d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_dd_2d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_dd_3d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:)
-  REAL(KIND=DP), INTENT(OUT) :: res (:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:)
+  REAL(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(3), output_dims_c(3)
@@ -399,26 +334,19 @@ SUBROUTINE evaluate_tau_dd_3d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_dd_3d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_dd_4d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:)
-  REAL(KIND=DP), INTENT(OUT) :: res (:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:)
+  REAL(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(4), output_dims_c(4)
@@ -440,26 +368,19 @@ SUBROUTINE evaluate_tau_dd_4d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_dd_4d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_dd_5d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:)
-  REAL(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:)
+  REAL(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(5), output_dims_c(5)
@@ -481,26 +402,19 @@ SUBROUTINE evaluate_tau_dd_5d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_dd_5d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_dd_6d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:)
-  REAL(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:)
+  REAL(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(6), output_dims_c(6)
@@ -522,26 +436,19 @@ SUBROUTINE evaluate_tau_dd_6d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_dd_6d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE
 
 SUBROUTINE evaluate_tau_dd_7d(obj, target_dim, arr, res)
   TYPE(IR), INTENT(IN) :: obj
   INTEGER, INTENT(IN) :: target_dim
-  REAL(KIND=DP), INTENT(IN) :: arr (:,:,:,:,:,:,:)
-  REAL(KIND=DP), INTENT(OUT) :: res (:,:,:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: arr_c(:,:,:,:,:,:,:)
-  REAL(KIND=c_double), ALLOCATABLE, TARGET :: res_c(:,:,:,:,:,:,:)
+  REAL(KIND=DP), INTENT(IN), TARGET :: arr (:,:,:,:,:,:,:)
+  REAL(KIND=DP), INTENT(OUT), TARGET :: res (:,:,:,:,:,:,:)
 
   INTEGER(KIND=c_int) :: ndim_c, target_dim_c, status_c
   INTEGER(KIND=c_int), TARGET :: input_dims_c(7), output_dims_c(7)
@@ -563,15 +470,10 @@ SUBROUTINE evaluate_tau_dd_7d(obj, target_dim, arr, res)
   ENDIF
   target_dim_c = target_dim - 1
 
-  ALLOCATE(arr_c, MOLD=arr)
-  arr_c = arr
-  ALLOCATE(res_c, MOLD=res)
   status_c = c_spir_sampling_eval_dd(obj%tau_smpl_ptr, SPIR_ORDER_COLUMN_MAJOR, &
-    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr_c), c_loc(res_c))
+    ndim_c, c_loc(input_dims_c), target_dim_c, c_loc(arr), c_loc(res))
   IF (status_c /= 0) THEN
     CALL errore('evaluate_tau_dd_7d', 'Error evaluating on tau sampling points', status_c)
   ENDIF
-  res = res_c
-  DEALLOCATE(arr_c, res_c)
 
 END SUBROUTINE

@@ -1,0 +1,38 @@
+name: Test C++ Backend
+
+on:
+  push:
+    branches: [ "main", "459-restructure-directories" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test-cxx-backend:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libopenblas-dev libeigen3-dev
+      
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake eigen openblas
+      
+      - name: Build and test C++ backend
+        working-directory: backend/cxx
+        run: ./build_capi_with_tests.sh
+      
+      - name: Build and test capi_test against backend
+        working-directory: capi_test
+        run: ./test_with_cxx_backend.sh
+

@@ -14,21 +14,51 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
-#include <sparseir/sparseir.hpp> // C++ interface
+// C++ interface removed for C-API test
 #include <sparseir/sparseir.h>   // C interface
 #include "_utils.hpp"
 
+// Helper function for movedim (replacing sparseir::movedim)
+template <int N>
+Eigen::array<int, N> getperm_local(int src, int dst)
+{
+    Eigen::array<int, N> perm;
+    if (src == dst) {
+        for (int i = 0; i < N; ++i) {
+            perm[i] = i;
+        }
+        return perm;
+    }
+
+    int pos = 0;
+    for (int i = 0; i < N; ++i) {
+        if (i == dst) {
+            perm[i] = src;
+        } else {
+            // Skip src position
+            if (pos == src)
+                ++pos;
+            perm[i] = pos;
+            ++pos;
+        }
+    }
+    return perm;
+}
+
+template <typename T, int N, int Options>
+Eigen::Tensor<T, N, Options> movedim_local(const Eigen::Tensor<T, N, Options> &arr, int src, int dst)
+{
+    if (src == dst) {
+        return arr;
+    }
+    auto perm = getperm_local<N>(src, dst);
+    return arr.shuffle(perm);
+}
+
 using Catch::Approx;
 
-template <typename S>
-int get_stat()
-{
-    if (std::is_same<S, sparseir::Fermionic>::value) {
-        return SPIR_STATISTICS_FERMIONIC;
-    } else {
-        return SPIR_STATISTICS_BOSONIC;
-    }
-}
+// Remove template, use runtime parameter
+// get_stat function is now replaced with direct parameter usage
 
 // int get_order(Eigen::StorageOptions order)
 //{
@@ -160,7 +190,7 @@ _transform_coefficients(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
 
     // Move target dimension to the first position
     Eigen::Tensor<T, ndim, ORDER> coeffs_targetdim0 =
-        sparseir::movedim(coeffs, target_dim, 0);
+        movedim_local(coeffs, target_dim, 0);
 
     // Calculate the size of extra dimensions
     Eigen::Index extra_size = 1;
@@ -188,7 +218,7 @@ _transform_coefficients(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
     result_mat = basis_eval * coeffs_mat.template cast<PromotedType>();
 
     // Move dimensions back to original order
-    return sparseir::movedim(result, 0, target_dim);
+    return movedim_local(result, 0, target_dim);
 }
 
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
@@ -216,19 +246,15 @@ _evaluate_giw(const Eigen::Tensor<T, ndim, ORDER> &coeffs,
     return result;
 }
 
-template <typename K>
-spir_kernel* _kernel_new(double lambda);
-
-template <>
-spir_kernel* _kernel_new<sparseir::LogisticKernel>(double lambda)
+// C-API function for kernel creation
+spir_kernel* _kernel_new_logistic(double lambda)
 {
     int status;
     spir_kernel* kernel = spir_logistic_kernel_new(lambda, &status);
     return kernel;
 }
 
-template <>
-spir_kernel* _kernel_new<sparseir::RegularizedBoseKernel>(double lambda)
+spir_kernel* _kernel_new_reg_bose(double lambda)
 {
     int status;
     spir_kernel* kernel = spir_reg_bose_kernel_new(lambda, &status);
@@ -350,10 +376,11 @@ struct tensor_converter<double, ndim, ORDER> {
 /*
 T: double or std::complex<double>, scalar type of coeffs
 */
-template <typename T, typename S, typename K, int ndim, Eigen::StorageOptions ORDER>
+template <typename T, int ndim, Eigen::StorageOptions ORDER>
 void integration_test(double beta, double wmax, double epsilon,
                       const std::vector<int> &extra_dims, int target_dim,
-                      const int order, double tol, bool positive_only)
+                      const int order, int stat, spir_kernel* kernel,
+                      double tol, bool positive_only)
 {
     // positive_only is not supported for complex numbers
     REQUIRE (!(std::is_same<T, std::complex<double>>::value && positive_only));
@@ -369,11 +396,7 @@ void integration_test(double beta, double wmax, double epsilon,
         REQUIRE(order == SPIR_ORDER_ROW_MAJOR);
     }
 
-    auto stat = get_stat<S>();
     int status;
-
-    // IR basis
-    spir_kernel* kernel = _kernel_new<K>(beta * wmax);
     spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve != nullptr);
@@ -492,7 +515,7 @@ void integration_test(double beta, double wmax, double epsilon,
 
     // Move the axis for the poles from the first to the target dimension
     Eigen::Tensor<T, ndim, ORDER> coeffs =
-        sparseir::movedim(coeffs_targetdim0, 0, target_dim);
+        movedim_local(coeffs_targetdim0, 0, target_dim);
 
     // Convert DLR coefficients to IR coefficients
     Eigen::Tensor<T, ndim, ORDER> g_IR(
@@ -674,19 +697,21 @@ TEST_CASE("Integration Test", "[cinterface]") {
     double tol = 10 * epsilon;
 
 
+    // Create kernel once for all tests
+    spir_kernel* kernel = _kernel_new_logistic(beta * wmax);
+    int stat = SPIR_STATISTICS_BOSONIC;
+
     for (bool positive_only : {false, true}) {
         std::cout << "positive_only = " << positive_only << std::endl;
         {
             std::vector<int> extra_dims = {};
             std::cout << "Integration test for bosonic LogisticKernel" << std::endl;
-            integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                           Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                          SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+            integration_test<double, 1, Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                          SPIR_ORDER_COLUMN_MAJOR, stat, kernel, tol, positive_only);
 
             if (!positive_only) {
-                integration_test<std::complex<double>, sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                               Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
-                                              SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+                integration_test<std::complex<double>, 1, Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, 0,
+                                              SPIR_ORDER_COLUMN_MAJOR, stat, kernel, tol, positive_only);
             }
         }
 
@@ -694,13 +719,11 @@ TEST_CASE("Integration Test", "[cinterface]") {
             int target_dim = 0;
             std::vector<int> extra_dims = {};
             std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
-            integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                           Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                          SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+            integration_test<double, 1, Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_COLUMN_MAJOR, stat, kernel, tol, positive_only);
             if (!positive_only) {
-                integration_test<std::complex<double>, sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                               Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                              SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+                integration_test<std::complex<double>, 1, Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                              SPIR_ORDER_COLUMN_MAJOR, stat, kernel, tol, positive_only);
             }
         }
 
@@ -708,13 +731,11 @@ TEST_CASE("Integration Test", "[cinterface]") {
             int target_dim = 0;
             std::vector<int> extra_dims = {};
             std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
-            integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                           Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                          SPIR_ORDER_ROW_MAJOR, tol, positive_only);
+            integration_test<double, 1, Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_ROW_MAJOR, stat, kernel, tol, positive_only);
             if (!positive_only) {
-                integration_test<std::complex<double>, sparseir::Bosonic, sparseir::LogisticKernel, 1,
-                               Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                              SPIR_ORDER_ROW_MAJOR, tol, positive_only);
+                integration_test<std::complex<double>, 1, Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                              SPIR_ORDER_ROW_MAJOR, stat, kernel, tol, positive_only);
             }
         }
 
@@ -722,17 +743,15 @@ TEST_CASE("Integration Test", "[cinterface]") {
         for (int target_dim = 0; target_dim < 4; ++target_dim) {
             std::vector<int> extra_dims = {2,3,4};
             std::cout << "Integration test for bosonic LogisticKernel, ColMajor, target_dim = " << target_dim << std::endl;
-            integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 4,
-                           Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                          SPIR_ORDER_COLUMN_MAJOR, tol, positive_only);
+            integration_test<double, 4, Eigen::ColMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_COLUMN_MAJOR, stat, kernel, tol, positive_only);
         }
 
         for (int target_dim = 0; target_dim < 4; ++target_dim) {
             std::vector<int> extra_dims = {2,3,4};
             std::cout << "Integration test for bosonic LogisticKernel, RowMajor, target_dim = " << target_dim << std::endl;
-            integration_test<double, sparseir::Bosonic, sparseir::LogisticKernel, 4,
-                           Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
-                                          SPIR_ORDER_ROW_MAJOR, tol, positive_only);
+            integration_test<double, 4, Eigen::RowMajor>(beta, wmax, epsilon, extra_dims, target_dim,
+                                          SPIR_ORDER_ROW_MAJOR, stat, kernel, tol, positive_only);
         }
     }
 }

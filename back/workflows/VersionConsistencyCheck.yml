@@ -4,13 +4,13 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'backend/cxx/include/sparseir/version.h'
+      - 'include/sparseir/version.h'
       - 'python/pyproject.toml'
       - 'update_version.py'
   push:
     branches: [main]
     paths:
-      - 'backend/cxx/include/sparseir/version.h'
+      - 'include/sparseir/version.h'
       - 'python/pyproject.toml'
       - 'update_version.py'
 

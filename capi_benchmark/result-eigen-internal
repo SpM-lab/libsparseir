@@ -1,0 +1,40 @@
+Running all tests...
+----------------------------------------
+Running benchmark1...
+Benchmark (positive only = false)
+beta: 100000.000000
+omega_max: 1.000000
+epsilon: 0.000000
+Extra size: 1000
+Number of runs: 10000
+Kernel creation               :   0.034000 ms
+SVE computation               : 8783.172000 ms
+n_basis: 95
+n_tau: 95
+n_matsubara: 96
+fit_zz (Matsubara)            : 60689.285000 ms
+eval_zz (Matsubara)           : 29683.097000 ms
+eval_dz (Matsubara)           : 10119.379000 ms
+fit_zz (Tau)                  : 29547.235000 ms
+eval_zz (Tau)                 : 28734.945000 ms
+
+Benchmark (positive only = true)
+beta: 100000.000000
+omega_max: 1.000000
+epsilon: 0.000000
+Extra size: 1000
+Number of runs: 10000
+Kernel creation               :   0.001000 ms
+SVE computation               : 8597.571000 ms
+n_basis: 95
+n_tau: 95
+n_matsubara: 48
+fit_zz (Matsubara)            : 15342.874000 ms
+eval_zz (Matsubara)           : 14869.731000 ms
+eval_dz (Matsubara)           : 5389.729000 ms
+fit_zz (Tau)                  : 30142.329000 ms
+eval_zz (Tau)                 : 29850.478000 ms
+
+----------------------------------------
+All tests completed!
+[100%] Built target test
