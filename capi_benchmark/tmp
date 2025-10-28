@@ -1,0 +1,33 @@
+----------------------------------------
+Running benchmark1...
+Benchmark (positive only = false)
+beta: 100000.000000
+omega_max: 1.000000
+epsilon: 0.000000
+Extra size: 1000
+Number of runs: 10000
+Kernel creation               :   0.003000 ms
+SVE computation               : 8369.650000 ms
+n_basis: 95
+n_tau: 95
+n_matsubara: 96
+fit_zz (Matsubara)            : 53336.191000 ms
+eval_zz (Matsubara)           : 32080.965000 ms
+fit_zz (Tau)                  : 34555.816000 ms
+eval_zz (Tau)                 : 5998.359000 ms
+
+Benchmark (positive only = true)
+beta: 100000.000000
+omega_max: 1.000000
+epsilon: 0.000000
+Extra size: 1000
+Number of runs: 10000
+Kernel creation               :   0.002000 ms
+SVE computation               : 8551.958000 ms
+n_basis: 95
+n_tau: 95
+n_matsubara: 48
+fit_zz (Matsubara)            : 11195.550000 ms
+eval_zz (Matsubara)           : 16474.556000 ms
+fit_zz (Tau)                  : 31909.953000 ms
+eval_zz (Tau)                 : 6620.095000 ms

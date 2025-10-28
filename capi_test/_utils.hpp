@@ -89,21 +89,6 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
 }
 
 
-template <typename S>
-sparseir::PiecewiseLegendrePoly _singleout_poly_from_irtaufuncs(const sparseir::IRTauFuncsType<S> &funcs, std::size_t idx) {
-    sparseir::IRTauFuncsType<S> funcs_slice = funcs[idx];
-    sparseir::PiecewiseLegendrePolyVector u0 = funcs_slice.get_obj();
-    return u0[0];
-}
-
-
-//template <typename S>
-//sparseir::IRBasisType<S> _singleout_from_irtaufuncs(const sparseir::IRTauFuncsType<S> &funcs, std::size_t idx) {
-    //sparseir::IRTauFuncsType<S> funcs_slice = funcs[idx];
-//}
-
-
-
 template <typename T, int ndim, Eigen::StorageOptions ORDER>
 bool compare_tensors_with_relative_error(const Eigen::Tensor<T, ndim, ORDER> &a,
                                          const Eigen::Tensor<T, ndim, ORDER> &b,

@@ -1,0 +1,33 @@
+Benchmark (positive only = false)
+beta: 100000.000000
+omega_max: 1.000000
+epsilon: 0.000000
+Extra size: 1000
+Number of runs: 10000
+Kernel creation               :   0.037000 ms
+SVE computation               : 8738.458000 ms
+n_basis: 95
+n_tau: 95
+n_matsubara: 96
+fit_zz (Matsubara)            : 47126.428000 ms
+eval_zz (Matsubara)           : 5542.738000 ms
+eval_dz (Matsubara)           : 10316.618000 ms
+fit_zz (Tau)                  : 41147.279000 ms
+eval_zz (Tau)                 : 6352.628000 ms
+
+Benchmark (positive only = true)
+beta: 100000.000000
+omega_max: 1.000000
+epsilon: 0.000000
+Extra size: 1000
+Number of runs: 10000
+Kernel creation               :   0.001000 ms
+SVE computation               : 8621.689000 ms
+n_basis: 95
+n_tau: 95
+n_matsubara: 48
+fit_zz (Matsubara)            : 7846.872000 ms
+eval_zz (Matsubara)           : 3648.960000 ms
+eval_dz (Matsubara)           : 5139.793000 ms
+fit_zz (Tau)                  : 38652.935000 ms
+eval_zz (Tau)                 : 6444.498000 ms
