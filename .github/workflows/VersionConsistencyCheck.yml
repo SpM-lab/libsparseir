@@ -1,0 +1,55 @@
+name: Version Consistency Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/cxx/include/sparseir/version.h'
+      - 'python/pyproject.toml'
+      - 'update_version.py'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/cxx/include/sparseir/version.h'
+      - 'python/pyproject.toml'
+      - 'update_version.py'
+
+jobs:
+  check-version-consistency:
+    runs-on: ubuntu-latest
+    name: Check Version Consistency
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+      
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+        
+    - name: Check version consistency
+      run: |
+        echo "🔍 Checking version consistency across components..."
+        echo "=================================================="
+        echo
+        
+        python update_version.py
+        exit_code=$?
+        
+        echo
+        if [ $exit_code -eq 0 ]; then
+          echo "✅ All versions are consistent and in sync!"
+          echo "   Ready for release process."
+        else
+          echo "❌ Version inconsistency detected!"
+          echo
+          echo "💡 To fix this issue:"
+          echo "   1. Run: python update_version.py <desired_version>"
+          echo "   2. Commit the changes: git add -A && git commit -m 'Fix version consistency'"
+          echo "   3. Push the changes to update this PR"
+          echo
+          echo "Example:"
+          echo "   python update_version.py 0.4.3"
+          exit 1
+        fi
