@@ -66,11 +66,11 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         "$WORK_DIR/build_fortran/libsparseir_fortran.0.dylib" 2>/dev/null || true
     
     # Update rpath for test executables
-    for test_bin in "$WORK_DIR/build_fortran/test/"*.exe "$WORK_DIR/build_fortran/test/test_"* 2>/dev/null; do
+    for test_bin in "$WORK_DIR/build_fortran/test/"*.exe "$WORK_DIR/build_fortran/test/test_"*; do
         if [ -f "$test_bin" ] && file "$test_bin" | grep -q "Mach-O"; then
             install_name_tool -add_rpath "$INSTALL_DIR/lib" "$test_bin" 2>/dev/null || true
         fi
-    done
+    done 2>/dev/null || true
 fi
 
 ctest --output-on-failure --verbose
