@@ -4,12 +4,10 @@ on:
   push:
     branches:
       - main
-      - develop
       - 459-restructure-directories
   pull_request:
     branches:
       - main
-      - develop
   workflow_dispatch:
 
 jobs:
