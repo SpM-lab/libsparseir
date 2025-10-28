@@ -14,21 +14,20 @@ def setup_build_environment():
     parent_dir = os.path.dirname(current_dir)
     
     # Files and directories to copy
+    # Note: CMakeLists.txt is NOT copied - Python has its own CMakeLists.txt
     items_to_copy = [
-        'CMakeLists.txt',
-        'LICENSE',
-        'include',
-        'src',
-        'fortran',
-        'cmake'
+        ('LICENSE', 'LICENSE'),
+        ('backend/cxx/include', 'include'),
+        ('backend/cxx/src', 'src'),
+        ('cmake', 'cmake')
     ]
     
     print(f"Setting up build environment in: {current_dir}")
     print(f"Copying from parent directory: {parent_dir}")
     
-    for item in items_to_copy:
-        src_path = os.path.join(parent_dir, item)
-        dst_path = os.path.join(current_dir, item)
+    for src_item, dst_item in items_to_copy:
+        src_path = os.path.join(parent_dir, src_item)
+        dst_path = os.path.join(current_dir, dst_item)
         
         if os.path.exists(src_path):
             # Always remove existing and copy fresh
@@ -40,12 +39,12 @@ def setup_build_environment():
             
             if os.path.isdir(src_path):
                 shutil.copytree(src_path, dst_path)
-                print(f"Copied directory: {item}")
+                print(f"Copied directory: {src_item} -> {dst_item}")
             else:
                 shutil.copy2(src_path, dst_path)
-                print(f"Copied file: {item}")
+                print(f"Copied file: {src_item} -> {dst_item}")
         else:
-            print(f"Warning: {item} not found in parent directory")
+            print(f"Warning: {src_item} not found in parent directory")
 
 if __name__ == "__main__":
     setup_build_environment()
