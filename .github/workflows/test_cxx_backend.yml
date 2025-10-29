@@ -32,9 +32,21 @@ jobs:
         working-directory: backend/cxx
         run: ./build_capi_with_tests.sh
       
+      - name: Install C++ backend
+        working-directory: backend/cxx/build
+        run: cmake --install .
+      
       - name: Build and test capi_test against backend
         working-directory: capi_test
         run: ./test_with_cxx_backend.sh
+      
+      - name: Build and run capi_sample
+        working-directory: capi_sample
+        run: |
+          export SparseIR_DIR="$(pwd)/../backend/cxx/build/share/cmake/SparseIR"
+          cmake -S . -B ./build
+          cmake --build ./build
+          cmake --build ./build --target test
 
   test-cxx-backend-rollup:
     runs-on: ubuntu-latest
