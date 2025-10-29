@@ -59,7 +59,7 @@ jobs:
           mkdir -p build && cd build
           cmake .. -DSPARSEIR_BUILD_TESTING=ON -DSPARSEIR_USE_BLAS_ILP64=ON
           cmake --build . -j$(nproc)
-          ctest --output-on-failure -j$(nproc)
+          ctest --output-on-failure --verbose -j$(nproc)
       
       - name: Build and test capi_test against ILP64 backend
         working-directory: capi_test
