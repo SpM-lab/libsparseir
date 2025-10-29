@@ -2,7 +2,6 @@
 
 #ifdef SPARSEIR_USE_BLAS
 namespace sparseir {
-#endif // SPARSEIR_USE_BLAS
 
 #ifdef SPARSEIR_USE_EXTERN_FBLAS_PTR
     #include "gemm_external.impl"
@@ -10,6 +9,5 @@ namespace sparseir {
     #include "gemm_link.impl"
 #endif
 
-#ifdef SPARSEIR_USE_BLAS
 } // namespace sparseir
 #endif // SPARSEIR_USE_BLAS
