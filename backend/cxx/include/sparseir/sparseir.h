@@ -1257,6 +1257,8 @@ int spir_sampling_fit_zd(const spir_sampling *s, int order, int ndim,
                          const int *input_dims, int target_dim,
                          const c_complex *input, double *out);
 
+#ifdef SPARSEIR_USE_EXTERN_FBLAS_PTR
+
 /**
  * @brief Register BLAS function pointers for LP64 interface (32-bit integers)
  *
@@ -1292,6 +1294,8 @@ void spir_register_dgemm_zgemm_lp64(void* dgemm_fn, void* zgemm_fn);
  * @note Only one registration function should be called (either LP64 or ILP64)
  */
 void spir_register_dgemm_zgemm_ilp64(void* dgemm_fn, void* zgemm_fn);
+
+#endif // SPARSEIR_USE_EXTERN_FBLAS_PTR
 
 #ifdef __cplusplus
 }

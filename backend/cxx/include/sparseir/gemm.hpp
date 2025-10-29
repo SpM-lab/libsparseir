@@ -15,8 +15,23 @@
 
 namespace sparseir {
 
-// Fortran BLAS interface wrapper functions (Fortran-style arguments)
-// For LP64 (32-bit integers)
+// Fortran BLAS interface wrapper functions
+// Integer type is selected at compile time based on SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_ILP64
+// ILP64 interface: 64-bit integers
+void my_dgemm(const char* transa, const char* transb,
+              const long long* m, const long long* n, const long long* k,
+              const double* alpha, const double* a, const long long* lda,
+              const double* b, const long long* ldb, const double* beta,
+              double* c, const long long* ldc);
+
+void my_zgemm(const char* transa, const char* transb,
+              const long long* m, const long long* n, const long long* k,
+              const void* alpha, const void* a, const long long* lda,
+              const void* b, const long long* ldb, const void* beta,
+              void* c, const long long* ldc);
+#else
+// LP64 interface: 32-bit integers (default)
 void my_dgemm(const char* transa, const char* transb,
               const int* m, const int* n, const int* k,
               const double* alpha, const double* a, const int* lda,
@@ -28,19 +43,7 @@ void my_zgemm(const char* transa, const char* transb,
               const void* alpha, const void* a, const int* lda,
               const void* b, const int* ldb, const void* beta,
               void* c, const int* ldc);
-
-// For ILP64 (64-bit integers)
-void my_dgemm64(const char* transa, const char* transb,
-                const long long* m, const long long* n, const long long* k,
-                const double* alpha, const double* a, const long long* lda,
-                const double* b, const long long* ldb, const double* beta,
-                double* c, const long long* ldc);
-
-void my_zgemm64(const char* transa, const char* transb,
-                const long long* m, const long long* n, const long long* k,
-                const void* alpha, const void* a, const long long* lda,
-                const void* b, const long long* ldb, const void* beta,
-                void* c, const long long* ldc);
+#endif
 
 // Type-specific CBLAS GEMM implementations
 template <typename U, typename V, typename ResultType>
@@ -65,9 +68,18 @@ inline void _gemm_blas_impl<double, double, double>(const double *A,
 {
     const char transa = 'N', transb = 'N';
     const double alpha = 1.0, beta = 0.0;
+#ifdef SPARSEIR_USE_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_dgemm64(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+#else
+    const int m = static_cast<int>(M), n = static_cast<int>(N), k = static_cast<int>(K);
+    const int lda = static_cast<int>(M), ldb = static_cast<int>(K), ldc = static_cast<int>(M);
+#endif
+#else
+    const int m = static_cast<int>(M), n = static_cast<int>(N), k = static_cast<int>(K);
+    const int lda = static_cast<int>(M), ldb = static_cast<int>(K), ldc = static_cast<int>(M);
+#endif
+    my_dgemm(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
 }
 
 // Specialization for complex<double> * complex<double> -> complex<double>
@@ -81,9 +93,14 @@ inline void _gemm_blas_impl<std::complex<double>, std::complex<double>,
     const char transa = 'N', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
+#ifdef SPARSEIR_USE_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_zgemm64(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
+#else
+    const int m = static_cast<int>(M), n = static_cast<int>(N), k = static_cast<int>(K);
+    const int lda = static_cast<int>(M), ldb = static_cast<int>(K), ldc = static_cast<int>(M);
+#endif
+    my_zgemm(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
                reinterpret_cast<const void*>(A), &lda,
                reinterpret_cast<const void*>(B), &ldb, reinterpret_cast<const void*>(&beta),
                reinterpret_cast<void*>(C), &ldc);
@@ -104,9 +121,14 @@ inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(
     const char transa = 'N', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
+#ifdef SPARSEIR_USE_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_zgemm64(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
+#else
+    const int m = static_cast<int>(M), n = static_cast<int>(N), k = static_cast<int>(K);
+    const int lda = static_cast<int>(M), ldb = static_cast<int>(K), ldc = static_cast<int>(M);
+#endif
+    my_zgemm(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
                reinterpret_cast<const void*>(A_complex.data()), &lda,
                reinterpret_cast<const void*>(B), &ldb, reinterpret_cast<const void*>(&beta),
                reinterpret_cast<void*>(C), &ldc);
@@ -127,9 +149,14 @@ inline void _gemm_blas_impl<std::complex<double>, double, std::complex<double>>(
     const char transa = 'N', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
+#ifdef SPARSEIR_USE_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_zgemm64(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
+#else
+    const int m = static_cast<int>(M), n = static_cast<int>(N), k = static_cast<int>(K);
+    const int lda = static_cast<int>(M), ldb = static_cast<int>(K), ldc = static_cast<int>(M);
+#endif
+    my_zgemm(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
                reinterpret_cast<const void*>(A), &lda,
                reinterpret_cast<const void*>(B_complex.data()), &ldb, reinterpret_cast<const void*>(&beta),
                reinterpret_cast<void*>(C), &ldc);
@@ -146,7 +173,7 @@ inline void _gemm_blas_impl_transpose<double, double, double>(const double *A,
     const double alpha = 1.0, beta = 0.0;
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(N), ldc = static_cast<long long>(M);
-    my_dgemm64(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+    my_dgemm(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
 }
 
 // Specialization for complex<double> * complex<double> -> complex<double>
@@ -164,7 +191,7 @@ _gemm_blas_impl_transpose<std::complex<double>, std::complex<double>,
     const std::complex<double> beta(0.0);
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(N), ldc = static_cast<long long>(M);
-    my_zgemm64(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
+    my_zgemm(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
                reinterpret_cast<const void*>(A), &lda,
                reinterpret_cast<const void*>(B), &ldb, reinterpret_cast<const void*>(&beta),
                reinterpret_cast<void*>(C), &ldc);
@@ -221,7 +248,7 @@ _gemm_blas_impl_conj<double, double, double>(const double *A, const double *B,
     const double alpha = 1.0, beta = 0.0;
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_dgemm64(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
+    my_dgemm(&transa, &transb, &m, &n, &k, &alpha, A, &lda, B, &ldb, &beta, C, &ldc);
 }
 
 // Specialization for complex<double> * complex<double> -> complex<double>
@@ -237,7 +264,7 @@ inline void _gemm_blas_impl_conj<std::complex<double>, std::complex<double>,
     const std::complex<double> beta(0.0);
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_zgemm64(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
+    my_zgemm(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
                reinterpret_cast<const void*>(A), &lda,
                reinterpret_cast<const void*>(B), &ldb, reinterpret_cast<const void*>(&beta),
                reinterpret_cast<void*>(C), &ldc);
@@ -261,7 +288,7 @@ _gemm_blas_impl_conj<std::complex<double>, double, std::complex<double>>(
     const std::complex<double> beta(0.0);
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_zgemm64(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
+    my_zgemm(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
                reinterpret_cast<const void*>(A), &lda,
                reinterpret_cast<const void*>(B_complex.data()), &ldb, reinterpret_cast<const void*>(&beta),
                reinterpret_cast<void*>(C), &ldc);
@@ -286,7 +313,7 @@ _gemm_blas_impl_conj<double, std::complex<double>, std::complex<double>>(
     const std::complex<double> beta(0.0);
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
-    my_zgemm64(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
+    my_zgemm(&transa, &transb, &m, &n, &k, reinterpret_cast<const void*>(&alpha),
                reinterpret_cast<const void*>(A_complex.data()), &lda,
                reinterpret_cast<const void*>(B), &ldb, reinterpret_cast<const void*>(&beta),
                reinterpret_cast<void*>(C), &ldc);

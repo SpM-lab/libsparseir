@@ -1,0 +1,109 @@
+// External function pointer registration implementation
+// This file is included when SPARSEIR_USE_EXTERN_FBLAS_PTR is defined
+// Note: This file is included inside namespace sparseir {} in gemm.cpp
+//
+// IMPORTANT: In this mode, BLAS libraries are NOT directly linked.
+//            Therefore, dgemm_ and zgemm_ symbols do NOT exist.
+//            All BLAS calls go through externally registered function pointers.
+
+#include <cstddef>
+#include <stdexcept>
+
+// Function pointer types for external registration
+// (No extern "C" dgemm_/zgemm_ declarations here - they don't exist when using external pointers)
+#ifdef SPARSEIR_USE_ILP64
+using dgemm_fptr = void(*)(const char*, const char*, const long long*,
+                           const long long*, const long long*, const double*,
+                           const double*, const long long*, const double*,
+                           const long long*, const double*, double*, const long long*);
+
+using zgemm_fptr = void(*)(const char*, const char*, const long long*,
+                           const long long*, const long long*, const void*,
+                           const void*, const long long*, const void*,
+                           const long long*, const void*, void*, const long long*);
+#else
+using dgemm_fptr = void(*)(const char*, const char*, const int*,
+                           const int*, const int*, const double*,
+                           const double*, const int*, const double*,
+                           const int*, const double*, double*, const int*);
+
+using zgemm_fptr = void(*)(const char*, const char*, const int*,
+                           const int*, const int*, const void*,
+                           const void*, const int*, const void*,
+                           const int*, const void*, void*, const int*);
+#endif
+
+// Storage for externally registered function pointers
+static dgemm_fptr registered_dgemm = nullptr;
+static zgemm_fptr registered_zgemm = nullptr;
+
+extern "C" {
+
+// Register function pointers from outside (for Python bindings)
+#ifdef SPARSEIR_USE_ILP64
+void spir_register_dgemm_zgemm_ilp64(void* dgemm_fn, void* zgemm_fn) {
+    registered_dgemm = reinterpret_cast<dgemm_fptr>(dgemm_fn);
+    registered_zgemm = reinterpret_cast<zgemm_fptr>(zgemm_fn);
+}
+#else
+void spir_register_dgemm_zgemm_lp64(void* dgemm_fn, void* zgemm_fn) {
+    registered_dgemm = reinterpret_cast<dgemm_fptr>(dgemm_fn);
+    registered_zgemm = reinterpret_cast<zgemm_fptr>(zgemm_fn);
+}
+#endif
+
+} // extern "C"
+
+#ifdef SPARSEIR_USE_ILP64
+// ILP64 interface
+void my_dgemm(const char* transa, const char* transb,
+              const long long* m, const long long* n, const long long* k,
+              const double* alpha, const double* a, const long long* lda,
+              const double* b, const long long* ldb, const double* beta,
+              double* c, const long long* ldc)
+{
+    if (!registered_dgemm) {
+        throw std::runtime_error("dgemm function pointer not registered - call spir_register_dgemm_zgemm_ilp64() first");
+    }
+    registered_dgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+
+void my_zgemm(const char* transa, const char* transb,
+              const long long* m, const long long* n, const long long* k,
+              const void* alpha, const void* a, const long long* lda,
+              const void* b, const long long* ldb, const void* beta,
+              void* c, const long long* ldc)
+{
+    if (!registered_zgemm) {
+        throw std::runtime_error("zgemm function pointer not registered - call spir_register_dgemm_zgemm_ilp64() first");
+    }
+    registered_zgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+
+#else
+// LP64 interface (default)
+void my_dgemm(const char* transa, const char* transb,
+              const int* m, const int* n, const int* k,
+              const double* alpha, const double* a, const int* lda,
+              const double* b, const int* ldb, const double* beta,
+              double* c, const int* ldc)
+{
+    if (!registered_dgemm) {
+        throw std::runtime_error("dgemm function pointer not registered - call spir_register_dgemm_zgemm_lp64() first");
+    }
+    registered_dgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+
+void my_zgemm(const char* transa, const char* transb,
+              const int* m, const int* n, const int* k,
+              const void* alpha, const void* a, const int* lda,
+              const void* b, const int* ldb, const void* beta,
+              void* c, const int* ldc)
+{
+    if (!registered_zgemm) {
+        throw std::runtime_error("zgemm function pointer not registered - call spir_register_dgemm_zgemm_lp64() first");
+    }
+    registered_zgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+#endif
+
