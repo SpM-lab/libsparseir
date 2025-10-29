@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
-option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface" OFF)
+option(SPARSEIR_USE_BLAS_ILP64 "Enable ILP64 BLAS interface (64-bit integers)" OFF)
 option(SPARSEIR_BUILD_TESTING "Enable testing" OFF)
 option(SPARSEIR_DEBUG "Enable debug logging" OFF)
 
@@ -56,14 +56,27 @@ if(NOT xprec_POPULATED)
 endif()
 
 # BLAS configuration (always enabled)
-if(SPARSEIR_USE_ILP64)
-    add_compile_definitions(SPARSEIR_USE_ILP64)
-    # Try to find ILP64 BLAS
-    if(NOT BLAS_LIBRARIES)
-        find_library(BLAS_LIBRARIES NAMES openblas64)
+# Set BLAS integer size based on SPARSEIR_USE_BLAS_ILP64
+if(SPARSEIR_USE_BLAS_ILP64)
+    set(BLA_SIZEOF_INTEGER 8)
+    message(STATUS "Searching for ILP64 BLAS interface (64-bit integers)")
+else()
+    set(BLA_SIZEOF_INTEGER 4)
+    message(STATUS "Searching for LP64 BLAS interface (32-bit integers, default)")
+endif()
+
+# Find BLAS package using standard CMake FindBLAS
+find_package(BLAS REQUIRED)
+
+if(BLAS_FOUND)
+    message(STATUS "BLAS libraries found: ${BLAS_LIBRARIES}")
+    if(SPARSEIR_USE_BLAS_ILP64)
+        message(STATUS "BLAS with ILP64 interface (BLA_SIZEOF_INTEGER=8)")
+    else()
+        message(STATUS "BLAS with LP64 interface (BLA_SIZEOF_INTEGER=4)")
     endif()
 else()
-    find_package(BLAS REQUIRED)
+    message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
 endif()
 
 # C++ Library Build

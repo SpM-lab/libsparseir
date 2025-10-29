@@ -99,71 +99,122 @@ cd build
 
 ### BLAS Support
 
-By default, the library uses Eigen's internal implementations for matrix-matrix multiplication for fitting and sampling.
-This does not require any additional system libraries.
-However, the performance is not as good as the BLAS implementation.
+BLAS support is **mandatory and always enabled** in this library. BLAS routines are used for performance-critical operations in fitting (`fit_tau`, `fit_matsubara`) and evaluation (`evaluate_tau`, `evaluate_matsubara`).
 
-For performance critical applications, we recommend using BLAS.
-For this, you need to set the `SPARSEIR_USE_BLAS` CMake option to `ON`.
+#### Two Modes for BLAS Provision
+
+The library supports two modes for providing BLAS functions:
+
+1. **Link-time BLAS (default)**: BLAS library is linked at build time
+2. **Runtime BLAS registration**: BLAS function pointers are provided at runtime via C-API (used when `SPARSEIR_USE_EXTERN_FBLAS_PTR` is defined)
+
+The choice between these modes is determined at compile time based on the `SPARSEIR_USE_EXTERN_FBLAS_PTR` CMake option.
+
+---
+
+#### Mode 1: Link-time BLAS (Default)
+
+In this mode, a BLAS library (OpenBLAS, Intel MKL, Apple Accelerate, etc.) is linked at build time. The library uses dynamic symbol resolution to automatically detect and use the appropriate BLAS functions at runtime.
+
+**Dynamic Symbol Resolution:**
+
+The library uses `dlopen`/`dlsym` to dynamically resolve Fortran BLAS function symbols at runtime:
+- Supports multiple BLAS implementations and symbol naming conventions (`dgemm_`, `dgemm`, `DGEMM_`, `DGEMM`, etc.)
+- **ILP64 interfaces are prioritized over LP64 interfaces**:
+  1. First attempts to find ILP64 symbols (`dgemm64_`, `dgemm64`, `ZGEMM64_`, etc.)
+  2. If ILP64 symbols are found, they are used
+  3. Otherwise, falls back to LP64 symbols (`dgemm_`, `dgemm`, `DGEMM_`, etc.)
+
+This automatic detection happens when the library is loaded, without requiring any runtime configuration.
+
+**Building with Link-time BLAS:**
 
 ```bash
-cmake .. -DSPARSEIR_USE_BLAS=OFF
-cmake .. -DSPARSEIR_USE_BLAS=ON
+# Standard build with BLAS auto-detection
+mkdir -p build && cd build
+cmake ..
+cmake --build .
+
+# On Ubuntu with OpenBLAS
+sudo apt install libopenblas-dev
+cmake ..
+
+# On macOS (uses Accelerate framework automatically)
+cmake ..
 ```
 
-Alternatively, you can set the `SPARSEIR_USE_BLAS` CMake option to `ON` in the `CMakeLists.txt` file of your project:
+**For ILP64 BLAS:**
 
-```cmake
-cmake_minimum_required(VERSION 3.10)
-project(MyProject)
-
-set(SPARSEIR_USE_BLAS ON)
-```
-
-Note: When enabling BLAS, ensure that the appropriate libraries (such as OpenBLAS, Intel MKL, or Apple Accelerate) can be found by CMake.
-
-#### ILP64 BLAS Support
-
-For applications requiring large matrix operations (matrices larger than 2^31 elements), you can enable ILP64 BLAS support by setting both `SPARSEIR_USE_BLAS` and `SPARSEIR_USE_ILP64` to `ON`:
+If you need ILP64 support for large matrix operations (matrices larger than 2^31 elements), install ILP64-compatible BLAS libraries:
 
 ```bash
-cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON
-```
-
-This option:
-- Uses 64-bit integers for matrix dimensions and leading dimensions
-- Directly calls Fortran BLAS interfaces instead of CBLAS
-- Requires ILP64-compatible BLAS libraries (e.g., `libopenblas64-0` on Ubuntu)
-
-Example with ILP64 OpenBLAS on Ubuntu:
-```bash
+# Ubuntu with ILP64 OpenBLAS
 sudo apt install libopenblas64-0 libopenblas64-dev
-cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON
+cmake .. -DSPARSEIR_USE_BLAS_ILP64=ON
 ```
 
-#### Manual BLAS Library Specification
+**Note**: The `SPARSEIR_USE_BLAS_ILP64` CMake option only affects which BLAS library CMake searches for during configuration (sets `BLA_SIZEOF_INTEGER=8`). At runtime, the library always tries ILP64 symbols first regardless of this option.
 
-If CMake cannot automatically find the ILP64 BLAS library, you can specify it manually:
+**Manual BLAS Library Specification:**
+
+If CMake cannot automatically find the BLAS library, you can specify it manually:
 
 ```bash
-# Specify the exact library path
-cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON \
+# For standard LP64 BLAS
+cmake .. -DBLAS_LIBRARIES=/usr/lib/x86_64-linux-gnu/libopenblas.so
+
+# For ILP64 BLAS
+cmake .. -DSPARSEIR_USE_BLAS_ILP64=ON \
   -DBLAS_LIBRARIES=/usr/lib/x86_64-linux-gnu/libopenblas64.so.0
 
 # Or use environment variables to help CMake find it
 export BLA_VENDOR=OpenBLAS
-cmake .. -DSPARSEIR_USE_BLAS=ON -DSPARSEIR_USE_ILP64=ON
+cmake ..
 ```
 
-#### Troubleshooting ILP64 BLAS
+---
 
-If you encounter linking errors like "undefined reference to `dgemm_`", ensure:
+#### Mode 2: Runtime BLAS Registration
 
-1. **ILP64 BLAS is installed**: Check with `find /usr/lib -name "*openblas64*"`
-2. **Library contains ILP64 symbols**: Verify with `nm -D /path/to/libopenblas64.so | grep dgemm_`
-3. **CMake finds the library**: Check the CMake output for "ILP64 BLAS found" messages
+In this mode (enabled with `-DSPARSEIR_USE_EXTERN_FBLAS_PTR=ON`), the library does not link BLAS at build time. Instead, BLAS function pointers must be registered at runtime before using the library. This mode is primarily used for language bindings (e.g., Python) where BLAS functions are provided by the host environment.
 
-**Note**: ILP64 support requires `SPARSEIR_USE_BLAS=ON`.
+**Building with Runtime BLAS Registration:**
+
+```bash
+mkdir -p build && cd build
+cmake .. -DSPARSEIR_USE_EXTERN_FBLAS_PTR=ON
+cmake --build .
+```
+
+**Registering BLAS Functions:**
+
+You must call one of these registration functions before using any BLAS functionality:
+
+**For LP64 interface (32-bit integers):**
+```c
+void spir_register_dgemm_zgemm_lp64(void* dgemm_fn, void* zgemm_fn);
+```
+
+**For ILP64 interface (64-bit integers):**
+```c
+void spir_register_dgemm_zgemm_ilp64(void* dgemm_fn, void* zgemm_fn);
+```
+
+**Important**:
+- Only one registration function should be called (either LP64 or ILP64, not both)
+- The library will throw a runtime error if BLAS functions are used without prior registration
+
+**Example (Python with ctypes):**
+
+```python
+import ctypes
+import scipy.linalg.cython_blas as blas
+
+lib = ctypes.CDLL("libsparseir.so")
+dgemm_ptr = ctypes.cast(blas.dgemm, ctypes.c_void_p).value
+zgemm_ptr = ctypes.cast(blas.zgemm, ctypes.c_void_p).value
+lib.spir_register_dgemm_zgemm_lp64(dgemm_ptr, zgemm_ptr)
+```
 
 ### Debug Logging at runtime
 
@@ -187,6 +238,27 @@ This will create the `docs/html` directory. Open `docs/html/index.html` with you
 ## Sample code in C
 
 Please refer [`./sample_c/README.md`](./sample_c/README.md) to learn more.
+
+## Python Bindings
+
+Python bindings are located in the `python/` directory. The bindings use `SPARSEIR_USE_EXTERN_FBLAS_PTR` to register BLAS function pointers from SciPy/Numpy at runtime.
+
+### Testing Python Bindings
+
+To test the Python bindings, use the provided `run_tests.sh` script:
+
+```bash
+cd python
+./run_tests.sh
+```
+
+This script:
+1. Cleans up previous build artifacts (copied source files, `.venv`, build cache)
+2. Sets up the build environment using `setup_build.py`
+3. Installs dependencies and rebuilds the package using `uv sync --refresh`
+4. Runs the test suite using `uv run pytest tests/ -v`
+
+The script ensures a clean build environment and automatically handles dependency management with `uv`.
 
 ## For developers
 
