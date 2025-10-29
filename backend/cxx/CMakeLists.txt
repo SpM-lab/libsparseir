@@ -19,6 +19,12 @@ project(SparseIR
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set default build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+    message(STATUS "CMAKE_BUILD_TYPE not set, defaulting to Release")
+endif()
+
 # Options
 option(SPARSEIR_USE_EXTERN_FBLAS_PTR "Use external BLAS function pointers (for Python bindings)" OFF)
 option(SPARSEIR_USE_BLAS_ILP64 "Enable ILP64 BLAS interface (64-bit integers)" OFF)

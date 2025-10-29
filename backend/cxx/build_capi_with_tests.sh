@@ -22,8 +22,7 @@ echo -e "${YELLOW}Configuring CMake...${NC}"
 cd "$BUILD_DIR"
 cmake .. \
     -DCMAKE_BUILD_TYPE=Release \
-    -DSPARSEIR_BUILD_TESTING=ON \
-    -DSPARSEIR_USE_BLAS=ON
+    -DSPARSEIR_BUILD_TESTING=ON
 
 # Build
 echo -e "${YELLOW}Building...${NC}"
