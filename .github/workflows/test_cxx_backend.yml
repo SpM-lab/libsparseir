@@ -43,6 +43,7 @@ jobs:
   test-cxx-backend-ilp64:
     runs-on: ubuntu-latest
     name: C++ backend with ILP64 BLAS
+    timeout-minutes: 60  # Allow up to 60 minutes for ILP64 tests
     
     steps:
       - uses: actions/checkout@v5
@@ -57,15 +58,19 @@ jobs:
           rm -rf build
           mkdir -p build && cd build
           cmake .. -DSPARSEIR_BUILD_TESTING=ON -DSPARSEIR_USE_BLAS_ILP64=ON
-          cmake --build .
-          ctest --output-on-failure
+          cmake --build . -j$(nproc)
+          ctest --output-on-failure -j$(nproc)
       
       - name: Build and test capi_test against ILP64 backend
         working-directory: capi_test
+        env:
+          SPARSEIR_USE_BLAS_ILP64: 1
         run: ./test_with_cxx_backend.sh
       
       - name: Build and run capi_sample with ILP64
         working-directory: capi_sample
+        env:
+          SPARSEIR_USE_BLAS_ILP64: 1
         run: ./run_sample.sh
 
   test-cxx-backend-rollup:

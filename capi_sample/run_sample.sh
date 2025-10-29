@@ -27,8 +27,8 @@ cd "$BUILD_DIR/build_backend"
 cmake ../../../backend/cxx \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="../../work_cxx/install" \
-    -DSPARSEIR_USE_BLAS=ON \
-    -DSPARSEIR_BUILD_TESTING=OFF
+    -DSPARSEIR_BUILD_TESTING=OFF \
+    ${SPARSEIR_USE_BLAS_ILP64:+-DSPARSEIR_USE_BLAS_ILP64=ON}
 
 cmake --build . -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 cmake --install .
