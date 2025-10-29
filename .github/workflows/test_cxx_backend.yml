@@ -42,12 +42,7 @@ jobs:
       
       - name: Build and run capi_sample
         working-directory: capi_sample
-        run: |
-          export SparseIR_DIR="$(pwd)/../backend/cxx/build/share/cmake/SparseIR"
-          rm -rf ./build
-          cmake -S . -B ./build
-          cmake --build ./build
-          cmake --build ./build --target test
+        run: ./test_with_installed_backend.sh
 
   test-cxx-backend-rollup:
     runs-on: ubuntu-latest
