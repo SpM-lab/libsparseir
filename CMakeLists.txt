@@ -49,24 +49,21 @@ endif()
 
 # Eigen3
 # BLAS/LAPACK options
-option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
-option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface (requires SPARSEIR_USE_BLAS=ON)" OFF)
+option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface" OFF)
 
-# BLAS/LAPACK search and configuration
-if(SPARSEIR_USE_BLAS)
-    add_compile_definitions(SPARSEIR_USE_BLAS)
-    message(STATUS "BLAS support enabled")
+# BLAS search and configuration (always enabled)
+message(STATUS "BLAS support enabled")
 
-    # ILP64 support
-    if(SPARSEIR_USE_ILP64)
-        add_compile_definitions(SPARSEIR_USE_ILP64)
-        message(STATUS "ILP64 BLAS interface enabled")
-    else()
-        message(STATUS "LP64 BLAS interface enabled (default)")
-    endif()
+# ILP64 support
+if(SPARSEIR_USE_ILP64)
+    add_compile_definitions(SPARSEIR_USE_ILP64)
+    message(STATUS "ILP64 BLAS interface enabled")
+else()
+    message(STATUS "LP64 BLAS interface enabled (default)")
+endif()
 
-    # Find BLAS package
-    if(SPARSEIR_USE_ILP64)
+# Find BLAS package
+if(SPARSEIR_USE_ILP64)
         # For ILP64, check if BLAS_LIBRARIES is already set by user
         if(BLAS_LIBRARIES)
             message(STATUS "ILP64 BLAS library specified: ${BLAS_LIBRARIES}")
@@ -106,8 +103,6 @@ if(SPARSEIR_USE_BLAS)
     #else()
         #message(FATAL_ERROR "BLAS include directories not found")
     #endif()
-elseif(SPARSEIR_USE_ILP64)
-    message(FATAL_ERROR "SPARSEIR_USE_ILP64 requires SPARSEIR_USE_BLAS=ON")
 endif()
 
 
@@ -187,22 +182,13 @@ set_target_properties(sparseir PROPERTIES
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
-# Add BLAS/LAPACK linking
-if(SPARSEIR_USE_BLAS)
-    if(SPARSEIR_USE_ILP64 OR BLAS_FOUND)
-        target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-        message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
-    else()
-        message(FATAL_ERROR "BLAS libraries not found")
-    endif()
+# Add BLAS linking (always enabled)
+if(SPARSEIR_USE_ILP64 OR BLAS_FOUND)
+    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
 else()
-    message(STATUS "BLAS linking disabled")
+    message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
 endif()
-
-if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
-    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
-endif()
-
 
 # macOS-specific configuration
 if(APPLE AND ACCELERATE_FRAMEWORK)

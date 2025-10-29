@@ -20,9 +20,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
-option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
 option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface" OFF)
-option(SPARSEIR_USE_LAPACKE "Enable LAPACKE support" OFF)
 option(SPARSEIR_BUILD_TESTING "Enable testing" OFF)
 option(SPARSEIR_DEBUG "Enable debug logging" OFF)
 
@@ -57,18 +55,15 @@ if(NOT xprec_POPULATED)
     FetchContent_Populate(XPrec)
 endif()
 
-# BLAS/LAPACK configuration
-if(SPARSEIR_USE_BLAS)
-    add_compile_definitions(SPARSEIR_USE_BLAS)
-    if(SPARSEIR_USE_ILP64)
-        add_compile_definitions(SPARSEIR_USE_ILP64)
-        # Try to find ILP64 BLAS
-        if(NOT BLAS_LIBRARIES)
-            find_library(BLAS_LIBRARIES NAMES openblas64)
-        endif()
-    else()
-        find_package(BLAS REQUIRED)
+# BLAS configuration (always enabled)
+if(SPARSEIR_USE_ILP64)
+    add_compile_definitions(SPARSEIR_USE_ILP64)
+    # Try to find ILP64 BLAS
+    if(NOT BLAS_LIBRARIES)
+        find_library(BLAS_LIBRARIES NAMES openblas64)
     endif()
+else()
+    find_package(BLAS REQUIRED)
 endif()
 
 # C++ Library Build
@@ -111,20 +106,12 @@ set_target_properties(sparseir PROPERTIES
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
-# BLAS/LAPACK linking
-if(SPARSEIR_USE_BLAS)
-    if(BLAS_LIBRARIES OR BLAS_FOUND)
-        target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-        message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
-    else()
-        message(FATAL_ERROR "BLAS libraries not found")
-    endif()
+# BLAS/LAPACK linking (required)
+if(BLAS_LIBRARIES OR BLAS_FOUND)
+    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
 else()
-    message(STATUS "BLAS linking disabled")
-endif()
-
-if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
-    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
+    message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
 endif()
 
 # macOS Accelerate framework

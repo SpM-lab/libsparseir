@@ -39,15 +39,8 @@ if(SPARSEIR_BUILD_FORTRAN)
     message(STATUS "Fortran support enabled for building Fortran bindings")
 endif()
 
-# Eigen3
-# BLAS/LAPACK options
-if(SPARSEIR_USE_BLAS)
-    add_compile_definitions(SPARSEIR_USE_BLAS)
-    message(STATUS "BLAS support enabled")
-
-    # Do not resolve BLAS library symbols (assume sharing with NumPy)
-    # Do not call find_package(BLAS) or, if called, do not pass to target_link_libraries
-endif()
+# Do not resolve BLAS library symbols (assume sharing with NumPy)
+# Do not call find_package(BLAS) or, if called, do not pass to target_link_libraries
 
 # External FBLAS pointer option
 if(SPARSEIR_USE_EXTERN_FBLAS_PTR)

@@ -71,10 +71,11 @@ try:
     ptr_z = ctypes.pythonapi.PyCapsule_GetPointer(capsule_z, name_z)
 
     _lib = ctypes.CDLL(_find_library())
-    _lib.spir_register_dgemm.argtypes = [ctypes.c_void_p]
-    _lib.spir_register_dgemm(ptr)
-    _lib.spir_register_zgemm.argtypes = [ctypes.c_void_p]
-    _lib.spir_register_zgemm(ptr_z)
+    # Register both dgemm and zgemm at once using LP64 interface
+    # Note: SciPy BLAS typically uses LP64 interface (32-bit integers)
+    _lib.spir_register_dgemm_zgemm_lp64.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    _lib.spir_register_dgemm_zgemm_lp64.restype = None
+    _lib.spir_register_dgemm_zgemm_lp64(ptr, ptr_z)
     if os.environ.get("SPARSEIR_DEBUG", "").lower() in ("1", "true", "yes", "on"):
         print(f"[core.py] Registered SciPy BLAS dgemm @ {hex(ptr)}")
         print(f"[core.py] Registered SciPy BLAS zgemm @ {hex(ptr_z)}")
