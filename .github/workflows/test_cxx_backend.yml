@@ -44,6 +44,7 @@ jobs:
         working-directory: capi_sample
         run: |
           export SparseIR_DIR="$(pwd)/../backend/cxx/build/share/cmake/SparseIR"
+          rm -rf ./build
           cmake -S . -B ./build
           cmake --build ./build
           cmake --build ./build --target test

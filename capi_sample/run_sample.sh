@@ -38,6 +38,10 @@ cd ../..
 # Step 2: Set SparseIR_DIR to point to the installed backend
 export SparseIR_DIR="$(pwd)/work_cxx/install/share/cmake/SparseIR"
 
+# Clean build directory
+rm -rf ./build
+mkdir -p ./build
+
 echo -e "${YELLOW}Building samples...${NC}"
 cmake -S . -B ./build
 
