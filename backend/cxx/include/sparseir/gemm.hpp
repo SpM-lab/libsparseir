@@ -16,8 +16,8 @@
 namespace sparseir {
 
 // Fortran BLAS interface wrapper functions
-// Integer type is selected at compile time based on SPARSEIR_USE_ILP64
-#ifdef SPARSEIR_USE_ILP64
+// Integer type is selected at compile time based on SPARSEIR_USE_BLAS_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
 // ILP64 interface: 64-bit integers
 void my_dgemm(const char* transa, const char* transb,
               const long long* m, const long long* n, const long long* k,
@@ -68,7 +68,7 @@ inline void _gemm_blas_impl<double, double, double>(const double *A,
 {
     const char transa = 'N', transb = 'N';
     const double alpha = 1.0, beta = 0.0;
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else
@@ -89,7 +89,7 @@ inline void _gemm_blas_impl<std::complex<double>, std::complex<double>,
     const char transa = 'N', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else
@@ -117,7 +117,7 @@ inline void _gemm_blas_impl<double, std::complex<double>, std::complex<double>>(
     const char transa = 'N', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else
@@ -145,7 +145,7 @@ inline void _gemm_blas_impl<std::complex<double>, double, std::complex<double>>(
     const char transa = 'N', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else
@@ -167,7 +167,7 @@ inline void _gemm_blas_impl_transpose<double, double, double>(const double *A,
 {
     const char transa = 'N', transb = 'T';
     const double alpha = 1.0, beta = 0.0;
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(N), ldc = static_cast<long long>(M);
 #else
@@ -190,7 +190,7 @@ _gemm_blas_impl_transpose<std::complex<double>, std::complex<double>,
     const char transa = 'N', transb = 'T';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(M), ldb = static_cast<long long>(N), ldc = static_cast<long long>(M);
 #else
@@ -252,7 +252,7 @@ _gemm_blas_impl_conj<double, double, double>(const double *A, const double *B,
 {
     const char transa = 'T', transb = 'N';
     const double alpha = 1.0, beta = 0.0;
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else
@@ -273,7 +273,7 @@ inline void _gemm_blas_impl_conj<std::complex<double>, std::complex<double>,
     const char transa = 'C', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else
@@ -302,7 +302,7 @@ _gemm_blas_impl_conj<std::complex<double>, double, std::complex<double>>(
     const char transa = 'C', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else
@@ -332,7 +332,7 @@ _gemm_blas_impl_conj<double, std::complex<double>, std::complex<double>>(
     const char transa = 'T', transb = 'N';
     const std::complex<double> alpha(1.0);
     const std::complex<double> beta(0.0);
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     const long long m = static_cast<long long>(M), n = static_cast<long long>(N), k = static_cast<long long>(K);
     const long long lda = static_cast<long long>(K), ldb = static_cast<long long>(K), ldc = static_cast<long long>(M);
 #else

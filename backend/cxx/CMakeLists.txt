@@ -20,6 +20,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Options
+option(SPARSEIR_USE_EXTERN_FBLAS_PTR "Use external BLAS function pointers (for Python bindings)" OFF)
 option(SPARSEIR_USE_BLAS_ILP64 "Enable ILP64 BLAS interface (64-bit integers)" OFF)
 option(SPARSEIR_BUILD_TESTING "Enable testing" OFF)
 option(SPARSEIR_DEBUG "Enable debug logging" OFF)
@@ -55,28 +56,44 @@ if(NOT xprec_POPULATED)
     FetchContent_Populate(XPrec)
 endif()
 
-# BLAS configuration (always enabled)
-# Set BLAS integer size based on SPARSEIR_USE_BLAS_ILP64
-if(SPARSEIR_USE_BLAS_ILP64)
-    set(BLA_SIZEOF_INTEGER 8)
-    message(STATUS "Searching for ILP64 BLAS interface (64-bit integers)")
-else()
-    set(BLA_SIZEOF_INTEGER 4)
-    message(STATUS "Searching for LP64 BLAS interface (32-bit integers, default)")
-endif()
-
-# Find BLAS package using standard CMake FindBLAS
-find_package(BLAS REQUIRED)
-
-if(BLAS_FOUND)
-    message(STATUS "BLAS libraries found: ${BLAS_LIBRARIES}")
+# BLAS configuration
+if(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    # External function pointer mode: BLAS is provided at runtime, no linking needed
+    message(STATUS "BLAS will be provided via external function pointers at runtime")
+    add_compile_definitions(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    
+    # Set compile-time ILP64/LP64 selection
     if(SPARSEIR_USE_BLAS_ILP64)
-        message(STATUS "BLAS with ILP64 interface (BLA_SIZEOF_INTEGER=8)")
+        message(STATUS "Using ILP64 interface (64-bit integers) for external BLAS")
+        add_compile_definitions(SPARSEIR_USE_BLAS_ILP64)
     else()
-        message(STATUS "BLAS with LP64 interface (BLA_SIZEOF_INTEGER=4)")
+        message(STATUS "Using LP64 interface (32-bit integers, default) for external BLAS")
     endif()
 else()
-    message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
+    # Link-time BLAS mode: find and link BLAS library
+    # Set BLAS integer size based on SPARSEIR_USE_BLAS_ILP64
+    if(SPARSEIR_USE_BLAS_ILP64)
+        set(BLA_SIZEOF_INTEGER 8)
+        message(STATUS "Searching for ILP64 BLAS interface (64-bit integers)")
+    else()
+        set(BLA_SIZEOF_INTEGER 4)
+        message(STATUS "Searching for LP64 BLAS interface (32-bit integers, default)")
+    endif()
+    
+    # Find BLAS package using standard CMake FindBLAS
+    find_package(BLAS REQUIRED)
+    
+    if(BLAS_FOUND)
+        message(STATUS "BLAS libraries found: ${BLAS_LIBRARIES}")
+        if(SPARSEIR_USE_BLAS_ILP64)
+            message(STATUS "BLAS with ILP64 interface (BLA_SIZEOF_INTEGER=8)")
+            add_compile_definitions(SPARSEIR_USE_BLAS_ILP64)
+        else()
+            message(STATUS "BLAS with LP64 interface (BLA_SIZEOF_INTEGER=4)")
+        endif()
+    else()
+        message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
+    endif()
 endif()
 
 # C++ Library Build
@@ -119,28 +136,16 @@ set_target_properties(sparseir PROPERTIES
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
-# BLAS/LAPACK linking (required)
-# Link BLAS privately, but ensure it's not dropped by linker
-# This allows dlopen/dlsym to find BLAS symbols at runtime
-if(BLAS_LIBRARIES OR BLAS_FOUND)
-    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
-    
-    # Ensure BLAS dependency is retained even if symbols are not directly used
-    # This is necessary for dynamic symbol resolution at runtime
-    if(NOT APPLE)
-        target_link_options(sparseir PRIVATE "LINKER:--no-as-needed")
+# BLAS/LAPACK linking (only when not using external function pointers)
+if(NOT SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    if(BLAS_LIBRARIES OR BLAS_FOUND)
+        target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+        message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
+    else()
+        message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
     endif()
 else()
-    message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
-endif()
-
-# macOS Accelerate framework
-if(APPLE)
-    find_library(ACCELERATE_FRAMEWORK Accelerate)
-    if(ACCELERATE_FRAMEWORK)
-        target_link_libraries(sparseir PRIVATE ${ACCELERATE_FRAMEWORK})
-    endif()
+    message(STATUS "BLAS linking skipped (using external function pointers)")
 endif()
 
 # Library convention alias

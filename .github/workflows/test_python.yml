@@ -54,8 +54,6 @@ jobs:
         run: |
           chmod +x run_tests.sh
           ./run_tests.sh
-        env:
-          SPARSEIR_USE_BLAS: 1
 
   test-python-rollup:
     runs-on: ubuntu-latest

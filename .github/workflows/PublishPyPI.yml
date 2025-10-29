@@ -91,16 +91,13 @@ jobs:
           CIBW_BUILD_VERBOSITY: 1
           CIBW_MANYLINUX_X86_64_IMAGE: "manylinux_2_28"
           CIBW_BUILD: "${{ matrix.py_tag }}-*"
-          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target || '11.0' }} SPARSEIR_USE_BLAS=1"
+          CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=${{ matrix.deployment_target || '11.0' }}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_SKIP: "*-manylinux_i686 *-musllinux_i686"
           # Install OpenBLAS using micromamba (conda-forge) - separate for manylinux and musllinux
           CIBW_BEFORE_ALL_MANYLINUX: "curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && ./bin/micromamba create -y -p /opt/openblas && ./bin/micromamba install -y -c conda-forge openblas -p /opt/openblas --no-deps"
           CIBW_BEFORE_ALL_MUSLLINUX: "apk add --no-cache bzip2 && curl -Ls https://micro.mamba.pm/api/micromamba/linux-64/latest | tar -xvj bin/micromamba && ./bin/micromamba create -y -p /opt/openblas && ./bin/micromamba install -y -c conda-forge openblas -p /opt/openblas --no-deps"
           CIBW_BEFORE_ALL_MACOS: "brew install openblas"
-          # Set environment variables to help CMake find OpenBLAS
-          CIBW_ENVIRONMENT_MANYLINUX: "SPARSEIR_USE_BLAS=1"
-          CIBW_ENVIRONMENT_MUSLLINUX: "SPARSEIR_USE_BLAS=1"
         with:
           package-dir: ./python
           output-dir: dist

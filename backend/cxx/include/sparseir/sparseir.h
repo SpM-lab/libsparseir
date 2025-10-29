@@ -1259,24 +1259,7 @@ int spir_sampling_fit_zd(const spir_sampling *s, int order, int ndim,
 
 #ifdef SPARSEIR_USE_EXTERN_FBLAS_PTR
 
-/**
- * @brief Register BLAS function pointers for LP64 interface (32-bit integers)
- *
- * This function registers both dgemm and zgemm function pointers from an external
- * BLAS library with LP64 interface (32-bit integers). This is used when
- * SPARSEIR_USE_EXTERN_FBLAS_PTR is defined at compile time.
- *
- * @param dgemm_fn Function pointer to Fortran dgemm (LP64 interface)
- * @param zgemm_fn Function pointer to Fortran zgemm (LP64 interface)
- *
- * @note The function pointers must be valid Fortran BLAS functions with LP64
- *       interface signature
- * @note This function must be called before using any BLAS functionality when
- *       SPARSEIR_USE_EXTERN_FBLAS_PTR is enabled
- * @note Only one registration function should be called (either LP64 or ILP64)
- */
-void spir_register_dgemm_zgemm_lp64(void* dgemm_fn, void* zgemm_fn);
-
+#ifdef SPARSEIR_USE_BLAS_ILP64
 /**
  * @brief Register BLAS function pointers for ILP64 interface (64-bit integers)
  *
@@ -1291,9 +1274,26 @@ void spir_register_dgemm_zgemm_lp64(void* dgemm_fn, void* zgemm_fn);
  *       interface signature
  * @note This function must be called before using any BLAS functionality when
  *       SPARSEIR_USE_EXTERN_FBLAS_PTR is enabled
- * @note Only one registration function should be called (either LP64 or ILP64)
  */
 void spir_register_dgemm_zgemm_ilp64(void* dgemm_fn, void* zgemm_fn);
+#else
+/**
+ * @brief Register BLAS function pointers for LP64 interface (32-bit integers)
+ *
+ * This function registers both dgemm and zgemm function pointers from an external
+ * BLAS library with LP64 interface (32-bit integers). This is used when
+ * SPARSEIR_USE_EXTERN_FBLAS_PTR is defined at compile time.
+ *
+ * @param dgemm_fn Function pointer to Fortran dgemm (LP64 interface)
+ * @param zgemm_fn Function pointer to Fortran zgemm (LP64 interface)
+ *
+ * @note The function pointers must be valid Fortran BLAS functions with LP64
+ *       interface signature
+ * @note This function must be called before using any BLAS functionality when
+ *       SPARSEIR_USE_EXTERN_FBLAS_PTR is enabled
+ */
+void spir_register_dgemm_zgemm_lp64(void* dgemm_fn, void* zgemm_fn);
+#endif // SPARSEIR_USE_BLAS_ILP64
 
 #endif // SPARSEIR_USE_EXTERN_FBLAS_PTR
 

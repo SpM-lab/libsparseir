@@ -11,7 +11,7 @@
 
 // Function pointer types for external registration
 // (No extern "C" dgemm_/zgemm_ declarations here - they don't exist when using external pointers)
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
 using dgemm_fptr = void(*)(const char*, const char*, const long long*,
                            const long long*, const long long*, const double*,
                            const double*, const long long*, const double*,
@@ -40,7 +40,7 @@ static zgemm_fptr registered_zgemm = nullptr;
 extern "C" {
 
 // Register function pointers from outside (for Python bindings)
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
 void spir_register_dgemm_zgemm_ilp64(void* dgemm_fn, void* zgemm_fn) {
     registered_dgemm = reinterpret_cast<dgemm_fptr>(dgemm_fn);
     registered_zgemm = reinterpret_cast<zgemm_fptr>(zgemm_fn);
@@ -54,7 +54,7 @@ void spir_register_dgemm_zgemm_lp64(void* dgemm_fn, void* zgemm_fn) {
 
 } // extern "C"
 
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
 // ILP64 interface
 void my_dgemm(const char* transa, const char* transb,
               const long long* m, const long long* n, const long long* k,

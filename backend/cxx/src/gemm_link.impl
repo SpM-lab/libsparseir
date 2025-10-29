@@ -7,7 +7,7 @@
 
 // Declare Fortran BLAS functions based on compile-time ILP64/LP64 selection
 extern "C" {
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
     // ILP64 interface: 64-bit integers
     void dgemm_(const char* transa, const char* transb, const long long* m,
                 const long long* n, const long long* k, const double* alpha,
@@ -32,7 +32,7 @@ extern "C" {
 #endif
 }
 
-#ifdef SPARSEIR_USE_ILP64
+#ifdef SPARSEIR_USE_BLAS_ILP64
 // ILP64 interface
 void my_dgemm(const char* transa, const char* transb,
               const long long* m, const long long* n, const long long* k,
