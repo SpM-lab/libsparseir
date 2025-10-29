@@ -65,9 +65,10 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     // Create fermionic and bosonic finite temperature bases with pre-computed
     // SVE result
     int max_size = -1;
+    double epsilon_basis = 1e-10;
     spir_basis *basis =
-        spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, kernel,
-                       sve_logistic, max_size, &status);
+        spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon_basis,
+                       kernel, sve_logistic, max_size, &status);
     assert(status == SPIR_COMPUTATION_SUCCESS);
     assert(basis != NULL);
 
