@@ -2,7 +2,7 @@ name: Test Fortran Bindings
 
 on:
   push:
-    branches: [ "main", "459-restructure-directories" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:

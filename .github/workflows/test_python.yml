@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - 459-restructure-directories
   pull_request:
     branches:
       - main
@@ -50,21 +49,11 @@ jobs:
         with:
           enable-cache: true
       
-      - name: Setup build environment
+      - name: Setup and run tests
         working-directory: python
-        run: python3 setup_build.py
-      
-      - name: Run uv sync
-        working-directory: python
-        run: uv sync
-        env:
-          SPARSEIR_USE_BLAS: 1
-      
-      - name: Run tests
-        working-directory: python
-        run: uv run pytest tests/ -v
-        env:
-          SPARSEIR_USE_BLAS: 1
+        run: |
+          chmod +x run_tests.sh
+          ./run_tests.sh
 
   test-python-rollup:
     runs-on: ubuntu-latest

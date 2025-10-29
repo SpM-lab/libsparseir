@@ -49,65 +49,32 @@ endif()
 
 # Eigen3
 # BLAS/LAPACK options
-option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
-option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface (requires SPARSEIR_USE_BLAS=ON)" OFF)
+option(SPARSEIR_USE_BLAS_ILP64 "Enable ILP64 BLAS interface (64-bit integers)" OFF)
 
-# BLAS/LAPACK search and configuration
-if(SPARSEIR_USE_BLAS)
-    add_compile_definitions(SPARSEIR_USE_BLAS)
-    message(STATUS "BLAS support enabled")
+# BLAS search and configuration (always enabled)
+message(STATUS "BLAS support enabled")
 
-    # ILP64 support
-    if(SPARSEIR_USE_ILP64)
-        add_compile_definitions(SPARSEIR_USE_ILP64)
-        message(STATUS "ILP64 BLAS interface enabled")
+# Set BLAS integer size based on SPARSEIR_USE_BLAS_ILP64
+if(SPARSEIR_USE_BLAS_ILP64)
+    set(BLA_SIZEOF_INTEGER 8)
+    message(STATUS "Searching for ILP64 BLAS interface (64-bit integers)")
+else()
+    set(BLA_SIZEOF_INTEGER 4)
+    message(STATUS "Searching for LP64 BLAS interface (32-bit integers, default)")
+endif()
+
+# Find BLAS package using standard CMake FindBLAS
+find_package(BLAS REQUIRED)
+
+if(BLAS_FOUND)
+    message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
+    if(SPARSEIR_USE_BLAS_ILP64)
+        message(STATUS "BLAS with ILP64 interface (BLA_SIZEOF_INTEGER=8)")
     else()
-        message(STATUS "LP64 BLAS interface enabled (default)")
+        message(STATUS "BLAS with LP64 interface (BLA_SIZEOF_INTEGER=4)")
     endif()
-
-    # Find BLAS package
-    if(SPARSEIR_USE_ILP64)
-        # For ILP64, check if BLAS_LIBRARIES is already set by user
-        if(BLAS_LIBRARIES)
-            message(STATUS "ILP64 BLAS library specified: ${BLAS_LIBRARIES}")
-            # Verify the library exists
-            if(NOT EXISTS "${BLAS_LIBRARIES}")
-                message(FATAL_ERROR "Specified ILP64 BLAS library not found: ${BLAS_LIBRARIES}")
-            endif()
-            set(BLAS_FOUND TRUE)
-        else()
-            # Try to find ILP64 BLAS automatically
-            find_library(BLAS_LIBRARIES
-                NAMES openblas64
-                PATHS /usr/lib/x86_64-linux-gnu /usr/lib /usr/local/lib
-                NO_DEFAULT_PATH
-            )
-            if(BLAS_LIBRARIES)
-                message(STATUS "ILP64 BLAS found automatically: ${BLAS_LIBRARIES}")
-                set(BLAS_FOUND TRUE)
-            else()
-                message(FATAL_ERROR "ILP64 BLAS (libopenblas64) not found. You can specify it with -DBLAS_LIBRARIES=/path/to/libopenblas64.so")
-            endif()
-        endif()
-    else()
-        # For LP64, use standard CMake BLAS finder
-        find_package(BLAS REQUIRED)
-        if(BLAS_FOUND)
-            message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
-        else()
-            message(FATAL_ERROR "BLAS not found")
-        endif()
-    endif()
-
-    # CMake's find_package(BLAS) should provide include directories
-    #if(BLAS_INCLUDE_DIRS)
-        #include_directories(${BLAS_INCLUDE_DIRS})
-        #message(STATUS "BLAS include directories: ${BLAS_INCLUDE_DIRS}")
-    #else()
-        #message(FATAL_ERROR "BLAS include directories not found")
-    #endif()
-elseif(SPARSEIR_USE_ILP64)
-    message(FATAL_ERROR "SPARSEIR_USE_ILP64 requires SPARSEIR_USE_BLAS=ON")
+else()
+    message(FATAL_ERROR "BLAS not found")
 endif()
 
 
@@ -187,22 +154,21 @@ set_target_properties(sparseir PROPERTIES
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
-# Add BLAS/LAPACK linking
-if(SPARSEIR_USE_BLAS)
-    if(SPARSEIR_USE_ILP64 OR BLAS_FOUND)
-        target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
-        message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
-    else()
-        message(FATAL_ERROR "BLAS libraries not found")
+# Add BLAS linking (always enabled)
+# Link BLAS privately, but ensure it's not dropped by linker
+# This allows dlopen/dlsym to find BLAS symbols at runtime
+if(SPARSEIR_USE_BLAS_ILP64 OR BLAS_FOUND)
+    target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
+    message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
+    
+    # Ensure BLAS dependency is retained even if symbols are not directly used
+    # This is necessary for dynamic symbol resolution at runtime
+    if(NOT APPLE)
+        target_link_options(sparseir PRIVATE "LINKER:--no-as-needed")
     endif()
 else()
-    message(STATUS "BLAS linking disabled")
+    message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
 endif()
-
-if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
-    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
-endif()
-
 
 # macOS-specific configuration
 if(APPLE AND ACCELERATE_FRAMEWORK)

@@ -30,8 +30,7 @@ cd "$WORK_DIR/build_backend"
 cmake "$BACKEND_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
-    -DSPARSEIR_BUILD_TESTING=OFF \
-    -DSPARSEIR_USE_BLAS=ON
+    -DSPARSEIR_BUILD_TESTING=OFF
 
 echo -e "${YELLOW}Building backend/cxx...${NC}"
 cmake --build . -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
