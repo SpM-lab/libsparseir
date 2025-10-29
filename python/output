@@ -1,0 +1,458 @@
+Adding in variants from internal_defaults
+Adding in variants from /Users/hiroshi/git/libsparseir/python/conda-recipe/conda_build_config.yaml
+Copying /Users/hiroshi/git/libsparseir to /opt/miniconda3/conda-bld/pylibsparseir_1758617764684/work/
+Attempting to finalize metadata for pylibsparseir
+Reloading output folder: ...working... done
+Getting pinned dependencies: ...working... done
+Reloading output folder: ...working... done
+Getting pinned dependencies: ...working... done
+Reloading output folder: ...working... done
+Getting pinned dependencies: ...working... done
+BUILD START: ['pylibsparseir-0.5.2-py313h2471540_0.conda']
+Reloading output folder: ...working... done
+Solving environment (_h_env): ...working... done
+
+## Package Plan ##
+
+  environment location: /opt/miniconda3/conda-bld/pylibsparseir_1758617764684/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_plac
+
+
+The following NEW packages will be INSTALLED:
+
+    blas:              1.0-openblas             
+    bzip2:             1.0.8-h80987f9_6         
+    ca-certificates:   2025.9.9-hca03da5_0      
+    eigen:             3.4.0-h48ca7d4_0         
+    expat:             2.7.1-h313beb8_0         
+    iniconfig:         2.1.0-py313hca03da5_0    
+    libcxx:            20.1.8-h8869778_0        
+    libffi:            3.4.4-hca03da5_1         
+    libgfortran:       5.0.0-11_3_0_hca03da5_28 
+    libgfortran5:      11.3.0-h009349e_28       
+    libmpdec:          4.0.0-h80987f9_0         
+    libopenblas:       0.3.30-hf2bb037_0        
+    libzlib:           1.3.1-h5f15de7_0         
+    llvm-openmp:       20.1.8-he822017_0        
+    ncurses:           6.5-hee39554_0           
+    numpy:             2.3.3-py313h4bb6f22_0    
+    numpy-base:        2.3.3-py313h23175f9_0    
+    openssl:           3.0.17-h4ee41c1_0        
+    packaging:         25.0-py313hca03da5_0     
+    pathspec:          0.12.1-py313hca03da5_0   
+    pip:               25.2-pyhc872135_0        
+    pluggy:            1.5.0-py313hca03da5_0    
+    pygments:          2.19.1-py313hca03da5_0   
+    pytest:            8.4.2-py313hca03da5_0    
+    python:            3.13.7-hc28b8d9_100_cp313
+    python_abi:        3.13-1_cp313             
+    readline:          8.3-h0b18652_0           
+    scikit-build-core: 0.11.6-py313hfc0b10c_0   
+    scipy:             1.16.1-py313h08a1045_0   
+    setuptools:        72.1.0-py313hca03da5_0   
+    sqlite:            3.50.2-h79febb2_1        
+    tk:                8.6.15-hcd8a7d5_0        
+    tzdata:            2025b-h04d1e81_0         
+    wheel:             0.45.1-py313hca03da5_0   
+    xz:                5.6.4-h80987f9_1         
+    zlib:              1.3.1-h5f15de7_0         
+
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done
+Reloading output folder: ...working... done
+Solving environment (_build_env): ...working... done
+Reloading output folder: ...working... done
+Solving environment (_test_env): ...working... done
+
+## Package Plan ##
+
+  environment location: /opt/miniconda3/conda-bld/pylibsparseir_1758617764684/_build_env
+
+
+The following NEW packages will be INSTALLED:
+
+    blas:                   1.0-openblas             
+    bzip2:                  1.0.8-h80987f9_6         
+    c-ares:                 1.34.5-h2ca31fc_0        
+    ca-certificates:        2025.9.9-hca03da5_0      
+    cctools:                1021.4-h01d68c5_0        
+    clang:                  20.1.8-h71b10da_0        
+    clang-20:               20.1.8-default_h988c893_0
+    clang_impl_osx-arm64:   20.1.8-h05252e2_0        
+    clang_osx-arm64:        20.1.8-hf3c1794_0        
+    clangxx:                20.1.8-default_h0a00f0c_0
+    clangxx_impl_osx-arm64: 20.1.8-he123483_0        
+    clangxx_osx-arm64:      20.1.8-hf3c1794_0        
+    cmake:                  3.31.2-h89d4fe9_0        
+    compiler-rt:            20.1.8-hf790f37_0        
+    compiler-rt_osx-arm64:  20.1.8-hf790f37_0        
+    expat:                  2.7.1-h313beb8_0         
+    icu:                    73.1-h313beb8_0          
+    ld64:                   954.16-hbcf198d_0        
+    libclang-cpp20.1:       20.1.8-default_h988c893_0
+    libcurl:                8.15.0-hcdd2897_0        
+    libcxx:                 20.1.8-h8869778_0        
+    libcxx-devel:           20.1.8-h8e27348_0        
+    libev:                  4.33-h1a28f6b_1          
+    libffi:                 3.4.4-hca03da5_1         
+    libgfortran:            5.0.0-11_3_0_hca03da5_28 
+    libgfortran5:           11.3.0-h009349e_28       
+    libiconv:               1.16-h80987f9_3          
+    libllvm20:              20.1.8-h1701f07_0        
+    libmpdec:               4.0.0-h80987f9_0         
+    libnghttp2:             1.57.0-h62f6fdd_0        
+    libopenblas:            0.3.30-hf2bb037_0        
+    libssh2:                1.11.1-h3e2b118_0        
+    libuv:                  1.48.0-h80987f9_0        
+    libxml2:                2.13.8-h0b34f26_0        
+    libzlib:                1.3.1-h5f15de7_0         
+    llvm-openmp:            20.1.8-he822017_0        
+    llvm-tools:             20.1.8-hf790f37_0        
+    llvm-tools-20:          20.1.8-h1e49d39_0        
+    lz4-c:                  1.9.4-h313beb8_1         
+    make:                   4.3-h620ffc9_1           
+    ncurses:                6.5-hee39554_0           
+    ninja:                  1.12.1-hca03da5_0        
+    ninja-base:             1.12.1-h48ca7d4_0        
+    numpy:                  2.3.3-py313h4bb6f22_0    
+    numpy-base:             2.3.3-py313h23175f9_0    
+    openssl:                3.0.17-h4ee41c1_0        
+    pip:                    25.2-pyhc872135_0        
+    python:                 3.13.7-hc28b8d9_100_cp313
+    python_abi:             3.13-1_cp313             
+    readline:               8.3-h0b18652_0           
+    rhash:                  1.4.3-h02f6b3c_0         
+    setuptools:             72.1.0-py313hca03da5_0   
+    sqlite:                 3.50.2-h79febb2_1        
+    tapi:                   1100.0.11-h8754e6a_1     
+    tk:                     8.6.15-hcd8a7d5_0        
+    tzdata:                 2025b-h04d1e81_0         
+    wheel:                  0.45.1-py313hca03da5_0   
+    xz:                     5.6.4-h80987f9_1         
+    zlib:                   1.3.1-h5f15de7_0         
+    zstd:                   1.5.7-h817c040_0         
+
+Preparing transaction: ...working... done
+Verifying transaction: ...working... done
+Executing transaction: ...working... done
+
+Rendered as:
+```yaml
+package:
+  name: pylibsparseir
+  version: 0.5.2
+source:
+  path: /Users/hiroshi/git/libsparseir
+build:
+  number: '0'
+  script: 'export SPARSEIR_USE_BLAS=1
+
+
+
+    cd ${SRC_DIR}/python
+
+    ${PYTHON} -m pip install . --no-deps --ignore-installed -v
+
+
+
+
+
+
+
+    echo "Python package contents:"
+
+    find ${SP_DIR}/pylibsparseir -name "*" -type f
+
+
+
+    echo "Python package files:"
+
+    find ${SP_DIR}/pylibsparseir -name "*" -type f
+
+    '
+  files:
+    - lib/python3.*/site-packages/pylibsparseir/
+    - lib/python3.*/site-packages/pylibsparseir-*.egg-info/
+requirements:
+  build:
+    - clangxx_impl_osx-arm64 20.1.8 he123483_0
+    - ncurses 6.5 hee39554_0
+    - libcxx-devel 20.1.8 h8e27348_0
+    - clang_osx-arm64 20.1.8 hf3c1794_0
+    - libuv 1.48.0 h80987f9_0
+    - libssh2 1.11.1 h3e2b118_0
+    - ld64 954.16 hbcf198d_0
+    - numpy 2.3.3 py313h4bb6f22_0
+    - readline 8.3 h0b18652_0
+    - wheel 0.45.1 py313hca03da5_0
+    - zlib 1.3.1 h5f15de7_0
+    - sqlite 3.50.2 h79febb2_1
+    - blas 1.0 openblas
+    - zstd 1.5.7 h817c040_0
+    - libclang-cpp20.1 20.1.8 default_h988c893_0
+    - cctools 1021.4 h01d68c5_0
+    - numpy-base 2.3.3 py313h23175f9_0
+    - c-ares 1.34.5 h2ca31fc_0
+    - cmake 3.31.2 h89d4fe9_0
+    - compiler-rt_osx-arm64 20.1.8 hf790f37_0
+    - libcxx 20.1.8 h8869778_0
+    - compiler-rt 20.1.8 hf790f37_0
+    - libcurl 8.15.0 hcdd2897_0
+    - libllvm20 20.1.8 h1701f07_0
+    - tk 8.6.15 hcd8a7d5_0
+    - clang 20.1.8 h71b10da_0
+    - clang_impl_osx-arm64 20.1.8 h05252e2_0
+    - ninja-base 1.12.1 h48ca7d4_0
+    - icu 73.1 h313beb8_0
+    - libev 4.33 h1a28f6b_1
+    - tzdata 2025b h04d1e81_0
+    - libxml2 2.13.8 h0b34f26_0
+    - clang-20 20.1.8 default_h988c893_0
+    - lz4-c 1.9.4 h313beb8_1
+    - ca-certificates 2025.9.9 hca03da5_0
+    - llvm-tools 20.1.8 hf790f37_0
+    - expat 2.7.1 h313beb8_0
+    - tapi 1100.0.11 h8754e6a_1
+    - rhash 1.4.3 h02f6b3c_0
+    - openssl 3.0.17 h4ee41c1_0
+    - llvm-tools-20 20.1.8 h1e49d39_0
+    - setuptools 72.1.0 py313hca03da5_0
+    - ninja 1.12.1 hca03da5_0
+    - clangxx_osx-arm64 20.1.8 hf3c1794_0
+    - libzlib 1.3.1 h5f15de7_0
+    - libgfortran 5.0.0 11_3_0_hca03da5_28
+    - bzip2 1.0.8 h80987f9_6
+    - libffi 3.4.4 hca03da5_1
+    - python 3.13.7 hc28b8d9_100_cp313
+    - libopenblas 0.3.30 hf2bb037_0
+    - xz 5.6.4 h80987f9_1
+    - libnghttp2 1.57.0 h62f6fdd_0
+    - pip 25.2 pyhc872135_0
+    - libiconv 1.16 h80987f9_3
+    - python_abi 3.13 1_cp313
+    - libmpdec 4.0.0 h80987f9_0
+    - make 4.3 h620ffc9_1
+    - llvm-openmp 20.1.8 he822017_0
+    - libgfortran5 11.3.0 h009349e_28
+    - clangxx 20.1.8 default_h0a00f0c_0
+  host:
+    - blas 1.0 openblas
+    - bzip2 1.0.8 h80987f9_6
+    - ca-certificates 2025.9.9 hca03da5_0
+    - libcxx 20.1.8 h8869778_0
+    - libffi 3.4.4 hca03da5_1
+    - libmpdec 4.0.0 h80987f9_0
+    - libzlib 1.3.1 h5f15de7_0
+    - llvm-openmp 20.1.8 he822017_0
+    - ncurses 6.5 hee39554_0
+    - python_abi 3.13 1_cp313
+    - tzdata 2025b h04d1e81_0
+    - xz 5.6.4 h80987f9_1
+    - eigen 3.4.0 h48ca7d4_0
+    - expat 2.7.1 h313beb8_0
+    - libgfortran5 11.3.0 h009349e_28
+    - openssl 3.0.17 h4ee41c1_0
+    - readline 8.3 h0b18652_0
+    - zlib 1.3.1 h5f15de7_0
+    - libgfortran 5.0.0 11_3_0_hca03da5_28
+    - sqlite 3.50.2 h79febb2_1
+    - tk 8.6.15 hcd8a7d5_0
+    - libopenblas 0.3.30 hf2bb037_0
+    - python 3.13.7 hc28b8d9_100_cp313
+    - iniconfig 2.1.0 py313hca03da5_0
+    - numpy-base 2.3.3 py313h23175f9_0
+    - packaging 25.0 py313hca03da5_0
+    - pathspec 0.12.1 py313hca03da5_0
+    - pluggy 1.5.0 py313hca03da5_0
+    - pygments 2.19.1 py313hca03da5_0
+    - setuptools 72.1.0 py313hca03da5_0
+    - wheel 0.45.1 py313hca03da5_0
+    - numpy 2.3.3 py313h4bb6f22_0
+    - pip 25.2 pyhc872135_0
+    - pytest 8.4.2 py313hca03da5_0
+    - scikit-build-core 0.11.6 py313hfc0b10c_0
+    - scipy 1.16.1 py313h08a1045_0
+  run:
+    - numpy >=2.3,<2.4.0a0
+    - numpy >=2.3,<2.4.0a0
+    - python >=3.13,<3.14.0a0
+    - scipy
+    - libcxx >=20
+    - python_abi 3.13.* *_cp313
+    - eigen
+  test:
+    - pytest
+about:
+  home: https://github.com/SpM-lab/libsparseir
+  license: MIT
+  license_file: LICENSE
+  summary: Python bindings for the libsparseir library, providing efficient sparse
+    intermediate representation for many-body physics calculations
+  description: 'pylibsparseir provides Python bindings for the libsparseir C++ library,
+
+    enabling efficient computation of sparse intermediate representation (IR)
+
+    basis functions used in many-body physics calculations. It provides
+
+    efficient computation of Green''s functions and other physical quantities.
+
+    '
+  doc_url: https://github.com/SpM-lab/libsparseir
+  dev_url: https://github.com/SpM-lab/libsparseir
+extra:
+  recipe-maintainers:
+    - SpM-lab
+  final: true
+  copy_test_source_files: true
+```
+
+source tree in: /opt/miniconda3/conda-bld/pylibsparseir_1758617764684/work
+export PREFIX=/opt/miniconda3/conda-bld/pylibsparseir_1758617764684/_h_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_plac
+export BUILD_PREFIX=/opt/miniconda3/conda-bld/pylibsparseir_1758617764684/_build_env
+export SRC_DIR=/opt/miniconda3/conda-bld/pylibsparseir_1758617764684/work
+INFO: activate_clang_osx-arm64.sh made the following environmental changes:
++_CONDA_PYTHON_SYSCONFIGDATA_NAME=_sysconfigdata_arm64_apple_darwin20_0_0
++ac_cv_func_malloc_0_nonnull=yes
++ac_cv_func_realloc_0_nonnull=yes
++AR=arm64-apple-darwin20.0.0-ar
++AS=arm64-apple-darwin20.0.0-as
++build_alias=arm64-apple-darwin20.0.0
++CC_FOR_BUILD=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-clang
++CC=arm64-apple-darwin20.0.0-clang
++CFLAGS=-ftree-vectorize -fPIC -fstack-protector-strong -O2 -pipe -isystem $PREFIX/include -fdebug-prefix-map=$SRC_DIR=/usr/local/src/conda/pylibsparseir-0.5.2 -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix
++CHECKSYMS=arm64-apple-darwin20.0.0-checksyms
++CLANG=arm64-apple-darwin20.0.0-clang
++CMAKE_ARGS=-DCMAKE_AR=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-ar -DCMAKE_CXX_COMPILER_AR=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-ar -DCMAKE_C_COMPILER_AR=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-ar -DCMAKE_RANLIB=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-ranlib -DCMAKE_CXX_COMPILER_RANLIB=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-ranlib -DCMAKE_C_COMPILER_RANLIB=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-ranlib -DCMAKE_LINKER=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-ld -DCMAKE_STRIP=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-strip -DCMAKE_INSTALL_NAME_TOOL=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-install_name_tool -DCMAKE_LIBTOOL=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-libtool -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -DCMAKE_FIND_FRAMEWORK=LAST -DCMAKE_FIND_APPBUNDLE=LAST -DCMAKE_INSTALL_PREFIX=$PREFIX -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_PROGRAM_PATH=$BUILD_PREFIX/bin;$PREFIX/bin
++CMAKE_PREFIX_PATH=:$PREFIX
++CONDA_BUILD_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
++CONDA_TOOLCHAIN_BUILD=arm64-apple-darwin20.0.0
++CONDA_TOOLCHAIN_HOST=arm64-apple-darwin20.0.0
++CPP_FOR_BUILD=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-clang-cpp
++CPP=arm64-apple-darwin20.0.0-clang-cpp
++CPPFLAGS=-D_FORTIFY_SOURCE=2 -isystem $PREFIX/include -mmacosx-version-min=11.0
++DEBUG_CFLAGS=-ftree-vectorize -fPIC -fstack-protector-strong -O2 -pipe -Og -g -Wall -Wextra -isystem $PREFIX/include -fdebug-prefix-map=$SRC_DIR=/usr/local/src/conda/pylibsparseir-0.5.2 -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix
++host_alias=arm64-apple-darwin20.0.0
++HOST=arm64-apple-darwin20.0.0
++INSTALL_NAME_TOOL=arm64-apple-darwin20.0.0-install_name_tool
++LD=arm64-apple-darwin20.0.0-ld
++LDFLAGS_LD=-headerpad_max_install_names -dead_strip_dylibs -rpath $PREFIX/lib -L$PREFIX/lib
++LDFLAGS=-Wl,-headerpad_max_install_names -Wl,-dead_strip_dylibs -Wl,-rpath,$PREFIX/lib -L$PREFIX/lib
++LIBTOOL=arm64-apple-darwin20.0.0-libtool
++LIPO=arm64-apple-darwin20.0.0-lipo
++MESON_ARGS=-Dbuildtype=release --prefix=$PREFIX -Dlibdir=lib
++NM=arm64-apple-darwin20.0.0-nm
++NMEDIT=arm64-apple-darwin20.0.0-nmedit
++OBJC_FOR_BUILD=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-clang
++OBJC=arm64-apple-darwin20.0.0-clang
++OTOOL=arm64-apple-darwin20.0.0-otool
++PAGESTUFF=arm64-apple-darwin20.0.0-pagestuff
++RANLIB=arm64-apple-darwin20.0.0-ranlib
++REDO_PREBINDING=arm64-apple-darwin20.0.0-redo_prebinding
++SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
++SEG_ADDR_TABLE=arm64-apple-darwin20.0.0-seg_addr_table
++SEG_HACK=arm64-apple-darwin20.0.0-seg_hack
++SEGEDIT=arm64-apple-darwin20.0.0-segedit
++SIZE=arm64-apple-darwin20.0.0-size
++STRINGS=arm64-apple-darwin20.0.0-strings
++STRIP=arm64-apple-darwin20.0.0-strip
+INFO: activate_clangxx_osx-arm64.sh made the following environmental changes:
++CLANGXX=arm64-apple-darwin20.0.0-clang++
++CXX_FOR_BUILD=$BUILD_PREFIX/bin/arm64-apple-darwin20.0.0-clang++
++CXX=arm64-apple-darwin20.0.0-clang++
++CXXFLAGS=-ftree-vectorize -fPIC -fstack-protector-strong -O2 -pipe -stdlib=libc++ -fvisibility-inlines-hidden -fmessage-length=0 -isystem $PREFIX/include -fdebug-prefix-map=$SRC_DIR=/usr/local/src/conda/pylibsparseir-0.5.2 -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix
++DEBUG_CXXFLAGS=-ftree-vectorize -fPIC -fstack-protector-strong -O2 -pipe -stdlib=libc++ -fvisibility-inlines-hidden -fmessage-length=0 -Og -g -Wall -Wextra -isystem $PREFIX/include -fdebug-prefix-map=$SRC_DIR=/usr/local/src/conda/pylibsparseir-0.5.2 -fdebug-prefix-map=$PREFIX=/usr/local/src/conda-prefix
+Using pip 25.2 from $PREFIX/lib/python3.13/site-packages/pip (python 3.13)
+Processing $SRC_DIR/python
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Building wheels for collected packages: pylibsparseir
+  Building wheel for pylibsparseir (pyproject.toml): started
+  Building wheel for pylibsparseir (pyproject.toml): finished with status 'done'
+  Created wheel for pylibsparseir: filename=pylibsparseir-0.5.2-cp313-cp313-macosx_11_0_arm64.whl size=482841 sha256=3e7bff8c2c850a4bf263e144fc8914941203450261188fe7fd9426b54ddd4daa
+  Stored in directory: /private/tmp/pip-ephem-wheel-cache-6j1euds9/wheels/9b/42/65/b538e67714b28fce2243409a741eb454cbec14906882101a74
+Successfully built pylibsparseir
+Installing collected packages: pylibsparseir
+Successfully installed pylibsparseir-0.5.2
+Python package contents:
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/ctypes_wrapper.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/clean_build_artifacts.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/constants.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__init__.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/core.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/core.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/constants.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/ctypes_wrapper.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/clean_build_artifacts.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/__init__.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/libsparseir.dylib
+Python package files:
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/ctypes_wrapper.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/clean_build_artifacts.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/constants.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__init__.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/core.py
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/core.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/constants.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/ctypes_wrapper.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/clean_build_artifacts.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/__pycache__/__init__.cpython-313.pyc
+$PREFIX/lib/python3.13/site-packages/pylibsparseir/libsparseir.dylib
+
+Resource usage statistics from building pylibsparseir:
+   Process count: 14
+   CPU time: Sys=0:00:01.3, User=0:00:24.8
+   Memory: 919.3M
+   Disk usage: 640.8K
+   Time elapsed: 0:00:43.3
+
+
+Packaging pylibsparseir
+Packaging pylibsparseir-0.5.2-py313h2471540_0
+compiling .pyc files...
+number of files: 18
+   INFO: sysroot: '/System/Library/Frameworks/' files: '['vmnet.framework/Versions/Current', 'vmnet.framework/Versions/A/_CodeSignature/CodeResources', 'vmnet.framework/Versions/A/Resources/version.plist', 'vmnet.framework/Versions/A/Resources/Info.plist']'
+   INFO: sysroot: '/opt/X11/' files: '['var/cache/fontconfig/ef8951649ecb4e89c7d1ab953911a6bc-le64.cache-7', 'var/cache/fontconfig/c4cf4b280f1e54315e8e6c2d54d856f1-le64.cache-7', 'var/cache/fontconfig/b6744bd65bcc11049ac6a55c344770a4-le64.cache-7', 'var/cache/fontconfig/CACHEDIR.TAG']'
+   INFO: sysroot: '/usr/lib/' files: '['zsh/5.9/zsh/zselect.so', 'zsh/5.9/zsh/zpty.so', 'zsh/5.9/zsh/zprof.so', 'zsh/5.9/zsh/zleparameter.so']'
+   INFO (pylibsparseir,lib/python3.13/site-packages/pylibsparseir/libsparseir.dylib): Needed DSO /System/Library/Frameworks/libc++.1.dylib found in $SYSROOT
+   INFO (pylibsparseir,lib/python3.13/site-packages/pylibsparseir/libsparseir.dylib): Needed DSO /System/Library/Frameworks/libSystem.B.dylib found in $SYSROOT
+WARNING (pylibsparseir): interpreter (Python) package defaults/osx-arm64::python==3.13.7=hc28b8d9_100_cp313 in requirements/run but it is not used (i.e. it is overdepending or perhaps statically linked? If that is what you want then add it to `build/ignore_run_exports`)
+WARNING (pylibsparseir): run-exports library package defaults/osx-arm64::numpy==2.3.3=py313h4bb6f22_0 in requirements/run but it is not used (i.e. it is overdepending or perhaps statically linked? If that is what you want then add it to `build/ignore_run_exports`)
+WARNING (pylibsparseir): plugin library (Python) package defaults/osx-arm64::scipy==1.16.1=py313h08a1045_0 in requirements/run but it is not used (i.e. it is overdepending or perhaps statically linked? If that is what you want then add it to `build/ignore_run_exports`)
+WARNING (pylibsparseir): dso library package defaults/osx-arm64::libcxx==20.1.8=h8869778_0 in requirements/run but it is not used (i.e. it is overdepending or perhaps statically linked? If that is what you want then add it to `build/ignore_run_exports`)
+Fixing permissions
+Packaged license file/s.
+INFO :: Time taken to mark (prefix)
+        0 replacements in 0 files was 0.01 seconds
+TEST START: /opt/miniconda3/conda-bld/osx-arm64/pylibsparseir-0.5.2-py313h2471540_0.conda
+Adding in variants from /var/folders/1t/fxgqx0n17z33mplwpw4n1d8r0000gn/T/tmp4jibsrb1/info/recipe/conda_build_config.yaml
+Adding in variants from config.variant
+Nothing to test for: /opt/miniconda3/conda-bld/osx-arm64/pylibsparseir-0.5.2-py313h2471540_0.conda
+Renaming work directory '/opt/miniconda3/conda-bld/pylibsparseir_1758617764684/work' to '/opt/miniconda3/conda-bld/pylibsparseir_1758617764684/work_moved_pylibsparseir-0.5.2-py313h2471540_0_osx-arm64_main_build_loop'
+shutil.move(work)=/opt/miniconda3/conda-bld/pylibsparseir_1758617764684/work, dest=/opt/miniconda3/conda-bld/pylibsparseir_1758617764684/work_moved_pylibsparseir-0.5.2-py313h2471540_0_osx-arm64_main_build_loop)
+Uploading pylibsparseir-0.5.2-py313h2471540_0.conda to anaconda.org
+
+INFO :: The inputs making up the hashes for the built packages are as follows:
+{
+  "pylibsparseir-0.5.2-py313h2471540_0.conda": {
+    "recipe": {
+      "cxx_compiler": "clangxx",
+      "numpy": "2.3",
+      "target_platform": "osx-arm64"
+    }
+  }
+}
+
+
+####################################################################################
+Resource usage summary:
+
+Total time: 0:01:21.9
+CPU usage: sys=0:00:01.3, user=0:00:24.8
+Maximum memory usage observed: 919.3M
+Total disk usage observed (not including envs): 640.8K
+
+
+####################################################################################
+Source and build intermediates have been left in /opt/miniconda3/conda-bld.
+There are currently 1 accumulated.
+To remove them, you can run the ```conda build purge``` command

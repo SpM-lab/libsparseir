@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/CMakeFiles/xprec-populate"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/CMakeFiles/xprec-populate.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/CMakeFiles/xprec-populate-complete.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-build.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-configure.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-download.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-install.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-mkdir.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-patch.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-test.rule"
+		},
+		{
+			"file" : "/Users/hiroshi/projects/sparse-ir/libsparseir/capi_benchmark/work_cxx_blas/build_backend/_deps/xprec-subbuild/xprec-populate-prefix/src/xprec-populate-stamp/xprec-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"xprec-populate"
+		],
+		"name" : "xprec-populate"
+	}
+}
