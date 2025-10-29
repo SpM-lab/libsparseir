@@ -34,6 +34,9 @@
 # CMake
 build
 work_cxx
+work_cxx_blas
+work_cxx_wo_blas
+capi_benchmark/work_cxx_blas/
 
 .DS_Store
 .vscode/settings.json

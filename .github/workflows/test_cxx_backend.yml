@@ -35,6 +35,10 @@ jobs:
       - name: Build and test capi_test against backend
         working-directory: capi_test
         run: ./test_with_cxx_backend.sh
+      
+      - name: Build and run capi_sample
+        working-directory: capi_sample
+        run: ./run_sample.sh
 
   test-cxx-backend-rollup:
     runs-on: ubuntu-latest
