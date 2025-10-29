@@ -155,9 +155,17 @@ set_target_properties(sparseir PROPERTIES
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
 # Add BLAS linking (always enabled)
+# Link BLAS privately, but ensure it's not dropped by linker
+# This allows dlopen/dlsym to find BLAS symbols at runtime
 if(SPARSEIR_USE_BLAS_ILP64 OR BLAS_FOUND)
     target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
     message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
+    
+    # Ensure BLAS dependency is retained even if symbols are not directly used
+    # This is necessary for dynamic symbol resolution at runtime
+    if(NOT APPLE)
+        target_link_options(sparseir PRIVATE "LINKER:--no-as-needed")
+    endif()
 else()
     message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
 endif()
