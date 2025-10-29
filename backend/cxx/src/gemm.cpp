@@ -1,6 +1,5 @@
 #include "sparseir/gemm.hpp"
 
-#ifdef SPARSEIR_USE_BLAS
 namespace sparseir {
 
 #ifdef SPARSEIR_USE_EXTERN_FBLAS_PTR
@@ -10,4 +9,3 @@ namespace sparseir {
 #endif
 
 } // namespace sparseir
-#endif // SPARSEIR_USE_BLAS
