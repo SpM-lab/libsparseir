@@ -333,15 +333,17 @@ inline void fence_matsubara_sampling(std::vector<MatsubaraFreq<S>> &wn,
     for (const auto &wn_outer : outer_frequencies) {
         int outer_val = wn_outer.n;
         int diff_val = 2 * static_cast<int>(std::round(0.025 * outer_val));
-        int wn_diff = MatsubaraFreq<S>(diff_val).n;
+        // wn_diff is just an integer offset, not a MatsubaraFreq itself
+        // In Julia v1.x.x: wn_diff = 2 * round.(Int, 0.025 * wn_outer)
+        int wn_diff = diff_val;
 
         if (wn.size() >= 20) {
-            wn.push_back(
-                MatsubaraFreq<S>(wn_outer.n - sign(wn_outer) * wn_diff));
+            int new_n = wn_outer.n - sign(wn_outer) * wn_diff;
+            wn.push_back(MatsubaraFreq<S>(new_n));
         }
         if (wn.size() >= 42) {
-            wn.push_back(
-                MatsubaraFreq<S>(wn_outer.n + sign(wn_outer) * wn_diff));
+            int new_n = wn_outer.n + sign(wn_outer) * wn_diff;
+            wn.push_back(MatsubaraFreq<S>(new_n));
         }
     }
 

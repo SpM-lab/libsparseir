@@ -1174,9 +1174,9 @@ int spir_basis_get_n_default_matsus_ext(const spir_basis *b, bool positive_only,
     }
 }
 
-int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, int L, int64_t *points, int *n_points_returned)
+int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, bool mitigate, int L, int64_t *points, int *n_points_returned)
 {
-      if (!b || !points) {
+    if (!b || !points || !n_points_returned) {
         return SPIR_INVALID_ARGUMENT;
     }
 
@@ -1193,18 +1193,90 @@ int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, i
     try {
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
             auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
-            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only, mitigate);
             *n_points_returned = matsubara_points.size();
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;
         } else {
             auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
-            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only);
+            auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(L, positive_only, mitigate);
             *n_points_returned = matsubara_points.size();
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
             return SPIR_COMPUTATION_SUCCESS;
         }
     } catch (const std::exception &e) {
+        DEBUG_LOG("Error in spir_basis_get_default_matsus_ext: " + std::string(e.what()));
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
+int spir_uhat_get_default_matsus(
+    const spir_funcs *uhat,
+    int L,
+    int statistics,
+    bool positive_only,
+    bool mitigate,
+    int64_t *points,
+    int *n_points_returned)
+{
+    if (!uhat || !points || !n_points_returned) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+    if (L <= 0) {
+        return SPIR_INVALID_ARGUMENT;
+    }
+
+    auto impl = get_impl_funcs(uhat);
+    if (!impl) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    // Check if it's a Matsubara functions object
+    auto matsubara_impl = std::dynamic_pointer_cast<AbstractMatsubaraFunctions>(impl);
+    if (!matsubara_impl) {
+        DEBUG_LOG("Error: spir_funcs is not a Matsubara functions object");
+        return SPIR_NOT_SUPPORTED;
+    }
+
+    try {
+        if (statistics == SPIR_STATISTICS_FERMIONIC) {
+            // Try to cast to MatsubaraBasisFunctions<PiecewiseLegendreFTVector<Fermionic>>
+            auto fermionic_funcs = std::dynamic_pointer_cast<MatsubaraBasisFunctions<sparseir::PiecewiseLegendreFTVector<sparseir::Fermionic>>>(matsubara_impl);
+            if (!fermionic_funcs) {
+                DEBUG_LOG("Error: uhat is not a PiecewiseLegendreFTVector<Fermionic>");
+                return SPIR_NOT_SUPPORTED;
+            }
+            auto uhat_vector = fermionic_funcs->get_impl();
+            auto matsubara_points = sparseir::default_matsubara_sampling_points_impl(
+                *uhat_vector, L, mitigate, positive_only);
+            *n_points_returned = matsubara_points.size();
+            std::transform(matsubara_points.begin(), matsubara_points.end(), points,
+                [](const sparseir::MatsubaraFreq<sparseir::Fermionic> &freq) {
+                    return static_cast<int64_t>(freq.get_n());
+                });
+            return SPIR_COMPUTATION_SUCCESS;
+        } else if (statistics == SPIR_STATISTICS_BOSONIC) {
+            // Try to cast to MatsubaraBasisFunctions<PiecewiseLegendreFTVector<Bosonic>>
+            auto bosonic_funcs = std::dynamic_pointer_cast<MatsubaraBasisFunctions<sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic>>>(matsubara_impl);
+            if (!bosonic_funcs) {
+                DEBUG_LOG("Error: uhat is not a PiecewiseLegendreFTVector<Bosonic>");
+                return SPIR_NOT_SUPPORTED;
+            }
+            auto uhat_vector = bosonic_funcs->get_impl();
+            auto matsubara_points = sparseir::default_matsubara_sampling_points_impl(
+                *uhat_vector, L, mitigate, positive_only);
+            *n_points_returned = matsubara_points.size();
+            std::transform(matsubara_points.begin(), matsubara_points.end(), points,
+                [](const sparseir::MatsubaraFreq<sparseir::Bosonic> &freq) {
+                    return static_cast<int64_t>(freq.get_n());
+                });
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            DEBUG_LOG("Error: Invalid statistics type");
+            return SPIR_INVALID_ARGUMENT;
+        }
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Error in spir_uhat_get_default_matsus: " + std::string(e.what()));
         return SPIR_GET_IMPL_FAILED;
     }
 }

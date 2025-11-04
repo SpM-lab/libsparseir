@@ -751,13 +751,52 @@ int spir_basis_get_n_default_matsus_ext(const spir_basis *b, bool positive_only,
  *
  * @param b Pointer to a finite temperature basis object (must be an IR basis)
  * @param positive_only If true, only positive frequencies are used
- * @param n_points Number of requested sampling points.
- * @param points Pre-allocated array to store the sampling points. The size of the array must be at least n_points.
- * @param n_points_returned Number of sampling points returned.
+ * @param mitigate If true, enable mitigation (fencing) to improve conditioning by adding oversampling points
+ * @param n_points Number of requested sampling points (default: basis_size). When positive_only=true, this represents the total number of frequencies (both positive and negative), and the returned number of points will be approximately n_points/2 (positive frequencies only).
+ * @param points Pre-allocated array to store the sampling points. The size of the array must be sufficient for the returned points (may exceed n_points if mitigate is true).
+ * @param n_points_returned Pointer to store the number of sampling points returned (may exceed n_points if mitigate is true, or approximately n_points/2 when positive_only=true).
  * @return An integer status code:
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note When mitigate is true, the returned number of points may exceed n_points due to fencing
+ * @note When positive_only=true, n_points represents the total number of frequencies, and the returned number of points will be approximately n_points/2
+ * @note The default sampling points are chosen to provide near-optimal conditioning for the given basis size
  */
-int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, int n_points, int64_t *points, int *n_points_returned);
+int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, bool mitigate, int n_points, int64_t *points, int *n_points_returned);
+
+/**
+ * @brief Gets default Matsubara sampling points from uhat functions and length.
+ *
+ * This function computes default sampling points directly from a Matsubara functions
+ * object (uhat) without requiring a full basis object. This is useful for computing
+ * sampling points for augmented bases or when only uhat is available.
+ *
+ * @param uhat Pointer to the Matsubara functions object (must be PiecewiseLegendreFTVector)
+ * @param L Requested number of sampling points (default: basis_size). When positive_only=true, this represents the total number of frequencies (both positive and negative), and the returned number of points will be approximately L/2 (positive frequencies only).
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
+ * @param positive_only If true, only positive frequencies are used
+ * @param mitigate If true, enable mitigation (fencing) to improve conditioning
+ * @param points Pre-allocated array to store the Matsubara frequency indices (must be large enough for returned points)
+ * @param n_points_returned Pointer to store the number of points returned (may exceed L if mitigate is true, or approximately L/2 when positive_only=true)
+ * @return Status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - SPIR_NOT_SUPPORTED if uhat is not a PiecewiseLegendreFTVector
+ *         - Other error codes on failure
+ *
+ * @note The uhat object must represent PiecewiseLegendreFTVector functions
+ * @note When mitigate is true, the returned number of points may exceed L
+ * @note When positive_only=true, L represents the total number of frequencies, and the returned number of points will be approximately L/2
+ */
+int spir_uhat_get_default_matsus(
+    const spir_funcs *uhat,
+    int L,
+    int statistics,
+    bool positive_only,
+    bool mitigate,
+    int64_t *points,
+    int *n_points_returned);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.

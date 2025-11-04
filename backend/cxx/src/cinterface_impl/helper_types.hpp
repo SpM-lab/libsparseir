@@ -38,6 +38,9 @@ public:
     {
         return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<MatsubaraBasisFunctions<InternalType>>(impl->slice(indices)));
     }
+
+    // Accessor for internal implementation (needed for C API)
+    std::shared_ptr<InternalType> get_impl() const { return impl; }
 };
 
 // Abstract class for functions of a single variable (in the imaginary time
@@ -321,11 +324,9 @@ public:
         return points;
     }
 
-    std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only) const
+    std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only, bool mitigate = false) const
     {
-        bool fence = false;
-
-        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, fence, positive_only);
+        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, mitigate, positive_only);
         std::vector<int64_t> points(matsubara_points.size());
         std::transform(
             matsubara_points.begin(), matsubara_points.end(), points.begin(),
