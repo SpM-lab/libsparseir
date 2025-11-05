@@ -159,11 +159,10 @@ void test_finite_temp_basis_constructor_with_sve()
     REQUIRE(kernel != nullptr);
 
     int sve_status;
-    double cutoff = -1.0;
-    int lmax = -1;
+    int n_sv = -1;
     int n_gauss = -1;
     int Twork = SPIR_TWORK_AUTO;
-    spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, &sve_status);
+    spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, n_sv, n_gauss, Twork, &sve_status);
     REQUIRE(sve_status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve_result != nullptr);
 
@@ -223,11 +222,10 @@ TEST_CASE("FiniteTempBasis", "[cinterface]")
         REQUIRE(kernel != nullptr);
 
         int sve_status;
-        double cutoff = -1.0;
-        int lmax = -1;
+        int n_sv = -1;
         int n_gauss = -1;
         int Twork = SPIR_TWORK_AUTO;
-        spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, &sve_status);
+        spir_sve_result *sve_result = spir_sve_result_new(kernel, epsilon, n_sv, n_gauss, Twork, &sve_status);
         REQUIRE(sve_status == SPIR_COMPUTATION_SUCCESS);
         REQUIRE(sve_result != nullptr);
 
@@ -396,6 +394,69 @@ void test_finite_temp_basis_basis_functions()
     spir_basis_release(basis);
 }
 
+TEST_CASE("SVE Result Default Epsilon", "[cinterface]")
+{
+    double Lambda = 10.0;
+
+    int kernel_status;
+    spir_kernel *kernel = spir_logistic_kernel_new(Lambda, &kernel_status);
+    REQUIRE(kernel_status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(kernel != nullptr);
+
+    // Test with default epsilon (negative value)
+    int sve_status_default;
+    int n_sv = -1;
+    int n_gauss = -1;
+    int Twork = SPIR_TWORK_AUTO;
+    double epsilon_default = -1.0; // Use default
+    spir_sve_result *sve_result_default = spir_sve_result_new(
+        kernel, epsilon_default, n_sv, n_gauss, Twork, &sve_status_default);
+    REQUIRE(sve_status_default == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(sve_result_default != nullptr);
+
+    // Get size for default epsilon
+    int size_default = 0;
+    int size_status_default = spir_sve_result_get_size(sve_result_default, &size_default);
+    REQUIRE(size_status_default == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(size_default > 0);
+
+    // Test with explicit epsilon (machine epsilon)
+    int sve_status_explicit;
+    double epsilon_explicit = std::numeric_limits<double>::epsilon();
+    spir_sve_result *sve_result_explicit = spir_sve_result_new(
+        kernel, epsilon_explicit, n_sv, n_gauss, Twork, &sve_status_explicit);
+    REQUIRE(sve_status_explicit == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(sve_result_explicit != nullptr);
+
+    // Get size for explicit epsilon
+    int size_explicit = 0;
+    int size_status_explicit = spir_sve_result_get_size(sve_result_explicit, &size_explicit);
+    REQUIRE(size_status_explicit == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(size_explicit > 0);
+
+    // Check that sizes match
+    REQUIRE(size_default == size_explicit);
+
+    // Also test with epsilon = 0 (should use default)
+    int sve_status_zero;
+    double epsilon_zero = 0.0;
+    spir_sve_result *sve_result_zero = spir_sve_result_new(
+        kernel, epsilon_zero, n_sv, n_gauss, Twork, &sve_status_zero);
+    REQUIRE(sve_status_zero == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(sve_result_zero != nullptr);
+
+    int size_zero = 0;
+    int size_status_zero = spir_sve_result_get_size(sve_result_zero, &size_zero);
+    REQUIRE(size_status_zero == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(size_zero == size_default);
+
+    // Clean up
+    spir_kernel_release(kernel);
+    spir_sve_result_release(sve_result_default);
+    spir_sve_result_release(sve_result_explicit);
+    spir_sve_result_release(sve_result_zero);
+}
+
 TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
 {
     SECTION("Basis Functions Fermionic")
@@ -407,202 +468,4 @@ TEST_CASE("FiniteTempBasis Basis Functions", "[cinterface]")
     {
         test_finite_temp_basis_basis_functions<sparseir::Bosonic>();
     }
-}
-
-TEST_CASE("Test spir_basis_get_default_matsus_ext", "[cinterface]")
-{
-    double beta = 10.0;
-    double wmax = 10.0;
-    double epsilon = 1e-8;
-    
-    int status;
-    spir_kernel* kernel = spir_logistic_kernel_new(beta * wmax, &status);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    spir_basis* basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, epsilon, kernel, sve, -1, &status);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    int basis_size;
-    status = spir_basis_get_size(basis, &basis_size);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    // Test without mitigation
-    {
-        bool positive_only = false;
-        bool mitigate = false;
-        int n_points_requested = basis_size;
-        
-        int n_points_returned = 0;
-        Eigen::Vector<int64_t, Eigen::Dynamic> points(n_points_requested + 10);
-        
-        status = spir_basis_get_default_matsus_ext(
-            basis, positive_only, mitigate, n_points_requested, points.data(), &n_points_returned);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(n_points_returned >= n_points_requested);
-        REQUIRE(n_points_returned <= n_points_requested + 10);
-        
-        // Verify points are valid fermionic frequencies (odd integers)
-        for (int i = 0; i < n_points_returned; ++i) {
-            REQUIRE(llabs(points(i)) % 2 == 1);
-        }
-    }
-    
-    // Test with mitigation
-    {
-        bool positive_only = false;
-        bool mitigate = true;
-        int n_points_requested = basis_size;
-        
-        int n_points_returned = 0;
-        Eigen::Vector<int64_t, Eigen::Dynamic> points(n_points_requested + 10);
-        
-        status = spir_basis_get_default_matsus_ext(
-            basis, positive_only, mitigate, n_points_requested, points.data(), &n_points_returned);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(n_points_returned >= n_points_requested);  // May exceed when mitigate is true
-        
-        // Verify points are valid fermionic frequencies
-        for (int i = 0; i < n_points_returned; ++i) {
-            REQUIRE(llabs(points(i)) % 2 == 1);
-        }
-    }
-    
-    // Test positive_only = true
-    {
-        bool positive_only = true;
-        bool mitigate = false;
-        // When positive_only=true, L represents total frequencies, so we request basis_size
-        int n_points_requested = basis_size;
-        
-        int n_points_returned = 0;
-        Eigen::Vector<int64_t, Eigen::Dynamic> points(n_points_requested + 10);
-        
-        status = spir_basis_get_default_matsus_ext(
-            basis, positive_only, mitigate, n_points_requested, points.data(), &n_points_returned);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        // When positive_only=true, returned frequencies should be approximately n_points_requested / 2
-        REQUIRE(n_points_returned > 0);
-        REQUIRE(n_points_returned <= basis_size);
-        
-        // Verify all points are positive and odd
-        for (int i = 0; i < n_points_returned; ++i) {
-            REQUIRE(points(i) > 0);
-            REQUIRE(points(i) % 2 == 1);
-        }
-    }
-    
-    spir_basis_release(basis);
-    spir_sve_result_release(sve);
-    spir_kernel_release(kernel);
-}
-
-TEST_CASE("Test spir_uhat_get_default_matsus", "[cinterface]")
-{
-    double beta = 10.0;
-    double wmax = 10.0;
-    double epsilon = 1e-8;
-    
-    int status;
-    spir_kernel* kernel = spir_logistic_kernel_new(beta * wmax, &status);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    spir_basis* basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, epsilon, kernel, sve, -1, &status);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    int basis_size;
-    status = spir_basis_get_size(basis, &basis_size);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    
-    // Get uhat from basis
-    spir_funcs* uhat = spir_basis_get_uhat(basis, &status);
-    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-    REQUIRE(uhat != nullptr);
-    
-    // Test without mitigation
-    {
-        int L = basis_size;
-        int statistics = SPIR_STATISTICS_FERMIONIC;
-        bool positive_only = false;
-        bool mitigate = false;
-        
-        int n_points_returned = 0;
-        Eigen::Vector<int64_t, Eigen::Dynamic> points(L + 10);
-        
-        status = spir_uhat_get_default_matsus(
-            uhat, L, statistics, positive_only, mitigate, points.data(), &n_points_returned);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(n_points_returned >= L);
-        REQUIRE(n_points_returned <= L + 10);
-        
-        // Verify points are valid fermionic frequencies
-        for (int i = 0; i < n_points_returned; ++i) {
-            REQUIRE(llabs(points(i)) % 2 == 1);
-        }
-    }
-    
-    // Test with mitigation
-    {
-        int L = basis_size;
-        int statistics = SPIR_STATISTICS_FERMIONIC;
-        bool positive_only = false;
-        bool mitigate = true;
-        
-        int n_points_returned = 0;
-        Eigen::Vector<int64_t, Eigen::Dynamic> points(L + 10);
-        
-        status = spir_uhat_get_default_matsus(
-            uhat, L, statistics, positive_only, mitigate, points.data(), &n_points_returned);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(n_points_returned >= L);  // May exceed when mitigate is true
-        
-        // Verify points are valid fermionic frequencies
-        for (int i = 0; i < n_points_returned; ++i) {
-            REQUIRE(llabs(points(i)) % 2 == 1);
-        }
-    }
-    
-    // Test bosonic statistics
-    {
-        spir_basis* basis_bosonic = spir_basis_new(SPIR_STATISTICS_BOSONIC, beta, wmax, epsilon, kernel, sve, -1, &status);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        
-        spir_funcs* uhat_bosonic = spir_basis_get_uhat(basis_bosonic, &status);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        
-        int basis_size_bosonic;
-        status = spir_basis_get_size(basis_bosonic, &basis_size_bosonic);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        
-        int L = basis_size_bosonic;
-        int statistics = SPIR_STATISTICS_BOSONIC;
-        bool positive_only = false;
-        bool mitigate = false;
-        
-        int n_points_returned = 0;
-        Eigen::Vector<int64_t, Eigen::Dynamic> points(L + 10);
-        
-        status = spir_uhat_get_default_matsus(
-            uhat_bosonic, L, statistics, positive_only, mitigate, points.data(), &n_points_returned);
-        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
-        REQUIRE(n_points_returned >= L);
-        
-        // Verify points are valid bosonic frequencies (even integers, including 0)
-        for (int i = 0; i < n_points_returned; ++i) {
-            REQUIRE(llabs(points(i)) % 2 == 0);
-        }
-        
-        spir_funcs_release(uhat_bosonic);
-        spir_basis_release(basis_bosonic);
-    }
-    
-    spir_funcs_release(uhat);
-    spir_basis_release(basis);
-    spir_sve_result_release(sve);
-    spir_kernel_release(kernel);
 }

@@ -114,7 +114,7 @@ def _setup_prototypes():
 
     # SVE result functions
     _lib.spir_sve_result_new.argtypes = [
-        spir_kernel, c_double, c_double, c_int, c_int, c_int, POINTER(c_int)]
+        spir_kernel, c_double, c_int, c_int, c_int, POINTER(c_int)]
     _lib.spir_sve_result_new.restype = spir_sve_result
 
     _lib.spir_sve_result_get_size.argtypes = [spir_sve_result, POINTER(c_int)]
@@ -351,25 +351,27 @@ def reg_bose_kernel_new(lambda_val):
     return kernel
 
 
-def sve_result_new(kernel, epsilon, cutoff=None, lmax=None, n_gauss=None, Twork=None):
-    """Create a new SVE result."""
+def sve_result_new(kernel, epsilon, n_sv=None, n_gauss=None, Twork=None):
+    """Create a new SVE result.
+    
+    The relative cutoff for singular values is internally fixed to 2 * ε,
+    where ε is the machine epsilon of the working type.
+    """
     # Validate epsilon
     if epsilon <= 0:
         raise RuntimeError(
             f"Failed to create SVE result: epsilon must be positive, got {epsilon}")
 
-    if cutoff is None:
-        cutoff = -1.0
-    if lmax is None:
-        lmax = -1
+    if n_sv is None:
+        n_sv = -1
     if n_gauss is None:
         n_gauss = -1
     if Twork is None:
-        Twork = SPIR_TWORK_FLOAT64X2
+        Twork = -1  # SPIR_TWORK_AUTO
 
     status = c_int()
     sve = _lib.spir_sve_result_new(
-        kernel, epsilon, cutoff, lmax, n_gauss, Twork, byref(status))
+        kernel, epsilon, n_sv, n_gauss, Twork, byref(status))
     if status.value != COMPUTATION_SUCCESS:
         raise RuntimeError(f"Failed to create SVE result: {status.value}")
     return sve

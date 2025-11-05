@@ -1178,4 +1178,332 @@ template <typename T>
 std::shared_ptr<AbstractSVEHints<T>>
 sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon);
 
+// Forward declaration
+template <typename T>
+class FunctionSVEHints;
+
+// Function pointer types for SVE hints (defined before FunctionKernel)
+typedef void (*SegmentsXFuncPtr)(double epsilon, double* segments, int* n_segments, void* user_data);
+typedef void (*SegmentsYFuncPtr)(double epsilon, double* segments, int* n_segments, void* user_data);
+typedef int (*NSvalsFuncPtr)(double epsilon, void* user_data);
+typedef int (*NGaussFuncPtr)(double epsilon, void* user_data);
+
+// Function pointer type for weight function
+typedef double (*WeightFuncPtr)(double beta, double omega, void* user_data);
+
+/**
+ * @brief Custom kernel from function pointer.
+ *
+ * This class allows creating a kernel from a C function pointer.
+ * The function pointer should have the signature:
+ *   double (*)(double x, double y, void* user_data)
+ * 
+ * For extended precision (double-double), a separate function pointer can be provided:
+ *   void (*)(double x_high, double x_low, double y_high, double y_low,
+ *            double* result_high, double* result_low, void* user_data)
+ */
+class FunctionKernel : public AbstractKernel {
+public:
+    // Function pointer type for batch kernel evaluation (double precision)
+    // Evaluates K(xs[i], ys[i]) for i=0..n-1 and writes results to out[i]
+    typedef void (*BatchFuncPtr)(const double* xs, const double* ys, int n,
+                                double* out, void* user_data);
+    
+    // Function pointer type for batch kernel evaluation (extended precision double-double)
+    // Evaluates K(xs[i], ys[i]) for i=0..n-1 and writes results to out_hi[i] and out_lo[i]
+    typedef void (*BatchFuncPtrDD)(const double* xs_hi, const double* xs_lo,
+                                   const double* ys_hi, const double* ys_lo,
+                                   int n,
+                                   double* out_hi, double* out_lo,
+                                   void* user_data);
+
+    /**
+     * @brief Constructor for FunctionKernel.
+     *
+     * @param lambda The kernel cutoff Λ.
+     * @param batch_func Function pointer for batch kernel evaluation (double precision). Must not be NULL.
+     * @param batch_func_dd Function pointer for batch kernel evaluation (extended precision). Can be NULL.
+     * @param xmin Minimum x value.
+     * @param xmax Maximum x value.
+     * @param ymin Minimum y value.
+     * @param ymax Maximum y value.
+     * @param is_centrosymmetric Whether the kernel is centrosymmetric.
+     * @param user_data User-provided data pointer that will be passed to all function pointers.
+     */
+    FunctionKernel(double lambda,
+                   BatchFuncPtr batch_func,
+                   BatchFuncPtrDD batch_func_dd,
+                   double xmin, double xmax,
+                   double ymin, double ymax,
+                   bool is_centrosymmetric = false,
+                   void* user_data = nullptr)
+        : AbstractKernel(lambda),
+          batch_func_(batch_func),
+          batch_func_dd_(batch_func_dd),
+          xmin_(xmin), xmax_(xmax),
+          ymin_(ymin), ymax_(ymax),
+          is_centrosymmetric_(is_centrosymmetric),
+          user_data_(user_data)
+    {
+        if (!batch_func_) {
+            throw std::invalid_argument("batch_func cannot be nullptr");
+        }
+    }
+
+    double compute(double x, double y,
+                   double x_plus = std::numeric_limits<double>::quiet_NaN(),
+                   double x_minus = std::numeric_limits<double>::quiet_NaN()) const override
+    {
+        (void)x_plus;  // Not used
+        (void)x_minus; // Not used
+        // Call batch function with n=1
+        double result;
+        batch_func_(&x, &y, 1, &result, user_data_);
+        return result;
+    }
+
+    xprec::DDouble compute(xprec::DDouble x, xprec::DDouble y,
+                           xprec::DDouble x_plus = std::numeric_limits<double>::quiet_NaN(),
+                           xprec::DDouble x_minus = std::numeric_limits<double>::quiet_NaN()) const override
+    {
+        if (batch_func_dd_) {
+            // Use extended precision batch function if available
+            double x_hi = x.hi();
+            double x_lo = x.lo();
+            double y_hi = y.hi();
+            double y_lo = y.lo();
+            double result_hi, result_lo;
+            batch_func_dd_(&x_hi, &x_lo, &y_hi, &y_lo, 1, &result_hi, &result_lo, user_data_);
+            return xprec::DDouble(result_hi, result_lo);
+        } else {
+            // Fallback to double precision batch function
+            double x_d = static_cast<double>(x);
+            double y_d = static_cast<double>(y);
+            double result;
+            batch_func_(&x_d, &y_d, 1, &result, user_data_);
+            return xprec::DDouble(result);
+        }
+    }
+
+    /**
+     * @brief Get the batch function pointer (for use in matrix_from_gauss optimization).
+     */
+    BatchFuncPtr get_batch_func() const { return batch_func_; }
+
+    /**
+     * @brief Get the double-double batch function pointer (for use in matrix_from_gauss optimization).
+     */
+    BatchFuncPtrDD get_batch_func_dd() const { return batch_func_dd_; }
+
+    /**
+     * @brief Get the user data pointer.
+     */
+    void* get_user_data() const { return user_data_; }
+
+    std::pair<double, double> xrange() const override
+    {
+        return std::make_pair(xmin_, xmax_);
+    }
+
+    std::pair<double, double> yrange() const override
+    {
+        return std::make_pair(ymin_, ymax_);
+    }
+
+    bool is_centrosymmetric() const override
+    {
+        return is_centrosymmetric_;
+    }
+
+    /**
+     * @brief Set weight function pointers.
+     */
+    void set_weight_funcs(
+        WeightFuncPtr weight_func_fermionic,
+        WeightFuncPtr weight_func_bosonic)
+    {
+        weight_func_fermionic_ = weight_func_fermionic;
+        weight_func_bosonic_ = weight_func_bosonic;
+    }
+
+    /**
+     * @brief Return the weight function for given statistics.
+     */
+    template <typename T>
+    std::function<T(T, T)> weight_func(Fermionic) const
+    {
+        if (weight_func_fermionic_) {
+            return [this](T beta, T omega) {
+                return static_cast<T>(weight_func_fermionic_(static_cast<double>(beta),
+                                                             static_cast<double>(omega),
+                                                             user_data_));
+            };
+        }
+        // Default: return 1.0
+        return [](T beta, T omega) { (void)beta; (void)omega; return T(1.0); };
+    }
+
+    template <typename T>
+    std::function<T(T, T)> weight_func(Bosonic) const
+    {
+        if (weight_func_bosonic_) {
+            return [this](T beta, T omega) {
+                return static_cast<T>(weight_func_bosonic_(static_cast<double>(beta),
+                                                           static_cast<double>(omega),
+                                                           user_data_));
+            };
+        }
+        // Default: return 1.0
+        return [](T beta, T omega) { (void)beta; (void)omega; return T(1.0); };
+    }
+
+    /**
+     * @brief Set SVE hints function pointers.
+     */
+    void set_sve_hints_funcs(
+        SegmentsXFuncPtr segments_x_func,
+        SegmentsYFuncPtr segments_y_func,
+        NSvalsFuncPtr nsvals_func,
+        NGaussFuncPtr ngauss_func)
+    {
+        segments_x_func_ = segments_x_func;
+        segments_y_func_ = segments_y_func;
+        nsvals_func_ = nsvals_func;
+        ngauss_func_ = ngauss_func;
+    }
+
+    /**
+     * @brief Get SVE hints for this kernel.
+     */
+    template <typename T>
+    std::shared_ptr<FunctionSVEHints<T>> sve_hints(double epsilon) const
+    {
+        if (!segments_x_func_ || !segments_y_func_ || !nsvals_func_ || !ngauss_func_) {
+            throw std::runtime_error("SVE hints function pointers are not set for FunctionKernel");
+        }
+        return std::make_shared<FunctionSVEHints<T>>(
+            epsilon,
+            segments_x_func_,
+            segments_y_func_,
+            nsvals_func_,
+            ngauss_func_,
+            user_data_);
+    }
+
+private:
+    BatchFuncPtr batch_func_;
+    BatchFuncPtrDD batch_func_dd_;
+    double xmin_, xmax_, ymin_, ymax_;
+    bool is_centrosymmetric_;
+    void* user_data_;
+    // Weight function pointers
+    WeightFuncPtr weight_func_fermionic_ = nullptr;
+    WeightFuncPtr weight_func_bosonic_ = nullptr;
+    // SVE hints function pointers
+    SegmentsXFuncPtr segments_x_func_ = nullptr;
+    SegmentsYFuncPtr segments_y_func_ = nullptr;
+    NSvalsFuncPtr nsvals_func_ = nullptr;
+    NGaussFuncPtr ngauss_func_ = nullptr;
+};
+
+/**
+ * @brief Custom SVE hints from function pointers.
+ *
+ * This class allows creating SVE hints from C function pointers.
+ */
+template <typename T>
+class FunctionSVEHints : public AbstractSVEHints<T> {
+public:
+    // Use the global function pointer types defined above
+    typedef SegmentsXFuncPtr SegmentsXFuncPtr;
+    typedef SegmentsYFuncPtr SegmentsYFuncPtr;
+    typedef NSvalsFuncPtr NSvalsFuncPtr;
+    typedef NGaussFuncPtr NGaussFuncPtr;
+
+    FunctionSVEHints(double epsilon,
+                     SegmentsXFuncPtr segments_x_func,
+                     SegmentsYFuncPtr segments_y_func,
+                     NSvalsFuncPtr nsvals_func,
+                     NGaussFuncPtr ngauss_func,
+                     void* user_data = nullptr)
+        : epsilon_(epsilon),
+          segments_x_func_(segments_x_func),
+          segments_y_func_(segments_y_func),
+          nsvals_func_(nsvals_func),
+          ngauss_func_(ngauss_func),
+          user_data_(user_data)
+    {
+    }
+
+    std::vector<T> segments_x() const override
+    {
+        if (!segments_x_func_) {
+            throw std::runtime_error("segments_x function pointer is not set");
+        }
+        // Call the function to get the number of segments
+        int n_segments = 0;
+        segments_x_func_(epsilon_, nullptr, &n_segments, user_data_);
+        if (n_segments <= 0) {
+            throw std::runtime_error("Invalid number of segments from segments_x");
+        }
+        // Allocate and get the segments as double
+        std::vector<double> segments_double(n_segments);
+        segments_x_func_(epsilon_, segments_double.data(), &n_segments, user_data_);
+        // Convert to T
+        std::vector<T> segments;
+        segments.reserve(n_segments);
+        for (double d : segments_double) {
+            segments.push_back(static_cast<T>(d));
+        }
+        return segments;
+    }
+
+    std::vector<T> segments_y() const override
+    {
+        if (!segments_y_func_) {
+            throw std::runtime_error("segments_y function pointer is not set");
+        }
+        // Call the function to get the number of segments
+        int n_segments = 0;
+        segments_y_func_(epsilon_, nullptr, &n_segments, user_data_);
+        if (n_segments <= 0) {
+            throw std::runtime_error("Invalid number of segments from segments_y");
+        }
+        // Allocate and get the segments as double
+        std::vector<double> segments_double(n_segments);
+        segments_y_func_(epsilon_, segments_double.data(), &n_segments, user_data_);
+        // Convert to T
+        std::vector<T> segments;
+        segments.reserve(n_segments);
+        for (double d : segments_double) {
+            segments.push_back(static_cast<T>(d));
+        }
+        return segments;
+    }
+
+    int nsvals() const override
+    {
+        if (!nsvals_func_) {
+            throw std::runtime_error("nsvals function pointer is not set");
+        }
+        return nsvals_func_(epsilon_, user_data_);
+    }
+
+    int ngauss() const override
+    {
+        if (!ngauss_func_) {
+            throw std::runtime_error("ngauss function pointer is not set");
+        }
+        return ngauss_func_(epsilon_, user_data_);
+    }
+
+private:
+    double epsilon_;
+    SegmentsXFuncPtr segments_x_func_;
+    SegmentsYFuncPtr segments_y_func_;
+    NSvalsFuncPtr nsvals_func_;
+    NGaussFuncPtr ngauss_func_;
+    void* user_data_;
+};
+
 } // namespace sparseir

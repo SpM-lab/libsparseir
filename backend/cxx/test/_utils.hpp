@@ -22,11 +22,10 @@ inline spir_basis *_spir_basis_new(int32_t statistics, double beta,
         }
 
         // Create a pre-computed SVE result
-        double cutoff = -1.0;
-        int lmax = -1;
+        int n_sv = -1;
         int n_gauss = -1;
         int Twork = SPIR_TWORK_AUTO;
-        sve = spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, &status_);
+        sve = spir_sve_result_new(kernel, epsilon, n_sv, n_gauss, Twork, &status_);
         if (status_ != SPIR_COMPUTATION_SUCCESS || sve == nullptr) {
             *status = status_;
             spir_kernel_release(kernel);

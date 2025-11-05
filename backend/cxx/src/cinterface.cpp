@@ -61,6 +61,287 @@ spir_kernel* spir_reg_bose_kernel_new(double lambda, int* status)
     }
 }
 
+spir_kernel* spir_function_kernel_new(double lambda,
+                                     spir_kernel_batch_func_ptr batch_func,
+                                     spir_kernel_batch_func_ptr_ddouble batch_func_dd,
+                                     double xmin, double xmax,
+                                     double ymin, double ymax,
+                                     int is_centrosymmetric,
+                                     spir_segments_x_func_ptr segments_x_func,
+                                     spir_segments_y_func_ptr segments_y_func,
+                                     spir_nsvals_func_ptr nsvals_func,
+                                     spir_ngauss_func_ptr ngauss_func,
+                                     spir_weight_func_ptr weight_func_fermionic,
+                                     spir_weight_func_ptr weight_func_bosonic,
+                                     void *user_data,
+                                     int *status)
+{
+    DEBUG_LOG("Creating FunctionKernel with lambda=" + std::to_string(lambda));
+    try {
+        if (!batch_func) {
+            DEBUG_LOG("batch_func is NULL");
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+        if (!segments_x_func || !segments_y_func || !nsvals_func || !ngauss_func) {
+            DEBUG_LOG("SVE hints function pointers are NULL");
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+        if (lambda < 0) {
+            DEBUG_LOG("lambda is negative");
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+
+        // Early validation: test all callbacks with 4-corner points
+        DEBUG_LOG("Validating callbacks with 4-corner points");
+        
+        // Test batch_func with 4 corner points
+        {
+            double test_xs[4] = {xmin, xmin, xmax, xmax};
+            double test_ys[4] = {ymin, ymax, ymin, ymax};
+            double test_out[4];
+            
+            try {
+                batch_func(test_xs, test_ys, 4, test_out, user_data);
+                
+                // Check for NaN or Inf
+                for (int i = 0; i < 4; ++i) {
+                    if (std::isnan(test_out[i]) || std::isinf(test_out[i])) {
+                        DEBUG_LOG("batch_func returned NaN or Inf at corner point " + std::to_string(i));
+                        *status = SPIR_INVALID_ARGUMENT;
+                        return nullptr;
+                    }
+                }
+            } catch (const std::exception &e) {
+                DEBUG_LOG("Exception in batch_func validation: " + std::string(e.what()));
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            } catch (...) {
+                DEBUG_LOG("Unknown exception in batch_func validation");
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            }
+        }
+        
+        // Test batch_func_dd if provided
+        if (batch_func_dd) {
+            double test_xs_hi[4] = {xmin, xmin, xmax, xmax};
+            double test_xs_lo[4] = {0.0, 0.0, 0.0, 0.0};
+            double test_ys_hi[4] = {ymin, ymax, ymin, ymax};
+            double test_ys_lo[4] = {0.0, 0.0, 0.0, 0.0};
+            double test_out_hi[4], test_out_lo[4];
+            
+            try {
+                batch_func_dd(test_xs_hi, test_xs_lo, test_ys_hi, test_ys_lo, 4,
+                             test_out_hi, test_out_lo, user_data);
+                
+                // Check for NaN or Inf
+                for (int i = 0; i < 4; ++i) {
+                    if (std::isnan(test_out_hi[i]) || std::isinf(test_out_hi[i]) ||
+                        std::isnan(test_out_lo[i]) || std::isinf(test_out_lo[i])) {
+                        DEBUG_LOG("batch_func_dd returned NaN or Inf at corner point " + std::to_string(i));
+                        *status = SPIR_INVALID_ARGUMENT;
+                        return nullptr;
+                    }
+                }
+            } catch (const std::exception &e) {
+                DEBUG_LOG("Exception in batch_func_dd validation: " + std::string(e.what()));
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            } catch (...) {
+                DEBUG_LOG("Unknown exception in batch_func_dd validation");
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            }
+        }
+        
+        // Test SVE hints with epsilon = 1e-6
+        {
+            double test_epsilon = 1e-6;
+            
+            // Test segments_x
+            try {
+                int n_segments_x = 0;
+                segments_x_func(test_epsilon, nullptr, &n_segments_x, user_data);
+                if (n_segments_x < 1) {
+                    DEBUG_LOG("segments_x_func returned invalid n_segments: " + std::to_string(n_segments_x));
+                    *status = SPIR_INVALID_ARGUMENT;
+                    return nullptr;
+                }
+                
+                // Allocate and fill segments
+                std::vector<double> segments_x(n_segments_x);
+                segments_x_func(test_epsilon, segments_x.data(), &n_segments_x, user_data);
+                
+                // Check segments are ordered and within domain
+                for (int i = 0; i < n_segments_x; ++i) {
+                    if (segments_x[i] < xmin || segments_x[i] > xmax) {
+                        DEBUG_LOG("segments_x contains value outside domain: " + std::to_string(segments_x[i]));
+                        *status = SPIR_INVALID_ARGUMENT;
+                        return nullptr;
+                    }
+                }
+            } catch (const std::exception &e) {
+                DEBUG_LOG("Exception in segments_x_func validation: " + std::string(e.what()));
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            } catch (...) {
+                DEBUG_LOG("Unknown exception in segments_x_func validation");
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            }
+            
+            // Test segments_y
+            try {
+                int n_segments_y = 0;
+                segments_y_func(test_epsilon, nullptr, &n_segments_y, user_data);
+                if (n_segments_y < 1) {
+                    DEBUG_LOG("segments_y_func returned invalid n_segments: " + std::to_string(n_segments_y));
+                    *status = SPIR_INVALID_ARGUMENT;
+                    return nullptr;
+                }
+                
+                // Allocate and fill segments
+                std::vector<double> segments_y(n_segments_y);
+                segments_y_func(test_epsilon, segments_y.data(), &n_segments_y, user_data);
+                
+                // Check segments are ordered and within domain
+                for (int i = 0; i < n_segments_y; ++i) {
+                    if (segments_y[i] < ymin || segments_y[i] > ymax) {
+                        DEBUG_LOG("segments_y contains value outside domain: " + std::to_string(segments_y[i]));
+                        *status = SPIR_INVALID_ARGUMENT;
+                        return nullptr;
+                    }
+                }
+            } catch (const std::exception &e) {
+                DEBUG_LOG("Exception in segments_y_func validation: " + std::string(e.what()));
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            } catch (...) {
+                DEBUG_LOG("Unknown exception in segments_y_func validation");
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            }
+            
+            // Test nsvals
+            try {
+                int nsvals = nsvals_func(test_epsilon, user_data);
+                if (nsvals < 1) {
+                    DEBUG_LOG("nsvals_func returned invalid nsvals: " + std::to_string(nsvals));
+                    *status = SPIR_INVALID_ARGUMENT;
+                    return nullptr;
+                }
+            } catch (const std::exception &e) {
+                DEBUG_LOG("Exception in nsvals_func validation: " + std::string(e.what()));
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            } catch (...) {
+                DEBUG_LOG("Unknown exception in nsvals_func validation");
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            }
+            
+            // Test ngauss
+            try {
+                int ngauss = ngauss_func(test_epsilon, user_data);
+                if (ngauss < 1) {
+                    DEBUG_LOG("ngauss_func returned invalid ngauss: " + std::to_string(ngauss));
+                    *status = SPIR_INVALID_ARGUMENT;
+                    return nullptr;
+                }
+            } catch (const std::exception &e) {
+                DEBUG_LOG("Exception in ngauss_func validation: " + std::string(e.what()));
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            } catch (...) {
+                DEBUG_LOG("Unknown exception in ngauss_func validation");
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            }
+        }
+        
+        // Test weight functions with representative inputs
+        {
+            double test_beta = 10.0;
+            double test_omega = 5.0;
+            
+            if (weight_func_fermionic) {
+                try {
+                    double w_fermionic = weight_func_fermionic(test_beta, test_omega, user_data);
+                    if (std::isnan(w_fermionic) || std::isinf(w_fermionic)) {
+                        DEBUG_LOG("weight_func_fermionic returned NaN or Inf");
+                        *status = SPIR_INVALID_ARGUMENT;
+                        return nullptr;
+                    }
+                } catch (const std::exception &e) {
+                    DEBUG_LOG("Exception in weight_func_fermionic validation: " + std::string(e.what()));
+                    *status = SPIR_INTERNAL_ERROR;
+                    return nullptr;
+                } catch (...) {
+                    DEBUG_LOG("Unknown exception in weight_func_fermionic validation");
+                    *status = SPIR_INTERNAL_ERROR;
+                    return nullptr;
+                }
+            }
+            
+            if (weight_func_bosonic) {
+                try {
+                    double w_bosonic = weight_func_bosonic(test_beta, test_omega, user_data);
+                    if (std::isnan(w_bosonic) || std::isinf(w_bosonic)) {
+                        DEBUG_LOG("weight_func_bosonic returned NaN or Inf");
+                        *status = SPIR_INVALID_ARGUMENT;
+                        return nullptr;
+                    }
+                } catch (const std::exception &e) {
+                    DEBUG_LOG("Exception in weight_func_bosonic validation: " + std::string(e.what()));
+                    *status = SPIR_INTERNAL_ERROR;
+                    return nullptr;
+                } catch (...) {
+                    DEBUG_LOG("Unknown exception in weight_func_bosonic validation");
+                    *status = SPIR_INTERNAL_ERROR;
+                    return nullptr;
+                }
+            }
+        }
+        
+        DEBUG_LOG("Callback validation passed");
+
+        auto kernel_ptr = std::make_shared<sparseir::FunctionKernel>(
+            lambda,
+            batch_func,
+            batch_func_dd,
+            xmin, xmax, ymin, ymax,
+            is_centrosymmetric != 0,
+            user_data);
+
+        // Set weight function pointers
+        kernel_ptr->set_weight_funcs(
+            weight_func_fermionic,
+            weight_func_bosonic);
+
+        // Set SVE hints function pointers
+        kernel_ptr->set_sve_hints_funcs(
+            segments_x_func,
+            segments_y_func,
+            nsvals_func,
+            ngauss_func);
+
+        auto abstract_kernel = _safe_static_pointer_cast<sparseir::AbstractKernel>(kernel_ptr);
+        *status = SPIR_COMPUTATION_SUCCESS;
+        return create_kernel(abstract_kernel);
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_function_kernel_new: " + std::string(e.what()));
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_function_kernel_new");
+        *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
+
 int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax)
 {
@@ -110,11 +391,168 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
     }
 }
 
+int spir_kernel_is_centrosymmetric(const spir_kernel *k, int *is_centrosymmetric)
+{
+    DEBUG_LOG("spir_kernel_is_centrosymmetric called");
+    auto impl = get_impl_kernel(k);
+    if (!impl) {
+        DEBUG_LOG("Failed to get kernel implementation");
+        return SPIR_GET_IMPL_FAILED;
+    }
+
+    try {
+        if (!is_centrosymmetric) {
+            DEBUG_LOG("is_centrosymmetric is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        *is_centrosymmetric = impl->is_centrosymmetric() ? 1 : 0;
+        DEBUG_LOG("spir_kernel_is_centrosymmetric: result=" + std::to_string(*is_centrosymmetric));
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_is_centrosymmetric: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_is_centrosymmetric");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_segments_x(const spir_kernel *k, double epsilon,
+                                         double *segments, int *n_segments)
+{
+    try {
+        if (!n_segments) {
+            DEBUG_LOG("n_segments is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        auto segs = hints->segments_x();
+
+        if (segments == nullptr) {
+            // First call: return the number of segments
+            *n_segments = static_cast<int>(segs.size());
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            // Second call: fill the segments
+            int n = static_cast<int>(segs.size());
+            *n_segments = n;
+            for (int i = 0; i < n; ++i) {
+                segments[i] = static_cast<double>(segs[i]);
+            }
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_segments_x: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_segments_x");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_segments_y(const spir_kernel *k, double epsilon,
+                                         double *segments, int *n_segments)
+{
+    try {
+        if (!n_segments) {
+            DEBUG_LOG("n_segments is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        auto segs = hints->segments_y();
+
+        if (segments == nullptr) {
+            // First call: return the number of segments
+            *n_segments = static_cast<int>(segs.size());
+            return SPIR_COMPUTATION_SUCCESS;
+        } else {
+            // Second call: fill the segments
+            int n = static_cast<int>(segs.size());
+            *n_segments = n;
+            for (int i = 0; i < n; ++i) {
+                segments[i] = static_cast<double>(segs[i]);
+            }
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_segments_y: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_segments_y");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_nsvals(const spir_kernel *k, double epsilon, int *nsvals)
+{
+    try {
+        if (!nsvals) {
+            DEBUG_LOG("nsvals is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        *nsvals = hints->nsvals();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_nsvals: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_nsvals");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_ngauss(const spir_kernel *k, double epsilon, int *ngauss)
+{
+    try {
+        if (!ngauss) {
+            DEBUG_LOG("ngauss is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        *ngauss = hints->ngauss();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_ngauss: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_ngauss");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 spir_sve_result* spir_sve_result_new(
     const spir_kernel *k,
     double epsilon,
-    double cutoff,
-    int lmax,
+    int n_sv,
     int n_gauss,
     int Twork,
     int *status
@@ -128,12 +566,16 @@ spir_sve_result* spir_sve_result_new(
             return nullptr;
         }
 
-        if (cutoff < 0) {
-            cutoff = std::numeric_limits<double>::quiet_NaN();
-        }
+        // Use default epsilon if negative or zero
+        double epsilon_actual = (epsilon <= 0.0)
+                                    ? std::numeric_limits<double>::epsilon()
+                                    : epsilon;
 
-        if (lmax < 0) {
-            lmax = std::numeric_limits<int>::max();
+        // Use default cutoff (NaN) - will be set to 2 * eps(T) internally
+        double cutoff = std::numeric_limits<double>::quiet_NaN();
+
+        if (n_sv < 0) {
+            n_sv = std::numeric_limits<int>::max();
         }
 
         sparseir::TworkType Twork_type;
@@ -151,16 +593,37 @@ spir_sve_result* spir_sve_result_new(
 
         std::shared_ptr<sparseir::SVEResult> sve_result;
 
+        // Debug output
+        std::cout << "[DEBUG spir_sve_result_new] epsilon_actual = " << epsilon_actual
+                  << ", cutoff = " << (std::isnan(cutoff) ? "NaN" : std::to_string(cutoff))
+                  << ", Twork_type = " << (Twork_type == sparseir::TworkType::FLOAT64 ? "FLOAT64" : (Twork_type == sparseir::TworkType::FLOAT64X2 ? "FLOAT64X2" : "AUTO"))
+                  << std::endl;
+
         if (auto logistic = std::dynamic_pointer_cast<sparseir::LogisticKernel>(impl)) {
+            std::cout << "[DEBUG spir_sve_result_new] Kernel type: LogisticKernel" << std::endl;
             sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(
-                *logistic, epsilon, cutoff, lmax, n_gauss, Twork_type
+                *logistic, epsilon_actual, cutoff, n_sv, n_gauss, Twork_type
             ));
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
+            std::cout << "[DEBUG spir_sve_result_new] Kernel type: RegularizedBoseKernel" << std::endl;
             sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(
-                *bose, epsilon, cutoff, lmax, n_gauss, Twork_type
+                *bose, epsilon_actual, cutoff, n_sv, n_gauss, Twork_type
             ));
+        } else if (auto func_kernel = std::dynamic_pointer_cast<sparseir::FunctionKernel>(impl)) {
+            std::cout << "[DEBUG spir_sve_result_new] Kernel type: FunctionKernel" << std::endl;
+            try {
+                sve_result = std::make_shared<sparseir::SVEResult>(sparseir::compute_sve(
+                    *func_kernel, epsilon_actual, cutoff, n_sv, n_gauss, Twork_type
+                ));
+            } catch (const std::exception &e) {
+                DEBUG_LOG("Exception in compute_sve for FunctionKernel: " + std::string(e.what()));
+                std::cout << "[DEBUG spir_sve_result_new] Exception: " << e.what() << std::endl;
+                *status = SPIR_INTERNAL_ERROR;
+                return nullptr;
+            }
         } else {
             DEBUG_LOG("Unknown kernel type");
+            std::cout << "[DEBUG spir_sve_result_new] Unknown kernel type" << std::endl;
             *status = SPIR_INTERNAL_ERROR;
             return nullptr;
         }
@@ -197,6 +660,8 @@ spir_basis* spir_basis_new(
             result = _spir_basis_new(statistics, beta, omega_max, epsilon, *logistic, sve, max_size);
         } else if (auto bose = std::dynamic_pointer_cast<sparseir::RegularizedBoseKernel>(impl)) {
             result = _spir_basis_new(statistics, beta, omega_max, epsilon, *bose, sve, max_size);
+        } else if (auto func_kernel = std::dynamic_pointer_cast<sparseir::FunctionKernel>(impl)) {
+            result = _spir_basis_new(statistics, beta, omega_max, epsilon, *func_kernel, sve, max_size);
         } else {
             DEBUG_LOG("Unknown kernel type");
             *status = SPIR_INVALID_ARGUMENT;
@@ -836,6 +1301,51 @@ spir_funcs* spir_basis_get_uhat(const spir_basis *b, int *status)
     }
 }
 
+spir_funcs* spir_basis_get_uhat_full(const spir_basis *b, int *status)
+{
+    if (!b) {
+        DEBUG_LOG("Error in spir_basis_get_uhat_full: invalid pointer b");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+    if (!status) {
+        DEBUG_LOG("Error in spir_basis_get_uhat_full: invalid pointer status");
+        *status = SPIR_INVALID_ARGUMENT;
+        return nullptr;
+    }
+
+    auto impl = get_impl_basis(b);
+    if (!impl) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+
+    try {
+        if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            spir_funcs *uhat_full = nullptr;
+            int ret = _spir_basis_get_uhat_full<sparseir::Fermionic>(b, &uhat_full);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return uhat_full;
+        } else {
+            spir_funcs *uhat_full = nullptr;
+            int ret = _spir_basis_get_uhat_full<sparseir::Bosonic>(b, &uhat_full);
+            if (ret != SPIR_COMPUTATION_SUCCESS) {
+                *status = ret;
+                return nullptr;
+            }
+            *status = SPIR_COMPUTATION_SUCCESS;
+            return uhat_full;
+        }
+    } catch (const std::exception &e) {
+        *status = SPIR_GET_IMPL_FAILED;
+        return nullptr;
+    }
+}
+
 // TODO: USE THIS
 int spir_sampling_get_npoints(const spir_sampling *s,
                                      int *num_points)
@@ -1213,7 +1723,6 @@ int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, b
 int spir_uhat_get_default_matsus(
     const spir_funcs *uhat,
     int L,
-    int statistics,
     bool positive_only,
     bool mitigate,
     int64_t *points,
@@ -1239,13 +1748,9 @@ int spir_uhat_get_default_matsus(
     }
 
     try {
-        if (statistics == SPIR_STATISTICS_FERMIONIC) {
-            // Try to cast to MatsubaraBasisFunctions<PiecewiseLegendreFTVector<Fermionic>>
-            auto fermionic_funcs = std::dynamic_pointer_cast<MatsubaraBasisFunctions<sparseir::PiecewiseLegendreFTVector<sparseir::Fermionic>>>(matsubara_impl);
-            if (!fermionic_funcs) {
-                DEBUG_LOG("Error: uhat is not a PiecewiseLegendreFTVector<Fermionic>");
-                return SPIR_NOT_SUPPORTED;
-            }
+        // Try Fermionic first
+        auto fermionic_funcs = std::dynamic_pointer_cast<MatsubaraBasisFunctions<sparseir::PiecewiseLegendreFTVector<sparseir::Fermionic>>>(matsubara_impl);
+        if (fermionic_funcs) {
             auto uhat_vector = fermionic_funcs->get_impl();
             auto matsubara_points = sparseir::default_matsubara_sampling_points_impl(
                 *uhat_vector, L, mitigate, positive_only);
@@ -1255,13 +1760,11 @@ int spir_uhat_get_default_matsus(
                     return static_cast<int64_t>(freq.get_n());
                 });
             return SPIR_COMPUTATION_SUCCESS;
-        } else if (statistics == SPIR_STATISTICS_BOSONIC) {
-            // Try to cast to MatsubaraBasisFunctions<PiecewiseLegendreFTVector<Bosonic>>
-            auto bosonic_funcs = std::dynamic_pointer_cast<MatsubaraBasisFunctions<sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic>>>(matsubara_impl);
-            if (!bosonic_funcs) {
-                DEBUG_LOG("Error: uhat is not a PiecewiseLegendreFTVector<Bosonic>");
-                return SPIR_NOT_SUPPORTED;
-            }
+        }
+
+        // Try Bosonic
+        auto bosonic_funcs = std::dynamic_pointer_cast<MatsubaraBasisFunctions<sparseir::PiecewiseLegendreFTVector<sparseir::Bosonic>>>(matsubara_impl);
+        if (bosonic_funcs) {
             auto uhat_vector = bosonic_funcs->get_impl();
             auto matsubara_points = sparseir::default_matsubara_sampling_points_impl(
                 *uhat_vector, L, mitigate, positive_only);
@@ -1271,10 +1774,11 @@ int spir_uhat_get_default_matsus(
                     return static_cast<int64_t>(freq.get_n());
                 });
             return SPIR_COMPUTATION_SUCCESS;
-        } else {
-            DEBUG_LOG("Error: Invalid statistics type");
-            return SPIR_INVALID_ARGUMENT;
         }
+
+        // Neither Fermionic nor Bosonic
+        DEBUG_LOG("Error: uhat is not a PiecewiseLegendreFTVector<Fermionic> or PiecewiseLegendreFTVector<Bosonic>");
+        return SPIR_NOT_SUPPORTED;
     } catch (const std::exception &e) {
         DEBUG_LOG("Error in spir_uhat_get_default_matsus: " + std::string(e.what()));
         return SPIR_GET_IMPL_FAILED;

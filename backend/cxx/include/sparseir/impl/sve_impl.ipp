@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../sve.hpp"
+#include <fstream>
 
 namespace sparseir {
 
@@ -8,6 +9,41 @@ template <typename K, typename T>
 SamplingSVE<K, T>::SamplingSVE(const K &kernel_, double epsilon_, int n_gauss_)
     : kernel(std::make_shared<K>(kernel_)), epsilon(epsilon_)
 {
+    debug_out() << "[DEBUG SamplingSVE] Constructor start, epsilon=" << epsilon_ << ", n_gauss_=" << n_gauss_ << std::endl;
+    debug_out().flush();
+    
+    // For FunctionKernel, use its sve_hints method directly
+    if constexpr (std::is_same<K, sparseir::FunctionKernel>::value) {
+        debug_out() << "[DEBUG SamplingSVE] FunctionKernel detected, calling sve_hints..." << std::endl;
+        debug_out().flush();
+        auto func_kernel = std::dynamic_pointer_cast<const sparseir::FunctionKernel>(kernel);
+        if (!func_kernel) {
+            throw std::runtime_error("Failed to cast kernel to FunctionKernel");
+        }
+        auto hints = func_kernel->template sve_hints<T>(epsilon);
+        debug_out() << "[DEBUG SamplingSVE] sve_hints completed, nsvals=" << hints->nsvals() << ", ngauss=" << hints->ngauss() << std::endl;
+        debug_out().flush();
+        n_gauss = (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
+        debug_out() << "[DEBUG SamplingSVE] Creating legendre rule with n_gauss=" << n_gauss << std::endl;
+        debug_out().flush();
+        auto rule_xprec_ddouble = legendre(n_gauss);
+        rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
+        debug_out() << "[DEBUG SamplingSVE] Rule created, getting segments..." << std::endl;
+        debug_out().flush();
+
+        nsvals_hint = hints->nsvals();
+        segs_x = hints->segments_x();
+        segs_y = hints->segments_y();
+        debug_out() << "[DEBUG SamplingSVE] Segments obtained, segs_x.size()=" << segs_x.size() << ", segs_y.size()=" << segs_y.size() << std::endl;
+        debug_out().flush();
+        gauss_x = rule.piecewise(segs_x);
+        debug_out() << "[DEBUG SamplingSVE] gauss_x created" << std::endl;
+        debug_out().flush();
+        gauss_y = rule.piecewise(segs_y);
+        debug_out() << "[DEBUG SamplingSVE] gauss_y created, constructor complete" << std::endl;
+        debug_out().flush();
+        return;
+    }
     auto hints = sve_hints<T>(kernel, epsilon);
     n_gauss = (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
     auto rule_xprec_ddouble = legendre(n_gauss);
@@ -40,8 +76,30 @@ SamplingSVE<K, T>::SamplingSVE(const std::shared_ptr<AbstractKernel> &kernel_,
 template <typename K, typename T>
 std::vector<Eigen::MatrixX<T>> SamplingSVE<K, T>::matrices() const
 {
+    debug_out() << "[DEBUG SamplingSVE::matrices] START" << std::endl;
+    debug_out().flush();
+    debug_out() << "[DEBUG SamplingSVE::matrices] kernel pointer: " << kernel.get() << std::endl;
+    debug_out().flush();
+    debug_out() << "[DEBUG SamplingSVE::matrices] gauss_x.x.size()=" << gauss_x.x.size() << ", gauss_y.x.size()=" << gauss_y.x.size() << std::endl;
+    debug_out().flush();
     std::vector<Eigen::MatrixX<T>> mats;
+    debug_out() << "[DEBUG SamplingSVE::matrices] Calling matrix_from_gauss..." << std::endl;
+    debug_out().flush();
+    
+    // Force immediate file write to ensure we see this
+    std::ofstream test_file("/tmp/test_matrix_from_gauss.txt", std::ios::app);
+    test_file << "[TEST] About to call matrix_from_gauss<T=" << (std::is_same<T, double>::value ? "double" : "DDouble") << ">" << std::endl;
+    test_file.flush();
+    test_file.close();
+    
     Eigen::MatrixX<T> A = matrix_from_gauss(*kernel, gauss_x, gauss_y);
+    
+    test_file.open("/tmp/test_matrix_from_gauss.txt", std::ios::app);
+    test_file << "[TEST] matrix_from_gauss returned, size=" << A.rows() << "x" << A.cols() << std::endl;
+    test_file.flush();
+    test_file.close();
+    debug_out() << "[DEBUG SamplingSVE::matrices] matrix_from_gauss completed, A.size()=" << A.rows() << "x" << A.cols() << std::endl;
+    debug_out().flush();
     for (int i = 0; i < gauss_x.w.size(); ++i) {
         A.row(i) *= sqrt_impl(gauss_x.w[i]);
     }
@@ -353,7 +411,11 @@ template <typename K, typename T>
 std::shared_ptr<AbstractSVE<T>> determine_sve(const K &kernel,
                                               double safe_epsilon, int n_gauss)
 {
-    if (kernel.is_centrosymmetric()) {
+    // FunctionKernel does not support CentrosymmSVE (requires get_symmetrized)
+    // Always use SamplingSVE for FunctionKernel, even if it's centrosymmetric
+    if constexpr (std::is_same<K, sparseir::FunctionKernel>::value) {
+        return std::make_shared<SamplingSVE<K, T>>(kernel, safe_epsilon, n_gauss);
+    } else if (kernel.is_centrosymmetric()) {
         return std::make_shared<CentrosymmSVE<K, T>>(kernel, safe_epsilon,
                                                      n_gauss);
     } else {
@@ -397,13 +459,30 @@ truncate(const std::vector<Eigen::MatrixX<T>> &u,
         }
     }
 
+    // Debug output - use stderr to ensure it's visible
+    std::cerr << "[DEBUG truncate] T = " << (std::is_same<T, double>::value ? "double" : "DDouble")
+              << ", rtol = " << static_cast<double>(rtol)
+              << ", max_sall = " << static_cast<double>(max_sall)
+              << ", lmax = " << lmax
+              << ", sall.size() = " << sall.size()
+              << std::endl;
+    std::cerr.flush();
+
     T cutoff;
     if (lmax < static_cast<int>(sall.size())) {
         std::nth_element(sall.begin(), sall.begin() + lmax, sall.end(),
                          std::greater<T>());
         cutoff = std::max(rtol * max_sall, sall[lmax - 1]);
+        std::cerr << "[DEBUG truncate] lmax < sall.size(), cutoff = max(" 
+                  << static_cast<double>(rtol * max_sall) << ", " 
+                  << static_cast<double>(sall[lmax - 1]) << ") = "
+                  << static_cast<double>(cutoff) << std::endl;
+        std::cerr.flush();
     } else {
         cutoff = rtol * max_sall;
+        std::cerr << "[DEBUG truncate] lmax >= sall.size(), cutoff = rtol * max_sall = "
+                  << static_cast<double>(cutoff) << std::endl;
+        std::cerr.flush();
     }
 
     std::vector<int> scount(s.size());
@@ -434,9 +513,24 @@ std::tuple<SVEResult, std::shared_ptr<AbstractSVE<T>>>
 pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                 double cutoff, int lmax)
 {
+    // Debug output at the start
+    debug_out() << "[DEBUG pre_postprocess] START: T = " << (std::is_same<T, double>::value ? "double" : "DDouble")
+              << ", safe_epsilon = " << safe_epsilon
+              << ", cutoff = " << (std::isnan(cutoff) ? "NaN" : std::to_string(cutoff))
+              << ", lmax = " << lmax << std::endl;
+    debug_out().flush();
+    
+    debug_out() << "[DEBUG pre_postprocess] Calling determine_sve..." << std::endl;
+    debug_out().flush();
     auto sve = determine_sve<K, T>(kernel, safe_epsilon, n_gauss);
+    debug_out() << "[DEBUG pre_postprocess] determine_sve completed, getting matrices..." << std::endl;
+    debug_out().flush();
 
+    debug_out() << "[DEBUG pre_postprocess] Calling sve->matrices()..." << std::endl;
+    debug_out().flush();
     std::vector<Eigen::MatrixX<T>> matrices = sve->matrices();
+    debug_out() << "[DEBUG pre_postprocess] matrices() completed, size=" << matrices.size() << std::endl;
+    debug_out().flush();
     std::vector<
         std::tuple<Eigen::MatrixX<T>, Eigen::VectorX<T>, Eigen::MatrixX<T>>>
         svds;
@@ -460,12 +554,20 @@ pre_postprocess(const K &kernel, double safe_epsilon, int n_gauss,
                           ? T(2) * T(std::numeric_limits<T>::epsilon())
                           : T(cutoff);
 
+    // Debug output - use stderr to ensure it's visible
+    std::cerr << "[DEBUG pre_postprocess] T = " << (std::is_same<T, double>::value ? "double" : "DDouble") 
+              << ", cutoff_actual = " << static_cast<double>(cutoff_actual)
+              << ", 2 * epsilon(T) = " << static_cast<double>(T(2) * T(std::numeric_limits<T>::epsilon()))
+              << ", epsilon(T) = " << static_cast<double>(T(std::numeric_limits<T>::epsilon()))
+              << std::endl;
+    std::cerr.flush();
+
     std::vector<Eigen::MatrixX<T>> u_list_truncated;
     std::vector<Eigen::VectorX<T>> s_list_truncated;
     std::vector<Eigen::MatrixX<T>> v_list_truncated;
 
     std::tie(u_list_truncated, s_list_truncated, v_list_truncated) =
-        truncate(u_list, s_list, v_list, cutoff_actual, lmax);
+        truncate(u_list, s_list, v_list, T(safe_epsilon), lmax);
 
     return std::make_tuple(
         sve->postprocess(u_list_truncated, s_list_truncated, v_list_truncated),

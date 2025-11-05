@@ -1,5 +1,6 @@
 #include "sparseir/sve.hpp"
 #include "sparseir/impl/sve_impl.ipp"
+#include <iostream>
 
 namespace sparseir {
 
@@ -86,6 +87,16 @@ safe_epsilon(double eps_required, TworkType work_dtype, SVDStrategy svd_strat)
         actual_svd_strat = svd_strat;
     }
 
+    // Debug output - use stderr to ensure it's visible
+    std::cerr << "[DEBUG safe_epsilon] eps_required = " << eps_required
+              << ", work_dtype = " << (work_dtype == TworkType::AUTO ? "AUTO" : (work_dtype == TworkType::FLOAT64 ? "FLOAT64" : "FLOAT64X2"))
+              << ", actual_work_dtype = " << (actual_work_dtype == TworkType::FLOAT64 ? "FLOAT64" : "FLOAT64X2")
+              << ", safe_eps = " << safe_eps
+              << ", epsilon(T) = " << (actual_work_dtype == TworkType::FLOAT64 ? std::numeric_limits<double>::epsilon() : sqrt(std::numeric_limits<xprec::DDouble>::epsilon()))
+              << ", 2 * epsilon(T) = " << (actual_work_dtype == TworkType::FLOAT64 ? (2.0 * std::numeric_limits<double>::epsilon()) : (2.0 * sqrt(std::numeric_limits<xprec::DDouble>::epsilon())))
+              << std::endl;
+    std::cerr.flush();
+
     if (warn_acc) {
         std::cerr << "\nRequested accuracy is " << eps_required
                   << ", which is below the\naccuracy " << safe_eps
@@ -141,6 +152,13 @@ SVEResult compute_sve(const K &kernel, double epsilon, const SVEParams& params)
 // Explicit template instantiations for SVEParams version
 template SVEResult compute_sve<LogisticKernel>(const LogisticKernel &kernel, double epsilon, const SVEParams& params);
 template SVEResult compute_sve<RegularizedBoseKernel>(const RegularizedBoseKernel &kernel, double epsilon, const SVEParams& params);
+
+// Explicit template instantiations for FunctionKernel
+template SVEResult compute_sve<FunctionKernel>(const FunctionKernel &kernel, double epsilon, double cutoff, int lmax, int n_gauss, TworkType Twork);
+template SVEResult compute_sve<FunctionKernel>(const FunctionKernel &kernel, double epsilon, const SVEParams& params);
+template class SamplingSVE<FunctionKernel, double>;
+template class SamplingSVE<FunctionKernel, DDouble>;
+
 
 // Explicit template instantiations for CentrosymmSVE
 template class CentrosymmSVE<LogisticKernel, double>;

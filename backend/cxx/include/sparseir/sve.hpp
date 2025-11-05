@@ -9,6 +9,7 @@
 #include <memory>
 #include <stdexcept>
 #include <tuple>
+#include <type_traits>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <vector>
 
@@ -16,6 +17,7 @@
 #include "sparseir/gauss.hpp"
 #include "sparseir/poly.hpp"
 #include "sparseir/kernel.hpp"
+#include "sparseir/impl/kernel_impl.ipp"
 #include "sparseir/svd.hpp"
 namespace sparseir {
 

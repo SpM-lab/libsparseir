@@ -1,8 +1,17 @@
 #pragma once
 
 #include "sparseir/kernel.hpp"
+#include <fstream>
+#include <vector>
+#include <algorithm>
 
 namespace sparseir {
+
+// Debug file output helper (shared with sve_impl.ipp)
+inline std::ofstream& debug_out() {
+    static std::ofstream debug_file("/tmp/sparseir_debug.log", std::ios::app);
+    return debug_file;
+}
 
 // Function to compute matrix from Gauss rules
 template <typename T>
@@ -10,25 +19,119 @@ Eigen::MatrixX<T> matrix_from_gauss(const AbstractKernel &kernel,
                                     const Rule<T> &gauss_x,
                                     const Rule<T> &gauss_y)
 {
-
     size_t n = gauss_x.x.size();
     size_t m = gauss_y.x.size();
+    
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> res(n, m);
 
-    // Parallelize using threads
-    std::vector<std::thread> threads;
+    debug_out() << "[DEBUG C++] matrix_from_gauss: START, n=" << n << ", m=" << m << std::endl;
+    debug_out().flush();
+
+    // Optimize for FunctionKernel: use batch evaluation for entire 2D grid
+    auto func_kernel = dynamic_cast<const FunctionKernel*>(&kernel);
+    debug_out() << "[DEBUG C++] matrix_from_gauss: dynamic_cast result: " << (func_kernel ? "FunctionKernel found" : "NOT FunctionKernel") << std::endl;
+    debug_out().flush();
+    
+    if (func_kernel) {
+        debug_out() << "[DEBUG C++] matrix_from_gauss: FunctionKernel detected, n=" << n << ", m=" << m << std::endl;
+        debug_out().flush();
+        void* user_data = func_kernel->get_user_data();
+        
+        if constexpr (std::is_same<T, double>::value) {
+            // Double precision: use double batch function
+            auto batch_func = func_kernel->get_batch_func();
+            debug_out() << "[DEBUG C++] matrix_from_gauss: Using double batch function, will call with n=" << (n * m) << " for entire grid" << std::endl;
+            debug_out().flush();
+            
+            // Prepare all (x, y) pairs for 2D grid: xs[k] = gauss_x.x[i], ys[k] = gauss_y.x[j] where k = i*m + j
+            std::vector<double> xs(n * m);
+            std::vector<double> ys(n * m);
+            std::vector<double> out(n * m);
+            
+            for (size_t i = 0; i < n; ++i) {
+                double x_val = static_cast<double>(gauss_x.x[i]);
+                for (size_t j = 0; j < m; ++j) {
+                    size_t k = i * m + j;
+                    xs[k] = x_val;
+                    ys[k] = static_cast<double>(gauss_y.x[j]);
+                }
+            }
+            
+            // Evaluate entire grid in one batch call
+            debug_out() << "[DEBUG C++] matrix_from_gauss: Calling batch_func with n=" << (n * m) << " for entire grid" << std::endl;
+            debug_out().flush();
+            batch_func(xs.data(), ys.data(), static_cast<int>(n * m), out.data(), user_data);
+            debug_out() << "[DEBUG C++] matrix_from_gauss: batch_func returned" << std::endl;
+            debug_out().flush();
+            
+            // Copy results to matrix
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < m; ++j) {
+                    size_t k = i * m + j;
+                    res(i, j) = static_cast<T>(out[k]);
+                }
+            }
+            
+            return res;
+        } else if constexpr (std::is_same<T, xprec::DDouble>::value) {
+            // Double-double precision: batch_func_dd is required (no fallback)
+            auto batch_func_dd = func_kernel->get_batch_func_dd();
+            if (!batch_func_dd) {
+                throw std::runtime_error("batch_func_dd is required for DDouble precision but was not provided");
+            }
+            
+            debug_out() << "[DEBUG C++] matrix_from_gauss: Using double-double batch function, will call with n=" << (n * m) << " for entire grid" << std::endl;
+            debug_out().flush();
+            
+            // Prepare all (x, y) pairs for 2D grid: xs[k] = gauss_x.x[i], ys[k] = gauss_y.x[j] where k = i*m + j
+            std::vector<double> xs_hi(n * m), xs_lo(n * m);
+            std::vector<double> ys_hi(n * m), ys_lo(n * m);
+            std::vector<double> out_hi(n * m), out_lo(n * m);
+            
+            for (size_t i = 0; i < n; ++i) {
+                double x_hi = static_cast<double>(gauss_x.x[i].hi());
+                double x_lo = static_cast<double>(gauss_x.x[i].lo());
+                for (size_t j = 0; j < m; ++j) {
+                    size_t k = i * m + j;
+                    xs_hi[k] = x_hi;
+                    xs_lo[k] = x_lo;
+                    ys_hi[k] = static_cast<double>(gauss_y.x[j].hi());
+                    ys_lo[k] = static_cast<double>(gauss_y.x[j].lo());
+                }
+            }
+            
+            // Evaluate entire grid in one batch call
+            debug_out() << "[DEBUG C++] matrix_from_gauss: Calling batch_func_dd with n=" << (n * m) << " for entire grid" << std::endl;
+            debug_out().flush();
+            batch_func_dd(xs_hi.data(), xs_lo.data(),
+                         ys_hi.data(), ys_lo.data(),
+                         static_cast<int>(n * m),
+                         out_hi.data(), out_lo.data(),
+                         user_data);
+            debug_out() << "[DEBUG C++] matrix_from_gauss: batch_func_dd returned" << std::endl;
+            debug_out().flush();
+            
+            // Copy results to matrix
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < m; ++j) {
+                    size_t k = i * m + j;
+                    res(i, j) = xprec::DDouble(out_hi[k], out_lo[k]);
+                }
+            }
+            
+            return res;
+        }
+    }
+    
+    // Fallback: element-by-element computation for non-FunctionKernel (LogisticKernel, etc.)
+    debug_out() << "[DEBUG C++] matrix_from_gauss: Using fallback element-by-element computation for non-FunctionKernel, n=" << n << ", m=" << m << std::endl;
+    debug_out().flush();
     for (size_t i = 0; i < n; ++i) {
-        threads.emplace_back([&, i]() {
             for (size_t j = 0; j < m; ++j) {
                 res(i, j) =
                     kernel.compute(gauss_x.x[i], gauss_y.x[j],
                                    gauss_x.x_forward[i], gauss_x.x_backward[i]);
             }
-        });
-    }
-
-    for (auto &thread : threads) {
-        thread.join();
     }
 
     return res;
@@ -97,7 +200,14 @@ sve_hints(const std::shared_ptr<const AbstractKernel> &kernel, double epsilon)
         }
     }
 
+    // Special handling for FunctionKernel
+    if (auto func_kernel =
+            std::dynamic_pointer_cast<const FunctionKernel>(kernel)) {
+        return func_kernel->template sve_hints<T>(epsilon);
+    }
+
     throw std::runtime_error("Unsupported kernel type");
 }
 
 } // namespace sparseir
+

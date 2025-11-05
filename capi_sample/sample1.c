@@ -22,11 +22,10 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(kernel != NULL);
 
 // Create a pre-computed SVE result
-double cutoff = -1.0;
-int lmax = -1;
+int n_sv = -1;
 int n_gauss = -1;
 int Twork = SPIR_TWORK_FLOAT64X2;
-spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, cutoff, lmax, n_gauss, Twork, &status);
+spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, n_sv, n_gauss, Twork, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(sve != NULL);
 

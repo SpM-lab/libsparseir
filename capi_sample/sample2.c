@@ -22,11 +22,10 @@ assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(logistic_kernel != NULL);
 
 // Create a pre-computed SVE result
-double cutoff = -1.0;
-int lmax = -1;
+int n_sv = -1;
 int n_gauss = -1;
 int Twork = SPIR_TWORK_FLOAT64X2;
-spir_sve_result* sve_logistic = spir_sve_result_new(logistic_kernel, epsilon, cutoff, lmax, n_gauss, Twork, &status);
+spir_sve_result* sve_logistic = spir_sve_result_new(logistic_kernel, epsilon, n_sv, n_gauss, Twork, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(sve_logistic != NULL);
 
@@ -45,7 +44,7 @@ spir_kernel* regularized_kernel = spir_reg_bose_kernel_new(beta * omega_max, &st
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(regularized_kernel != NULL);
 
-spir_sve_result* sve_regularized = spir_sve_result_new(regularized_kernel, epsilon, cutoff, lmax, n_gauss, Twork, &status);
+spir_sve_result* sve_regularized = spir_sve_result_new(regularized_kernel, epsilon, n_sv, n_gauss, Twork, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(sve_regularized != NULL);
 
