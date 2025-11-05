@@ -1,0 +1,75 @@
+// Direct BLAS linking implementation
+// This file is included when SPARSEIR_USE_EXTERN_FBLAS_PTR is NOT defined
+// Note: This file is included inside namespace sparseir {} in gemm.cpp
+
+#include <cstddef>
+#include <stdexcept>
+
+// Declare Fortran BLAS functions based on compile-time ILP64/LP64 selection
+extern "C" {
+#ifdef SPARSEIR_USE_BLAS_ILP64
+    // ILP64 interface: 64-bit integers
+    void dgemm_(const char* transa, const char* transb, const long long* m,
+                const long long* n, const long long* k, const double* alpha,
+                const double* a, const long long* lda, const double* b,
+                const long long* ldb, const double* beta, double* c, const long long* ldc);
+    
+    void zgemm_(const char* transa, const char* transb, const long long* m,
+                const long long* n, const long long* k, const void* alpha,
+                const void* a, const long long* lda, const void* b,
+                const long long* ldb, const void* beta, void* c, const long long* ldc);
+#else
+    // LP64 interface: 32-bit integers (default)
+    void dgemm_(const char* transa, const char* transb, const int* m,
+                const int* n, const int* k, const double* alpha,
+                const double* a, const int* lda, const double* b,
+                const int* ldb, const double* beta, double* c, const int* ldc);
+    
+    void zgemm_(const char* transa, const char* transb, const int* m,
+                const int* n, const int* k, const void* alpha,
+                const void* a, const int* lda, const void* b,
+                const int* ldb, const void* beta, void* c, const int* ldc);
+#endif
+}
+
+#ifdef SPARSEIR_USE_BLAS_ILP64
+// ILP64 interface
+void my_dgemm(const char* transa, const char* transb,
+              const long long* m, const long long* n, const long long* k,
+              const double* alpha, const double* a, const long long* lda,
+              const double* b, const long long* ldb, const double* beta,
+              double* c, const long long* ldc)
+{
+    dgemm_(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+
+void my_zgemm(const char* transa, const char* transb,
+              const long long* m, const long long* n, const long long* k,
+              const void* alpha, const void* a, const long long* lda,
+              const void* b, const long long* ldb, const void* beta,
+              void* c, const long long* ldc)
+{
+    zgemm_(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+
+#else
+// LP64 interface (default)
+void my_dgemm(const char* transa, const char* transb,
+              const int* m, const int* n, const int* k,
+              const double* alpha, const double* a, const int* lda,
+              const double* b, const int* ldb, const double* beta,
+              double* c, const int* ldc)
+{
+    dgemm_(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+
+void my_zgemm(const char* transa, const char* transb,
+              const int* m, const int* n, const int* k,
+              const void* alpha, const void* a, const int* lda,
+              const void* b, const int* ldb, const void* beta,
+              void* c, const int* ldc)
+{
+    zgemm_(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+#endif
+

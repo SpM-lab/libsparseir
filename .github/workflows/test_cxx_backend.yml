@@ -2,7 +2,7 @@ name: Test C++ Backend
 
 on:
   push:
-    branches: [ "main", "459-restructure-directories" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
@@ -35,4 +35,55 @@ jobs:
       - name: Build and test capi_test against backend
         working-directory: capi_test
         run: ./test_with_cxx_backend.sh
+      
+      - name: Build and run capi_sample
+        working-directory: capi_sample
+        run: ./run_sample.sh
+
+  test-cxx-backend-ilp64:
+    runs-on: ubuntu-latest
+    name: C++ backend with ILP64 BLAS
+    timeout-minutes: 60  # Allow up to 60 minutes for ILP64 tests
+    
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Install dependencies with ILP64 BLAS
+        run: |
+          sudo apt update && sudo apt install -y libeigen3-dev libopenblas64-0 libopenblas64-dev
+      
+      - name: Build and test C++ backend with ILP64
+        working-directory: backend/cxx
+        run: |
+          rm -rf build
+          mkdir -p build && cd build
+          cmake .. -DSPARSEIR_BUILD_TESTING=ON -DSPARSEIR_USE_BLAS_ILP64=ON
+          cmake --build . -j$(nproc)
+          ctest --output-on-failure --verbose -j$(nproc)
+      
+      - name: Build and test capi_test against ILP64 backend
+        working-directory: capi_test
+        env:
+          SPARSEIR_USE_BLAS_ILP64: 1
+        run: ./test_with_cxx_backend.sh
+      
+      - name: Build and run capi_sample with ILP64
+        working-directory: capi_sample
+        env:
+          SPARSEIR_USE_BLAS_ILP64: 1
+        run: ./run_sample.sh
+
+  test-cxx-backend-rollup:
+    runs-on: ubuntu-latest
+    needs: 
+      - test-cxx-backend
+      - test-cxx-backend-ilp64
+    if: always()
+    steps:
+      - name: All tests passed
+        if: ${{ !contains(needs.*.result, 'failure') }}
+        run: exit 0
+      - name: Some tests failed
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
 

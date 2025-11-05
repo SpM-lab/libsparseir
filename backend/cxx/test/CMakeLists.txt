@@ -23,13 +23,9 @@ foreach(TEST_FILE ${TEST_FILES})
     target_link_libraries(${TEST_NAME} PRIVATE SparseIR::sparseir)
     target_link_libraries(${TEST_NAME} PRIVATE Eigen3::Eigen Threads::Threads)
     
-    # Add BLAS/LAPACK linking for tests if enabled
-    if(SPARSEIR_USE_BLAS AND BLAS_FOUND)
+    # Add BLAS linking for tests (always enabled)
+    if(BLAS_FOUND)
         target_link_libraries(${TEST_NAME} PRIVATE ${BLAS_LIBRARIES})
-    endif()
-    
-    if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
-        target_link_libraries(${TEST_NAME} PRIVATE ${LAPACK_LIBRARIES})
     endif()
     
     # macOS-specific configuration for tests

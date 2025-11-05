@@ -19,10 +19,15 @@ project(SparseIR
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Set default build type to Release if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+    message(STATUS "CMAKE_BUILD_TYPE not set, defaulting to Release")
+endif()
+
 # Options
-option(SPARSEIR_USE_BLAS "Enable BLAS support" OFF)
-option(SPARSEIR_USE_ILP64 "Enable ILP64 BLAS interface" OFF)
-option(SPARSEIR_USE_LAPACKE "Enable LAPACKE support" OFF)
+option(SPARSEIR_USE_EXTERN_FBLAS_PTR "Use external BLAS function pointers (for Python bindings)" OFF)
+option(SPARSEIR_USE_BLAS_ILP64 "Enable ILP64 BLAS interface (64-bit integers)" OFF)
 option(SPARSEIR_BUILD_TESTING "Enable testing" OFF)
 option(SPARSEIR_DEBUG "Enable debug logging" OFF)
 
@@ -57,17 +62,43 @@ if(NOT xprec_POPULATED)
     FetchContent_Populate(XPrec)
 endif()
 
-# BLAS/LAPACK configuration
-if(SPARSEIR_USE_BLAS)
-    add_compile_definitions(SPARSEIR_USE_BLAS)
-    if(SPARSEIR_USE_ILP64)
-        add_compile_definitions(SPARSEIR_USE_ILP64)
-        # Try to find ILP64 BLAS
-        if(NOT BLAS_LIBRARIES)
-            find_library(BLAS_LIBRARIES NAMES openblas64)
+# BLAS configuration
+if(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    # External function pointer mode: BLAS is provided at runtime, no linking needed
+    message(STATUS "BLAS will be provided via external function pointers at runtime")
+    add_compile_definitions(SPARSEIR_USE_EXTERN_FBLAS_PTR)
+    
+    # Set compile-time ILP64/LP64 selection
+    if(SPARSEIR_USE_BLAS_ILP64)
+        message(STATUS "Using ILP64 interface (64-bit integers) for external BLAS")
+        add_compile_definitions(SPARSEIR_USE_BLAS_ILP64)
+    else()
+        message(STATUS "Using LP64 interface (32-bit integers, default) for external BLAS")
+    endif()
+else()
+    # Link-time BLAS mode: find and link BLAS library
+    # Set BLAS integer size based on SPARSEIR_USE_BLAS_ILP64
+    if(SPARSEIR_USE_BLAS_ILP64)
+        set(BLA_SIZEOF_INTEGER 8)
+        message(STATUS "Searching for ILP64 BLAS interface (64-bit integers)")
+    else()
+        set(BLA_SIZEOF_INTEGER 4)
+        message(STATUS "Searching for LP64 BLAS interface (32-bit integers, default)")
+    endif()
+    
+    # Find BLAS package using standard CMake FindBLAS
+    find_package(BLAS REQUIRED)
+    
+    if(BLAS_FOUND)
+        message(STATUS "BLAS libraries found: ${BLAS_LIBRARIES}")
+        if(SPARSEIR_USE_BLAS_ILP64)
+            message(STATUS "BLAS with ILP64 interface (BLA_SIZEOF_INTEGER=8)")
+            add_compile_definitions(SPARSEIR_USE_BLAS_ILP64)
+        else()
+            message(STATUS "BLAS with LP64 interface (BLA_SIZEOF_INTEGER=4)")
         endif()
     else()
-        find_package(BLAS REQUIRED)
+        message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
     endif()
 endif()
 
@@ -111,28 +142,16 @@ set_target_properties(sparseir PROPERTIES
 
 target_link_libraries(sparseir PRIVATE Eigen3::Eigen Threads::Threads)
 
-# BLAS/LAPACK linking
-if(SPARSEIR_USE_BLAS)
+# BLAS/LAPACK linking (only when not using external function pointers)
+if(NOT SPARSEIR_USE_EXTERN_FBLAS_PTR)
     if(BLAS_LIBRARIES OR BLAS_FOUND)
         target_link_libraries(sparseir PRIVATE ${BLAS_LIBRARIES})
         message(STATUS "Linked BLAS libraries: ${BLAS_LIBRARIES}")
     else()
-        message(FATAL_ERROR "BLAS libraries not found")
+        message(FATAL_ERROR "BLAS libraries not found - BLAS is required")
     endif()
 else()
-    message(STATUS "BLAS linking disabled")
-endif()
-
-if(SPARSEIR_USE_LAPACKE AND LAPACK_FOUND)
-    target_link_libraries(sparseir PRIVATE ${LAPACK_LIBRARIES})
-endif()
-
-# macOS Accelerate framework
-if(APPLE)
-    find_library(ACCELERATE_FRAMEWORK Accelerate)
-    if(ACCELERATE_FRAMEWORK)
-        target_link_libraries(sparseir PRIVATE ${ACCELERATE_FRAMEWORK})
-    endif()
+    message(STATUS "BLAS linking skipped (using external function pointers)")
 endif()
 
 # Library convention alias

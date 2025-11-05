@@ -32,11 +32,11 @@ assert(sve_logistic != NULL);
 
 // Create fermionic and bosonic finite temperature bases with pre-computed SVE result
 int max_size = -1;
-spir_basis* basis_fermionic = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, logistic_kernel, sve_logistic, max_size, &status);
+spir_basis* basis_fermionic = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon, logistic_kernel, sve_logistic, max_size, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis_fermionic != NULL);
 
-spir_basis* basis_bosonic = spir_basis_new(SPIR_STATISTICS_BOSONIC, beta, omega_max, logistic_kernel, sve_logistic, max_size, &status);
+spir_basis* basis_bosonic = spir_basis_new(SPIR_STATISTICS_BOSONIC, beta, omega_max, epsilon, logistic_kernel, sve_logistic, max_size, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis_bosonic != NULL);
 
@@ -49,7 +49,7 @@ spir_sve_result* sve_regularized = spir_sve_result_new(regularized_kernel, epsil
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(sve_regularized != NULL);
 
-spir_basis* basis_regularized = spir_basis_new(SPIR_STATISTICS_BOSONIC, beta, omega_max, regularized_kernel, sve_regularized, max_size, &status);
+spir_basis* basis_regularized = spir_basis_new(SPIR_STATISTICS_BOSONIC, beta, omega_max, epsilon, regularized_kernel, sve_regularized, max_size, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis_regularized != NULL);
 

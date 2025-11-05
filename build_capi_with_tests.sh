@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Build backend/cxx and run C++ tests
-# Build directory: build
+# Build directory: backend/cxx/build
 
 set -e  # Exit on error
 
@@ -14,15 +14,16 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}=== Building backend/cxx with tests ===${NC}"
 
 # Create build directory
-BUILD_DIR="build"
+BUILD_DIR="backend/cxx/build"
 mkdir -p "$BUILD_DIR"
 
 # Configure CMake
 echo -e "${YELLOW}Configuring CMake...${NC}"
 cd "$BUILD_DIR"
-cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DSPARSEIR_BUILD_TESTING=ON
+cmake ../.. \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DSPARSEIR_BUILD_TESTING=ON \
+    -DSPARSEIR_USE_BLAS=OFF
 
 # Build
 echo -e "${YELLOW}Building...${NC}"

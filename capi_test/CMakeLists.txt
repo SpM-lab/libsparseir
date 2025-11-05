@@ -63,17 +63,18 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 endif()
 
 # Optional BLAS linking
+# Check if ILP64 BLAS is requested (via environment variable or CMake option)
+if(DEFINED ENV{SPARSEIR_USE_BLAS_ILP64} AND "$ENV{SPARSEIR_USE_BLAS_ILP64}")
+    set(BLA_SIZEOF_INTEGER 8)
+    message(STATUS "capi_test: Using ILP64 BLAS (64-bit integers)")
+else()
+    set(BLA_SIZEOF_INTEGER 4)
+    message(STATUS "capi_test: Using LP64 BLAS (32-bit integers, default)")
+endif()
+
 find_package(BLAS QUIET)
 if(BLAS_FOUND)
     target_link_libraries(cinterface_integration PRIVATE ${BLAS_LIBRARIES})
-endif()
-
-# macOS Accelerate framework
-if(APPLE)
-    find_library(ACCELERATE_FRAMEWORK Accelerate)
-    if(ACCELERATE_FRAMEWORK)
-        target_link_libraries(cinterface_integration PRIVATE ${ACCELERATE_FRAMEWORK})
-    endif()
 endif()
 
 # Enable testing

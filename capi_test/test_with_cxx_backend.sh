@@ -30,7 +30,7 @@ cmake "$BACKEND_DIR" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
     -DSPARSEIR_BUILD_TESTING=OFF \
-    -DSPARSEIR_USE_BLAS=ON
+    ${SPARSEIR_USE_BLAS_ILP64:+-DSPARSEIR_USE_BLAS_ILP64=ON}
 
 echo -e "${YELLOW}Building backend/cxx...${NC}"
 cmake --build . -j$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)

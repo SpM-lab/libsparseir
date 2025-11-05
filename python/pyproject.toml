@@ -42,7 +42,6 @@ cmake.build-type = "Release"
 
 # CMake arguments
 cmake.args = [
-    "-DSPARSEIR_USE_BLAS=ON",
     "-DSPARSEIR_USE_EXTERN_FBLAS_PTR=ON",
     "-DBUILD_SHARED_LIBS=ON",
     "-DCMAKE_CXX_STANDARD=11",
@@ -67,7 +66,6 @@ sdist.include = [
 
 
 [tool.scikit-build.cmake.define]
-SPARSEIR_USE_BLAS = "ON"
 BUILD_SHARED_LIBS = "ON"
 CMAKE_CXX_STANDARD = "11"
 CMAKE_CXX_STANDARD_REQUIRED = "ON"

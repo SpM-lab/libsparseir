@@ -9,6 +9,9 @@
 
 
 ## Build and run
+
+### Option 1: Build with pre-installed library
+
 After installing the library, you can build the samples as follows:
 
 ```bash
@@ -17,3 +20,16 @@ export SparseIR_DIR=$HOME/opt/libsparseir/share/cmake
 cmake -S . -B ./build
 cmake --build build --target test
 ```
+
+### Option 2: Build C++ backend and samples together
+
+You can also build the C++ backend and run the samples in one go:
+
+```bash
+./run_sample.sh
+```
+
+This script will:
+1. Build the C++ backend with BLAS support in `work_cxx/` directory
+2. Install the backend to the `install/` subdirectory
+3. Build and run all sample programs

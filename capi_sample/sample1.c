@@ -33,7 +33,7 @@ assert(sve != NULL);
 // Create a fermionic finite temperature basis with pre-computed SVE result
 // Use SPIR_STATISTICS_BOSONIC for bosonic basis
 int max_size = -1;
-spir_basis* basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, kernel, sve, max_size, &status);
+spir_basis* basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon, kernel, sve, max_size, &status);
 assert(status == SPIR_COMPUTATION_SUCCESS);
 assert(basis != NULL);
 
