@@ -266,6 +266,78 @@ int spir_choose_working_type(double epsilon)
     }
 }
 
+spir_funcs* spir_funcs_from_piecewise_legendre(
+    const double* segments, int n_segments,
+    const double* coeffs, int nfuncs, int order,
+    int* status)
+{
+    try {
+        if (!segments || !coeffs || !status) {
+            if (status) *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+        
+        if (n_segments < 1) {
+            DEBUG_LOG("n_segments must be >= 1");
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+        
+        if (nfuncs < 1) {
+            DEBUG_LOG("nfuncs must be >= 1");
+            *status = SPIR_INVALID_ARGUMENT;
+            return nullptr;
+        }
+        
+        // Create knots vector from segments
+        Eigen::VectorXd knots(n_segments + 1);
+        for (int i = 0; i <= n_segments; ++i) {
+            knots(i) = segments[i];
+        }
+        
+        // Verify segments are monotonically increasing
+        for (int i = 1; i <= n_segments; ++i) {
+            if (knots(i) <= knots(i-1)) {
+                DEBUG_LOG("segments must be monotonically increasing");
+                *status = SPIR_INVALID_ARGUMENT;
+                return nullptr;
+            }
+        }
+        
+        // Create coefficient matrix: data is (nfuncs, n_segments)
+        // Each column represents one segment's coefficients
+        Eigen::MatrixXd data(nfuncs, n_segments);
+        for (int seg = 0; seg < n_segments; ++seg) {
+            for (int deg = 0; deg < nfuncs; ++deg) {
+                // Layout: coeffs[seg * nfuncs + deg]
+                data(deg, seg) = coeffs[seg * nfuncs + deg];
+            }
+        }
+        
+        // Create PiecewiseLegendrePoly (l=-1 means not specified)
+        sparseir::PiecewiseLegendrePoly poly(data, knots, -1);
+        
+        // Create PiecewiseLegendrePolyVector (single function)
+        std::vector<sparseir::PiecewiseLegendrePoly> polyvec = {poly};
+        auto polyvec_ptr = std::make_shared<sparseir::PiecewiseLegendrePolyVector>(polyvec);
+        
+        // Wrap in PiecewiseLegendrePolyFunctions
+        auto funcs_impl = std::make_shared<PiecewiseLegendrePolyFunctions>(polyvec_ptr);
+        
+        // Create spir_funcs
+        *status = SPIR_COMPUTATION_SUCCESS;
+        return create_funcs(_safe_static_pointer_cast<AbstractContinuousFunctions>(funcs_impl));
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_funcs_from_piecewise_legendre: " + std::string(e.what()));
+        if (status) *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_funcs_from_piecewise_legendre");
+        if (status) *status = SPIR_INTERNAL_ERROR;
+        return nullptr;
+    }
+}
+
 spir_sve_result* spir_sve_result_new(
     const spir_kernel *k,
     double epsilon,

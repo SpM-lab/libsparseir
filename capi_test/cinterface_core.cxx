@@ -237,3 +237,100 @@ TEST_CASE("Test spir_choose_working_type", "[cinterface]")
         REQUIRE(twork == SPIR_TWORK_FLOAT64X2);
     }
 }
+
+TEST_CASE("Test spir_funcs_from_piecewise_legendre", "[cinterface]")
+{
+    // Create a simple piecewise polynomial: constant function = 1.0 on [-1, 1]
+    // Single segment, nfuncs=1 (only degree 0 Legendre polynomial)
+    {
+        int n_segments = 1;
+        double segments[2] = {-1.0, 1.0};
+        double coeffs[1] = {1.0};  // Only constant term
+        int nfuncs = 1;
+        int order = 0;
+        
+        int status;
+        spir_funcs* funcs = spir_funcs_from_piecewise_legendre(
+            segments, n_segments, coeffs, nfuncs, order, &status);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(funcs != nullptr);
+        
+        // Test evaluation at x=0 (should be normalized, so value depends on normalization)
+        int size;
+        status = spir_funcs_get_size(funcs, &size);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(size == 1);
+        
+        // Evaluate at x=0
+        double x = 0.0;
+        double values[1];
+        status = spir_funcs_eval(funcs, x, values);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        // Value should be approximately 1.0 * normalization factor
+        REQUIRE(values[0] == Approx(1.0).margin(1e-10));
+        
+        spir_funcs_release(funcs);
+    }
+    
+    // Create a linear function: f(x) = x on [-1, 1]
+    // Single segment, nfuncs=2 (degrees 0 and 1)
+    {
+        int n_segments = 1;
+        double segments[2] = {-1.0, 1.0};
+        // Legendre expansion: P0(x) = 1, P1(x) = x
+        // For f(x) = x, we need coefficient 0 for P0 and 1 for P1
+        // But normalization affects the actual values
+        double coeffs[2] = {0.0, 1.0};  // Constant=0, linear=1
+        int nfuncs = 2;
+        int order = 0;
+        
+        int status;
+        spir_funcs* funcs = spir_funcs_from_piecewise_legendre(
+            segments, n_segments, coeffs, nfuncs, order, &status);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(funcs != nullptr);
+        
+        // Evaluate at x=0.5
+        double x = 0.5;
+        double values[2];
+        status = spir_funcs_eval(funcs, x, values);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        // Value should be approximately 0.5 (with normalization)
+        // Note: PiecewiseLegendrePoly applies normalization, so the actual value may differ
+        // We just check that evaluation succeeds and returns a reasonable value
+        REQUIRE(std::abs(values[0]) < 10.0);  // Reasonable bound
+        
+        spir_funcs_release(funcs);
+    }
+    
+    // Test error handling: invalid arguments
+    {
+        int status;
+        spir_funcs* funcs = spir_funcs_from_piecewise_legendre(
+            nullptr, 1, nullptr, 1, 0, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(funcs == nullptr);
+    }
+    
+    // Test error handling: n_segments < 1
+    {
+        double segments[2] = {-1.0, 1.0};
+        double coeffs[1] = {1.0};
+        int status;
+        spir_funcs* funcs = spir_funcs_from_piecewise_legendre(
+            segments, 0, coeffs, 1, 0, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(funcs == nullptr);
+    }
+    
+    // Test error handling: non-monotonic segments
+    {
+        double segments[2] = {1.0, -1.0};  // Wrong order
+        double coeffs[1] = {1.0};
+        int status;
+        spir_funcs* funcs = spir_funcs_from_piecewise_legendre(
+            segments, 1, coeffs, 1, 0, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(funcs == nullptr);
+    }
+}

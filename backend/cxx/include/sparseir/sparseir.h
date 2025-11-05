@@ -241,6 +241,32 @@ int spir_kernel_get_sve_hints_ngauss(const spir_kernel *k, double epsilon, int *
 int spir_choose_working_type(double epsilon);
 
 /**
+ * @brief Create a spir_funcs object from piecewise Legendre polynomial coefficients.
+ *
+ * Constructs a continuous function object from segments and Legendre polynomial
+ * expansion coefficients. The coefficients are organized per segment, with each
+ * segment containing nfuncs coefficients (degrees 0 to nfuncs-1).
+ *
+ * @param segments Array of segment boundaries (n_segments+1 elements). Must be
+ *                 monotonically increasing.
+ * @param n_segments Number of segments (must be >= 1).
+ * @param coeffs Array of Legendre coefficients. Layout: contiguous per segment,
+ *               coefficients for segment i are stored at indices [i*nfuncs, (i+1)*nfuncs).
+ *               Each segment has nfuncs coefficients for Legendre degrees 0 to nfuncs-1.
+ * @param nfuncs Number of basis functions per segment (Legendre polynomial degrees 0 to nfuncs-1).
+ * @param order Order parameter (currently unused, reserved for future use).
+ * @param status Pointer to store the status code.
+ * @return Pointer to the newly created funcs object, or NULL if creation fails.
+ *
+ * @note The function creates a single piecewise Legendre polynomial function.
+ *       To create multiple functions, call this function multiple times.
+ */
+spir_funcs* spir_funcs_from_piecewise_legendre(
+    const double* segments, int n_segments,
+    const double* coeffs, int nfuncs, int order,
+    int* status);
+
+/**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
  *
  * Computes a truncated singular value expansion of an integral kernel
