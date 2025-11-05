@@ -194,3 +194,46 @@ TEST_CASE("Test spir_kernel_get_sve_hints error handling", "[cinterface]")
     
     spir_kernel_release(kernel);
 }
+
+TEST_CASE("Test spir_choose_working_type", "[cinterface]")
+{
+    // Test with epsilon >= 1e-8 -> should return FLOAT64
+    {
+        int twork = spir_choose_working_type(1e-6);
+        REQUIRE(twork == SPIR_TWORK_FLOAT64);
+    }
+    
+    {
+        int twork = spir_choose_working_type(1e-8);
+        REQUIRE(twork == SPIR_TWORK_FLOAT64);
+    }
+    
+    // Test with epsilon < 1e-8 -> should return FLOAT64X2
+    {
+        int twork = spir_choose_working_type(1e-10);
+        REQUIRE(twork == SPIR_TWORK_FLOAT64X2);
+    }
+    
+    {
+        int twork = spir_choose_working_type(1e-15);
+        REQUIRE(twork == SPIR_TWORK_FLOAT64X2);
+    }
+    
+    // Test with NaN -> should return FLOAT64X2
+    {
+        int twork = spir_choose_working_type(std::numeric_limits<double>::quiet_NaN());
+        REQUIRE(twork == SPIR_TWORK_FLOAT64X2);
+    }
+    
+    // Test boundary case: epsilon = 1e-8 exactly
+    {
+        int twork = spir_choose_working_type(1e-8);
+        REQUIRE(twork == SPIR_TWORK_FLOAT64);
+    }
+    
+    // Test boundary case: epsilon just below 1e-8
+    {
+        int twork = spir_choose_working_type(0.99e-8);
+        REQUIRE(twork == SPIR_TWORK_FLOAT64X2);
+    }
+}

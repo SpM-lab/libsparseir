@@ -249,6 +249,23 @@ int spir_kernel_get_sve_hints_ngauss(const spir_kernel *k, double epsilon, int *
     }
 }
 
+int spir_choose_working_type(double epsilon)
+{
+    try {
+        if (std::isnan(epsilon) || epsilon < 1e-8) {
+            return SPIR_TWORK_FLOAT64X2;
+        } else {
+            return SPIR_TWORK_FLOAT64;
+        }
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_choose_working_type: " + std::string(e.what()));
+        return SPIR_TWORK_FLOAT64;  // Default to FLOAT64 on error
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_choose_working_type");
+        return SPIR_TWORK_FLOAT64;  // Default to FLOAT64 on error
+    }
+}
+
 spir_sve_result* spir_sve_result_new(
     const spir_kernel *k,
     double epsilon,

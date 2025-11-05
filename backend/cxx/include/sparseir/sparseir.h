@@ -226,6 +226,21 @@ int spir_kernel_get_sve_hints_nsvals(const spir_kernel *k, double epsilon, int *
 int spir_kernel_get_sve_hints_ngauss(const spir_kernel *k, double epsilon, int *ngauss);
 
 /**
+ * @brief Choose the working type (Twork) based on epsilon value.
+ *
+ * This function determines the appropriate working precision type based on the
+ * target accuracy epsilon. It follows the same logic as SPIR_TWORK_AUTO:
+ * - Returns SPIR_TWORK_FLOAT64X2 if epsilon < 1e-8 or epsilon is NaN
+ * - Returns SPIR_TWORK_FLOAT64 otherwise
+ *
+ * @param epsilon Target accuracy (must be non-negative, or NaN for auto-selection)
+ * @return Working type constant:
+ *         - SPIR_TWORK_FLOAT64 (0): Use double precision (64-bit)
+ *         - SPIR_TWORK_FLOAT64X2 (1): Use extended precision (128-bit)
+ */
+int spir_choose_working_type(double epsilon);
+
+/**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
  *
  * Computes a truncated singular value expansion of an integral kernel
