@@ -338,6 +338,138 @@ spir_funcs* spir_funcs_from_piecewise_legendre(
     }
 }
 
+int spir_gauss_legendre_rule_piecewise_double(
+    int n,
+    const double* segments, int n_segments,
+    double* x, double* w,
+    int* status)
+{
+    try {
+        if (!segments || !x || !w || !status) {
+            if (status) *status = SPIR_INVALID_ARGUMENT;
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        if (n < 1) {
+            DEBUG_LOG("n must be >= 1");
+            *status = SPIR_INVALID_ARGUMENT;
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        if (n_segments < 1) {
+            DEBUG_LOG("n_segments must be >= 1");
+            *status = SPIR_INVALID_ARGUMENT;
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        // Convert segments to vector
+        std::vector<double> segs_vec(segments, segments + n_segments + 1);
+        
+        // Verify segments are monotonically increasing
+        for (int i = 1; i <= n_segments; ++i) {
+            if (segs_vec[i] <= segs_vec[i-1]) {
+                DEBUG_LOG("segments must be monotonically increasing");
+                *status = SPIR_INVALID_ARGUMENT;
+                return SPIR_INVALID_ARGUMENT;
+            }
+        }
+        
+        // Generate base rule with DDouble precision, then convert to double
+        auto rule_dd = sparseir::legendre(n);
+        auto rule = sparseir::convert_rule<double>(rule_dd);
+        
+        // Create piecewise rule
+        auto piecewise_rule = rule.piecewise(segs_vec);
+        
+        // Copy to output arrays
+        for (int i = 0; i < piecewise_rule.x.size(); ++i) {
+            x[i] = piecewise_rule.x(i);
+            w[i] = piecewise_rule.w(i);
+        }
+        
+        *status = SPIR_COMPUTATION_SUCCESS;
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_gauss_legendre_rule_piecewise_double: " + std::string(e.what()));
+        if (status) *status = SPIR_INTERNAL_ERROR;
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_gauss_legendre_rule_piecewise_double");
+        if (status) *status = SPIR_INTERNAL_ERROR;
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_gauss_legendre_rule_piecewise_ddouble(
+    int n,
+    const double* segments, int n_segments,
+    double* x_high, double* x_low,
+    double* w_high, double* w_low,
+    int* status)
+{
+    try {
+        if (!segments || !x_high || !x_low || !w_high || !w_low || !status) {
+            if (status) *status = SPIR_INVALID_ARGUMENT;
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        if (n < 1) {
+            DEBUG_LOG("n must be >= 1");
+            *status = SPIR_INVALID_ARGUMENT;
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        if (n_segments < 1) {
+            DEBUG_LOG("n_segments must be >= 1");
+            *status = SPIR_INVALID_ARGUMENT;
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        // Convert segments to vector
+        std::vector<double> segs_vec(segments, segments + n_segments + 1);
+        
+        // Verify segments are monotonically increasing
+        for (int i = 1; i <= n_segments; ++i) {
+            if (segs_vec[i] <= segs_vec[i-1]) {
+                DEBUG_LOG("segments must be monotonically increasing");
+                *status = SPIR_INVALID_ARGUMENT;
+                return SPIR_INVALID_ARGUMENT;
+            }
+        }
+        
+        // Generate base rule with DDouble precision
+        auto rule_dd = sparseir::legendre(n);
+        
+        // Convert segments to DDouble
+        std::vector<xprec::DDouble> segs_dd(segs_vec.size());
+        for (size_t i = 0; i < segs_vec.size(); ++i) {
+            segs_dd[i] = xprec::DDouble(segs_vec[i]);
+        }
+        
+        // Create piecewise rule
+        auto piecewise_rule = rule_dd.piecewise(segs_dd);
+        
+        // Extract high and low parts
+        for (int i = 0; i < piecewise_rule.x.size(); ++i) {
+            x_high[i] = piecewise_rule.x(i).hi();
+            x_low[i] = piecewise_rule.x(i).lo();
+            w_high[i] = piecewise_rule.w(i).hi();
+            w_low[i] = piecewise_rule.w(i).lo();
+        }
+        
+        *status = SPIR_COMPUTATION_SUCCESS;
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_gauss_legendre_rule_piecewise_ddouble: " + std::string(e.what()));
+        if (status) *status = SPIR_INTERNAL_ERROR;
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_gauss_legendre_rule_piecewise_ddouble");
+        if (status) *status = SPIR_INTERNAL_ERROR;
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 spir_sve_result* spir_sve_result_new(
     const spir_kernel *k,
     double epsilon,

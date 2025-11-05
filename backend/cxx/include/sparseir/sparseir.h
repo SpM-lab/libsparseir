@@ -267,6 +267,61 @@ spir_funcs* spir_funcs_from_piecewise_legendre(
     int* status);
 
 /**
+ * @brief Compute piecewise Gauss-Legendre quadrature rule (double precision).
+ *
+ * Generates a piecewise Gauss-Legendre quadrature rule with n points per segment.
+ * The rule is concatenated across all segments, with points and weights properly
+ * scaled for each segment interval.
+ *
+ * @param n Number of Gauss points per segment (must be >= 1).
+ * @param segments Array of segment boundaries (n_segments + 1 elements).
+ *                 Must be monotonically increasing.
+ * @param n_segments Number of segments (must be >= 1).
+ * @param x Output array for Gauss points (size n * n_segments). Must be pre-allocated.
+ * @param w Output array for Gauss weights (size n * n_segments). Must be pre-allocated.
+ * @param status Pointer to store the status code.
+ * @return Status code:
+ *         - SPIR_COMPUTATION_SUCCESS (0) on success
+ *         - Non-zero error code on failure
+ */
+int spir_gauss_legendre_rule_piecewise_double(
+    int n,
+    const double* segments, int n_segments,
+    double* x, double* w,
+    int* status);
+
+/**
+ * @brief Compute piecewise Gauss-Legendre quadrature rule (DDouble precision).
+ *
+ * Generates a piecewise Gauss-Legendre quadrature rule with n points per segment,
+ * computed using extended precision (DDouble). Returns high and low parts separately
+ * for maximum precision.
+ *
+ * @param n Number of Gauss points per segment (must be >= 1).
+ * @param segments Array of segment boundaries (n_segments + 1 elements).
+ *                 Must be monotonically increasing.
+ * @param n_segments Number of segments (must be >= 1).
+ * @param x_high Output array for high part of Gauss points (size n * n_segments).
+ *               Must be pre-allocated.
+ * @param x_low Output array for low part of Gauss points (size n * n_segments).
+ *              Must be pre-allocated.
+ * @param w_high Output array for high part of Gauss weights (size n * n_segments).
+ *               Must be pre-allocated.
+ * @param w_low Output array for low part of Gauss weights (size n * n_segments).
+ *             Must be pre-allocated.
+ * @param status Pointer to store the status code.
+ * @return Status code:
+ *         - SPIR_COMPUTATION_SUCCESS (0) on success
+ *         - Non-zero error code on failure
+ */
+int spir_gauss_legendre_rule_piecewise_ddouble(
+    int n,
+    const double* segments, int n_segments,
+    double* x_high, double* x_low,
+    double* w_high, double* w_low,
+    int* status);
+
+/**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
  *
  * Computes a truncated singular value expansion of an integral kernel

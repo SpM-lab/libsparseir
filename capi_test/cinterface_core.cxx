@@ -334,3 +334,145 @@ TEST_CASE("Test spir_funcs_from_piecewise_legendre", "[cinterface]")
         REQUIRE(funcs == nullptr);
     }
 }
+
+TEST_CASE("Test spir_gauss_legendre_rule_piecewise_double", "[cinterface]")
+{
+    // Test with single segment [-1, 1]
+    {
+        int n = 5;
+        double segments[2] = {-1.0, 1.0};
+        int n_segments = 1;
+        double x[5], w[5];
+        int status;
+        
+        status = spir_gauss_legendre_rule_piecewise_double(
+            n, segments, n_segments, x, w, &status);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        
+        // Verify we got n points
+        // Points should be in [-1, 1] and sorted
+        REQUIRE(x[0] >= -1.0);
+        REQUIRE(x[n-1] <= 1.0);
+        for (int i = 1; i < n; ++i) {
+            REQUIRE(x[i] > x[i-1]);
+        }
+        
+        // Weights should be positive
+        for (int i = 0; i < n; ++i) {
+            REQUIRE(w[i] > 0.0);
+        }
+    }
+    
+    // Test with two segments [-1, 0, 1]
+    {
+        int n = 3;
+        double segments[3] = {-1.0, 0.0, 1.0};
+        int n_segments = 2;
+        double x[6], w[6];  // n * n_segments
+        int status;
+        
+        status = spir_gauss_legendre_rule_piecewise_double(
+            n, segments, n_segments, x, w, &status);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        
+        // Verify we got n * n_segments points
+        // Points should be sorted across segments
+        REQUIRE(x[0] >= -1.0);
+        REQUIRE(x[5] <= 1.0);
+        for (int i = 1; i < 6; ++i) {
+            REQUIRE(x[i] > x[i-1]);
+        }
+        
+        // Weights should be positive
+        for (int i = 0; i < 6; ++i) {
+            REQUIRE(w[i] > 0.0);
+        }
+    }
+    
+    // Test error handling
+    {
+        int status;
+        status = spir_gauss_legendre_rule_piecewise_double(
+            5, nullptr, 1, nullptr, nullptr, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+    }
+    
+    {
+        double segments[2] = {-1.0, 1.0};
+        double x[5], w[5];
+        int status;
+        status = spir_gauss_legendre_rule_piecewise_double(
+            0, segments, 1, x, w, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+    }
+    
+    {
+        double segments[2] = {1.0, -1.0};  // Wrong order
+        double x[5], w[5];
+        int status;
+        status = spir_gauss_legendre_rule_piecewise_double(
+            5, segments, 1, x, w, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+    }
+}
+
+TEST_CASE("Test spir_gauss_legendre_rule_piecewise_ddouble", "[cinterface]")
+{
+    // Test with single segment [-1, 1]
+    {
+        int n = 5;
+        double segments[2] = {-1.0, 1.0};
+        int n_segments = 1;
+        double x_high[5], x_low[5], w_high[5], w_low[5];
+        int status;
+        
+        status = spir_gauss_legendre_rule_piecewise_ddouble(
+            n, segments, n_segments, x_high, x_low, w_high, w_low, &status);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        
+        // Verify we got n points
+        // Points should be in [-1, 1] and sorted
+        REQUIRE(x_high[0] >= -1.0);
+        REQUIRE(x_high[n-1] <= 1.0);
+        for (int i = 1; i < n; ++i) {
+            // Reconstruct DDouble and compare
+            double x_val = x_high[i] + x_low[i];
+            double x_prev = x_high[i-1] + x_low[i-1];
+            REQUIRE(x_val > x_prev);
+        }
+        
+        // Weights should be positive
+        for (int i = 0; i < n; ++i) {
+            double w_val = w_high[i] + w_low[i];
+            REQUIRE(w_val > 0.0);
+        }
+    }
+    
+    // Test with two segments [-1, 0, 1]
+    {
+        int n = 3;
+        double segments[3] = {-1.0, 0.0, 1.0};
+        int n_segments = 2;
+        double x_high[6], x_low[6], w_high[6], w_low[6];
+        int status;
+        
+        status = spir_gauss_legendre_rule_piecewise_ddouble(
+            n, segments, n_segments, x_high, x_low, w_high, w_low, &status);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        
+        // Verify points are sorted
+        for (int i = 1; i < 6; ++i) {
+            double x_val = x_high[i] + x_low[i];
+            double x_prev = x_high[i-1] + x_low[i-1];
+            REQUIRE(x_val > x_prev);
+        }
+    }
+    
+    // Test error handling
+    {
+        int status;
+        status = spir_gauss_legendre_rule_piecewise_ddouble(
+            5, nullptr, 1, nullptr, nullptr, nullptr, nullptr, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+    }
+}
