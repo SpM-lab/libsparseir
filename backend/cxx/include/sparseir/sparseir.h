@@ -146,6 +146,86 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax);
 
 /**
+ * @brief Get x-segments for SVE discretization hints from a kernel.
+ *
+ * Retrieves the x-segments (discretization points) for singular value expansion
+ * of the specified kernel. This function is useful for custom kernels that wrap
+ * standard kernels (like LogisticKernel or RegularizedBoseKernel) and need to
+ * delegate SVE hints to the wrapped kernel.
+ *
+ * @param k Pointer to the kernel object.
+ * @param epsilon Accuracy target for the basis.
+ * @param segments Pointer to store segments array. If NULL, only n_segments is set.
+ * @param n_segments [IN/OUT] Input: ignored when segments is NULL. Output: number of segments.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The function should be called twice:
+ *       1. First call with segments=NULL: set n_segments to the required array size.
+ *       2. Second call with segments allocated: fill segments[0..n_segments-1] with values.
+ */
+int spir_kernel_get_sve_hints_segments_x(const spir_kernel *k, double epsilon,
+                                         double *segments, int *n_segments);
+
+/**
+ * @brief Get y-segments for SVE discretization hints from a kernel.
+ *
+ * Retrieves the y-segments (discretization points) for singular value expansion
+ * of the specified kernel. This function is useful for custom kernels that wrap
+ * standard kernels (like LogisticKernel or RegularizedBoseKernel) and need to
+ * delegate SVE hints to the wrapped kernel.
+ *
+ * @param k Pointer to the kernel object.
+ * @param epsilon Accuracy target for the basis.
+ * @param segments Pointer to store segments array. If NULL, only n_segments is set.
+ * @param n_segments [IN/OUT] Input: ignored when segments is NULL. Output: number of segments.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note The function should be called twice:
+ *       1. First call with segments=NULL: set n_segments to the required array size.
+ *       2. Second call with segments allocated: fill segments[0..n_segments-1] with values.
+ */
+int spir_kernel_get_sve_hints_segments_y(const spir_kernel *k, double epsilon,
+                                         double *segments, int *n_segments);
+
+/**
+ * @brief Get the number of singular values hint from a kernel.
+ *
+ * Retrieves the suggested number of singular values for singular value expansion
+ * of the specified kernel. This function is useful for custom kernels that wrap
+ * standard kernels (like LogisticKernel or RegularizedBoseKernel) and need to
+ * delegate SVE hints to the wrapped kernel.
+ *
+ * @param k Pointer to the kernel object.
+ * @param epsilon Accuracy target for the basis.
+ * @param nsvals Pointer to store the number of singular values.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ */
+int spir_kernel_get_sve_hints_nsvals(const spir_kernel *k, double epsilon, int *nsvals);
+
+/**
+ * @brief Get the number of Gauss points hint from a kernel.
+ *
+ * Retrieves the suggested number of Gauss points for numerical integration
+ * in singular value expansion of the specified kernel. This function is useful
+ * for custom kernels that wrap standard kernels (like LogisticKernel or
+ * RegularizedBoseKernel) and need to delegate SVE hints to the wrapped kernel.
+ *
+ * @param k Pointer to the kernel object.
+ * @param epsilon Accuracy target for the basis.
+ * @param ngauss Pointer to store the number of Gauss points.
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ */
+int spir_kernel_get_sve_hints_ngauss(const spir_kernel *k, double epsilon, int *ngauss);
+
+/**
  * @brief Perform truncated singular value expansion (SVE) of a kernel.
  *
  * Computes a truncated singular value expansion of an integral kernel

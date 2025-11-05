@@ -62,6 +62,26 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     target_compile_options(cinterface_integration PRIVATE -fp-model=precise)
 endif()
 
+# C-API core test
+add_executable(cinterface_core cinterface_core.cxx)
+
+target_include_directories(cinterface_core PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${EIGEN3_INCLUDE_DIR}
+)
+
+target_link_libraries(cinterface_core PRIVATE 
+    Catch2::Catch2WithMain
+    SparseIR::sparseir
+    Eigen3::Eigen 
+    Threads::Threads
+)
+
+# Intel Compiler: disable fastmath optimizations that break xprec's extended precision
+if(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+    target_compile_options(cinterface_core PRIVATE -fp-model=precise)
+endif()
+
 # Optional BLAS linking
 # Check if ILP64 BLAS is requested (via environment variable or CMake option)
 if(DEFINED ENV{SPARSEIR_USE_BLAS_ILP64} AND "$ENV{SPARSEIR_USE_BLAS_ILP64}")
@@ -75,8 +95,10 @@ endif()
 find_package(BLAS QUIET)
 if(BLAS_FOUND)
     target_link_libraries(cinterface_integration PRIVATE ${BLAS_LIBRARIES})
+    target_link_libraries(cinterface_core PRIVATE ${BLAS_LIBRARIES})
 endif()
 
 # Enable testing
 enable_testing()
 add_test(NAME cinterface_integration COMMAND cinterface_integration -d yes)
+add_test(NAME cinterface_core COMMAND cinterface_core -d yes)

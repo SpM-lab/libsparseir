@@ -105,7 +105,146 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
         DEBUG_LOG("Exception in spir_kernel_domain: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
-        DEBUG_LOG("Unknown exception in spir_kernel_domain");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_segments_x(const spir_kernel *k, double epsilon,
+                                         double *segments, int *n_segments)
+{
+    try {
+        if (!n_segments) {
+            DEBUG_LOG("n_segments is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        auto segs = hints->segments_x();
+
+        if (segments == nullptr) {
+            // First call: return the number of segments
+            *n_segments = static_cast<int>(segs.size());
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Second call: copy segments to output array
+        if (*n_segments < static_cast<int>(segs.size())) {
+            DEBUG_LOG("segments array is too small");
+            return SPIR_INVALID_ARGUMENT;
+        }
+
+        for (size_t i = 0; i < segs.size(); ++i) {
+            segments[i] = static_cast<double>(segs[i]);
+        }
+        *n_segments = static_cast<int>(segs.size());
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_segments_x: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_segments_x");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_segments_y(const spir_kernel *k, double epsilon,
+                                         double *segments, int *n_segments)
+{
+    try {
+        if (!n_segments) {
+            DEBUG_LOG("n_segments is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        auto segs = hints->segments_y();
+
+        if (segments == nullptr) {
+            // First call: return the number of segments
+            *n_segments = static_cast<int>(segs.size());
+            return SPIR_COMPUTATION_SUCCESS;
+        }
+
+        // Second call: copy segments to output array
+        if (*n_segments < static_cast<int>(segs.size())) {
+            DEBUG_LOG("segments array is too small");
+            return SPIR_INVALID_ARGUMENT;
+        }
+
+        for (size_t i = 0; i < segs.size(); ++i) {
+            segments[i] = static_cast<double>(segs[i]);
+        }
+        *n_segments = static_cast<int>(segs.size());
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_segments_y: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_segments_y");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_nsvals(const spir_kernel *k, double epsilon, int *nsvals)
+{
+    try {
+        if (!nsvals) {
+            DEBUG_LOG("nsvals is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        *nsvals = hints->nsvals();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_nsvals: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_nsvals");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
+int spir_kernel_get_sve_hints_ngauss(const spir_kernel *k, double epsilon, int *ngauss)
+{
+    try {
+        if (!ngauss) {
+            DEBUG_LOG("ngauss is nullptr");
+            return SPIR_INVALID_ARGUMENT;
+        }
+        
+        std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+
+        auto hints = sparseir::sve_hints<double>(impl, epsilon);
+        *ngauss = hints->ngauss();
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_sve_hints_ngauss: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_sve_hints_ngauss");
         return SPIR_INTERNAL_ERROR;
     }
 }
