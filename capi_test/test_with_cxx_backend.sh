@@ -26,6 +26,9 @@ echo -e "${YELLOW}Step 1: Building backend/cxx...${NC}"
 mkdir -p "$WORK_DIR/build_backend"
 cd "$WORK_DIR/build_backend"
 
+# Set SDK path explicitly to avoid CMake auto-detection issues
+export SDKROOT=$(xcrun --show-sdk-path)
+
 cmake "$BACKEND_DIR" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
@@ -43,6 +46,9 @@ echo -e "${YELLOW}Step 2: Building capi_test...${NC}"
 cd "$SCRIPT_DIR"
 mkdir -p "$WORK_DIR/build_test"
 cd "$WORK_DIR/build_test"
+
+# Set SDK path explicitly to avoid CMake auto-detection issues
+export SDKROOT=$(xcrun --show-sdk-path)
 
 cmake "$SCRIPT_DIR" \
     -DCMAKE_BUILD_TYPE=Debug \
