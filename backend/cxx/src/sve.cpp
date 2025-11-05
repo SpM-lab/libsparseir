@@ -153,13 +153,6 @@ SVEResult compute_sve(const K &kernel, double epsilon, const SVEParams& params)
 template SVEResult compute_sve<LogisticKernel>(const LogisticKernel &kernel, double epsilon, const SVEParams& params);
 template SVEResult compute_sve<RegularizedBoseKernel>(const RegularizedBoseKernel &kernel, double epsilon, const SVEParams& params);
 
-// Explicit template instantiations for FunctionKernel
-template SVEResult compute_sve<FunctionKernel>(const FunctionKernel &kernel, double epsilon, double cutoff, int lmax, int n_gauss, TworkType Twork);
-template SVEResult compute_sve<FunctionKernel>(const FunctionKernel &kernel, double epsilon, const SVEParams& params);
-template class SamplingSVE<FunctionKernel, double>;
-template class SamplingSVE<FunctionKernel, DDouble>;
-
-
 // Explicit template instantiations for CentrosymmSVE
 template class CentrosymmSVE<LogisticKernel, double>;
 template class CentrosymmSVE<LogisticKernel, DDouble>;

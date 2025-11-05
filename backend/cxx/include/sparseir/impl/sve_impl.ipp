@@ -12,38 +12,6 @@ SamplingSVE<K, T>::SamplingSVE(const K &kernel_, double epsilon_, int n_gauss_)
     debug_out() << "[DEBUG SamplingSVE] Constructor start, epsilon=" << epsilon_ << ", n_gauss_=" << n_gauss_ << std::endl;
     debug_out().flush();
     
-    // For FunctionKernel, use its sve_hints method directly
-    if constexpr (std::is_same<K, sparseir::FunctionKernel>::value) {
-        debug_out() << "[DEBUG SamplingSVE] FunctionKernel detected, calling sve_hints..." << std::endl;
-        debug_out().flush();
-        auto func_kernel = std::dynamic_pointer_cast<const sparseir::FunctionKernel>(kernel);
-        if (!func_kernel) {
-            throw std::runtime_error("Failed to cast kernel to FunctionKernel");
-        }
-        auto hints = func_kernel->template sve_hints<T>(epsilon);
-        debug_out() << "[DEBUG SamplingSVE] sve_hints completed, nsvals=" << hints->nsvals() << ", ngauss=" << hints->ngauss() << std::endl;
-        debug_out().flush();
-        n_gauss = (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
-        debug_out() << "[DEBUG SamplingSVE] Creating legendre rule with n_gauss=" << n_gauss << std::endl;
-        debug_out().flush();
-        auto rule_xprec_ddouble = legendre(n_gauss);
-        rule = sparseir::convert_rule<T>(rule_xprec_ddouble);
-        debug_out() << "[DEBUG SamplingSVE] Rule created, getting segments..." << std::endl;
-        debug_out().flush();
-
-        nsvals_hint = hints->nsvals();
-        segs_x = hints->segments_x();
-        segs_y = hints->segments_y();
-        debug_out() << "[DEBUG SamplingSVE] Segments obtained, segs_x.size()=" << segs_x.size() << ", segs_y.size()=" << segs_y.size() << std::endl;
-        debug_out().flush();
-        gauss_x = rule.piecewise(segs_x);
-        debug_out() << "[DEBUG SamplingSVE] gauss_x created" << std::endl;
-        debug_out().flush();
-        gauss_y = rule.piecewise(segs_y);
-        debug_out() << "[DEBUG SamplingSVE] gauss_y created, constructor complete" << std::endl;
-        debug_out().flush();
-        return;
-    }
     auto hints = sve_hints<T>(kernel, epsilon);
     n_gauss = (n_gauss_ > 0) ? n_gauss_ : hints->ngauss();
     auto rule_xprec_ddouble = legendre(n_gauss);
@@ -411,11 +379,7 @@ template <typename K, typename T>
 std::shared_ptr<AbstractSVE<T>> determine_sve(const K &kernel,
                                               double safe_epsilon, int n_gauss)
 {
-    // FunctionKernel does not support CentrosymmSVE (requires get_symmetrized)
-    // Always use SamplingSVE for FunctionKernel, even if it's centrosymmetric
-    if constexpr (std::is_same<K, sparseir::FunctionKernel>::value) {
-        return std::make_shared<SamplingSVE<K, T>>(kernel, safe_epsilon, n_gauss);
-    } else if (kernel.is_centrosymmetric()) {
+    if (kernel.is_centrosymmetric()) {
         return std::make_shared<CentrosymmSVE<K, T>>(kernel, safe_epsilon,
                                                      n_gauss);
     } else {
