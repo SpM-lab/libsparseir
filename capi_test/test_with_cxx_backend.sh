@@ -23,11 +23,9 @@ echo -e "${GREEN}=== Testing capi_test with C++ backend ===${NC}"
 
 # Step 1: Build and install backend/cxx (without tests)
 echo -e "${YELLOW}Step 1: Building backend/cxx...${NC}"
+rm -rf "$WORK_DIR/build_backend"
 mkdir -p "$WORK_DIR/build_backend"
 cd "$WORK_DIR/build_backend"
-
-# Set SDK path explicitly to avoid CMake auto-detection issues
-export SDKROOT=$(xcrun --show-sdk-path)
 
 cmake "$BACKEND_DIR" \
     -DCMAKE_BUILD_TYPE=Debug \

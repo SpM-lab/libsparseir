@@ -474,7 +474,6 @@ int spir_gauss_legendre_rule_piecewise_ddouble(
 spir_sve_result* spir_sve_result_new(
     const spir_kernel *k,
     double epsilon,
-    double cutoff,
     int lmax,
     int n_gauss,
     int Twork,
@@ -489,9 +488,8 @@ spir_sve_result* spir_sve_result_new(
             return nullptr;
         }
 
-        if (cutoff < 0) {
-            cutoff = std::numeric_limits<double>::quiet_NaN();
-        }
+        // Set cutoff to NaN to use default value (2 * eps) internally
+        double cutoff = std::numeric_limits<double>::quiet_NaN();
 
         if (lmax < 0) {
             lmax = std::numeric_limits<int>::max();
@@ -2395,6 +2393,7 @@ int spir_basis_get_n_default_matsus(const spir_basis *b, bool positive_only, int
 
     auto impl = get_impl_basis(b);
     if (!impl) {
+        DEBUG_LOG("Error: Failed to get basis implementation");
         return SPIR_GET_IMPL_FAILED;
     }
 
@@ -2416,6 +2415,7 @@ int spir_basis_get_n_default_matsus(const spir_basis *b, bool positive_only, int
             return SPIR_COMPUTATION_SUCCESS;
         }
     } catch (const std::exception &e) {
+        DEBUG_LOG("Error in spir_basis_get_n_default_matsus: " + std::string(e.what()));
         return SPIR_GET_IMPL_FAILED;
     }
 }

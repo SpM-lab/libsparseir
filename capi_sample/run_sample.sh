@@ -22,7 +22,11 @@ mkdir -p "$INSTALL_DIR"
 
 # Step 1: Build C++ backend with BLAS
 echo -e "${YELLOW}Building C++ backend with BLAS support...${NC}"
-cd "$BUILD_DIR/build_backend"
+cd "$BUILD_DIR"
+# Clean build directory to remove old CMake cache with incorrect SDK paths
+rm -rf build_backend
+mkdir -p build_backend
+cd build_backend
 
 cmake ../../../backend/cxx \
     -DCMAKE_BUILD_TYPE=Release \

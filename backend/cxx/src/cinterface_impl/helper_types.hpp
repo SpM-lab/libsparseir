@@ -324,15 +324,20 @@ public:
     {
         bool fence = false;
         int L = size();
-
-        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
-        std::vector<int64_t> points(matsubara_points.size());
-        std::transform(
-            matsubara_points.begin(), matsubara_points.end(), points.begin(),
-        [](const sparseir::MatsubaraFreq<S> &freq) {
-            return static_cast<int64_t>(freq.get_n());
-        });
-        return points;
+        
+        try {
+            std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
+            std::vector<int64_t> points(matsubara_points.size());
+            std::transform(
+                matsubara_points.begin(), matsubara_points.end(), points.begin(),
+            [](const sparseir::MatsubaraFreq<S> &freq) {
+                return static_cast<int64_t>(freq.get_n());
+            });
+            return points;
+        } catch (const std::exception &e) {
+            std::cerr << "[DEBUG _IRBasis::default_matsubara_sampling_points] Exception: " << e.what() << std::endl;
+            throw;
+        }
     }
 
     std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only, bool mitigate = false) const

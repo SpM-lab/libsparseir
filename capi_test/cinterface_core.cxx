@@ -629,8 +629,9 @@ TEST_CASE("Test spir_basis_new_from_sve_and_inv_weight", "[cinterface]")
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(kernel != nullptr);
     
+    // cutoff parameter is removed; it's automatically set to NaN internally to use default (2*eps)
     spir_sve_result* sve = spir_sve_result_new(
-        kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
+        kernel, epsilon, -1, -1, SPIR_TWORK_AUTO, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve != nullptr);
     
@@ -698,7 +699,8 @@ TEST_CASE("Test spir_basis_get_default_matsus_ext with fence", "[cinterface]")
     spir_kernel* kernel = spir_logistic_kernel_new(beta * wmax, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     
-    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
+    // cutoff parameter is removed; it's automatically set to NaN internally to use default (2*eps)
+    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1, -1, SPIR_TWORK_AUTO, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     
     spir_basis* basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, epsilon, kernel, sve, -1, &status);

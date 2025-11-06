@@ -346,8 +346,6 @@ int spir_gauss_legendre_rule_piecewise_ddouble(
  * @param epsilon Accuracy target for the basis. Determines:
  *               - The relative magnitude for truncation of singular values
  *               - The accuracy of computed singular values and vectors
- * @param cutoff Cutoff value for singular values. Set to -1 to use default value, i.e., 2 * √ε,
- *               where ε is the machine epsilon of the working type.
  * @param lmax Maximum number of Legendre polynomials to use
  * @param n_gauss Number of Gauss points for numerical integration
  * @param Twork Working data type for computations (sve). Must be one of:
@@ -363,15 +361,17 @@ int spir_gauss_legendre_rule_piecewise_ddouble(
  *         adjusted to meet accuracy requirements based on epsilon
  *       - If epsilon is below √ε (where ε is machine epsilon), a warning is
  *         issued and higher precision arithmetic is used if possible.
+ *       - The cutoff is automatically set to 2 * ε (where ε is the machine epsilon
+ *         of the working type) to allow for later truncation with part().
  *
  * @note The returned object must be freed using spir_release_sve_result when no
  * longer needed
  * @see spir_release_sve_result
+ * @see spir_sve_result_truncate
  */
 spir_sve_result *spir_sve_result_new(
     const spir_kernel *k,
     double epsilon,
-    double cutoff,
     int lmax,
     int n_gauss,
     int Twork,

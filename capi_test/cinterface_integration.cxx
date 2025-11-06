@@ -397,7 +397,8 @@ void integration_test(double beta, double wmax, double epsilon,
     }
 
     int status;
-    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
+    // cutoff parameter is removed; it's automatically set to NaN internally to use default (2*eps)
+    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1, -1, SPIR_TWORK_AUTO, &status);
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     REQUIRE(sve != nullptr);
 
