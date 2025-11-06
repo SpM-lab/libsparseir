@@ -51,21 +51,6 @@ public:
     }
 
     /**
-     * @brief Return the weight function for given statistics.
-     *
-     * @param statistics 'F' for fermions or 'B' for bosons.
-     */
-    template <typename T>
-    std::function<T(T, T)> weight_func(Fermionic) const {
-        return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
-    }
-
-    template <typename T>
-    std::function<T(T, T)> weight_func(Bosonic) const {
-        return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
-    }
-
-    /**
      * @brief Return the inverse weight function for given statistics.
      * 
      * This is numerically more stable than weight_func, avoiding division by zero.
@@ -344,19 +329,6 @@ public:
     double conv_radius() const override { return 40.0 * this->lambda_; }
 
     template <typename T>
-    std::function<T(T, T)> weight_func(Fermionic) const
-    {
-        return [](T beta , T omega) { (void)beta; (void)omega; return 1.0; };
-    }
-
-    template <typename T>
-    std::function<T(T, T)> weight_func(Bosonic) const
-    {
-        using std::tanh;
-        return [](T beta, T omega) { return 1.0 / tanh(0.5 * beta * omega); };
-    }
-
-    template <typename T>
     std::function<T(T, T)> inv_weight_func(Fermionic) const
     {
         return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
@@ -544,26 +516,6 @@ public:
      * @return The convergence radius.
      */
     double conv_radius() const override { return 40.0 * this->lambda_; }
-
-    template <typename T>
-    std::function<T(T, T)> weight_func(Fermionic) const
-    {
-        std::cerr
-            << "RegularizedBoseKernel does not support fermionic functions"
-            << std::endl;
-        throw std::invalid_argument(
-            "RegularizedBoseKernel does not support fermionic functions");
-    }
-
-    template <typename T>
-    std::function<T(T, T)> weight_func(Bosonic) const
-    {
-        using std::tanh;
-        return [](T beta, T omega) {
-            (void)beta;  // Silence unused parameter warning
-            return static_cast<T>(1.0) / omega;
-        };
-    }
 
     template <typename T>
     std::function<T(T, T)> inv_weight_func(Fermionic) const

@@ -699,7 +699,7 @@ spir_basis *spir_basis_new(int statistics, double beta, double omega_max,
  * @param ypower Power with which y coordinate scales (typically 0 or 1)
  * @param conv_radius Convergence radius for Matsubara basis asymptotic model
  * @param sve_result SVE result
- * @param inv_weight_funcs spir_funcs representing inv_weight_func(omega) for fixed beta
+ * @param inv_weight_funcs spir_funcs representing inv_weight_func(omega) (omega-only function)
  * @param max_size Maximum number of basis functions (-1 for no limit)
  * @param status Pointer to store status code
  * @return Pointer to basis on success, nullptr on failure
@@ -830,6 +830,29 @@ spir_funcs *spir_basis_get_v(const spir_basis *b, int *status);
  * @see spir_release_funcs
  */
 spir_funcs *spir_basis_get_uhat(const spir_basis *b, int *status);
+
+/**
+ * @brief Gets the full (untruncated) Matsubara-frequency basis functions.
+ *
+ * This function returns an object representing all basis functions
+ * in the Matsubara-frequency domain, including those beyond the truncation
+ * threshold. Unlike `spir_basis_get_uhat`, which returns only the truncated
+ * basis functions (up to `basis.size()`), this function returns all basis
+ * functions from the SVE result (up to `sve_result.s.size()`).
+ *
+ * @param b Pointer to the finite temperature basis object (must be an IR basis)
+ * @param status Pointer to store the status code
+ * @return Pointer to the basis functions object, or NULL if creation fails
+ *
+ * @note The returned object must be freed using spir_funcs_release
+ *       when no longer needed
+ * @note This function is only available for IR basis objects (not DLR)
+ * @note uhat_full.size() >= uhat.size() is always true
+ * @note The first uhat.size() functions in uhat_full are identical to uhat
+ * @see spir_basis_get_uhat
+ * @see spir_funcs_release
+ */
+spir_funcs *spir_basis_get_uhat_full(const spir_basis *b, int *status);
 
 /**
  * @brief Gets the number of default tau sampling points for an IR basis.
@@ -1018,13 +1041,42 @@ int spir_basis_get_n_default_matsus_ext(const spir_basis *b, bool positive_only,
  *
  * @param b Pointer to a finite temperature basis object (must be an IR basis)
  * @param positive_only If true, only positive frequencies are used
- * @param n_points Number of requested sampling points.
- * @param points Pre-allocated array to store the sampling points. The size of the array must be at least n_points.
- * @param n_points_returned Number of sampling points returned.
+ * @param mitigate If true, enable mitigation (fencing) to improve conditioning by adding oversampling points
+ * @param n_points Number of requested sampling points (default: basis_size). When positive_only=true, this represents the total number of frequencies (both positive and negative), and the returned number of points will be approximately n_points/2 (positive frequencies only).
+ * @param points Pre-allocated array to store the sampling points. The size of the array must be sufficient for the returned points (may exceed n_points if mitigate is true).
+ * @param n_points_returned Pointer to store the number of sampling points returned (may exceed n_points if mitigate is true, or approximately n_points/2 when positive_only=true).
  * @return An integer status code:
  *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for IR basis objects
+ * @note When mitigate is true, the returned number of points may exceed n_points due to fencing
  */
-int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, int n_points, int64_t *points, int *n_points_returned);
+int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, bool mitigate, int n_points, int64_t *points, int *n_points_returned);
+
+/**
+ * @brief Gets the default Matsubara sampling points from a Matsubara-space spir_funcs.
+ *
+ * This function computes default sampling points in Matsubara frequencies (iωn) from
+ * a spir_funcs object that represents Matsubara-space basis functions (e.g., uhat or uhat_full).
+ * The statistics type (Fermionic/Bosonic) is automatically detected from the spir_funcs object type.
+ *
+ * @param uhat Pointer to a spir_funcs object representing Matsubara-space basis functions
+ * @param L Number of requested sampling points
+ * @param positive_only If true, only positive frequencies are used
+ * @param mitigate If true, enable mitigation (fencing) to improve conditioning by adding oversampling points
+ * @param points Pre-allocated array to store the sampling points. The size of the array must be sufficient for the returned points (may exceed L if mitigate is true).
+ * @param n_points_returned Pointer to store the number of sampling points returned (may exceed L if mitigate is true, or approximately L/2 when positive_only=true).
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - A non-zero error code on failure
+ *
+ * @note This function is only available for spir_funcs objects representing Matsubara-space basis functions
+ * @note The statistics type is automatically detected from the spir_funcs object type
+ * @note The default sampling points are chosen to provide near-optimal conditioning
+ * @see spir_basis_get_default_matsus_ext
+ */
+int spir_uhat_get_default_matsus(const spir_funcs *uhat, int L, bool positive_only, bool mitigate, int64_t *points, int *n_points_returned);
 
 /**
  * @brief Creates a new Discrete Lehmann Representation (DLR) basis.

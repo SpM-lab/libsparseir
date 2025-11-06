@@ -250,7 +250,12 @@ TEST_CASE("DLR Tests", "[dlr]")
 
         sparseir::LogisticKernel kernel(beta * wmax);
 
-        sparseir::MatsubaraPoles<sparseir::Bosonic> mbp(beta, poles, wmax, kernel.template weight_func<double>(sparseir::Bosonic{}));
+        // Convert kernel's 2-arg inv_weight_func to omega-only function
+        auto kernel_inv_weight_func = kernel.template inv_weight_func<double>(sparseir::Bosonic{});
+        std::function<double(double)> inv_weight_func = [kernel_inv_weight_func, beta](double omega) -> double {
+            return kernel_inv_weight_func(beta, omega);
+        };
+        sparseir::MatsubaraPoles<sparseir::Bosonic> mbp(beta, poles, wmax, inv_weight_func);
         // Choose 100 random even integers between -234 and 13898
         std::vector<int> n;
         std::mt19937 gen(42);

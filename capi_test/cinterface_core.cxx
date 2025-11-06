@@ -687,3 +687,97 @@ TEST_CASE("Test spir_basis_new_from_sve_and_inv_weight", "[cinterface]")
     spir_sve_result_release(sve);
     spir_kernel_release(kernel);
 }
+
+TEST_CASE("Test spir_basis_get_default_matsus_ext with fence", "[cinterface]")
+{
+    double beta = 10.0;
+    double wmax = 10.0;
+    double epsilon = 1e-8;
+    
+    int status;
+    spir_kernel* kernel = spir_logistic_kernel_new(beta * wmax, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    spir_sve_result* sve = spir_sve_result_new(kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    spir_basis* basis = spir_basis_new(SPIR_STATISTICS_FERMIONIC, beta, wmax, epsilon, kernel, sve, -1, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    int basis_size;
+    status = spir_basis_get_size(basis, &basis_size);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    // Test without mitigation (fence = false)
+    {
+        bool positive_only = false;
+        bool mitigate = false;
+        int n_points_requested = basis_size;
+        
+        int n_points_returned = 0;
+        std::vector<int64_t> points(n_points_requested + 10);
+        
+        status = spir_basis_get_default_matsus_ext(
+            basis, positive_only, mitigate, n_points_requested, points.data(), &n_points_returned);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(n_points_returned >= n_points_requested);
+        REQUIRE(n_points_returned <= n_points_requested + 10);
+        
+        // Verify points are valid fermionic frequencies (odd integers)
+        for (int i = 0; i < n_points_returned; ++i) {
+            REQUIRE(llabs(points[i]) % 2 == 1);
+        }
+    }
+    
+    // Test with mitigation (fence = true)
+    {
+        bool positive_only = false;
+        bool mitigate = true;
+        int n_points_requested = basis_size;
+        
+        int n_points_returned = 0;
+        std::vector<int64_t> points(n_points_requested + 20);  // Extra space for fence points
+        
+        status = spir_basis_get_default_matsus_ext(
+            basis, positive_only, mitigate, n_points_requested, points.data(), &n_points_returned);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(n_points_returned >= n_points_requested);  // May exceed when mitigate is true
+        
+        // Verify points are valid fermionic frequencies (odd integers)
+        for (int i = 0; i < n_points_returned; ++i) {
+            REQUIRE(llabs(points[i]) % 2 == 1);
+        }
+        
+        // When mitigate is true and basis_size >= 20, we should have more points
+        // Note: This may not always be true due to rounding, so we just check it's >= requested
+        if (basis_size >= 20 && n_points_returned > n_points_requested) {
+            // Extra points due to fencing were added
+        }
+    }
+    
+    // Test positive_only = true with mitigation
+    {
+        bool positive_only = true;
+        bool mitigate = true;
+        int n_points_requested = basis_size;
+        
+        int n_points_returned = 0;
+        std::vector<int64_t> points(n_points_requested + 20);
+        
+        status = spir_basis_get_default_matsus_ext(
+            basis, positive_only, mitigate, n_points_requested, points.data(), &n_points_returned);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(n_points_returned > 0);
+        REQUIRE(n_points_returned <= basis_size + 10);  // May have some extra points due to fencing
+        
+        // Verify all points are positive and odd
+        for (int i = 0; i < n_points_returned; ++i) {
+            REQUIRE(points[i] > 0);
+            REQUIRE(points[i] % 2 == 1);
+        }
+    }
+    
+    spir_basis_release(basis);
+    spir_sve_result_release(sve);
+    spir_kernel_release(kernel);
+}

@@ -38,6 +38,11 @@ public:
     {
         return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<MatsubaraBasisFunctions<InternalType>>(impl->slice(indices)));
     }
+
+    // Getter for the underlying implementation
+    std::shared_ptr<InternalType> get_impl() const {
+        return impl;
+    }
 };
 
 // Abstract class for functions of a single variable (in the imaginary time
@@ -240,6 +245,7 @@ public:
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
     virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat_full() const = 0;
 };
 
 
@@ -294,6 +300,14 @@ public:
                 sparseir::PiecewiseLegendreFTVector<S>>>(impl->uhat));
     }
 
+    virtual std::shared_ptr<AbstractMatsubaraFunctions>
+    get_uhat_full() const override
+    {
+        return std::static_pointer_cast<AbstractMatsubaraFunctions>(
+            std::make_shared<MatsubaraBasisFunctions<
+                sparseir::PiecewiseLegendreFTVector<S>>>(impl->uhat_full));
+    }
+
     std::shared_ptr<sparseir::FiniteTempBasis<S>> get_impl() const
     {
         return impl;
@@ -321,9 +335,9 @@ public:
         return points;
     }
 
-    std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only) const
+    std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only, bool mitigate = false) const
     {
-        bool fence = false;
+        bool fence = mitigate;
 
         std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, fence, positive_only);
         std::vector<int64_t> points(matsubara_points.size());
@@ -410,6 +424,13 @@ public:
             std::make_shared<
                 MatsubaraBasisFunctions<sparseir::MatsubaraPoles<S>>>(
                 impl->uhat));
+    }
+
+    virtual std::shared_ptr<AbstractMatsubaraFunctions>
+    get_uhat_full() const override
+    {
+        // DLR basis does not have uhat_full
+        throw std::runtime_error("get_uhat_full is not supported for DLR basis");
     }
 
     virtual std::vector<double> get_poles() const override

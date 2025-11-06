@@ -65,7 +65,7 @@ public:
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat;
     std::shared_ptr<PiecewiseLegendreFTVector<S>> uhat_full;
 
-    std::function<double(double, double)> weight_func; // weight function especially for bosonic basis
+    std::function<double(double)> inv_weight_func; // inverse weight function (numerically stable), omega-only
 
     template <typename K, typename = typename std::enable_if<is_concrete_kernel<K>::value>::type>
     FiniteTempBasis(double beta, double omega_max, double epsilon,
@@ -90,7 +90,11 @@ public:
         this->beta = beta;
         this->lambda = kernel.lambda_;
         this->sve_result = std::make_shared<SVEResult>(sve_result);
-        this->weight_func = kernel.template weight_func<double>(S());
+        // Convert kernel's 2-arg inv_weight_func to omega-only function
+        auto kernel_inv_weight_func = kernel.template inv_weight_func<double>(S());
+        this->inv_weight_func = [kernel_inv_weight_func, beta](double omega) -> double {
+            return kernel_inv_weight_func(beta, omega);
+        };
 
         double wmax = this->lambda / beta;
 
@@ -154,6 +158,93 @@ public:
 
         this->uhat_full = std::make_shared<PiecewiseLegendreFTVector<S>>(
             uhat_base_full, statistics, kernel.conv_radius());
+
+        std::vector<PiecewiseLegendreFT<S>> uhat_polyvec;
+        for (int i = 0; i < this->s.size(); ++i) {
+            uhat_polyvec.push_back(this->uhat_full->operator[](i));
+        }
+        this->uhat =
+            std::make_shared<PiecewiseLegendreFTVector<S>>(uhat_polyvec);
+    }
+
+    // Constructor with SVE result and inv_weight_func (no kernel required)
+    FiniteTempBasis(double beta, double omega_max, double epsilon,
+                    double lambda, int ypower, double conv_radius,
+                    SVEResult sve_result,
+                    std::function<double(double)> inv_weight_func,
+                    int max_size = -1)
+    {
+        if (sve_result.s.size() == 0) {
+            throw std::runtime_error("SVE result sve_result.s is empty");
+        }
+        if (beta <= 0.0) {
+            throw std::domain_error(
+                "Inverse temperature beta must be positive");
+        }
+        if (omega_max < 0.0) {
+            throw std::domain_error(
+                "Frequency cutoff omega_max must be non-negative");
+        }
+        if (std::fabs(beta * omega_max - lambda) > 1e-10) {
+            throw std::runtime_error("Product of beta and omega_max must be "
+                                     "equal to lambda");
+        }
+        this->beta = beta;
+        this->lambda = lambda;
+        this->sve_result = std::make_shared<SVEResult>(sve_result);
+        this->inv_weight_func = inv_weight_func;
+
+        double wmax = this->lambda / beta;
+
+        auto part_result = sve_result.part(epsilon, max_size);
+        PiecewiseLegendrePolyVector u_ = std::get<0>(part_result);
+        Eigen::VectorXd s_ = std::get<1>(part_result);
+        PiecewiseLegendrePolyVector v_ = std::get<2>(part_result);
+        double sve_result_s0 = sve_result.s(0);
+
+        if (sve_result.s.size() > s_.size()) {
+            this->accuracy = sve_result.s(s_.size()) / sve_result_s0;
+        } else {
+            this->accuracy = sve_result.s(s_.size() - 1) / sve_result_s0;
+        }
+
+        auto u_knots_ = u_.polyvec[0].knots;
+        auto v_knots_ = v_.polyvec[0].knots;
+
+        Eigen::VectorXd u_knots = (beta / 2) * (u_knots_.array() + 1);
+        Eigen::VectorXd v_knots = wmax * v_knots_;
+
+        Eigen::VectorXd deltax4u = (beta / 2) * u_.get_delta_x();
+        Eigen::VectorXd deltax4v = wmax * v_.get_delta_x();
+        std::vector<int> u_symm_vec;
+        for (std::size_t i = 0; i < u_.size(); ++i) {
+            u_symm_vec.push_back(u_.polyvec[i].get_symm());
+        }
+        std::vector<int> v_symm_vec;
+        for (std::size_t i = 0; i < v_.size(); ++i) {
+            v_symm_vec.push_back(v_.polyvec[i].get_symm());
+        }
+
+        Eigen::VectorXi u_symm =
+            Eigen::Map<Eigen::VectorXi>(u_symm_vec.data(), u_symm_vec.size());
+        Eigen::VectorXi v_symm =
+            Eigen::Map<Eigen::VectorXi>(v_symm_vec.data(), v_symm_vec.size());
+
+        this->u = std::make_shared<PeriodicFunctions<S, PiecewiseLegendrePolyVector>>(
+            std::make_shared<PiecewiseLegendrePolyVector>(u_, u_knots, deltax4u, u_symm), beta);
+        this->v = std::make_shared<PiecewiseLegendrePolyVector>(
+            v_, v_knots, deltax4v, v_symm);
+        this->s =
+            (std::sqrt(beta * wmax / 2) * std::pow(wmax, ypower)) *
+            s_;
+
+        Eigen::Tensor<double, 3> udata3d = sve_result.u->get_data();
+        PiecewiseLegendrePolyVector uhat_base_full =
+            PiecewiseLegendrePolyVector(sqrt(beta) * udata3d, *sve_result.u);
+        S statistics = S();
+
+        this->uhat_full = std::make_shared<PiecewiseLegendreFTVector<S>>(
+            uhat_base_full, statistics, conv_radius);
 
         std::vector<PiecewiseLegendreFT<S>> uhat_polyvec;
         for (int i = 0; i < this->s.size(); ++i) {
