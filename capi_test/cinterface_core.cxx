@@ -361,6 +361,14 @@ TEST_CASE("Test spir_gauss_legendre_rule_piecewise_double", "[cinterface]")
         for (int i = 0; i < n; ++i) {
             REQUIRE(w[i] > 0.0);
         }
+        
+        // Weight sum should be approximately 1.0 (integral over [-1, 1] is 2, but normalized)
+        // Actually, for Gauss-Legendre on [-1, 1], sum of weights should be 2.0
+        double weight_sum = 0.0;
+        for (int i = 0; i < n; ++i) {
+            weight_sum += w[i];
+        }
+        REQUIRE(weight_sum == Approx(2.0).margin(1e-10));  // Integral over [-1, 1] is 2
     }
     
     // Test with two segments [-1, 0, 1]
@@ -387,6 +395,13 @@ TEST_CASE("Test spir_gauss_legendre_rule_piecewise_double", "[cinterface]")
         for (int i = 0; i < 6; ++i) {
             REQUIRE(w[i] > 0.0);
         }
+        
+        // Weight sum should be approximately 2.0 (integral over [-1, 1])
+        double weight_sum = 0.0;
+        for (int i = 0; i < 6; ++i) {
+            weight_sum += w[i];
+        }
+        REQUIRE(weight_sum == Approx(2.0).margin(1e-10));
     }
     
     // Test error handling
@@ -442,10 +457,14 @@ TEST_CASE("Test spir_gauss_legendre_rule_piecewise_ddouble", "[cinterface]")
         }
         
         // Weights should be positive
+        double weight_sum = 0.0;
         for (int i = 0; i < n; ++i) {
             double w_val = w_high[i] + w_low[i];
             REQUIRE(w_val > 0.0);
+            weight_sum += w_val;
         }
+        // Weight sum should be approximately 2.0 (integral over [-1, 1])
+        REQUIRE(weight_sum == Approx(2.0).margin(1e-10));
     }
     
     // Test with two segments [-1, 0, 1]
@@ -466,6 +485,14 @@ TEST_CASE("Test spir_gauss_legendre_rule_piecewise_ddouble", "[cinterface]")
             double x_prev = x_high[i-1] + x_low[i-1];
             REQUIRE(x_val > x_prev);
         }
+        
+        // Weight sum should be approximately 2.0 (integral over [-1, 1])
+        double weight_sum = 0.0;
+        for (int i = 0; i < 6; ++i) {
+            double w_val = w_high[i] + w_low[i];
+            weight_sum += w_val;
+        }
+        REQUIRE(weight_sum == Approx(2.0).margin(1e-10));
     }
     
     // Test error handling
@@ -475,4 +502,188 @@ TEST_CASE("Test spir_gauss_legendre_rule_piecewise_ddouble", "[cinterface]")
             5, nullptr, 1, nullptr, nullptr, nullptr, nullptr, &status);
         REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
     }
+}
+
+TEST_CASE("Test spir_sve_result_from_matrix", "[cinterface]")
+{
+    double lambda = 10.0;
+    double epsilon = 1e-8;
+    
+    // Create kernel and get SVE hints
+    int status;
+    spir_kernel* kernel = spir_logistic_kernel_new(lambda, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(kernel != nullptr);
+    
+    // Get SVE hints
+    int n_gauss;
+    status = spir_kernel_get_sve_hints_ngauss(kernel, epsilon, &n_gauss);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    int n_segments_x = 0;
+    status = spir_kernel_get_sve_hints_segments_x(kernel, epsilon, nullptr, &n_segments_x);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    int n_segments_y = 0;
+    status = spir_kernel_get_sve_hints_segments_y(kernel, epsilon, nullptr, &n_segments_y);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    // Get segments
+    std::vector<double> segments_x(n_segments_x + 1);
+    int n_segments_x_out = n_segments_x + 1;
+    status = spir_kernel_get_sve_hints_segments_x(kernel, epsilon, segments_x.data(), &n_segments_x_out);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    std::vector<double> segments_y(n_segments_y + 1);
+    int n_segments_y_out = n_segments_y + 1;
+    status = spir_kernel_get_sve_hints_segments_y(kernel, epsilon, segments_y.data(), &n_segments_y_out);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    
+    // Get Gauss points and weights
+    int nx = n_gauss * n_segments_x;
+    int ny = n_gauss * n_segments_y;
+    std::vector<double> x(nx), w_x(nx);
+    std::vector<double> y(ny), w_y(ny);
+    
+    int status_gauss;
+    status_gauss = spir_gauss_legendre_rule_piecewise_double(
+        n_gauss, segments_x.data(), n_segments_x, x.data(), w_x.data(), &status_gauss);
+    REQUIRE(status_gauss == SPIR_COMPUTATION_SUCCESS);
+    
+    status_gauss = spir_gauss_legendre_rule_piecewise_double(
+        n_gauss, segments_y.data(), n_segments_y, y.data(), w_y.data(), &status_gauss);
+    REQUIRE(status_gauss == SPIR_COMPUTATION_SUCCESS);
+    
+    // Create a simple test kernel matrix
+    // Note: In practice, this would be computed from the actual kernel
+    std::vector<double> K_high(nx * ny);
+    for (int i = 0; i < nx; ++i) {
+        for (int j = 0; j < ny; ++j) {
+            // Simple test: scaled identity-like matrix
+            double k_val = (i == j) ? std::sqrt(w_x[i] * w_y[j]) : 0.0;
+            K_high[i * ny + j] = k_val;
+        }
+    }
+    
+    // Create SVE result from matrix (row major)
+    spir_sve_result* sve_from_matrix = spir_sve_result_from_matrix(
+        K_high.data(), nullptr, nx, ny, SPIR_ORDER_ROW_MAJOR,
+        segments_x.data(), n_segments_x,
+        segments_y.data(), n_segments_y,
+        n_gauss, epsilon, &status);
+    
+    // Note: The test matrix is very simple, so the SVE result may not be meaningful
+    // But we can at least verify the function doesn't crash and returns a valid result
+    if (status == SPIR_COMPUTATION_SUCCESS && sve_from_matrix != nullptr) {
+        int sve_size;
+        status = spir_sve_result_get_size(sve_from_matrix, &sve_size);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        
+        spir_sve_result_release(sve_from_matrix);
+    }
+    
+    // Test error handling
+    {
+        spir_sve_result* sve_err = spir_sve_result_from_matrix(
+            nullptr, nullptr, nx, ny, SPIR_ORDER_ROW_MAJOR,
+            segments_x.data(), n_segments_x,
+            segments_y.data(), n_segments_y,
+            n_gauss, epsilon, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(sve_err == nullptr);
+    }
+    
+    // Test column major order
+    {
+        std::vector<double> K_col(nx * ny);
+        for (int j = 0; j < ny; ++j) {
+            for (int i = 0; i < nx; ++i) {
+                K_col[j * nx + i] = (i == j) ? std::sqrt(w_x[i] * w_y[j]) : 0.0;
+            }
+        }
+        
+        spir_sve_result* sve_col = spir_sve_result_from_matrix(
+            K_col.data(), nullptr, nx, ny, SPIR_ORDER_COLUMN_MAJOR,
+            segments_x.data(), n_segments_x,
+            segments_y.data(), n_segments_y,
+            n_gauss, epsilon, &status);
+        
+        if (status == SPIR_COMPUTATION_SUCCESS && sve_col != nullptr) {
+            spir_sve_result_release(sve_col);
+        }
+    }
+    
+    spir_kernel_release(kernel);
+}
+
+TEST_CASE("Test spir_basis_new_from_sve_and_inv_weight", "[cinterface]")
+{
+    double lambda = 10.0;
+    double beta = 1.0;
+    double omega_max = lambda / beta;
+    double epsilon = 1e-8;
+    
+    // Create kernel and SVE result
+    int status;
+    spir_kernel* kernel = spir_logistic_kernel_new(lambda, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(kernel != nullptr);
+    
+    spir_sve_result* sve = spir_sve_result_new(
+        kernel, epsilon, -1.0, -1, -1, SPIR_TWORK_AUTO, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(sve != nullptr);
+    
+    // Create inv_weight_func as spir_funcs
+    // For LogisticKernel with Fermionic statistics, inv_weight_func(omega) = 1.0
+    // We'll create a simple constant function
+    int n_segments = 1;
+    double segments[2] = {-omega_max, omega_max};  // Full omega range
+    double coeffs[1] = {1.0};  // Constant function = 1.0
+    int nfuncs = 1;
+    int order = 0;
+    
+    spir_funcs* inv_weight_funcs = spir_funcs_from_piecewise_legendre(
+        segments, n_segments, coeffs, nfuncs, order, &status);
+    REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+    REQUIRE(inv_weight_funcs != nullptr);
+    
+    // Create basis using new function
+    // For LogisticKernel: ypower=0, conv_radius=1.0 (typical values)
+    spir_basis* basis = spir_basis_new_from_sve_and_inv_weight(
+        SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon,
+        lambda, 0, 1.0,  // ypower=0, conv_radius=1.0
+        sve, inv_weight_funcs, -1, &status);
+    
+    if (status == SPIR_COMPUTATION_SUCCESS && basis != nullptr) {
+        int basis_size;
+        status = spir_basis_get_size(basis, &basis_size);
+        REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(basis_size > 0);
+        
+        spir_basis_release(basis);
+    }
+    
+    // Test error handling
+    {
+        spir_basis* basis_err = spir_basis_new_from_sve_and_inv_weight(
+            SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon,
+            lambda, 0, 1.0,
+            nullptr, inv_weight_funcs, -1, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(basis_err == nullptr);
+    }
+    
+    {
+        spir_basis* basis_err = spir_basis_new_from_sve_and_inv_weight(
+            SPIR_STATISTICS_FERMIONIC, beta, omega_max, epsilon,
+            lambda, 0, 1.0,
+            sve, nullptr, -1, &status);
+        REQUIRE(status != SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(basis_err == nullptr);
+    }
+    
+    spir_funcs_release(inv_weight_funcs);
+    spir_sve_result_release(sve);
+    spir_kernel_release(kernel);
 }

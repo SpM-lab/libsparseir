@@ -427,6 +427,69 @@ spir_sve_result* spir_sve_result_truncate(const spir_sve_result *sve, double eps
 int spir_sve_result_get_svals(const spir_sve_result *sve, double *svals);
 
 /**
+ * @brief Create a SVE result from a discretized kernel matrix.
+ *
+ * This function performs singular value expansion (SVE) on a discretized kernel
+ * matrix K. The matrix K should already be in the appropriate form (no weight
+ * application needed). The function supports both double and DDouble precision
+ * based on whether K_low is provided.
+ *
+ * @param K_high High part of the kernel matrix (required, size: nx * ny)
+ * @param K_low Low part of the kernel matrix (optional, nullptr for double precision)
+ * @param nx Number of rows in the matrix
+ * @param ny Number of columns in the matrix
+ * @param order Memory layout (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param segments_x X-direction segments (size: n_segments_x + 1)
+ * @param n_segments_x Number of segments in x direction
+ * @param segments_y Y-direction segments (size: n_segments_y + 1)
+ * @param n_segments_y Number of segments in y direction
+ * @param n_gauss Number of Gauss points per segment
+ * @param epsilon Target accuracy
+ * @param status Pointer to store status code
+ * @return Pointer to SVE result on success, nullptr on failure
+ */
+spir_sve_result* spir_sve_result_from_matrix(
+    const double* K_high, const double* K_low,
+    int nx, int ny, int order,
+    const double* segments_x, int n_segments_x,
+    const double* segments_y, int n_segments_y,
+    int n_gauss, double epsilon,
+    int* status);
+
+/**
+ * @brief Create a SVE result from centrosymmetric discretized kernel matrices.
+ *
+ * This function performs singular value expansion (SVE) on centrosymmetric
+ * discretized kernel matrices K_even and K_odd. The matrices should already be
+ * in the appropriate form (no weight application needed). The function supports
+ * both double and DDouble precision based on whether K_low is provided.
+ *
+ * @param K_even_high High part of the even kernel matrix (required, size: nx * ny)
+ * @param K_even_low Low part of the even kernel matrix (optional, nullptr for double precision)
+ * @param K_odd_high High part of the odd kernel matrix (required, size: nx * ny)
+ * @param K_odd_low Low part of the odd kernel matrix (optional, nullptr for double precision)
+ * @param nx Number of rows in each matrix
+ * @param ny Number of columns in each matrix
+ * @param order Memory layout (SPIR_ORDER_ROW_MAJOR or SPIR_ORDER_COLUMN_MAJOR)
+ * @param segments_x X-direction segments (size: n_segments_x + 1)
+ * @param n_segments_x Number of segments in x direction
+ * @param segments_y Y-direction segments (size: n_segments_y + 1)
+ * @param n_segments_y Number of segments in y direction
+ * @param n_gauss Number of Gauss points per segment
+ * @param epsilon Target accuracy
+ * @param status Pointer to store status code
+ * @return Pointer to SVE result on success, nullptr on failure
+ */
+spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
+    const double* K_even_high, const double* K_even_low,
+    const double* K_odd_high, const double* K_odd_low,
+    int nx, int ny, int order,
+    const double* segments_x, int n_segments_x,
+    const double* segments_y, int n_segments_y,
+    int n_gauss, double epsilon,
+    int* status);
+
+/**
  * @brief Gets the number of functions in a functions object.
  *
  * This function returns the number of functions contained in the specified
@@ -620,6 +683,34 @@ spir_basis *spir_basis_new(int statistics, double beta, double omega_max,
                            const spir_kernel *k, const spir_sve_result *sve,
                            int max_size,
                            int *status);
+
+/**
+ * @brief Create a basis from SVE result and inv_weight_func.
+ *
+ * This function creates a finite temperature basis from an SVE result and
+ * an inv_weight_func represented as spir_funcs. The inv_weight_func is
+ * evaluated as a function of omega (frequency), with beta as a fixed parameter.
+ *
+ * @param statistics Statistics type (SPIR_STATISTICS_FERMIONIC or SPIR_STATISTICS_BOSONIC)
+ * @param beta Inverse temperature
+ * @param omega_max Maximum frequency
+ * @param epsilon Target accuracy
+ * @param lambda Kernel parameter (beta * omega_max)
+ * @param ypower Power with which y coordinate scales (typically 0 or 1)
+ * @param conv_radius Convergence radius for Matsubara basis asymptotic model
+ * @param sve_result SVE result
+ * @param inv_weight_funcs spir_funcs representing inv_weight_func(omega) for fixed beta
+ * @param max_size Maximum number of basis functions (-1 for no limit)
+ * @param status Pointer to store status code
+ * @return Pointer to basis on success, nullptr on failure
+ */
+spir_basis* spir_basis_new_from_sve_and_inv_weight(
+    int statistics, double beta, double omega_max, double epsilon,
+    double lambda, int ypower, double conv_radius,
+    const spir_sve_result *sve,
+    const spir_funcs *inv_weight_funcs,
+    int max_size,
+    int *status);
 
 /**
  * @brief Gets the size (number of basis functions) of a finite temperature
