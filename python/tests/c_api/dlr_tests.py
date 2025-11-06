@@ -14,7 +14,7 @@ from pylibsparseir.core import (
     _lib,
     logistic_kernel_new, reg_bose_kernel_new,
     sve_result_new, basis_new,
-    COMPUTATION_SUCCESS
+    COMPUTATION_SUCCESS, c_double_complex
 )
 from pylibsparseir.ctypes_wrapper import *
 from pylibsparseir.constants import SPIR_STATISTICS_FERMIONIC, SPIR_STATISTICS_BOSONIC, SPIR_ORDER_ROW_MAJOR
@@ -348,8 +348,8 @@ class TestDLRTransformations:
                 ndim,
                 dims.ctypes.data_as(POINTER(c_int)),
                 target_dim,
-                dlr_coeffs_complex.ctypes.data_as(POINTER(c_double)),
-                ir_coeffs_complex.ctypes.data_as(POINTER(c_double))
+                dlr_coeffs_complex.ctypes.data_as(POINTER(c_double_complex)),
+                ir_coeffs_complex.ctypes.data_as(POINTER(c_double_complex))
             )
             assert convert_status == COMPUTATION_SUCCESS
 

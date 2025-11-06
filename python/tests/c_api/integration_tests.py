@@ -16,7 +16,7 @@ from pylibsparseir.core import (
     logistic_kernel_new, reg_bose_kernel_new,
     sve_result_new, basis_new,
     tau_sampling_new, matsubara_sampling_new,
-    COMPUTATION_SUCCESS
+    COMPUTATION_SUCCESS, c_double_complex
 )
 from pylibsparseir.ctypes_wrapper import *
 from pylibsparseir.constants import *
@@ -107,19 +107,19 @@ class TestIntegrationWorkflow:
 
         # Get default Matsubara points
         n_matsu_points = c_int()
-        status = _lib.spir_basis_get_n_default_matsus(ir_basis, c_bool(positive_only), byref(n_matsu_points))
+        status = _lib.spir_basis_get_n_default_matsus(ir_basis, c_int(1 if positive_only else 0), byref(n_matsu_points))
         assert status == COMPUTATION_SUCCESS
         assert n_matsu_points.value > 0
 
         matsu_points = np.zeros(n_matsu_points.value, dtype=np.int64)
-        status = _lib.spir_basis_get_default_matsus(ir_basis, c_bool(positive_only),
+        status = _lib.spir_basis_get_default_matsus(ir_basis, c_int(1 if positive_only else 0),
                                                    matsu_points.ctypes.data_as(POINTER(c_int64)))
         assert status == COMPUTATION_SUCCESS
 
         # Create Matsubara sampling for IR
         matsu_sampling_status = c_int()
         ir_matsu_sampling = _lib.spir_matsu_sampling_new(
-            ir_basis, c_bool(positive_only), n_matsu_points.value,
+            ir_basis, c_int(1 if positive_only else 0), n_matsu_points.value,
             matsu_points.ctypes.data_as(POINTER(c_int64)),
             byref(matsu_sampling_status)
         )
@@ -160,7 +160,7 @@ class TestIntegrationWorkflow:
 
         dlr_matsu_sampling_status = c_int()
         dlr_matsu_sampling = _lib.spir_matsu_sampling_new(
-            dlr, c_bool(positive_only), n_matsu_points.value,
+            dlr, c_int(1 if positive_only else 0), n_matsu_points.value,
             matsu_points.ctypes.data_as(POINTER(c_int64)),
             byref(dlr_matsu_sampling_status)
         )
@@ -473,7 +473,7 @@ class TestEnhancedDLRSamplingIntegration:
         status = _lib.spir_funcs_batch_eval_matsu(
             uhat, SPIR_ORDER_ROW_MAJOR, len(matsubara_indices),
             freq_indices.ctypes.data_as(POINTER(c_int64)),
-            uhat_eval_mat.ctypes.data_as(POINTER(c_double))
+            uhat_eval_mat.ctypes.data_as(POINTER(c_double_complex))
         )
         assert status == COMPUTATION_SUCCESS
 
@@ -571,18 +571,18 @@ class TestEnhancedDLRSamplingIntegration:
 
         # Get default Matsubara points
         n_matsu_points = c_int()
-        status = _lib.spir_basis_get_n_default_matsus(ir_basis, c_bool(positive_only), byref(n_matsu_points))
+        status = _lib.spir_basis_get_n_default_matsus(ir_basis, c_int(1 if positive_only else 0), byref(n_matsu_points))
         assert status == COMPUTATION_SUCCESS
 
         matsu_points = np.zeros(n_matsu_points.value, dtype=np.int64)
-        status = _lib.spir_basis_get_default_matsus(ir_basis, c_bool(positive_only),
+        status = _lib.spir_basis_get_default_matsus(ir_basis, c_int(1 if positive_only else 0),
                                                    matsu_points.ctypes.data_as(POINTER(c_int64)))
         assert status == COMPUTATION_SUCCESS
 
         # Create DLR Matsubara sampling
         dlr_matsu_sampling_status = c_int()
         dlr_matsu_sampling = _lib.spir_matsu_sampling_new(
-            dlr, c_bool(positive_only), n_matsu_points.value,
+            dlr, c_int(1 if positive_only else 0), n_matsu_points.value,
             matsu_points.ctypes.data_as(POINTER(c_int64)),
             byref(dlr_matsu_sampling_status)
         )
