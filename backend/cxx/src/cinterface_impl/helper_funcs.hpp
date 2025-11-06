@@ -470,6 +470,25 @@ int _spir_basis_get_uhat(const spir_basis *b, spir_funcs **uhat)
     }
 }
 
+template <typename S>
+int _spir_basis_get_uhat_full(const spir_basis *b, spir_funcs **uhat_full)
+{
+    try {
+        auto impl = get_impl_basis(b);
+        if (!impl) {
+            return SPIR_GET_IMPL_FAILED;
+        }
+        if (!is_ir_basis(b)) {
+            // DLR basis does not have uhat_full
+            return SPIR_NOT_SUPPORTED;
+        }
+        *uhat_full = create_funcs(impl->get_uhat_full());
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        return SPIR_GET_IMPL_FAILED;
+    }
+}
+
 
 template <typename K>
 spir_basis* _spir_basis_new(

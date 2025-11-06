@@ -17,6 +17,7 @@ echo -e "${GREEN}=== Building C++ backend with BLAS ===${NC}"
 BUILD_DIR="work_cxx_blas"
 INSTALL_DIR="$BUILD_DIR/install"
 
+rm -rf "$BUILD_DIR/build_backend"
 mkdir -p "$BUILD_DIR/build_backend"
 mkdir -p "$INSTALL_DIR"
 

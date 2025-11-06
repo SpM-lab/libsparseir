@@ -78,7 +78,7 @@ else()
 endif()
 
 
-set(EIGEN3_REQUIRED_VERSION "3.4.0")
+set(EIGEN3_REQUIRED_VERSION "3.4.1")
 find_package (Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
 if(NOT Eigen3_FOUND)
     message(STATUS "Eigen3 not found in system, fetching from GitHub...")

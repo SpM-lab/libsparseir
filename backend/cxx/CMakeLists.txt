@@ -36,11 +36,13 @@ if(SPARSEIR_DEBUG)
 endif()
 
 # Find Eigen3
-set(EIGEN3_REQUIRED_VERSION "3.4.0")
+set(EIGEN3_REQUIRED_VERSION "3.4.1")
 find_package(Eigen3 ${EIGEN3_REQUIRED_VERSION} QUIET NO_MODULE)
 if(NOT Eigen3_FOUND)
     message(STATUS "Eigen3 not found, fetching from GitLab...")
     include(FetchContent)
+    # Disable Eigen3's own tests to avoid running them in CI
+    set(EIGEN_BUILD_TESTING OFF CACHE BOOL "Build Eigen3 tests" FORCE)
     FetchContent_Declare(Eigen3
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
         GIT_TAG ${EIGEN3_REQUIRED_VERSION}

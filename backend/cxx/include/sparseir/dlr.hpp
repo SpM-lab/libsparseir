@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "sparseir/funcs.hpp"
+#include "sparseir/basis.hpp"
 
 namespace sparseir {
 
@@ -16,24 +17,24 @@ public:
     double beta;
     Eigen::VectorXd poles;
     double wmax;
-    std::vector<double> weights;
-    std::function<double(double, double)> weight_func;
+    std::vector<double> inv_weights;
+    std::function<double(double)> inv_weight_func;
 
-    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double, double)> weight_func)
-        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0), weight_func(weight_func)
+    MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax, std::function<double(double)> inv_weight_func)
+        : beta(beta), poles(poles), wmax(wmax), inv_weights(poles.size(), 1.0), inv_weight_func(inv_weight_func)
     {
-        if (!weight_func) {
-            throw std::runtime_error("weight_func is nullptr in MatsubaraPoles constructor");
+        if (!inv_weight_func) {
+            throw std::runtime_error("inv_weight_func is nullptr in MatsubaraPoles constructor");
         }
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
-            weights[i] = weight_func(beta, poles(i));
+            inv_weights[i] = inv_weight_func(poles(i));
         }
     }
 
     template <typename T = Statistics>
     MatsubaraPoles(double beta, const Eigen::VectorXd &poles, double wmax,
                    typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
-        : beta(beta), poles(poles), wmax(wmax), weights(poles.size(), 1.0)
+        : beta(beta), poles(poles), wmax(wmax), inv_weights(poles.size(), 1.0)
     {
     }
 
@@ -63,8 +64,8 @@ public:
         Eigen::VectorXcd result(poles.size());
         for (Eigen::Index i = 0; i < poles.size(); ++i) {
             // double y = poles(i) / wmax;
-            double weight = weights[i];
-            result(i) = 1.0 / ((n.valueim(beta) - poles(i)) * weight);
+            double inv_weight = inv_weights[i];
+            result(i) = inv_weight / (n.valueim(beta) - poles(i));
         }
         return result;
     }
@@ -97,16 +98,16 @@ public:
         
         // Prepare data for the new MatsubaraPoles
         Eigen::VectorXd new_poles(indices.size());
-        std::vector<double> new_weights(indices.size());
+        std::vector<double> new_inv_weights(indices.size());
         
-        // Copy selected poles and weights
+        // Copy selected poles and inv_weights
         for (size_t i = 0; i < indices.size(); ++i) {
             new_poles(i) = poles(indices[i]);
-            new_weights[i] = weights[indices[i]];
+            new_inv_weights[i] = inv_weights[indices[i]];
         }
         
-        // Create new MatsubaraPoles with selected poles and the same weight_func
-        return std::make_shared<MatsubaraPoles>(beta, new_poles, wmax, weight_func);
+        // Create new MatsubaraPoles with selected poles and the same inv_weight_func
+        return std::make_shared<MatsubaraPoles>(beta, new_poles, wmax, inv_weight_func);
     }
 };
 
@@ -117,16 +118,16 @@ public:
     double beta;
     Eigen::VectorXd poles;
     double wmax;
-    Eigen::VectorXd weights;
+    Eigen::VectorXd inv_weights; // inverse weights (numerically stable)
 
-    DLRBasisFunctions(double beta, const Eigen::VectorXd &poles, double wmax, const Eigen::VectorXd &weights)
-        : beta(beta), poles(poles), wmax(wmax), weights(weights)
+    DLRBasisFunctions(double beta, const Eigen::VectorXd &poles, double wmax, const Eigen::VectorXd &inv_weights)
+        : beta(beta), poles(poles), wmax(wmax), inv_weights(inv_weights)
     {
     }
 
     template <typename T = S>
     DLRBasisFunctions(double beta, const Eigen::VectorXd &poles, double wmax, typename std::enable_if<std::is_same<T, Fermionic>::value>::type* = nullptr)
-        : beta(beta), poles(poles), wmax(wmax), weights(Eigen::VectorXd::Ones(poles.size()))
+        : beta(beta), poles(poles), wmax(wmax), inv_weights(Eigen::VectorXd::Ones(poles.size()))
     {
     }
 
@@ -140,7 +141,7 @@ public:
             auto kernel = LogisticKernel(beta * wmax); // k(x, y)
             double x = 2 * tau / beta - 1.0;
             double y = poles(i) / wmax;
-            result(i) = - kernel.compute(x, y) / weights(i);
+            result(i) = - kernel.compute(x, y) * inv_weights(i);
         }
         return result;
     }
@@ -156,7 +157,7 @@ public:
             double x = 2.0 * tau / beta - 1.0;
             double y = poles(i) / wmax;
             double k_tau_omega = kernel.compute(x, y);
-            result(i) = - k_tau_omega / (y * weights(i));
+            result(i) = - k_tau_omega * inv_weights(i) / y;
         }
         return result;
     }
@@ -175,7 +176,7 @@ public:
     std::size_t size() const { return poles.size(); }
 
     DLRBasisFunctions slice(size_t i) const {
-        return DLRBasisFunctions(beta, poles.segment(i, 1), wmax, weights.segment(i, 1));
+        return DLRBasisFunctions(beta, poles.segment(i, 1), wmax, inv_weights.segment(i, 1));
     }
 
     // Slice method to extract multiple functions by indices
@@ -185,16 +186,16 @@ public:
         
         // Prepare data for the new DLRBasisFunctions
         Eigen::VectorXd new_poles(indices.size());
-        Eigen::VectorXd new_weights(indices.size());
+        Eigen::VectorXd new_inv_weights(indices.size());
         
-        // Copy selected poles and weights
+        // Copy selected poles and inv_weights
         for (size_t i = 0; i < indices.size(); ++i) {
             new_poles(i) = poles(indices[i]);
-            new_weights(i) = weights(indices[i]);
+            new_inv_weights(i) = inv_weights(indices[i]);
         }
         
         // Create new DLRBasisFunctions with selected poles
-        return std::make_shared<DLRBasisFunctions>(beta, new_poles, wmax, new_weights);
+        return std::make_shared<DLRBasisFunctions>(beta, new_poles, wmax, new_inv_weights);
     }
 
     int nroots() const {
@@ -256,7 +257,7 @@ public:
     std::shared_ptr<MatsubaraPoles<S>> uhat;
     Eigen::MatrixXd fitmat;
     sparseir::JacobiSVD<Eigen::MatrixXd> matrix;
-    std::function<double(double, double)> weight_func;
+    std::function<double(double)> inv_weight_func;
     Eigen::VectorXd _ir_default_tau_sampling_points;
 
 
@@ -268,14 +269,14 @@ public:
           wmax(b.get_wmax()),
           accuracy(b.get_accuracy()),
           u(nullptr),
-          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.weight_func)),
+          uhat(std::make_shared<MatsubaraPoles<S>>(b.get_beta(), poles, b.get_wmax(), b.inv_weight_func)),
           _ir_default_tau_sampling_points(b.default_tau_sampling_points())
     {
-        Eigen::VectorXd weights(poles.size());
+        Eigen::VectorXd inv_weights(poles.size());
         for (int i = 0; i < poles.size(); ++i) {
-            weights(i) = b.weight_func(beta, poles[i]);
+            inv_weights(i) = b.inv_weight_func(poles[i]);
         }
-        auto base_u_funcs = std::make_shared<DLRBasisFunctions<S>>(b.get_beta(), poles, b.get_wmax(), weights);
+        auto base_u_funcs = std::make_shared<DLRBasisFunctions<S>>(b.get_beta(), poles, b.get_wmax(), inv_weights);
         this->u = std::make_shared<DLRTauFuncsType<S>>(base_u_funcs, b.get_beta());
 
         // Fitting matrix from IR
@@ -289,7 +290,7 @@ public:
 
         matrix.compute(fitmat, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-        weight_func = b.weight_func;
+        inv_weight_func = b.inv_weight_func;
         wmax = b.get_wmax();
     }
 

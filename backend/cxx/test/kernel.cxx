@@ -351,25 +351,43 @@ TEST_CASE("Kernel Accuracy Tests", "[kernel]")
     }
 }
 
-TEST_CASE("weight_func", "[kernel]")
+TEST_CASE("inv_weight_func", "[kernel]")
 {
     double lambda = 100.;
     double beta = 10.0;
     double omega_max = lambda / beta;
 
+    // LogisticKernel - Fermionic
     {
         sparseir::LogisticKernel K(lambda);
-        auto wf = K.weight_func<double>(sparseir::Bosonic());
+        auto inv_wf = K.inv_weight_func<double>(sparseir::Fermionic());
         double omega = 0.1 * omega_max;
-        REQUIRE(wf(beta, omega) == 1.0 / tanh(0.5 * beta * omega));
+        REQUIRE(inv_wf(beta, omega) == 1.0);
     }
 
-    // RegularizedBoseKernel
+    // LogisticKernel - Bosonic
+    {
+        sparseir::LogisticKernel K(lambda);
+        auto inv_wf = K.inv_weight_func<double>(sparseir::Bosonic());
+        double omega = 0.1 * omega_max;
+        using std::tanh;
+        REQUIRE(inv_wf(beta, omega) == tanh(0.5 * beta * omega));
+    }
+
+    // RegularizedBoseKernel - Bosonic
     {
         sparseir::RegularizedBoseKernel K(lambda);
-        auto wf = K.weight_func<double>(sparseir::Bosonic());
+        auto inv_wf = K.inv_weight_func<double>(sparseir::Bosonic());
         double omega = 0.1 * omega_max;
-        REQUIRE(wf(beta, omega) == 1.0 / omega);
+        REQUIRE(inv_wf(beta, omega) == omega);
+    }
+
+    // Test numerical stability: inv_weight_func should handle omega=0 better
+    {
+        sparseir::RegularizedBoseKernel K(lambda);
+        auto inv_wf = K.inv_weight_func<double>(sparseir::Bosonic());
+        double omega = 0.0;
+        REQUIRE(inv_wf(beta, omega) == 0.0);  // No division by zero
     }
 
 }

@@ -51,17 +51,21 @@ public:
     }
 
     /**
-     * @brief Return the weight function for given statistics.
+     * @brief Return the inverse weight function for given statistics.
+     * 
+     * This is numerically more stable than weight_func, avoiding division by zero.
+     * For fermions: inv_weight = 1.0 (since weight = 1.0)
+     * For bosons: inv_weight = weight^{-1}, computed in a stable way.
      *
      * @param statistics 'F' for fermions or 'B' for bosons.
      */
     template <typename T>
-    std::function<T(T, T)> weight_func(Fermionic) const {
+    std::function<T(T, T)> inv_weight_func(Fermionic) const {
         return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     template <typename T>
-    std::function<T(T, T)> weight_func(Bosonic) const {
+    std::function<T(T, T)> inv_weight_func(Bosonic) const {
         return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
@@ -325,16 +329,18 @@ public:
     double conv_radius() const override { return 40.0 * this->lambda_; }
 
     template <typename T>
-    std::function<T(T, T)> weight_func(Fermionic) const
+    std::function<T(T, T)> inv_weight_func(Fermionic) const
     {
-        return [](T beta , T omega) { (void)beta; (void)omega; return 1.0; };
+        return [](T beta, T omega) { (void)beta; (void)omega; return 1.0; };
     }
 
     template <typename T>
-    std::function<T(T, T)> weight_func(Bosonic) const
+    std::function<T(T, T)> inv_weight_func(Bosonic) const
     {
         using std::tanh;
-        return [](T beta, T omega) { return 1.0 / tanh(0.5 * beta * omega); };
+        // inv_weight = tanh(0.5 * beta * omega) is numerically stable
+        // This avoids division by zero when tanh(0.5 * beta * omega) approaches zero
+        return [](T beta, T omega) { return tanh(0.5 * beta * omega); };
     }
 
 private:
@@ -512,7 +518,7 @@ public:
     double conv_radius() const override { return 40.0 * this->lambda_; }
 
     template <typename T>
-    std::function<T(T, T)> weight_func(Fermionic) const
+    std::function<T(T, T)> inv_weight_func(Fermionic) const
     {
         std::cerr
             << "RegularizedBoseKernel does not support fermionic functions"
@@ -522,12 +528,12 @@ public:
     }
 
     template <typename T>
-    std::function<T(T, T)> weight_func(Bosonic) const
+    std::function<T(T, T)> inv_weight_func(Bosonic) const
     {
-        using std::tanh;
+        // inv_weight = omega is numerically stable (no division)
         return [](T beta, T omega) {
             (void)beta;  // Silence unused parameter warning
-            return static_cast<T>(1.0) / omega;
+            return omega;
         };
     }
 

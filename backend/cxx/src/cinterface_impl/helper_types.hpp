@@ -1,6 +1,16 @@
 #include "sparseir/sparseir.hpp"
 #include "_util.hpp"
 #include <memory>
+#include <iostream>
+#include <cstdlib>
+
+// DEBUG_LOG macro for helper_types.hpp
+inline void DEBUG_LOG_HELPER(const std::string& msg) {
+    const char* env = std::getenv("SPARSEIR_DEBUG");
+    if (env && std::string(env) == "1") {
+        std::cerr << "[DEBUG] " << msg << std::endl;
+    }
+}
 
 class _AbstractFuncs {
 public:
@@ -37,6 +47,11 @@ public:
     virtual std::shared_ptr<_AbstractFuncs> slice(const std::vector<size_t> &indices) const override
     {
         return _safe_dynamic_pointer_cast<_AbstractFuncs>(std::make_shared<MatsubaraBasisFunctions<InternalType>>(impl->slice(indices)));
+    }
+
+    // Getter for the underlying implementation
+    std::shared_ptr<InternalType> get_impl() const {
+        return impl;
     }
 };
 
@@ -240,6 +255,7 @@ public:
     virtual std::shared_ptr<AbstractContinuousFunctions> get_u() const = 0;
     virtual std::shared_ptr<AbstractContinuousFunctions> get_v() const = 0;
     virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat() const = 0;
+    virtual std::shared_ptr<AbstractMatsubaraFunctions> get_uhat_full() const = 0;
 };
 
 
@@ -294,6 +310,14 @@ public:
                 sparseir::PiecewiseLegendreFTVector<S>>>(impl->uhat));
     }
 
+    virtual std::shared_ptr<AbstractMatsubaraFunctions>
+    get_uhat_full() const override
+    {
+        return std::static_pointer_cast<AbstractMatsubaraFunctions>(
+            std::make_shared<MatsubaraBasisFunctions<
+                sparseir::PiecewiseLegendreFTVector<S>>>(impl->uhat_full));
+    }
+
     std::shared_ptr<sparseir::FiniteTempBasis<S>> get_impl() const
     {
         return impl;
@@ -310,29 +334,42 @@ public:
     {
         bool fence = false;
         int L = size();
-
-        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
-        std::vector<int64_t> points(matsubara_points.size());
-        std::transform(
-            matsubara_points.begin(), matsubara_points.end(), points.begin(),
-        [](const sparseir::MatsubaraFreq<S> &freq) {
-            return static_cast<int64_t>(freq.get_n());
-        });
-        return points;
+        
+        try {
+            std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(L, fence, positive_only);
+            std::vector<int64_t> points(matsubara_points.size());
+            std::transform(
+                matsubara_points.begin(), matsubara_points.end(), points.begin(),
+            [](const sparseir::MatsubaraFreq<S> &freq) {
+                return static_cast<int64_t>(freq.get_n());
+            });
+            return points;
+        } catch (const std::exception &e) {
+            throw;
+        }
     }
 
-    std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only) const
+    std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only, bool mitigate = false) const
     {
-        bool fence = false;
-
-        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, fence, positive_only);
-        std::vector<int64_t> points(matsubara_points.size());
-        std::transform(
-            matsubara_points.begin(), matsubara_points.end(), points.begin(),
-        [](const sparseir::MatsubaraFreq<S> &freq) {
-            return static_cast<int64_t>(freq.get_n());
-        });
-        return points;
+        bool fence = mitigate;
+        
+        try {
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] n_points=" + std::to_string(n_points) + ", positive_only=" + std::to_string(positive_only) + ", mitigate=" + std::to_string(mitigate) + ", fence=" + std::to_string(fence));
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] calling impl->default_matsubara_sampling_points");
+            std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, fence, positive_only);
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] got " + std::to_string(matsubara_points.size()) + " points");
+            std::vector<int64_t> points(matsubara_points.size());
+            std::transform(
+                matsubara_points.begin(), matsubara_points.end(), points.begin(),
+            [](const sparseir::MatsubaraFreq<S> &freq) {
+                return static_cast<int64_t>(freq.get_n());
+            });
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] returning " + std::to_string(points.size()) + " points");
+            return points;
+        } catch (const std::exception &e) {
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] Exception: " + std::string(e.what()));
+            throw;
+        }
     }
 
     std::vector<double> default_omega_sampling_points() const
@@ -410,6 +447,13 @@ public:
             std::make_shared<
                 MatsubaraBasisFunctions<sparseir::MatsubaraPoles<S>>>(
                 impl->uhat));
+    }
+
+    virtual std::shared_ptr<AbstractMatsubaraFunctions>
+    get_uhat_full() const override
+    {
+        // DLR basis does not have uhat_full
+        throw std::runtime_error("get_uhat_full is not supported for DLR basis");
     }
 
     virtual std::vector<double> get_poles() const override
