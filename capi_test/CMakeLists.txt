@@ -8,13 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(SparseIR REQUIRED)
 
 # Find Eigen3
-find_package(Eigen3 3.4.0 QUIET NO_MODULE)
+find_package(Eigen3 3.4.1 QUIET NO_MODULE)
 if(NOT Eigen3_FOUND)
     message(STATUS "Eigen3 not found in system, fetching from GitHub...")
     include(FetchContent)
     FetchContent_Declare(Eigen3
         GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
-        GIT_TAG 3.4.0
+        GIT_TAG 3.4.1
     )
     FetchContent_MakeAvailable(Eigen3)
 endif()
