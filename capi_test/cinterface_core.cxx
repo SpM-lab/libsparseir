@@ -540,18 +540,20 @@ TEST_CASE("Test spir_sve_result_from_matrix", "[cinterface]")
     REQUIRE(status == SPIR_COMPUTATION_SUCCESS);
     
     // Get Gauss points and weights
-    int nx = n_gauss * n_segments_x;
-    int ny = n_gauss * n_segments_y;
+    // Note: n_segments_x and n_segments_y are the number of boundary points (n_segments + 1),
+    // but spir_gauss_legendre_rule_piecewise_double expects the number of segments (n_segments)
+    int nx = n_gauss * (n_segments_x - 1);  // n_segments_x - 1 is the number of segments
+    int ny = n_gauss * (n_segments_y - 1);  // n_segments_y - 1 is the number of segments
     std::vector<double> x(nx), w_x(nx);
     std::vector<double> y(ny), w_y(ny);
     
     int status_gauss;
     status_gauss = spir_gauss_legendre_rule_piecewise_double(
-        n_gauss, segments_x.data(), n_segments_x, x.data(), w_x.data(), &status_gauss);
+        n_gauss, segments_x.data(), n_segments_x - 1, x.data(), w_x.data(), &status_gauss);  // n_segments_x - 1 is the number of segments
     REQUIRE(status_gauss == SPIR_COMPUTATION_SUCCESS);
     
     status_gauss = spir_gauss_legendre_rule_piecewise_double(
-        n_gauss, segments_y.data(), n_segments_y, y.data(), w_y.data(), &status_gauss);
+        n_gauss, segments_y.data(), n_segments_y - 1, y.data(), w_y.data(), &status_gauss);  // n_segments_y - 1 is the number of segments
     REQUIRE(status_gauss == SPIR_COMPUTATION_SUCCESS);
     
     // Create a simple test kernel matrix

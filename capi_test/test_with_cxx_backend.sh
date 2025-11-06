@@ -28,7 +28,7 @@ mkdir -p "$WORK_DIR/build_backend"
 cd "$WORK_DIR/build_backend"
 
 cmake "$BACKEND_DIR" \
-    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" \
     -DSPARSEIR_BUILD_TESTING=OFF \
     ${SPARSEIR_USE_BLAS_ILP64:+-DSPARSEIR_USE_BLAS_ILP64=ON}
@@ -46,10 +46,10 @@ mkdir -p "$WORK_DIR/build_test"
 cd "$WORK_DIR/build_test"
 
 # Set SDK path explicitly to avoid CMake auto-detection issues
-export SDKROOT=$(xcrun --show-sdk-path)
+#export SDKROOT=$(xcrun --show-sdk-path)
 
 cmake "$SCRIPT_DIR" \
-    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_PREFIX_PATH="$INSTALL_DIR"
 
 echo -e "${YELLOW}Building capi_test...${NC}"
