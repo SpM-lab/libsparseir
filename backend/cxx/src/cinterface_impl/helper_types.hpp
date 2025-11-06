@@ -1,6 +1,16 @@
 #include "sparseir/sparseir.hpp"
 #include "_util.hpp"
 #include <memory>
+#include <iostream>
+#include <cstdlib>
+
+// DEBUG_LOG macro for helper_types.hpp
+inline void DEBUG_LOG_HELPER(const std::string& msg) {
+    const char* env = std::getenv("SPARSEIR_DEBUG");
+    if (env && std::string(env) == "1") {
+        std::cerr << "[DEBUG] " << msg << std::endl;
+    }
+}
 
 class _AbstractFuncs {
 public:
@@ -343,15 +353,29 @@ public:
     std::vector<int64_t> default_matsubara_sampling_points_ext(int n_points, bool positive_only, bool mitigate = false) const
     {
         bool fence = mitigate;
-
-        std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, fence, positive_only);
-        std::vector<int64_t> points(matsubara_points.size());
-        std::transform(
-            matsubara_points.begin(), matsubara_points.end(), points.begin(),
-        [](const sparseir::MatsubaraFreq<S> &freq) {
-            return static_cast<int64_t>(freq.get_n());
-        });
-        return points;
+        
+        std::cerr << "[DEBUG _IRBasis::default_matsubara_sampling_points_ext] ENTER: n_points=" << n_points << ", positive_only=" << positive_only << ", mitigate=" << mitigate << ", fence=" << fence << std::endl;
+        try {
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] n_points=" + std::to_string(n_points) + ", positive_only=" + std::to_string(positive_only) + ", mitigate=" + std::to_string(mitigate) + ", fence=" + std::to_string(fence));
+            std::cerr << "[DEBUG _IRBasis::default_matsubara_sampling_points_ext] calling impl->default_matsubara_sampling_points" << std::endl;
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] calling impl->default_matsubara_sampling_points");
+            std::vector<sparseir::MatsubaraFreq<S>> matsubara_points = impl->default_matsubara_sampling_points(n_points, fence, positive_only);
+            std::cerr << "[DEBUG _IRBasis::default_matsubara_sampling_points_ext] got " << matsubara_points.size() << " points" << std::endl;
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] got " + std::to_string(matsubara_points.size()) + " points");
+            std::vector<int64_t> points(matsubara_points.size());
+            std::transform(
+                matsubara_points.begin(), matsubara_points.end(), points.begin(),
+            [](const sparseir::MatsubaraFreq<S> &freq) {
+                return static_cast<int64_t>(freq.get_n());
+            });
+            std::cerr << "[DEBUG _IRBasis::default_matsubara_sampling_points_ext] returning " << points.size() << " points" << std::endl;
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] returning " + std::to_string(points.size()) + " points");
+            return points;
+        } catch (const std::exception &e) {
+            std::cerr << "[DEBUG _IRBasis::default_matsubara_sampling_points_ext] Exception: " << e.what() << std::endl;
+            DEBUG_LOG_HELPER("[DEBUG _IRBasis::default_matsubara_sampling_points_ext] Exception: " + std::string(e.what()));
+            throw;
+        }
     }
 
     std::vector<double> default_omega_sampling_points() const

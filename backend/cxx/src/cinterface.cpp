@@ -2488,35 +2488,63 @@ int spir_basis_get_n_default_matsus_ext(const spir_basis *b, bool positive_only,
 
 int spir_basis_get_default_matsus_ext(const spir_basis *b, bool positive_only, bool mitigate, int n_points, int64_t *points, int *n_points_returned)
 {
+    std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] ENTER: b=" << (void*)b << ", positive_only=" << positive_only << ", mitigate=" << mitigate << ", n_points=" << n_points << std::endl;
     if (!b || !points || !n_points_returned) {
+        DEBUG_LOG("Error: Invalid arguments in spir_basis_get_default_matsus_ext");
+        std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Invalid arguments" << std::endl;
         return SPIR_INVALID_ARGUMENT;
     }
 
     auto impl = get_impl_basis(b);
     if (!impl) {
+        DEBUG_LOG("Error: Failed to get basis implementation in spir_basis_get_default_matsus_ext");
+        std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Failed to get impl" << std::endl;
         return SPIR_GET_IMPL_FAILED;
     }
 
     if (!is_ir_basis(b)) {
-        DEBUG_LOG("Error: The basis is not an IR basis");
+        DEBUG_LOG("Error: The basis is not an IR basis in spir_basis_get_default_matsus_ext");
+        std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Not an IR basis" << std::endl;
         return SPIR_INVALID_ARGUMENT;
     }
 
     try {
+        DEBUG_LOG("spir_basis_get_default_matsus_ext: statistics=" + std::to_string(impl->get_statistics()) + ", n_points=" + std::to_string(n_points) + ", positive_only=" + std::to_string(positive_only) + ", mitigate=" + std::to_string(mitigate));
+        std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] statistics=" << impl->get_statistics() << ", n_points=" << n_points << ", positive_only=" << positive_only << ", mitigate=" << mitigate << std::endl;
         if (impl->get_statistics() == SPIR_STATISTICS_FERMIONIC) {
+            DEBUG_LOG("spir_basis_get_default_matsus_ext: casting to Fermionic");
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Casting to Fermionic" << std::endl;
             auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Fermionic>>(impl);
+            DEBUG_LOG("spir_basis_get_default_matsus_ext: calling default_matsubara_sampling_points_ext");
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Calling default_matsubara_sampling_points_ext" << std::endl;
             auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(n_points, positive_only, mitigate);
+            DEBUG_LOG("spir_basis_get_default_matsus_ext: got " + std::to_string(matsubara_points.size()) + " points");
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Got " << matsubara_points.size() << " points" << std::endl;
             *n_points_returned = matsubara_points.size();
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] SUCCESS" << std::endl;
             return SPIR_COMPUTATION_SUCCESS;
         } else {
+            DEBUG_LOG("spir_basis_get_default_matsus_ext: casting to Bosonic");
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Casting to Bosonic" << std::endl;
             auto ir_basis = _safe_static_pointer_cast<_IRBasis<sparseir::Bosonic>>(impl);
+            DEBUG_LOG("spir_basis_get_default_matsus_ext: calling default_matsubara_sampling_points_ext");
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Calling default_matsubara_sampling_points_ext" << std::endl;
             auto matsubara_points = ir_basis->default_matsubara_sampling_points_ext(n_points, positive_only, mitigate);
+            DEBUG_LOG("spir_basis_get_default_matsus_ext: got " + std::to_string(matsubara_points.size()) + " points");
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Got " << matsubara_points.size() << " points" << std::endl;
             *n_points_returned = matsubara_points.size();
             std::copy(matsubara_points.begin(), matsubara_points.end(), points);
+            std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] SUCCESS" << std::endl;
             return SPIR_COMPUTATION_SUCCESS;
         }
     } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_basis_get_default_matsus_ext: " + std::string(e.what()));
+        std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Exception: " << e.what() << std::endl;
+        return SPIR_GET_IMPL_FAILED;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_basis_get_default_matsus_ext");
+        std::cerr << "[DEBUG spir_basis_get_default_matsus_ext] Unknown exception" << std::endl;
         return SPIR_GET_IMPL_FAILED;
     }
 }
