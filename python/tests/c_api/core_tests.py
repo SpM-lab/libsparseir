@@ -57,11 +57,11 @@ class TestCAPICoreFixed:
         assert status.value == COMPUTATION_SUCCESS
 
         # Compute SVE
-        cutoff = -1.0
+        # Note: cutoff parameter was removed from C-API
         lmax = -1
         n_gauss = -1
         Twork = SPIR_TWORK_FLOAT64X2
-        sve = _lib.spir_sve_result_new(kernel, c_double(1e-6), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
+        sve = _lib.spir_sve_result_new(kernel, c_double(1e-6), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         assert status.value == COMPUTATION_SUCCESS
         assert sve is not None
 
@@ -96,11 +96,11 @@ class TestCAPICoreFixed:
             assert status.value == COMPUTATION_SUCCESS
 
             # Compute SVE
-            cutoff = -1.0
+            # Note: cutoff parameter was removed from C-API
             lmax = -1
             n_gauss = -1
             Twork = SPIR_TWORK_FLOAT64X2
-            sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
+            sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
             assert status.value == COMPUTATION_SUCCESS
 
             # Create basis
@@ -145,7 +145,7 @@ class TestCAPICoreFixed:
         n_gauss = -1
         Twork = SPIR_TWORK_FLOAT64X2
         max_size = -1
-        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
+        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(beta),
                                    c_double(wmax), c_double(1e-10), kernel, sve, max_size, byref(status))
 
@@ -190,23 +190,23 @@ class TestCAPICoreFixed:
         lmax = -1
         n_gauss = -1
         Twork = SPIR_TWORK_FLOAT64X2
-        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
+        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(beta),
                                    c_double(wmax), c_double(1e-10), kernel, sve, max_size, byref(status))
 
         # Get default Matsubara points
         n_matsu = c_int()
-        status_val = _lib.spir_basis_get_n_default_matsus(basis, c_bool(False), byref(n_matsu))
+        status_val = _lib.spir_basis_get_n_default_matsus(basis, c_int(0), byref(n_matsu))
         assert status_val == COMPUTATION_SUCCESS
         assert n_matsu.value > 0
 
         default_matsus = np.zeros(n_matsu.value, dtype=np.int64)
-        status_val = _lib.spir_basis_get_default_matsus(basis, c_bool(False),
+        status_val = _lib.spir_basis_get_default_matsus(basis, c_int(0),
                                                        default_matsus.ctypes.data_as(POINTER(c_int64)))
         assert status_val == COMPUTATION_SUCCESS
 
         # Create Matsubara sampling
-        matsu_sampling = _lib.spir_matsu_sampling_new(basis, c_bool(False), n_matsu.value,
+        matsu_sampling = _lib.spir_matsu_sampling_new(basis, c_int(0), n_matsu.value,
                                                      default_matsus.ctypes.data_as(POINTER(c_int64)),
                                                      byref(status))
         assert status.value == COMPUTATION_SUCCESS
@@ -231,7 +231,7 @@ class TestCAPICoreFixed:
         n_gauss = -1
         Twork = SPIR_TWORK_FLOAT64X2
         max_size = -1
-        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
+        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(beta),
                                    c_double(wmax), c_double(1e-10), kernel, sve, max_size, byref(status))
 
@@ -262,7 +262,7 @@ class TestCAPICoreFixed:
         lmax = -1
         n_gauss = -1
         Twork = SPIR_TWORK_FLOAT64X2
-        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
+        sve = _lib.spir_sve_result_new(kernel, c_double(1e-10), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         basis = _lib.spir_basis_new(c_int(SPIR_STATISTICS_FERMIONIC), c_double(10.0),
                                    c_double(1.0), c_double(1e-10), kernel, sve, -1, byref(status))
 
@@ -300,11 +300,11 @@ class TestBasisFunctionEvaluation:
             return None, status.value
 
         # Create SVE result
-        cutoff = -1.0
+        # Note: cutoff parameter was removed from C-API
         lmax = -1
         n_gauss = -1
         Twork = SPIR_TWORK_FLOAT64X2
-        sve = _lib.spir_sve_result_new(kernel, c_double(epsilon), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
+        sve = _lib.spir_sve_result_new(kernel, c_double(epsilon), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(status))
         if status.value != COMPUTATION_SUCCESS or sve is None:
             _lib.spir_kernel_release(kernel)
             return None, status.value
@@ -476,12 +476,12 @@ class TestBasisFunctionEvaluation:
                 assert kernel is not None
 
                 # Create SVE result
-                cutoff = -1.0
+                # Note: cutoff parameter was removed from C-API
                 lmax = -1
                 n_gauss = -1
                 Twork = SPIR_TWORK_FLOAT64X2
                 sve_status = c_int()
-                sve_result = _lib.spir_sve_result_new(kernel, c_double(epsilon), c_double(cutoff), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(sve_status))
+                sve_result = _lib.spir_sve_result_new(kernel, c_double(epsilon), c_int(lmax), c_int(n_gauss), c_int(Twork), byref(sve_status))
                 assert sve_status.value == COMPUTATION_SUCCESS
                 assert sve_result is not None
 

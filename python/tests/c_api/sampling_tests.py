@@ -115,19 +115,19 @@ class TestSamplingBasics:
 
         # Get default Matsubara points
         n_matsu_points = c_int()
-        status = _lib.spir_basis_get_n_default_matsus(basis, c_bool(positive_only), byref(n_matsu_points))
+        status = _lib.spir_basis_get_n_default_matsus(basis, c_int(1 if positive_only else 0), byref(n_matsu_points))
         assert status == COMPUTATION_SUCCESS
         assert n_matsu_points.value > 0
 
         matsu_points = np.zeros(n_matsu_points.value, dtype=np.int64)
-        status = _lib.spir_basis_get_default_matsus(basis, c_bool(positive_only),
+        status = _lib.spir_basis_get_default_matsus(basis, c_int(1 if positive_only else 0),
                                                    matsu_points.ctypes.data_as(POINTER(c_int64)))
         assert status == COMPUTATION_SUCCESS
 
         # Create Matsubara sampling
         sampling_status = c_int()
         sampling = _lib.spir_matsu_sampling_new(
-            basis, c_bool(positive_only), n_matsu_points.value,
+            basis, c_int(1 if positive_only else 0), n_matsu_points.value,
             matsu_points.ctypes.data_as(POINTER(c_int64)),
             byref(sampling_status)
         )
@@ -350,17 +350,17 @@ class TestSamplingEvaluationComplex:
 
         # Create Matsubara sampling
         n_matsu_points = c_int()
-        status = _lib.spir_basis_get_n_default_matsus(basis, c_bool(positive_only), byref(n_matsu_points))
+        status = _lib.spir_basis_get_n_default_matsus(basis, c_int(1 if positive_only else 0), byref(n_matsu_points))
         assert status == COMPUTATION_SUCCESS
 
         matsu_points = np.zeros(n_matsu_points.value, dtype=np.int64)
-        status = _lib.spir_basis_get_default_matsus(basis, c_bool(positive_only),
+        status = _lib.spir_basis_get_default_matsus(basis, c_int(1 if positive_only else 0),
                                                    matsu_points.ctypes.data_as(POINTER(c_int64)))
         assert status == COMPUTATION_SUCCESS
 
         sampling_status = c_int()
         sampling = _lib.spir_matsu_sampling_new(
-            basis, c_bool(positive_only), n_matsu_points.value,
+            basis, c_int(1 if positive_only else 0), n_matsu_points.value,
             matsu_points.ctypes.data_as(POINTER(c_int64)),
             byref(sampling_status)
         )
