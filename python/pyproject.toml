@@ -80,6 +80,3 @@ python_functions = ["test_*"]
 dev = [
     "pytest>=8.4.1",
 ]
-
-[tool.uv]
-version = "0.8.15"

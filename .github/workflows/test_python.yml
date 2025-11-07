@@ -43,19 +43,53 @@ jobs:
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.8.15"
           python-version: ${{ matrix.python-version }}
-          enable-cache: true
       
       - name: Setup and run tests
         working-directory: python
-        timeout-minutes: 30
+        timeout-minutes: 45
         env:
-          UV_HTTP_TIMEOUT: 300
+          UV_HTTP_TIMEOUT: 600
           UV_CONCURRENT_DOWNLOADS: 1
+          UV_INDEX_STRATEGY: unsafe-any-match
         run: |
           chmod +x run_tests.sh
-          ./run_tests.sh
+          
+          # Retry logic for uv sync with exponential backoff
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          RETRY_DELAY=10
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES"
+            
+            # Run setup_build.py first
+            python3 setup_build.py
+            
+            # Try uv sync with verbose output
+            if uv sync --refresh --verbose 2>&1 | tee /tmp/uv_sync.log; then
+              echo "✓ uv sync completed successfully"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "✗ uv sync failed, waiting ${RETRY_DELAY}s before retry..."
+                sleep $RETRY_DELAY
+                RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
+                # Clean up partial downloads
+                [ -d ".venv" ] && rm -rf ".venv"
+              else
+                echo "✗ uv sync failed after $MAX_RETRIES attempts"
+                echo "Last 50 lines of uv sync log:"
+                tail -50 /tmp/uv_sync.log || true
+                exit 1
+              fi
+            fi
+          done
+          
+          # Run tests
+          echo "Running tests..."
+          uv run pytest tests/ -v
 
   test-python-rollup:
     runs-on: ubuntu-latest
