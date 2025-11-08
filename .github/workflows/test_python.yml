@@ -47,8 +47,18 @@ jobs:
       
       - name: Setup and run tests
         working-directory: python
-        timeout-minutes: 30
-        env:
-          UV_HTTP_TIMEOUT: 300
         run: |
-          uv sync --refresh
+          chmod +x run_tests.sh
+          ./run_tests.sh
+
+  test-python-rollup:
+    runs-on: ubuntu-latest
+    needs: test-python
+    if: always()
+    steps:
+      - name: All tests passed
+        if: ${{ !contains(needs.*.result, 'failure') }}
+        run: exit 0
+      - name: Some tests failed
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
