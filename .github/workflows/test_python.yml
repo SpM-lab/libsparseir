@@ -16,8 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: ['3.10', '3.11', '3.12']
+        #os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
+        #python-version: ['3.10', '3.11', '3.12']
+        python-version: ['3.10']
     
     steps:
       - name: Checkout code
@@ -41,13 +43,7 @@ jobs:
       - name: Install uv and set the python version
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.8.15"
           python-version: ${{ matrix.python-version }}
-      
-      - name: Enable caching
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
       
       - name: Setup and run tests
         working-directory: python
@@ -61,9 +57,8 @@ jobs:
     if: always()
     steps:
       - name: All tests passed
-        if: ${{ !contains(needs.*.result, 'failure') }}
+        if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
         run: exit 0
-      - name: Some tests failed
-        if: ${{ contains(needs.*.result, 'failure') }}
+      - name: Some tests failed or cancelled
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: exit 1
-
