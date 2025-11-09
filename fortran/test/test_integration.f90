@@ -59,7 +59,7 @@ stop 1
 stop 1
       end if
 
-      status = c_spir_kernel_domain(k_ptr, c_loc(xmin), c_loc(xmax), c_loc(ymin), c_loc(ymax))
+      status = c_spir_kernel_get_domain(k_ptr, c_loc(xmin), c_loc(xmax), c_loc(ymin), c_loc(ymax))
       if (status /= 0) then
          print *, "Error: kernel domain is not assigned"
 stop 1

@@ -26,7 +26,7 @@ class TestCAPICoreFixed:
         xmax = c_double()
         ymin = c_double()
         ymax = c_double()
-        status_val = _lib.spir_kernel_domain(kernel, byref(xmin), byref(xmax),
+        status_val = _lib.spir_kernel_get_domain(kernel, byref(xmin), byref(xmax),
                                             byref(ymin), byref(ymax))
         assert status_val == COMPUTATION_SUCCESS
         assert xmin.value == pytest.approx(-1.0)
@@ -40,7 +40,7 @@ class TestCAPICoreFixed:
         assert status.value == COMPUTATION_SUCCESS
         assert kernel is not None
 
-        _lib.spir_kernel_domain(kernel, byref(xmin), byref(xmax),
+        _lib.spir_kernel_get_domain(kernel, byref(xmin), byref(xmax),
                                byref(ymin), byref(ymax))
         assert status_val == COMPUTATION_SUCCESS
         assert xmin.value == pytest.approx(-1.0)

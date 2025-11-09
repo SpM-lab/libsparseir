@@ -62,10 +62,10 @@ spir_kernel* spir_reg_bose_kernel_new(double lambda, int* status)
     }
 }
 
-int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
+int spir_kernel_get_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax)
 {
-    DEBUG_LOG("spir_kernel_domain called with kernel=" + std::to_string(reinterpret_cast<uintptr_t>(k)));
+    DEBUG_LOG("spir_kernel_get_domain called with kernel=" + std::to_string(reinterpret_cast<uintptr_t>(k)));
     auto impl = get_impl_kernel(k);
     if (!impl) {
         DEBUG_LOG("Failed to get kernel implementation");
@@ -103,7 +103,7 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_kernel_domain: " + std::string(e.what()));
+        DEBUG_LOG("Exception in spir_kernel_get_domain: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         return SPIR_INTERNAL_ERROR;
@@ -118,7 +118,7 @@ int spir_kernel_get_sve_hints_segments_x(const spir_kernel *k, double epsilon,
             DEBUG_LOG("n_segments is nullptr");
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
         if (!impl) {
             DEBUG_LOG("Failed to get kernel implementation");
@@ -162,7 +162,7 @@ int spir_kernel_get_sve_hints_segments_y(const spir_kernel *k, double epsilon,
             DEBUG_LOG("n_segments is nullptr");
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
         if (!impl) {
             DEBUG_LOG("Failed to get kernel implementation");
@@ -205,7 +205,7 @@ int spir_kernel_get_sve_hints_nsvals(const spir_kernel *k, double epsilon, int *
             DEBUG_LOG("nsvals is nullptr");
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
         if (!impl) {
             DEBUG_LOG("Failed to get kernel implementation");
@@ -231,7 +231,7 @@ int spir_kernel_get_sve_hints_ngauss(const spir_kernel *k, double epsilon, int *
             DEBUG_LOG("ngauss is nullptr");
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         std::shared_ptr<sparseir::AbstractKernel> impl = get_impl_kernel(k);
         if (!impl) {
             DEBUG_LOG("Failed to get kernel implementation");
@@ -277,25 +277,25 @@ spir_funcs* spir_funcs_from_piecewise_legendre(
             if (status) *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         if (n_segments < 1) {
             DEBUG_LOG("n_segments must be >= 1");
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         if (nfuncs < 1) {
             DEBUG_LOG("nfuncs must be >= 1");
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         // Create knots vector from segments
         Eigen::VectorXd knots(n_segments + 1);
         for (int i = 0; i <= n_segments; ++i) {
             knots(i) = segments[i];
         }
-        
+
         // Verify segments are monotonically increasing
         for (int i = 1; i <= n_segments; ++i) {
             if (knots(i) <= knots(i-1)) {
@@ -304,7 +304,7 @@ spir_funcs* spir_funcs_from_piecewise_legendre(
                 return nullptr;
             }
         }
-        
+
         // Create coefficient matrix: data is (nfuncs, n_segments)
         // Each column represents one segment's coefficients
         Eigen::MatrixXd data(nfuncs, n_segments);
@@ -314,17 +314,17 @@ spir_funcs* spir_funcs_from_piecewise_legendre(
                 data(deg, seg) = coeffs[seg * nfuncs + deg];
             }
         }
-        
+
         // Create PiecewiseLegendrePoly (l=-1 means not specified)
         sparseir::PiecewiseLegendrePoly poly(data, knots, -1);
-        
+
         // Create PiecewiseLegendrePolyVector (single function)
         std::vector<sparseir::PiecewiseLegendrePoly> polyvec = {poly};
         auto polyvec_ptr = std::make_shared<sparseir::PiecewiseLegendrePolyVector>(polyvec);
-        
+
         // Wrap in PiecewiseLegendrePolyFunctions
         auto funcs_impl = std::make_shared<PiecewiseLegendrePolyFunctions>(polyvec_ptr);
-        
+
         // Create spir_funcs
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_funcs(_safe_static_pointer_cast<AbstractContinuousFunctions>(funcs_impl));
@@ -350,22 +350,22 @@ int spir_gauss_legendre_rule_piecewise_double(
             if (status) *status = SPIR_INVALID_ARGUMENT;
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         if (n < 1) {
             DEBUG_LOG("n must be >= 1");
             *status = SPIR_INVALID_ARGUMENT;
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         if (n_segments < 1) {
             DEBUG_LOG("n_segments must be >= 1");
             *status = SPIR_INVALID_ARGUMENT;
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         // Convert segments to vector
         std::vector<double> segs_vec(segments, segments + n_segments + 1);
-        
+
         // Verify segments are monotonically increasing
         for (int i = 1; i <= n_segments; ++i) {
             if (segs_vec[i] <= segs_vec[i-1]) {
@@ -374,20 +374,20 @@ int spir_gauss_legendre_rule_piecewise_double(
                 return SPIR_INVALID_ARGUMENT;
             }
         }
-        
+
         // Generate base rule with DDouble precision, then convert to double
         auto rule_dd = sparseir::legendre(n);
         auto rule = sparseir::convert_rule<double>(rule_dd);
-        
+
         // Create piecewise rule
         auto piecewise_rule = rule.piecewise(segs_vec);
-        
+
         // Copy to output arrays
         for (int i = 0; i < piecewise_rule.x.size(); ++i) {
             x[i] = piecewise_rule.x(i);
             w[i] = piecewise_rule.w(i);
         }
-        
+
         *status = SPIR_COMPUTATION_SUCCESS;
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
@@ -413,22 +413,22 @@ int spir_gauss_legendre_rule_piecewise_ddouble(
             if (status) *status = SPIR_INVALID_ARGUMENT;
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         if (n < 1) {
             DEBUG_LOG("n must be >= 1");
             *status = SPIR_INVALID_ARGUMENT;
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         if (n_segments < 1) {
             DEBUG_LOG("n_segments must be >= 1");
             *status = SPIR_INVALID_ARGUMENT;
             return SPIR_INVALID_ARGUMENT;
         }
-        
+
         // Convert segments to vector
         std::vector<double> segs_vec(segments, segments + n_segments + 1);
-        
+
         // Verify segments are monotonically increasing
         for (int i = 1; i <= n_segments; ++i) {
             if (segs_vec[i] <= segs_vec[i-1]) {
@@ -437,19 +437,19 @@ int spir_gauss_legendre_rule_piecewise_ddouble(
                 return SPIR_INVALID_ARGUMENT;
             }
         }
-        
+
         // Generate base rule with DDouble precision
         auto rule_dd = sparseir::legendre(n);
-        
+
         // Convert segments to DDouble
         std::vector<xprec::DDouble> segs_dd(segs_vec.size());
         for (size_t i = 0; i < segs_vec.size(); ++i) {
             segs_dd[i] = xprec::DDouble(segs_vec[i]);
         }
-        
+
         // Create piecewise rule
         auto piecewise_rule = rule_dd.piecewise(segs_dd);
-        
+
         // Extract high and low parts
         for (int i = 0; i < piecewise_rule.x.size(); ++i) {
             x_high[i] = piecewise_rule.x(i).hi();
@@ -457,7 +457,7 @@ int spir_gauss_legendre_rule_piecewise_ddouble(
             w_high[i] = piecewise_rule.w(i).hi();
             w_low[i] = piecewise_rule.w(i).lo();
         }
-        
+
         *status = SPIR_COMPUTATION_SUCCESS;
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
@@ -551,13 +551,13 @@ spir_sve_result* spir_sve_result_from_matrix(
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         if (nx < 1 || ny < 1 || n_segments_x < 1 || n_segments_y < 1 || n_gauss < 1) {
             DEBUG_LOG("Invalid dimensions or parameters");
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         // Verify segments are monotonically increasing
         for (int i = 1; i <= n_segments_x; ++i) {
             if (segments_x[i] <= segments_x[i-1]) {
@@ -573,21 +573,21 @@ spir_sve_result* spir_sve_result_from_matrix(
                 return nullptr;
             }
         }
-        
+
         // Determine if using DDouble precision
         bool use_ddouble = (K_low != nullptr);
-        
+
         // Convert segments to vectors
         std::vector<double> segs_x_vec(segments_x, segments_x + n_segments_x + 1);
         std::vector<double> segs_y_vec(segments_y, segments_y + n_segments_y + 1);
-        
+
         // Reconstruct Gauss rules
         auto rule_base_dd = sparseir::legendre(n_gauss);
-        
+
         if (use_ddouble) {
             // DDouble precision
             using T = xprec::DDouble;
-            
+
             // Convert segments to DDouble
             std::vector<T> segs_x_dd(segs_x_vec.size());
             std::vector<T> segs_y_dd(segs_y_vec.size());
@@ -597,11 +597,11 @@ spir_sve_result* spir_sve_result_from_matrix(
             for (size_t i = 0; i < segs_y_vec.size(); ++i) {
                 segs_y_dd[i] = T(segs_y_vec[i]);
             }
-            
+
             auto rule = sparseir::convert_rule<T>(rule_base_dd);
             auto gauss_x = rule.piecewise(segs_x_dd);
             auto gauss_y = rule.piecewise(segs_y_dd);
-            
+
             // Convert input matrix K to Eigen::MatrixX<DDouble>
             Eigen::MatrixX<T> K(nx, ny);
             if (order == SPIR_ORDER_ROW_MAJOR) {
@@ -619,18 +619,18 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Compute SVD
             auto svd_result = sparseir::compute_svd(K);
             auto u = std::get<0>(svd_result);
             auto s_ = std::get<1>(svd_result);
             auto v = std::get<2>(svd_result);
-            
+
             // Postprocess similar to SamplingSVE::postprocess
             Eigen::VectorXd s = s_.template cast<double>();
             Eigen::VectorX<T> gauss_x_w = Eigen::VectorX<T>::Map(gauss_x.w.data(), gauss_x.w.size());
             Eigen::VectorX<T> gauss_y_w = Eigen::VectorX<T>::Map(gauss_y.w.data(), gauss_y.w.size());
-            
+
             // Normalize u and v by weights
             Eigen::MatrixX<T> u_x_ = u;
             for (int i = 0; i < u_x_.rows(); ++i) {
@@ -638,18 +638,18 @@ spir_sve_result* spir_sve_result_from_matrix(
                     u_x_(i, j) = u(i, j) / sparseir::sqrt_impl(gauss_x_w[i]);
                 }
             }
-            
+
             Eigen::MatrixX<T> v_y_ = v;
             for (int i = 0; i < v_y_.rows(); ++i) {
                 for (int j = 0; j < v_y_.cols(); ++j) {
                     v_y_(i, j) = v(i, j) / sparseir::sqrt_impl(gauss_y_w[i]);
                 }
             }
-            
+
             // Reshape to Tensor
             Eigen::Tensor<T, 3> u_x(n_gauss, n_segments_x, s.size());
             Eigen::Tensor<T, 3> v_y(n_gauss, n_segments_y, s.size());
-            
+
             for (int i = 0; i < u_x.dimension(0); ++i) {
                 for (int j = 0; j < u_x.dimension(1); ++j) {
                     for (int k = 0; k < u_x.dimension(2); ++k) {
@@ -657,7 +657,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             for (int i = 0; i < v_y.dimension(0); ++i) {
                 for (int j = 0; j < v_y.dimension(1); ++j) {
                     for (int k = 0; k < v_y.dimension(2); ++k) {
@@ -665,12 +665,12 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Apply Legendre collocation
             Eigen::MatrixX<T> cmat = sparseir::legendre_collocation<T>(rule);
             Eigen::Tensor<T, 3> u_data(cmat.rows(), n_segments_x, s.size());
             Eigen::Tensor<T, 3> v_data(cmat.rows(), n_segments_y, s.size());
-            
+
             for (int j = 0; j < u_data.dimension(1); ++j) {
                 for (int k = 0; k < u_data.dimension(2); ++k) {
                     for (int i = 0; i < u_data.dimension(0); ++i) {
@@ -681,7 +681,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             for (int j = 0; j < v_data.dimension(1); ++j) {
                 for (int k = 0; k < v_data.dimension(2); ++k) {
                     for (int i = 0; i < v_data.dimension(0); ++i) {
@@ -692,11 +692,11 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Apply segment scaling
             auto dsegs_x = sparseir::diff(segs_x_dd);
             auto dsegs_y = sparseir::diff(segs_y_dd);
-            
+
             for (int j = 0; j < u_data.dimension(1); ++j) {
                 for (int i = 0; i < u_data.dimension(0); ++i) {
                     for (int k = 0; k < u_data.dimension(2); ++k) {
@@ -704,7 +704,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             for (int j = 0; j < v_data.dimension(1); ++j) {
                 for (int i = 0; i < v_data.dimension(0); ++i) {
                     for (int k = 0; k < v_data.dimension(2); ++k) {
@@ -712,13 +712,13 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Convert to PiecewiseLegendrePoly
             std::vector<sparseir::PiecewiseLegendrePoly> polyvec_u;
             std::vector<sparseir::PiecewiseLegendrePoly> polyvec_v;
             Eigen::VectorXd knots_x = Eigen::Map<Eigen::VectorXd>(segs_x_vec.data(), segs_x_vec.size());
             Eigen::VectorXd knots_y = Eigen::Map<Eigen::VectorXd>(segs_y_vec.data(), segs_y_vec.size());
-            
+
             for (int i = 0; i < u_data.dimension(2); ++i) {
                 Eigen::MatrixXd slice_double(u_data.dimension(0), u_data.dimension(1));
                 for (int j = 0; j < u_data.dimension(0); ++j) {
@@ -729,7 +729,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                 polyvec_u.push_back(
                     sparseir::PiecewiseLegendrePoly(slice_double, knots_x, i, sparseir::diff(knots_x)));
             }
-            
+
             for (int i = 0; i < v_data.dimension(2); ++i) {
                 Eigen::MatrixXd slice_double(v_data.dimension(0), v_data.dimension(1));
                 for (int j = 0; j < v_data.dimension(0); ++j) {
@@ -740,23 +740,23 @@ spir_sve_result* spir_sve_result_from_matrix(
                 polyvec_v.push_back(
                     sparseir::PiecewiseLegendrePoly(slice_double, knots_y, i, sparseir::diff(knots_y)));
             }
-            
+
             sparseir::PiecewiseLegendrePolyVector ulx(polyvec_u);
             sparseir::PiecewiseLegendrePolyVector vly(polyvec_v);
             sparseir::canonicalize(ulx, vly);
-            
+
             auto sve_result = std::make_shared<sparseir::SVEResult>(ulx, s, vly, epsilon);
             *status = SPIR_COMPUTATION_SUCCESS;
             return create_sve_result(sve_result);
-            
+
         } else {
             // Double precision
             using T = double;
-            
+
             auto rule = sparseir::convert_rule<T>(rule_base_dd);
             auto gauss_x = rule.piecewise(segs_x_vec);
             auto gauss_y = rule.piecewise(segs_y_vec);
-            
+
             // Convert input matrix K to Eigen::MatrixXd
             Eigen::MatrixXd K(nx, ny);
             if (order == SPIR_ORDER_ROW_MAJOR) {
@@ -772,18 +772,18 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Compute SVD
             auto svd_result = sparseir::compute_svd(K);
             auto u = std::get<0>(svd_result);
             auto s_ = std::get<1>(svd_result);
             auto v = std::get<2>(svd_result);
-            
+
             // Postprocess similar to SamplingSVE::postprocess
             Eigen::VectorXd s = s_;
             Eigen::VectorXd gauss_x_w = Eigen::Map<Eigen::VectorXd>(gauss_x.w.data(), gauss_x.w.size());
             Eigen::VectorXd gauss_y_w = Eigen::Map<Eigen::VectorXd>(gauss_y.w.data(), gauss_y.w.size());
-            
+
             // Normalize u and v by weights
             Eigen::MatrixXd u_x_ = u;
             for (int i = 0; i < u_x_.rows(); ++i) {
@@ -791,18 +791,18 @@ spir_sve_result* spir_sve_result_from_matrix(
                     u_x_(i, j) = u(i, j) / std::sqrt(gauss_x_w[i]);
                 }
             }
-            
+
             Eigen::MatrixXd v_y_ = v;
             for (int i = 0; i < v_y_.rows(); ++i) {
                 for (int j = 0; j < v_y_.cols(); ++j) {
                     v_y_(i, j) = v(i, j) / std::sqrt(gauss_y_w[i]);
                 }
             }
-            
+
             // Reshape to Tensor
             Eigen::Tensor<double, 3> u_x(n_gauss, n_segments_x, s.size());
             Eigen::Tensor<double, 3> v_y(n_gauss, n_segments_y, s.size());
-            
+
             for (int i = 0; i < u_x.dimension(0); ++i) {
                 for (int j = 0; j < u_x.dimension(1); ++j) {
                     for (int k = 0; k < u_x.dimension(2); ++k) {
@@ -810,7 +810,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             for (int i = 0; i < v_y.dimension(0); ++i) {
                 for (int j = 0; j < v_y.dimension(1); ++j) {
                     for (int k = 0; k < v_y.dimension(2); ++k) {
@@ -818,12 +818,12 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Apply Legendre collocation
             Eigen::MatrixXd cmat = sparseir::legendre_collocation<double>(rule);
             Eigen::Tensor<double, 3> u_data(cmat.rows(), n_segments_x, s.size());
             Eigen::Tensor<double, 3> v_data(cmat.rows(), n_segments_y, s.size());
-            
+
             for (int j = 0; j < u_data.dimension(1); ++j) {
                 for (int k = 0; k < u_data.dimension(2); ++k) {
                     for (int i = 0; i < u_data.dimension(0); ++i) {
@@ -834,7 +834,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             for (int j = 0; j < v_data.dimension(1); ++j) {
                 for (int k = 0; k < v_data.dimension(2); ++k) {
                     for (int i = 0; i < v_data.dimension(0); ++i) {
@@ -845,7 +845,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Apply segment scaling
             std::vector<double> dsegs_x(n_segments_x);
             std::vector<double> dsegs_y(n_segments_y);
@@ -855,7 +855,7 @@ spir_sve_result* spir_sve_result_from_matrix(
             for (int i = 0; i < n_segments_y; ++i) {
                 dsegs_y[i] = segs_y_vec[i+1] - segs_y_vec[i];
             }
-            
+
             for (int j = 0; j < u_data.dimension(1); ++j) {
                 for (int i = 0; i < u_data.dimension(0); ++i) {
                     for (int k = 0; k < u_data.dimension(2); ++k) {
@@ -863,7 +863,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             for (int j = 0; j < v_data.dimension(1); ++j) {
                 for (int i = 0; i < v_data.dimension(0); ++i) {
                     for (int k = 0; k < v_data.dimension(2); ++k) {
@@ -871,13 +871,13 @@ spir_sve_result* spir_sve_result_from_matrix(
                     }
                 }
             }
-            
+
             // Convert to PiecewiseLegendrePoly
             std::vector<sparseir::PiecewiseLegendrePoly> polyvec_u;
             std::vector<sparseir::PiecewiseLegendrePoly> polyvec_v;
             Eigen::VectorXd knots_x = Eigen::Map<Eigen::VectorXd>(segs_x_vec.data(), segs_x_vec.size());
             Eigen::VectorXd knots_y = Eigen::Map<Eigen::VectorXd>(segs_y_vec.data(), segs_y_vec.size());
-            
+
             for (int i = 0; i < u_data.dimension(2); ++i) {
                 Eigen::MatrixXd slice_double(u_data.dimension(0), u_data.dimension(1));
                 for (int j = 0; j < u_data.dimension(0); ++j) {
@@ -888,7 +888,7 @@ spir_sve_result* spir_sve_result_from_matrix(
                 polyvec_u.push_back(
                     sparseir::PiecewiseLegendrePoly(slice_double, knots_x, i, sparseir::diff(knots_x)));
             }
-            
+
             for (int i = 0; i < v_data.dimension(2); ++i) {
                 Eigen::MatrixXd slice_double(v_data.dimension(0), v_data.dimension(1));
                 for (int j = 0; j < v_data.dimension(0); ++j) {
@@ -899,11 +899,11 @@ spir_sve_result* spir_sve_result_from_matrix(
                 polyvec_v.push_back(
                     sparseir::PiecewiseLegendrePoly(slice_double, knots_y, i, sparseir::diff(knots_y)));
             }
-            
+
             sparseir::PiecewiseLegendrePolyVector ulx(polyvec_u);
             sparseir::PiecewiseLegendrePolyVector vly(polyvec_v);
             sparseir::canonicalize(ulx, vly);
-            
+
             auto sve_result = std::make_shared<sparseir::SVEResult>(ulx, s, vly, epsilon);
             *status = SPIR_COMPUTATION_SUCCESS;
             return create_sve_result(sve_result);
@@ -934,12 +934,12 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         // Validate segments for centrosymmetric kernels:
         // segments_x and segments_y must start at 0 and end at positive values
         // This is required because even/odd matrices are computed on [0, xmax] x [0, ymax]
         const double eps_tol = 1e-12;
-        
+
         // Check segments_x
         if (n_segments_x < 1) {
             DEBUG_LOG("Invalid n_segments_x: must be at least 1, got " + std::to_string(n_segments_x));
@@ -956,7 +956,7 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         // Check segments_y
         if (n_segments_y < 1) {
             DEBUG_LOG("Invalid n_segments_y: must be at least 1, got " + std::to_string(n_segments_y));
@@ -973,12 +973,12 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         // Verify segments are monotonically increasing (additional check)
         for (int i = 1; i <= n_segments_x; ++i) {
             if (segments_x[i] <= segments_x[i-1]) {
-                DEBUG_LOG("segments_x must be monotonically increasing, but segments_x[" + 
-                         std::to_string(i-1) + "]=" + std::to_string(segments_x[i-1]) + 
+                DEBUG_LOG("segments_x must be monotonically increasing, but segments_x[" +
+                         std::to_string(i-1) + "]=" + std::to_string(segments_x[i-1]) +
                          " >= segments_x[" + std::to_string(i) + "]=" + std::to_string(segments_x[i]));
                 *status = SPIR_INVALID_ARGUMENT;
                 return nullptr;
@@ -986,36 +986,36 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
         }
         for (int i = 1; i <= n_segments_y; ++i) {
             if (segments_y[i] <= segments_y[i-1]) {
-                DEBUG_LOG("segments_y must be monotonically increasing, but segments_y[" + 
-                         std::to_string(i-1) + "]=" + std::to_string(segments_y[i-1]) + 
+                DEBUG_LOG("segments_y must be monotonically increasing, but segments_y[" +
+                         std::to_string(i-1) + "]=" + std::to_string(segments_y[i-1]) +
                          " >= segments_y[" + std::to_string(i) + "]=" + std::to_string(segments_y[i]));
                 *status = SPIR_INVALID_ARGUMENT;
                 return nullptr;
             }
         }
-        
+
         // Debug: Check matrix sizes and non-zero elements
         DEBUG_LOG("Input matrices: nx=" + std::to_string(nx) + ", ny=" + std::to_string(ny));
         DEBUG_LOG("n_segments_x=" + std::to_string(n_segments_x) + ", n_segments_y=" + std::to_string(n_segments_y));
         DEBUG_LOG("n_gauss=" + std::to_string(n_gauss));
         if (segments_x && n_segments_x > 0) {
-            DEBUG_LOG("segments_x[0]=" + std::to_string(segments_x[0]) + 
-                     ", segments_x[" + std::to_string(n_segments_x) + "]=" + 
+            DEBUG_LOG("segments_x[0]=" + std::to_string(segments_x[0]) +
+                     ", segments_x[" + std::to_string(n_segments_x) + "]=" +
                      std::to_string(segments_x[n_segments_x]));
         }
         if (segments_y && n_segments_y > 0) {
-            DEBUG_LOG("segments_y[0]=" + std::to_string(segments_y[0]) + 
-                     ", segments_y[" + std::to_string(n_segments_y) + "]=" + 
+            DEBUG_LOG("segments_y[0]=" + std::to_string(segments_y[0]) +
+                     ", segments_y[" + std::to_string(n_segments_y) + "]=" +
                      std::to_string(segments_y[n_segments_y]));
         }
-        
+
         // Check if matrices are non-empty
         if (nx <= 0 || ny <= 0) {
             DEBUG_LOG("Error: Empty matrices: nx=" + std::to_string(nx) + ", ny=" + std::to_string(ny));
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         // Compute SVE for even and odd matrices separately
         int status_even, status_odd;
         DEBUG_LOG("Computing SVE for even matrix...");
@@ -1023,20 +1023,20 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             K_even_high, K_even_low, nx, ny, order,
             segments_x, n_segments_x, segments_y, n_segments_y,
             n_gauss, epsilon, &status_even);
-        
+
         if (status_even != SPIR_COMPUTATION_SUCCESS || !sve_even) {
             DEBUG_LOG("Error: Failed to compute SVE for even matrix: status=" + std::to_string(status_even));
             *status = status_even;
             return nullptr;
         }
         DEBUG_LOG("Successfully computed SVE for even matrix");
-        
+
         DEBUG_LOG("Computing SVE for odd matrix...");
         auto sve_odd = spir_sve_result_from_matrix(
             K_odd_high, K_odd_low, nx, ny, order,
             segments_x, n_segments_x, segments_y, n_segments_y,
             n_gauss, epsilon, &status_odd);
-        
+
         if (status_odd != SPIR_COMPUTATION_SUCCESS || !sve_odd) {
             DEBUG_LOG("Error: Failed to compute SVE for odd matrix: status=" + std::to_string(status_odd));
             spir_sve_result_release(sve_even);
@@ -1044,11 +1044,11 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             return nullptr;
         }
         DEBUG_LOG("Successfully computed SVE for odd matrix");
-        
+
         // Get implementations
         auto sve_even_impl = get_impl_sve_result(sve_even);
         auto sve_odd_impl = get_impl_sve_result(sve_odd);
-        
+
         if (!sve_even_impl || !sve_odd_impl) {
             DEBUG_LOG("Error: Failed to get SVE result implementations");
             spir_sve_result_release(sve_even);
@@ -1056,15 +1056,15 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             *status = SPIR_GET_IMPL_FAILED;
             return nullptr;
         }
-        
+
         // Debug: Check sizes of even and odd results
-        DEBUG_LOG("Even SVE result: s.size()=" + std::to_string(sve_even_impl->s.size()) + 
-                 ", u->size()=" + std::to_string(sve_even_impl->u->size()) + 
+        DEBUG_LOG("Even SVE result: s.size()=" + std::to_string(sve_even_impl->s.size()) +
+                 ", u->size()=" + std::to_string(sve_even_impl->u->size()) +
                  ", v->size()=" + std::to_string(sve_even_impl->v->size()));
-        DEBUG_LOG("Odd SVE result: s.size()=" + std::to_string(sve_odd_impl->s.size()) + 
-                 ", u->size()=" + std::to_string(sve_odd_impl->u->size()) + 
+        DEBUG_LOG("Odd SVE result: s.size()=" + std::to_string(sve_odd_impl->s.size()) +
+                 ", u->size()=" + std::to_string(sve_odd_impl->u->size()) +
                  ", v->size()=" + std::to_string(sve_odd_impl->v->size()));
-        
+
         // Check if even and odd results are non-empty
         if (sve_even_impl->s.size() == 0 || sve_even_impl->u->size() == 0 || sve_even_impl->v->size() == 0) {
             DEBUG_LOG("Error: Even SVE result is empty");
@@ -1080,54 +1080,54 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             *status = SPIR_INTERNAL_ERROR;
             return nullptr;
         }
-        
+
         // Merge even and odd results similar to CentrosymmSVE::postprocess
         std::vector<sparseir::PiecewiseLegendrePoly> u_merged;
         u_merged.reserve(sve_even_impl->u->size() + sve_odd_impl->u->size());
         u_merged.insert(u_merged.end(), sve_even_impl->u->begin(), sve_even_impl->u->end());
         u_merged.insert(u_merged.end(), sve_odd_impl->u->begin(), sve_odd_impl->u->end());
-        
+
         Eigen::VectorXd s_merged(sve_even_impl->s.size() + sve_odd_impl->s.size());
         s_merged << sve_even_impl->s, sve_odd_impl->s;
-        
+
         std::vector<sparseir::PiecewiseLegendrePoly> v_merged;
         v_merged.reserve(sve_even_impl->v->size() + sve_odd_impl->v->size());
         v_merged.insert(v_merged.end(), sve_even_impl->v->begin(), sve_even_impl->v->end());
         v_merged.insert(v_merged.end(), sve_odd_impl->v->begin(), sve_odd_impl->v->end());
-        
+
         sparseir::PiecewiseLegendrePolyVector _u_complete(u_merged);
         sparseir::PiecewiseLegendrePolyVector _v_complete(v_merged);
-        
+
         Eigen::VectorXi sign_even = Eigen::VectorXi::Ones(sve_even_impl->s.size());
         Eigen::VectorXi sign_odd = -Eigen::VectorXi::Ones(sve_odd_impl->s.size());
         Eigen::VectorXi signs = Eigen::VectorXi::Zero(s_merged.size());
         signs << sign_even, sign_odd;
-        
+
         // Sort by singular values (descending)
         std::vector<size_t> sorted_indices = sparseir::sortperm_rev(s_merged);
-        
+
         std::vector<sparseir::PiecewiseLegendrePoly> u_sorted(sorted_indices.size());
         std::vector<sparseir::PiecewiseLegendrePoly> v_sorted(sorted_indices.size());
         Eigen::VectorXi signs_sorted(sorted_indices.size());
         Eigen::VectorXd s_sorted(sorted_indices.size());
-        
+
         for (size_t i = 0; i < sorted_indices.size(); ++i) {
             u_sorted[i] = u_merged[sorted_indices[i]];
             v_sorted[i] = v_merged[sorted_indices[i]];
             s_sorted[i] = s_merged[sorted_indices[i]];
             signs_sorted[i] = signs[sorted_indices[i]];
         }
-        
+
         // Convert segments to vectors
         std::vector<double> segs_x_vec(segments_x, segments_x + n_segments_x + 1);
         std::vector<double> segs_y_vec(segments_y, segments_y + n_segments_y + 1);
         Eigen::VectorXd segs_x = Eigen::Map<Eigen::VectorXd>(segs_x_vec.data(), segs_x_vec.size());
         Eigen::VectorXd segs_y = Eigen::Map<Eigen::VectorXd>(segs_y_vec.data(), segs_y_vec.size());
-        
+
         // Build complete domain polynomials
         std::vector<sparseir::PiecewiseLegendrePoly> u_complete_vec;
         std::vector<sparseir::PiecewiseLegendrePoly> v_complete_vec;
-        
+
         // Check if we have any singular values
         if (u_sorted.empty()) {
             spir_sve_result_release(sve_even);
@@ -1136,23 +1136,23 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
             DEBUG_LOG("No singular values found in merged SVE result");
             return nullptr;
         }
-        
+
         Eigen::VectorXd poly_flip_x(u_sorted[0].data.rows());
         for (int i = 0; i < u_sorted[0].data.rows(); ++i) {
             poly_flip_x(i) = (i % 2 == 0) ? 1.0 : -1.0;
         }
-        
+
         DEBUG_LOG("Processing " + std::to_string(u_sorted.size()) + " sorted singular values");
-        
+
         for (size_t i = 0; i < u_sorted.size(); ++i) {
             try {
                 DEBUG_LOG("Processing singular value " + std::to_string(i) + "/" + std::to_string(u_sorted.size()));
             Eigen::MatrixXd u_pos_data = u_sorted[i].data / std::sqrt(2);
             Eigen::MatrixXd v_pos_data = v_sorted[i].data / std::sqrt(2);
-                
+
                 DEBUG_LOG("u_pos_data size: " + std::to_string(u_pos_data.rows()) + "x" + std::to_string(u_pos_data.cols()));
                 DEBUG_LOG("v_pos_data size: " + std::to_string(v_pos_data.rows()) + "x" + std::to_string(v_pos_data.cols()));
-                
+
                 // Check dimensions
                 if (u_pos_data.cols() == 0 || v_pos_data.cols() == 0) {
                     DEBUG_LOG("Zero columns in u_pos_data or v_pos_data at i=" + std::to_string(i));
@@ -1161,22 +1161,22 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
                     *status = SPIR_INTERNAL_ERROR;
                     return nullptr;
                 }
-            
+
             Eigen::MatrixXd u_neg_data = u_pos_data.rowwise().reverse();
             u_neg_data = u_neg_data.array().colwise() * (poly_flip_x * signs_sorted[i]).array();
             Eigen::MatrixXd v_neg_data = v_pos_data.rowwise().reverse();
             v_neg_data = v_neg_data.array().colwise() * (poly_flip_x * signs_sorted[i]).array();
-            
+
                 DEBUG_LOG("u_neg_data size: " + std::to_string(u_neg_data.rows()) + "x" + std::to_string(u_neg_data.cols()));
                 DEBUG_LOG("v_neg_data size: " + std::to_string(v_neg_data.rows()) + "x" + std::to_string(v_neg_data.cols()));
-                
+
                 // The merged data should have the same number of columns as the full domain segments
                 // u_pos_data already covers the full domain, so we shouldn't double the columns
                 // Instead, we need to properly extend to negative side
                 // Check if segments are symmetric
                 DEBUG_LOG("segs_x.size()=" + std::to_string(segs_x.size()) + ", u_pos_data.cols()=" + std::to_string(u_pos_data.cols()));
                 if (segs_x.size() != u_pos_data.cols() + 1) {
-                    DEBUG_LOG("Segment size mismatch: segs_x.size()=" + std::to_string(segs_x.size()) + 
+                    DEBUG_LOG("Segment size mismatch: segs_x.size()=" + std::to_string(segs_x.size()) +
                              ", u_pos_data.cols()=" + std::to_string(u_pos_data.cols()));
                     // Try to construct symmetric segments from positive half
                     // For now, use the existing data structure
@@ -1188,21 +1188,21 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
                 v_pos_data.rows(), v_neg_data.cols() + v_pos_data.cols());
             v_data.leftCols(v_neg_data.cols()) = v_neg_data;
             v_data.rightCols(v_pos_data.cols()) = v_pos_data;
-            
+
                     // Construct symmetric segments
                     Eigen::VectorXd segs_x_symmetric = Eigen::VectorXd::Zero(u_data.cols() + 1);
                     int half = u_pos_data.cols();
                     segs_x_symmetric.head(half) = -segs_x.tail(half).reverse();
                     segs_x_symmetric.tail(half + 1) = segs_x.tail(half + 1);
-                    
+
                     Eigen::VectorXd segs_y_symmetric = Eigen::VectorXd::Zero(v_data.cols() + 1);
                     half = v_pos_data.cols();
                     segs_y_symmetric.head(half) = -segs_y.tail(half).reverse();
                     segs_y_symmetric.tail(half + 1) = segs_y.tail(half + 1);
-                    
+
                     Eigen::VectorXd segs_x_diff = segs_x_symmetric.tail(segs_x_symmetric.size() - 1) - segs_x_symmetric.head(segs_x_symmetric.size() - 1);
                     Eigen::VectorXd segs_y_diff = segs_y_symmetric.tail(segs_y_symmetric.size() - 1) - segs_y_symmetric.head(segs_y_symmetric.size() - 1);
-            
+
             u_complete_vec.push_back(
                         sparseir::PiecewiseLegendrePoly(u_data, segs_x_symmetric, static_cast<int>(i), segs_x_diff, signs_sorted[i]));
             v_complete_vec.push_back(
@@ -1212,20 +1212,20 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
                     // Current segments are [0, xmax], need to construct full domain
                     DEBUG_LOG("Segments match, extending to full domain");
                     DEBUG_LOG("Current segs_x: [" + std::to_string(segs_x(0)) + ", ..., " + std::to_string(segs_x(segs_x.size()-1)) + "]");
-                    
+
                     // Construct symmetric segments for full domain
                     int half = u_pos_data.cols();
                     Eigen::VectorXd segs_x_full = Eigen::VectorXd::Zero(2 * half + 1);
                     segs_x_full.head(half) = -segs_x.tail(half).reverse();
                     segs_x_full(half) = 0.0;
                     segs_x_full.tail(half) = segs_x.tail(half);
-                    
+
                     int half_y = v_pos_data.cols();
                     Eigen::VectorXd segs_y_full = Eigen::VectorXd::Zero(2 * half_y + 1);
                     segs_y_full.head(half_y) = -segs_y.tail(half_y).reverse();
                     segs_y_full(half_y) = 0.0;
                     segs_y_full.tail(half_y) = segs_y.tail(half_y);
-                    
+
                     // Combine u_neg and u_pos data
                     Eigen::MatrixXd u_data = Eigen::MatrixXd::Zero(
                         u_pos_data.rows(), u_neg_data.cols() + u_pos_data.cols());
@@ -1235,15 +1235,15 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
                         v_pos_data.rows(), v_neg_data.cols() + v_pos_data.cols());
                     v_data.leftCols(v_neg_data.cols()) = v_neg_data;
                     v_data.rightCols(v_pos_data.cols()) = v_pos_data;
-                    
-                    DEBUG_LOG("u_data size: " + std::to_string(u_data.rows()) + "x" + std::to_string(u_data.cols()) + 
+
+                    DEBUG_LOG("u_data size: " + std::to_string(u_data.rows()) + "x" + std::to_string(u_data.cols()) +
                              ", segs_x_full size: " + std::to_string(segs_x_full.size()));
-                    DEBUG_LOG("v_data size: " + std::to_string(v_data.rows()) + "x" + std::to_string(v_data.cols()) + 
+                    DEBUG_LOG("v_data size: " + std::to_string(v_data.rows()) + "x" + std::to_string(v_data.cols()) +
                              ", segs_y_full size: " + std::to_string(segs_y_full.size()));
-                    
+
                     Eigen::VectorXd segs_x_diff = segs_x_full.tail(segs_x_full.size() - 1) - segs_x_full.head(segs_x_full.size() - 1);
                     Eigen::VectorXd segs_y_diff = segs_y_full.tail(segs_y_full.size() - 1) - segs_y_full.head(segs_y_full.size() - 1);
-                    
+
                     DEBUG_LOG("Creating PiecewiseLegendrePoly...");
                     u_complete_vec.push_back(
                         sparseir::PiecewiseLegendrePoly(u_data, segs_x_full, static_cast<int>(i), segs_x_diff, signs_sorted[i]));
@@ -1261,16 +1261,16 @@ spir_sve_result* spir_sve_result_from_matrix_centrosymmetric(
                 return nullptr;
             }
         }
-        
+
         sparseir::PiecewiseLegendrePolyVector u_complete(u_complete_vec);
         sparseir::PiecewiseLegendrePolyVector v_complete(v_complete_vec);
-        
+
         auto sve_result = std::make_shared<sparseir::SVEResult>(u_complete, s_sorted, v_complete, epsilon);
-        
+
         // Clean up temporary results
         spir_sve_result_release(sve_even);
         spir_sve_result_release(sve_odd);
-        
+
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_sve_result(sve_result);
     } catch (const std::exception &e) {
@@ -1303,18 +1303,18 @@ spir_basis* spir_basis_new_from_sve_and_inv_weight(
     int *status)
 {
     DEBUG_LOG("spir_basis_new_from_sve_and_inv_weight called");
-    DEBUG_LOG("  statistics=" + std::to_string(statistics) + 
-              ", beta=" + std::to_string(beta) + 
-              ", omega_max=" + std::to_string(omega_max) + 
-              ", epsilon=" + std::to_string(epsilon) + 
-              ", lambda=" + std::to_string(lambda) + 
-              ", ypower=" + std::to_string(ypower) + 
-              ", conv_radius=" + std::to_string(conv_radius) + 
+    DEBUG_LOG("  statistics=" + std::to_string(statistics) +
+              ", beta=" + std::to_string(beta) +
+              ", omega_max=" + std::to_string(omega_max) +
+              ", epsilon=" + std::to_string(epsilon) +
+              ", lambda=" + std::to_string(lambda) +
+              ", ypower=" + std::to_string(ypower) +
+              ", conv_radius=" + std::to_string(conv_radius) +
               ", max_size=" + std::to_string(max_size));
     DEBUG_LOG("  sve=" + (sve ? std::to_string(reinterpret_cast<uintptr_t>(sve)) : std::string("null")));
     DEBUG_LOG("  inv_weight_funcs=" + (inv_weight_funcs ? std::to_string(reinterpret_cast<uintptr_t>(inv_weight_funcs)) : std::string("null")));
     DEBUG_LOG("  status=" + (status ? std::to_string(reinterpret_cast<uintptr_t>(status)) : std::string("null")));
-    
+
     try {
         // Input validation
         if (!sve || !inv_weight_funcs || !status) {
@@ -1322,13 +1322,13 @@ spir_basis* spir_basis_new_from_sve_and_inv_weight(
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         if (beta <= 0.0 || omega_max < 0.0) {
             DEBUG_LOG("Invalid beta or omega_max: beta=" + std::to_string(beta) + ", omega_max=" + std::to_string(omega_max));
             *status = SPIR_INVALID_ARGUMENT;
             return nullptr;
         }
-        
+
         // Get SVE result implementation
         DEBUG_LOG("Getting SVE result implementation");
         auto sve_impl = get_impl_sve_result(sve);
@@ -1338,30 +1338,30 @@ spir_basis* spir_basis_new_from_sve_and_inv_weight(
             return nullptr;
         }
         DEBUG_LOG("SVE result implementation obtained successfully");
-        
+
         // Create inv_weight_func from spir_funcs
         // inv_weight_funcs represents inv_weight_func(omega) for fixed beta
         // Create omega-only function that evaluates spir_funcs
         DEBUG_LOG("Creating inv_weight_func from spir_funcs");
-        std::function<double(double)> inv_weight_func = 
+        std::function<double(double)> inv_weight_func =
             [inv_weight_funcs](double omega) -> double {
                 int funcs_size;
                 int eval_status = spir_funcs_get_size(inv_weight_funcs, &funcs_size);
                 if (eval_status != SPIR_COMPUTATION_SUCCESS || funcs_size < 1) {
                     return 1.0; // Default to 1.0 on error
                 }
-                
+
                 // Evaluate at omega (treating omega as x coordinate)
                 std::vector<double> values(funcs_size);
                 eval_status = spir_funcs_eval(inv_weight_funcs, omega, values.data());
                 if (eval_status != SPIR_COMPUTATION_SUCCESS) {
                     return 1.0; // Default to 1.0 on error
                 }
-                
+
                 // Return the first function value (assuming single function)
                 return values[0];
             };
-        
+
         // Create basis using new constructor
         DEBUG_LOG("Creating FiniteTempBasis with statistics=" + std::to_string(statistics));
         spir_basis* result = nullptr;
@@ -1380,7 +1380,7 @@ spir_basis* spir_basis_new_from_sve_and_inv_weight(
             result = create_basis(
                 std::make_shared<_IRBasis<sparseir::Bosonic>>(impl));
         }
-        
+
         if (result) {
             *status = SPIR_COMPUTATION_SUCCESS;
             return result;
@@ -2321,7 +2321,7 @@ int spir_basis_get_default_taus_ext(
             Eigen::VectorXd x = sparseir::default_sampling_points(
                 *(ir_basis->get_impl()->sve_result->u), n_points
             );
-            
+
             // Process like default_tau_sampling_points() but with n_points
             std::vector<double> unique_x;
             if (x.size() % 2 == 0) {
@@ -2352,7 +2352,7 @@ int spir_basis_get_default_taus_ext(
             Eigen::VectorXd x = sparseir::default_sampling_points(
                 *(ir_basis->get_impl()->sve_result->u), n_points
             );
-            
+
             // Process like default_tau_sampling_points() but with n_points
             std::vector<double> unique_x;
             if (x.size() % 2 == 0) {
@@ -2582,7 +2582,7 @@ int spir_uhat_get_default_matsus(const spir_funcs *uhat, int L, bool positive_on
         if (fermionic_uhat) {
             auto uhat_impl = fermionic_uhat->get_impl();
             bool fence = mitigate;
-            std::vector<sparseir::MatsubaraFreq<sparseir::Fermionic>> matsubara_points = 
+            std::vector<sparseir::MatsubaraFreq<sparseir::Fermionic>> matsubara_points =
                 sparseir::default_matsubara_sampling_points_impl(*uhat_impl, L, fence, positive_only);
             *n_points_returned = matsubara_points.size();
             std::transform(
@@ -2598,7 +2598,7 @@ int spir_uhat_get_default_matsus(const spir_funcs *uhat, int L, bool positive_on
         if (bosonic_uhat) {
             auto uhat_impl = bosonic_uhat->get_impl();
             bool fence = mitigate;
-            std::vector<sparseir::MatsubaraFreq<sparseir::Bosonic>> matsubara_points = 
+            std::vector<sparseir::MatsubaraFreq<sparseir::Bosonic>> matsubara_points =
                 sparseir::default_matsubara_sampling_points_impl(*uhat_impl, L, fence, positive_only);
             *n_points_returned = matsubara_points.size();
             std::transform(
@@ -3003,18 +3003,18 @@ spir_sve_result* spir_sve_result_truncate(const spir_sve_result *sve, double eps
     try {
         // Use the part method to truncate the SVE result
         auto part_result = impl->part(epsilon, max_size);
-        
+
         // Extract the truncated components
         sparseir::PiecewiseLegendrePolyVector u_truncated = std::get<0>(part_result);
         Eigen::VectorXd s_truncated = std::get<1>(part_result);
         sparseir::PiecewiseLegendrePolyVector v_truncated = std::get<2>(part_result);
-        
+
         // Create a new SVEResult with the truncated components
         // Use the original epsilon or the provided one if it's not NaN
         double result_epsilon = std::isnan(epsilon) ? impl->epsilon : epsilon;
         auto truncated_sve_result = std::make_shared<sparseir::SVEResult>(
             u_truncated, s_truncated, v_truncated, result_epsilon);
-        
+
         *status = SPIR_COMPUTATION_SUCCESS;
         return create_sve_result(truncated_sve_result);
     } catch (const std::exception &e) {
@@ -3277,7 +3277,7 @@ int spir_funcs_get_knots(const spir_funcs *funcs, double *knots)
         if (piecewise_impl) {
             // Get knots from the underlying PiecewiseLegendrePolyVector
             auto knots_vec = piecewise_impl->get_impl()->get_knots();
-            
+
             // Copy knots to output array (already in non-ascending order)
             std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
             return SPIR_COMPUTATION_SUCCESS;
@@ -3287,7 +3287,7 @@ int spir_funcs_get_knots(const spir_funcs *funcs, double *knots)
         auto tau_adaptor = std::dynamic_pointer_cast<TauFunctionsAdaptor<sparseir::IRTauFuncsType<sparseir::Fermionic>>>(continuous_impl);
         if (tau_adaptor) {
             auto knots_vec = tau_adaptor->get_impl()->get_obj().get_knots();
-            
+
             // Copy knots to output array (already in non-ascending order)
             std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
             return SPIR_COMPUTATION_SUCCESS;
@@ -3296,7 +3296,7 @@ int spir_funcs_get_knots(const spir_funcs *funcs, double *knots)
         auto tau_adaptor_boson = std::dynamic_pointer_cast<TauFunctionsAdaptor<sparseir::IRTauFuncsType<sparseir::Bosonic>>>(continuous_impl);
         if (tau_adaptor_boson) {
             auto knots_vec = tau_adaptor_boson->get_impl()->get_obj().get_knots();
-            
+
             // Copy knots to output array (already in non-ascending order)
             std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
             return SPIR_COMPUTATION_SUCCESS;
@@ -3307,7 +3307,7 @@ int spir_funcs_get_knots(const spir_funcs *funcs, double *knots)
         // For now, just call get_knots() directly on the continuous_impl
         try {
             auto knots_vec = continuous_impl->get_knots();
-            
+
             // Copy knots to output array (already in non-ascending order)
             std::memcpy(knots, knots_vec.data(), knots_vec.size() * sizeof(double));
             return SPIR_COMPUTATION_SUCCESS;

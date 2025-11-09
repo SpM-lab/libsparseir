@@ -115,15 +115,15 @@ function c_spir_reg_bose_kernel_new(lambda, status) &
   type(c_ptr) :: c_spir_reg_bose_kernel_new
 end function
 
-function c_spir_kernel_domain(k, xmin, xmax, ymin, ymax) &
-    bind(c, name="spir_kernel_domain")
+function c_spir_kernel_get_domain(k, xmin, xmax, ymin, ymax) &
+    bind(c, name="spir_kernel_get_domain")
   use iso_c_binding
   type(c_ptr), value :: k
   type(c_ptr), value :: xmin
   type(c_ptr), value :: xmax
   type(c_ptr), value :: ymin
   type(c_ptr), value :: ymax
-  integer(c_int) :: c_spir_kernel_domain
+  integer(c_int) :: c_spir_kernel_get_domain
 end function
 
 function c_spir_sve_result_new(k, epsilon, cutoff, lmax, n_gauss, Twork, status) &

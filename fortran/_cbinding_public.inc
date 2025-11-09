@@ -16,7 +16,7 @@
   public :: c_spir_sve_result_is_assigned
   public :: c_spir_logistic_kernel_new
   public :: c_spir_reg_bose_kernel_new
-  public :: c_spir_kernel_domain
+  public :: c_spir_kernel_get_domain
   public :: c_spir_sve_result_new
   public :: c_spir_sve_result_get_size
   public :: c_spir_sve_result_truncate
