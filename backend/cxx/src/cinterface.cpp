@@ -110,6 +110,25 @@ int spir_kernel_get_domain(const spir_kernel *k, double *xmin, double *xmax,
     }
 }
 
+int spir_kernel_compute(const spir_kernel *kernel, double x, double y, double *out)
+{
+    try {
+        auto impl = get_impl_kernel(kernel);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+        *out = impl->compute(x, y);
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_compute: " + std::string(e.what()));
+        return SPIR_INVALID_ARGUMENT;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_compute");
+        return SPIR_INVALID_ARGUMENT;
+    }
+}
+
 int spir_kernel_get_sve_hints_segments_x(const spir_kernel *k, double epsilon,
                                          double *segments, int *n_segments)
 {

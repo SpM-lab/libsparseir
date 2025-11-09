@@ -124,6 +124,25 @@ spir_kernel *spir_logistic_kernel_new(double lambda, int *status);
 spir_kernel *spir_reg_bose_kernel_new(double lambda, int *status);
 
 /**
+ * @brief Retrieves the cutoff parameter lambda used to construct the kernel.
+ *
+ * This function extracts the lambda value (Λ) associated with the provided kernel object.
+ * The lambda parameter typically determines the cutoff scale in the analytic continuation kernels.
+ *
+ * @param kernel      Pointer to the kernel object. Must not be NULL.
+ * @param lambda_out  Pointer to a double where the lambda value will be written. Must not be NULL.
+ *
+ * @return An integer status code:
+ *         - SPIR_COMPUTATION_SUCCESS (0) on success
+ *         - SPIR_INVALID_ARGUMENT if either `kernel` or `lambda_out` is NULL
+ *         - SPIR_INTERNAL_ERROR if an unexpected error occurs internally
+ *
+ * @note The lambda value is specific to the type of kernel and corresponds
+ *       to the cutoff parameter provided at kernel construction.
+ */
+int spir_kernel_get_lambda(const spir_kernel *kernel, double *lambda_out);
+
+/**
  * @brief Retrieves the domain boundaries of a kernel function.
  *
  * This function obtains the domain boundaries (ranges) for both the x and y
@@ -144,6 +163,29 @@ spir_kernel *spir_reg_bose_kernel_new(double lambda, int *status);
  */
 int spir_kernel_get_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax);
+
+/**
+ * @brief Computes the value of the kernel function K(x, y).
+ *
+ * This function evaluates the kernel associated with the provided kernel object
+ * at the specified coordinates (x, y), and stores the result at the memory location
+ * pointed to by `out`.
+ *
+ * @param kernel Pointer to a kernel object (must not be NULL).
+ * @param x      First coordinate for evaluation (typically in [-1, 1]; domain may vary by kernel).
+ * @param y      Second coordinate for evaluation (typically in [-1, 1]; domain may vary by kernel).
+ * @param out    Pointer to a double where the computed result will be stored (must not be NULL).
+ *
+ * @return An integer status code:
+ *         - 0 (SPIR_COMPUTATION_SUCCESS) on success
+ *         - SPIR_INVALID_ARGUMENT if `kernel` or `out` is NULL
+ *         - SPIR_INTERNAL_ERROR if an internal error occurs
+ *
+ * @note The function does not check if (x, y) is within the valid domain of the kernel;
+ *       callers should ensure that inputs are valid.
+ * @note The kernel object must have been created by one of the kernel constructor functions.
+ */
+int spir_kernel_compute(const spir_kernel *kernel, double x, double y, double *out);
 
 /**
  * @brief Get x-segments for SVE discretization hints from a kernel.
