@@ -37,6 +37,19 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
         REQUIRE(kernel != nullptr);
     }
 
+    SECTION("Kernel Get Lambda")
+    {
+        int kernel_status;
+        spir_kernel *kernel = spir_logistic_kernel_new(9, &kernel_status);
+        REQUIRE(kernel_status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(kernel != nullptr);
+        double lambda;
+        int lambda_status = spir_kernel_get_lambda(kernel, &lambda);
+        REQUIRE(lambda_status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(lambda == 9);
+        spir_kernel_release(kernel);
+    }
+
     SECTION("Kernel Domain")
     {
         // Create a kernel through C API
@@ -63,6 +76,26 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
         REQUIRE(xmax == cpp_xmax);
         REQUIRE(ymin == cpp_ymin);
         REQUIRE(ymax == cpp_ymax);
+
+        // Clean up
+        spir_kernel_release(kernel);
+    }
+
+    SECTION("Kernel Compute")
+    {
+        auto cpp_kernel = sparseir::LogisticKernel(9);
+        double x = 0.5;
+        double y = 0.5;
+        double out;
+
+        // Create a kernel through C API
+        int kernel_status;
+        spir_kernel *kernel = spir_logistic_kernel_new(9, &kernel_status);
+        REQUIRE(kernel_status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(kernel != nullptr);
+        int compute_status = spir_kernel_compute(kernel, x, y, &out);
+        REQUIRE(compute_status == SPIR_COMPUTATION_SUCCESS);
+        REQUIRE(out == Approx(cpp_kernel.compute(x, y)));
 
         // Clean up
         spir_kernel_release(kernel);
