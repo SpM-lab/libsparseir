@@ -62,6 +62,25 @@ spir_kernel* spir_reg_bose_kernel_new(double lambda, int* status)
     }
 }
 
+int spir_kernel_get_lambda(const spir_kernel *kernel, double *lambda_out){
+    DEBUG_LOG("spir_kernel_get_lambda called with kernel=" + std::to_string(reinterpret_cast<uintptr_t>(kernel)));
+    try {
+        auto impl = get_impl_kernel(kernel);
+        if (!impl) {
+            DEBUG_LOG("Failed to get kernel implementation");
+            return SPIR_GET_IMPL_FAILED;
+        }
+        *lambda_out = impl->lambda_;
+        return SPIR_COMPUTATION_SUCCESS;
+    } catch (const std::exception &e) {
+        DEBUG_LOG("Exception in spir_kernel_get_lambda: " + std::string(e.what()));
+        return SPIR_INTERNAL_ERROR;
+    } catch (...) {
+        DEBUG_LOG("Unknown exception in spir_kernel_get_lambda");
+        return SPIR_INTERNAL_ERROR;
+    }
+}
+
 int spir_kernel_get_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax)
 {
