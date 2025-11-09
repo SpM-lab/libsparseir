@@ -81,10 +81,10 @@ int spir_kernel_get_lambda(const spir_kernel *kernel, double *lambda_out){
     }
 }
 
-int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
+int spir_kernel_get_domain(const spir_kernel *k, double *xmin, double *xmax,
                            double *ymin, double *ymax)
 {
-    DEBUG_LOG("spir_kernel_domain called with kernel=" + std::to_string(reinterpret_cast<uintptr_t>(k)));
+    DEBUG_LOG("spir_kernel_get_domain called with kernel=" + std::to_string(reinterpret_cast<uintptr_t>(k)));
     auto impl = get_impl_kernel(k);
     if (!impl) {
         DEBUG_LOG("Failed to get kernel implementation");
@@ -122,7 +122,7 @@ int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
 
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
-        DEBUG_LOG("Exception in spir_kernel_domain: " + std::string(e.what()));
+        DEBUG_LOG("Exception in spir_kernel_get_domain: " + std::string(e.what()));
         return SPIR_INTERNAL_ERROR;
     } catch (...) {
         return SPIR_INTERNAL_ERROR;

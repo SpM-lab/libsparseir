@@ -73,7 +73,7 @@ FUNCTIONS = {
     'spir_ir2dlr_dd': ('c_int', ['spir_basis', 'c_int', 'c_int', 'POINTER(c_int)', 'c_int', 'POINTER(c_double)', 'POINTER(c_double)']),
     'spir_ir2dlr_zz': ('c_int', ['spir_basis', 'c_int', 'c_int', 'POINTER(c_int)', 'c_int', 'POINTER(c_double_complex)', 'POINTER(c_double_complex)']),
     'spir_kernel_clone': ('spir_kernel', ['spir_kernel']),
-    'spir_kernel_domain': ('c_int', ['spir_kernel', 'POINTER(c_double)', 'POINTER(c_double)', 'POINTER(c_double)', 'POINTER(c_double)']),
+    'spir_kernel_get_domain': ('c_int', ['spir_kernel', 'POINTER(c_double)', 'POINTER(c_double)', 'POINTER(c_double)', 'POINTER(c_double)']),
     'spir_kernel_get_sve_hints_ngauss': ('c_int', ['spir_kernel', 'c_double', 'POINTER(c_int)']),
     'spir_kernel_get_sve_hints_nsvals': ('c_int', ['spir_kernel', 'c_double', 'POINTER(c_int)']),
     'spir_kernel_get_sve_hints_segments_x': ('c_int', ['spir_kernel', 'c_double', 'POINTER(c_double)', 'POINTER(c_int)']),

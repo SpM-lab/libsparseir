@@ -161,7 +161,7 @@ int spir_kernel_get_lambda(const spir_kernel *kernel, double *lambda_out);
  * @note For the logistic and regularized bosonic kernels, the domain is
  *       typically [-1, 1] × [-1, 1] in dimensionless variables.
  */
-int spir_kernel_domain(const spir_kernel *k, double *xmin, double *xmax,
+int spir_kernel_get_domain(const spir_kernel *k, double *xmin, double *xmax,
                        double *ymin, double *ymax);
 
 /**

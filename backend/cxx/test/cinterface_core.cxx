@@ -60,7 +60,7 @@ TEST_CASE("Kernel Accuracy Tests", "[cinterface]")
 
         // Get domain bounds
         double xmin, xmax, ymin, ymax;
-        int domain_status = spir_kernel_domain(kernel, &xmin, &xmax, &ymin, &ymax);
+        int domain_status = spir_kernel_get_domain(kernel, &xmin, &xmax, &ymin, &ymax);
         REQUIRE(domain_status == SPIR_COMPUTATION_SUCCESS);
 
         // Compare with C++ implementation
