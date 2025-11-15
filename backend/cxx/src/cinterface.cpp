@@ -168,12 +168,12 @@ int spir_kernel_get_sve_hints_segments_x(const spir_kernel *k, double epsilon,
 
         if (segments == nullptr) {
             // First call: return the number of segments
-            *n_segments = static_cast<int>(segs.size());
+            *n_segments = static_cast<int>(segs.size()) - 1;
             return SPIR_COMPUTATION_SUCCESS;
         }
 
         // Second call: copy segments to output array
-        if (*n_segments < static_cast<int>(segs.size())) {
+        if (*n_segments < static_cast<int>(segs.size()) - 1) {
             DEBUG_LOG("segments array is too small");
             return SPIR_INVALID_ARGUMENT;
         }
@@ -181,7 +181,7 @@ int spir_kernel_get_sve_hints_segments_x(const spir_kernel *k, double epsilon,
         for (size_t i = 0; i < segs.size(); ++i) {
             segments[i] = static_cast<double>(segs[i]);
         }
-        *n_segments = static_cast<int>(segs.size());
+        *n_segments = static_cast<int>(segs.size()) - 1;
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_kernel_get_sve_hints_segments_x: " + std::string(e.what()));
@@ -212,12 +212,12 @@ int spir_kernel_get_sve_hints_segments_y(const spir_kernel *k, double epsilon,
 
         if (segments == nullptr) {
             // First call: return the number of segments
-            *n_segments = static_cast<int>(segs.size());
+            *n_segments = static_cast<int>(segs.size()) - 1;
             return SPIR_COMPUTATION_SUCCESS;
         }
 
         // Second call: copy segments to output array
-        if (*n_segments < static_cast<int>(segs.size())) {
+        if (*n_segments < static_cast<int>(segs.size()) - 1) {
             DEBUG_LOG("segments array is too small");
             return SPIR_INVALID_ARGUMENT;
         }
@@ -225,7 +225,7 @@ int spir_kernel_get_sve_hints_segments_y(const spir_kernel *k, double epsilon,
         for (size_t i = 0; i < segs.size(); ++i) {
             segments[i] = static_cast<double>(segs[i]);
         }
-        *n_segments = static_cast<int>(segs.size());
+        *n_segments = static_cast<int>(segs.size()) - 1;
         return SPIR_COMPUTATION_SUCCESS;
     } catch (const std::exception &e) {
         DEBUG_LOG("Exception in spir_kernel_get_sve_hints_segments_y: " + std::string(e.what()));
