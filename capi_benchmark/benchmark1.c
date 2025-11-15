@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <sparseir/sparseir.h>
 #include <time.h>
+#include <stdbool.h>
 
 // Simple benchmark utilities
 typedef struct
@@ -51,13 +52,12 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
     benchmark_end(&bench);
 
     // Create a pre-computed SVE result
-    double cutoff = -1.0;
     int lmax = -1;
     int n_gauss = -1;
     int Twork = SPIR_TWORK_FLOAT64X2;
     benchmark_start(&bench, "SVE computation");
     spir_sve_result *sve_logistic = spir_sve_result_new(
-        kernel, epsilon, cutoff, lmax, n_gauss, Twork, &status);
+        kernel, epsilon, lmax, n_gauss, Twork, &status);
     assert(status == SPIR_COMPUTATION_SUCCESS);
     assert(sve_logistic != NULL);
     benchmark_end(&bench);
@@ -200,11 +200,9 @@ int benchmark(double beta, double omega_max, double epsilon, int extra_size, int
 }
 
 
-int main()
+int benchmark_internal(double beta, double epsilon)
 {
-    double beta = 1e+5;     // Inverse temperature
     double omega_max = 1.0; // Ultraviolet cutoff
-    double epsilon = 1e-10;  // Accuracy target
 
     int extra_size = 1000; // dimension of the extra space
 
@@ -220,3 +218,17 @@ int main()
 
     return 0;
 }
+
+
+int main()
+{
+    printf("Benchmark (beta = 1e+3, epsilon = 1e-6)\n");
+    benchmark_internal(1e+3, 1e-6);
+    printf("\n");
+
+    printf("Benchmark (beta = 1e+5, epsilon = 1e-10)\n");
+    benchmark_internal(1e+5, 1e-10);
+
+    return 0;
+}
+
