@@ -15,7 +15,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'
@@ -46,7 +46,7 @@ jobs:
     timeout-minutes: 60  # Allow up to 60 minutes for ILP64 tests
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       
       - name: Install dependencies with ILP64 BLAS
         run: |

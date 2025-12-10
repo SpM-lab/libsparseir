@@ -30,7 +30,7 @@ jobs:
             openblas_path: "/opt/homebrew/opt/openblas"
             py_tag: "cp310"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: remove python/.gitignore
         shell: bash
         run: |
